@@ -34,6 +34,10 @@ dependencies:
   kana_kit: ^2.1.1
   # 沙盒路径获取
   path_provider: ^2.1.3
+  # 网络请求
+  dio: ^5.7.0
+  # 日志
+  logger: ^2.5.0
 
 dev_dependencies:
   flutter_test:

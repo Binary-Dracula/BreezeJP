@@ -1,0 +1,252 @@
+import 'package:dio/dio.dart';
+import '../utils/app_logger.dart';
+import 'api_endpoints.dart';
+
+/// Dio 网络请求客户端（单例模式）
+class DioClient {
+  static final DioClient instance = DioClient._internal();
+
+  late final Dio dio;
+
+  DioClient._internal() {
+    dio = Dio(
+      BaseOptions(
+        // 基础 URL（根据实际 API 修改）
+        baseUrl: ApiEndpoints.baseUrl,
+        // 连接超时时间
+        connectTimeout: const Duration(seconds: 10),
+        // 接收超时时间
+        receiveTimeout: const Duration(seconds: 10),
+        // 发送超时时间
+        sendTimeout: const Duration(seconds: 10),
+        // 默认请求头
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    // 添加拦截器
+    _setupInterceptors();
+  }
+
+  /// 配置拦截器
+  void _setupInterceptors() {
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          // 请求前处理（例如：添加 token）
+          // final token = await getToken();
+          // options.headers['Authorization'] = 'Bearer $token';
+
+          // 记录请求日志
+          logger.network(
+            options.method,
+            options.uri.toString(),
+            data: options.data,
+          );
+
+          handler.next(options);
+        },
+        onResponse: (response, handler) {
+          // 记录响应日志
+          logger.networkResponse(
+            response.statusCode ?? 0,
+            response.requestOptions.uri.toString(),
+            data: response.data,
+          );
+
+          handler.next(response);
+        },
+        onError: (error, handler) {
+          // 记录错误日志
+          logger.networkError(
+            error.requestOptions.method,
+            error.requestOptions.uri.toString(),
+            error.message,
+          );
+
+          handler.next(error);
+        },
+      ),
+    );
+  }
+
+  /// GET 请求
+  Future<Response<T>> get<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    try {
+      return await dio.get<T>(
+        path,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+        onReceiveProgress: onReceiveProgress,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// POST 请求
+  Future<Response<T>> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    try {
+      return await dio.post<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+        onSendProgress: onSendProgress,
+        onReceiveProgress: onReceiveProgress,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// PUT 请求
+  Future<Response<T>> put<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    try {
+      return await dio.put<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+        onSendProgress: onSendProgress,
+        onReceiveProgress: onReceiveProgress,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// DELETE 请求
+  Future<Response<T>> delete<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      return await dio.delete<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// 下载文件
+  Future<Response> download(
+    String urlPath,
+    String savePath, {
+    ProgressCallback? onReceiveProgress,
+    Map<String, dynamic>? queryParameters,
+    CancelToken? cancelToken,
+    bool deleteOnError = true,
+    String lengthHeader = Headers.contentLengthHeader,
+    Options? options,
+  }) async {
+    try {
+      logger.info('📥 开始下载: $urlPath -> $savePath');
+      return await dio.download(
+        urlPath,
+        savePath,
+        onReceiveProgress: onReceiveProgress,
+        queryParameters: queryParameters,
+        cancelToken: cancelToken,
+        deleteOnError: deleteOnError,
+        lengthHeader: lengthHeader,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// 统一错误处理
+  Exception _handleError(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return NetworkException('连接超时，请检查网络设置');
+
+      case DioExceptionType.badResponse:
+        return _handleStatusCode(error.response?.statusCode);
+
+      case DioExceptionType.cancel:
+        return NetworkException('请求已取消');
+
+      case DioExceptionType.connectionError:
+        return NetworkException('网络连接失败，请检查网络设置');
+
+      case DioExceptionType.badCertificate:
+        return NetworkException('证书验证失败');
+
+      case DioExceptionType.unknown:
+        return NetworkException('网络请求失败: ${error.message}');
+    }
+  }
+
+  /// 处理 HTTP 状态码
+  Exception _handleStatusCode(int? statusCode) {
+    switch (statusCode) {
+      case 400:
+        return NetworkException('请求参数错误');
+      case 401:
+        return NetworkException('未授权，请重新登录');
+      case 403:
+        return NetworkException('拒绝访问');
+      case 404:
+        return NetworkException('请求的资源不存在');
+      case 500:
+        return NetworkException('服务器内部错误');
+      case 502:
+        return NetworkException('网关错误');
+      case 503:
+        return NetworkException('服务不可用');
+      default:
+        return NetworkException('网络请求失败 (状态码: $statusCode)');
+    }
+  }
+}
+
+/// 网络异常类
+class NetworkException implements Exception {
+  final String message;
+
+  NetworkException(this.message);
+
+  @override
+  String toString() => message;
+}
