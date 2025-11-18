@@ -1,0 +1,15 @@
+{
+  "@@locale": "ja",
+  "appName": "Breeze JP",
+  "appSubtitle": "日本語学習アシスタント",
+  "splashInitializing": "初期化中...",
+  "splashLoadingDatabase": "データベースを読み込んでいます...",
+  "splashInitComplete": "初期化完了",
+  "splashInitFailed": "初期化失敗: {error}",
+  "retry": "再試行",
+  "homeWelcome": "Breeze JP へようこそ",
+  "homeSubtitle": "日本語学習の旅を始めましょう",
+  "startLearning": "学習を始める",
+  "databaseEmpty": "データベースが空です。データファイルを確認してください",
+  "databaseInitFailed": "データベース初期化失敗: {error}"
+}

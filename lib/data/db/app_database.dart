@@ -43,9 +43,9 @@ class AppDatabase {
       // 写入本地
       await File(targetPath).writeAsBytes(bytes, flush: true);
 
-      print("📦 数据库成功复制到: $targetPath");
+      // 数据库复制成功
     } catch (e) {
-      print("❌ 复制数据库失败: $e");
+      // 复制数据库失败，重新抛出异常
       rethrow;
     }
   }

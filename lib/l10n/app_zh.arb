@@ -1,0 +1,63 @@
+{
+  "@@locale": "zh",
+  "appName": "Breeze JP",
+  "@appName": {
+    "description": "应用名称"
+  },
+  "appSubtitle": "日语学习助手",
+  "@appSubtitle": {
+    "description": "应用副标题"
+  },
+  "splashInitializing": "正在初始化...",
+  "@splashInitializing": {
+    "description": "Splash 页面初始化提示"
+  },
+  "splashLoadingDatabase": "正在加载数据库...",
+  "@splashLoadingDatabase": {
+    "description": "加载数据库提示"
+  },
+  "splashInitComplete": "初始化完成",
+  "@splashInitComplete": {
+    "description": "初始化完成提示"
+  },
+  "splashInitFailed": "初始化失败: {error}",
+  "@splashInitFailed": {
+    "description": "初始化失败提示",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "数据库错误"
+      }
+    }
+  },
+  "retry": "重试",
+  "@retry": {
+    "description": "重试按钮"
+  },
+  "homeWelcome": "欢迎使用 Breeze JP",
+  "@homeWelcome": {
+    "description": "主页欢迎文字"
+  },
+  "homeSubtitle": "开始你的日语学习之旅",
+  "@homeSubtitle": {
+    "description": "主页副标题"
+  },
+  "startLearning": "开始学习",
+  "@startLearning": {
+    "description": "开始学习按钮"
+  },
+  "databaseEmpty": "数据库为空，请检查数据文件",
+  "@databaseEmpty": {
+    "description": "数据库为空错误提示"
+  },
+  "databaseInitFailed": "数据库初始化失败: {error}",
+  "@databaseInitFailed": {
+    "description": "数据库初始化失败提示",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "文件不存在"
+      }
+    }
+  }
+}
