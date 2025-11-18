@@ -6,13 +6,13 @@ inclusion: always
 
 ## 框架与语言
 
-- **Flutter** (Dart SDK ^3.5.4)
+- **Flutter 3.38.1** (Dart SDK ^3.10.0)
 - 跨平台移动应用（支持 iOS、Android、Web、Desktop）
 
 ## 核心依赖
 
 ### 状态管理
-- `flutter_riverpod` ^2.5.1 - 响应式状态管理方案
+- `flutter_riverpod` ^3.0.3 - 响应式状态管理方案
   - 使用 Provider 模式管理应用状态
   - 支持依赖注入和状态隔离
   - 推荐使用 `ConsumerWidget` 或 `ConsumerStatefulWidget`
@@ -26,13 +26,13 @@ inclusion: always
 - 使用单例模式访问：`AppDatabase.instance`
 
 ### 路由导航
-- `go_router` ^15.1.2 - 声明式路由管理
+- `go_router` ^17.0.0 - 声明式路由管理
   - 支持深链接和 URL 导航
   - 类型安全的路由定义
   - 路由配置位于 `lib/router/`
 
 ### 音频播放
-- `just_audio` ^0.9.40 - 高性能音频播放器
+- `just_audio` ^0.10.5 - 高性能音频播放器
   - 用于单词和例句发音播放
   - 支持多种音频格式（主要使用 MP3）
   - 音频文件位置：
@@ -49,7 +49,7 @@ inclusion: always
 - `json_annotation` ^4.9.0 - JSON 序列化注解
 
 ### 开发依赖
-- `flutter_lints` ^5.0.0 - Flutter 官方代码检查规则
+- `flutter_lints` ^6.0.0 - Flutter 官方代码检查规则
 - `build_runner` ^2.4.8 - 代码生成工具
 - `json_serializable` ^6.8.0 - JSON 序列化代码生成器
 
