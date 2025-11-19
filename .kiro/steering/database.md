@@ -42,10 +42,13 @@ BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`）�
 | id | INTEGER PK AUTOINCREMENT | 主键 |
 | word_id | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词 |
 | audio_filename | TEXT NOT NULL | 文件名，例如 `高校_koukou_default_default.mp3` |
+| audio_url | TEXT | 音频文件的 URL 地址（可选，用于在线音频） |
 | voice_type | TEXT | 音频类型，如 default / NHK / other |
 | source | TEXT | 来源，如 default / NHK / TTS |
 
-**音频文件路径**：`assets/audio/words/[audio_filename]`
+**音频文件路径**：
+- 本地文件：`assets/audio/words/[audio_filename]`
+- 在线文件：使用 `audio_url` 字段存储的 URL
 
 ### example_sentences
 | 字段 | 类型 | 描述 |
@@ -65,10 +68,13 @@ BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`）�
 | id | INTEGER PK AUTOINCREMENT | 主键 |
 | example_id | INTEGER NOT NULL REFERENCES example_sentences(id) ON DELETE CASCADE | 对应例句 |
 | audio_filename | TEXT NOT NULL UNIQUE | 文件名，例如 `sentence_1_default_default.mp3` |
+| audio_url | TEXT | 音频文件的 URL 地址（可选，用于在线音频） |
 | voice_type | TEXT DEFAULT 'default' | 音频类型 |
 | source | TEXT DEFAULT 'default' | 来源 |
 
-**音频文件路径**：`assets/audio/examples/[audio_filename]`
+**音频文件路径**：
+- 本地文件：`assets/audio/examples/[audio_filename]`
+- 在线文件：使用 `audio_url` 字段存储的 URL
 
 ## 数据关系
 

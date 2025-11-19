@@ -25,11 +25,17 @@ class WordDetail {
   /// 获取所有释义文本
   List<String> get allMeanings => meanings.map((m) => m.meaningCn).toList();
 
+  /// 获取主要音频对象
+  WordAudio? get primaryAudio => audios.isNotEmpty ? audios.first : null;
+
   /// 获取主要音频文件名
   String? get primaryAudioFilename =>
       audios.isNotEmpty ? audios.first.audioFilename : null;
 
-  /// 获取音频文件路径
+  /// 获取音频文件路径（已废弃，建议使用 AudioService）
+  /// 注意：此方法仅返回本地路径，不支持在线 URL
+  /// 推荐使用 AudioService.playWordAudio(primaryAudio) 代替
+  @Deprecated('使用 AudioService.playWordAudio() 代替')
   String? get primaryAudioPath => primaryAudioFilename != null
       ? 'assets/audio/words/$primaryAudioFilename'
       : null;
@@ -42,7 +48,10 @@ class ExampleSentenceWithAudio {
 
   ExampleSentenceWithAudio({required this.sentence, this.audio});
 
-  /// 获取音频文件路径
+  /// 获取音频文件路径（已废弃，建议使用 AudioService）
+  /// 注意：此方法仅返回本地路径，不支持在线 URL
+  /// 推荐使用 AudioService.playExampleAudio(audio) 代替
+  @Deprecated('使用 AudioService.playExampleAudio() 代替')
   String? get audioPath => audio?.audioFilename != null
       ? 'assets/audio/examples/${audio!.audioFilename}'
       : null;

@@ -3,30 +3,29 @@ import 'package:just_audio/just_audio.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/word_repository.dart';
 import '../../../data/models/word_detail.dart';
+import '../../../services/audio_service.dart';
+import '../../../services/audio_service_provider.dart';
 import '../state/learn_state.dart';
 
 /// 学习页面控制器
 class LearnController extends Notifier<LearnState> {
   final WordRepository _repository = WordRepository();
-  final AudioPlayer _wordAudioPlayer = AudioPlayer();
-  final AudioPlayer _exampleAudioPlayer = AudioPlayer();
 
   @override
   LearnState build() {
-    _initAudioPlayers();
+    _initAudioListener();
     return LearnState();
   }
 
-  void _initAudioPlayers() {
-    _wordAudioPlayer.playerStateStream.listen((playerState) {
-      if (playerState.processingState == ProcessingState.completed) {
-        state = state.copyWith(isPlayingWordAudio: false);
-      }
-    });
+  /// 获取音频服务
+  AudioService get _audioService => ref.read(audioServiceProvider);
 
-    _exampleAudioPlayer.playerStateStream.listen((playerState) {
+  void _initAudioListener() {
+    // 监听音频播放状态
+    _audioService.player.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
         state = state.copyWith(
+          isPlayingWordAudio: false,
           isPlayingExampleAudio: false,
           playingExampleIndex: null,
         );
@@ -90,29 +89,30 @@ class LearnController extends Notifier<LearnState> {
   Future<void> playWordAudio() async {
     try {
       final currentWord = state.currentWord;
-      if (currentWord == null || currentWord.primaryAudioPath == null) {
+      if (currentWord == null || currentWord.audios.isEmpty) {
         logger.warning('没有可播放的单词音频');
         return;
       }
 
-      await _exampleAudioPlayer.stop();
-      state = state.copyWith(
-        isPlayingExampleAudio: false,
-        playingExampleIndex: null,
-      );
-
-      if (state.isPlayingWordAudio) {
-        await _wordAudioPlayer.stop();
-        state = state.copyWith(isPlayingWordAudio: false);
-      } else {
-        state = state.copyWith(isPlayingWordAudio: true);
-        await _wordAudioPlayer.setAsset(currentWord.primaryAudioPath!);
-        await _wordAudioPlayer.play();
-        logger.info('播放单词音频: ${currentWord.word.word}');
+      // 停止当前播放
+      if (state.isPlayingWordAudio || state.isPlayingExampleAudio) {
+        await _audioService.stop();
+        state = state.copyWith(
+          isPlayingWordAudio: false,
+          isPlayingExampleAudio: false,
+          playingExampleIndex: null,
+        );
+        return;
       }
+
+      // 播放第一个音频
+      final audio = currentWord.audios.first;
+      state = state.copyWith(isPlayingWordAudio: true);
+      await _audioService.playWordAudio(audio);
+      logger.info('播放单词音频: ${currentWord.word.word}');
     } catch (e, stackTrace) {
       logger.error('播放单词音频失败', e, stackTrace);
-      state = state.copyWith(isPlayingWordAudio: false);
+      state = state.copyWith(isPlayingWordAudio: false, error: '播放音频失败: $e');
     }
   }
 
@@ -125,43 +125,48 @@ class LearnController extends Notifier<LearnState> {
       }
 
       final example = currentWord.examples[exampleIndex];
-      if (example.audioPath == null) {
+      if (example.audio == null) {
         logger.warning('没有可播放的例句音频');
         return;
       }
 
-      await _wordAudioPlayer.stop();
-      state = state.copyWith(isPlayingWordAudio: false);
-
+      // 如果正在播放同一个例句，则停止
       if (state.isPlayingExampleAudio &&
           state.playingExampleIndex == exampleIndex) {
-        await _exampleAudioPlayer.stop();
+        await _audioService.stop();
         state = state.copyWith(
           isPlayingExampleAudio: false,
           playingExampleIndex: null,
         );
-      } else {
-        state = state.copyWith(
-          isPlayingExampleAudio: true,
-          playingExampleIndex: exampleIndex,
-        );
-        await _exampleAudioPlayer.setAsset(example.audioPath!);
-        await _exampleAudioPlayer.play();
-        logger.info('播放例句音频: 例句 ${exampleIndex + 1}');
+        return;
       }
+
+      // 停止当前播放
+      if (state.isPlayingWordAudio || state.isPlayingExampleAudio) {
+        await _audioService.stop();
+      }
+
+      // 播放例句音频
+      state = state.copyWith(
+        isPlayingWordAudio: false,
+        isPlayingExampleAudio: true,
+        playingExampleIndex: exampleIndex,
+      );
+      await _audioService.playExampleAudio(example.audio!);
+      logger.info('播放例句音频: 例句 ${exampleIndex + 1}');
     } catch (e, stackTrace) {
       logger.error('播放例句音频失败', e, stackTrace);
       state = state.copyWith(
         isPlayingExampleAudio: false,
         playingExampleIndex: null,
+        error: '播放音频失败: $e',
       );
     }
   }
 
   /// 停止所有音频
   void _stopAllAudio() {
-    _wordAudioPlayer.stop();
-    _exampleAudioPlayer.stop();
+    _audioService.stop();
     state = state.copyWith(
       isPlayingWordAudio: false,
       isPlayingExampleAudio: false,
