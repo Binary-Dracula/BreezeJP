@@ -1,62 +1,50 @@
 import '../../../data/models/word_detail.dart';
 
-/// 学习状态
+/// 学习页面状态
 class LearnState {
-  final bool isLoading;
   final List<WordDetail> words;
   final int currentIndex;
+  final bool isLoading;
   final String? error;
-  final String? jlptLevel;
-  final int totalWords;
-  final bool isCompleted;
+  final bool isPlayingWordAudio;
+  final bool isPlayingExampleAudio;
+  final int? playingExampleIndex;
 
-  const LearnState({
-    this.isLoading = false,
+  LearnState({
     this.words = const [],
     this.currentIndex = 0,
+    this.isLoading = false,
     this.error,
-    this.jlptLevel,
-    this.totalWords = 0,
-    this.isCompleted = false,
+    this.isPlayingWordAudio = false,
+    this.isPlayingExampleAudio = false,
+    this.playingExampleIndex,
   });
 
-  LearnState copyWith({
-    bool? isLoading,
-    List<WordDetail>? words,
-    int? currentIndex,
-    String? error,
-    String? jlptLevel,
-    int? totalWords,
-    bool? isCompleted,
-  }) {
-    return LearnState(
-      isLoading: isLoading ?? this.isLoading,
-      words: words ?? this.words,
-      currentIndex: currentIndex ?? this.currentIndex,
-      error: error,
-      jlptLevel: jlptLevel ?? this.jlptLevel,
-      totalWords: totalWords ?? this.totalWords,
-      isCompleted: isCompleted ?? this.isCompleted,
-    );
-  }
-
-  /// 当前单词
   WordDetail? get currentWord => words.isNotEmpty && currentIndex < words.length
       ? words[currentIndex]
       : null;
 
-  /// 是否有下一个
   bool get hasNext => currentIndex < words.length - 1;
-
-  /// 是否有上一个
   bool get hasPrevious => currentIndex > 0;
 
-  /// 进度百分比
-  double get progress => words.isEmpty ? 0 : (currentIndex + 1) / words.length;
-
-  /// 是否有数据
-  bool get hasData => words.isNotEmpty;
-
-  /// 是否有错误
-  bool get hasError => error != null;
+  LearnState copyWith({
+    List<WordDetail>? words,
+    int? currentIndex,
+    bool? isLoading,
+    String? error,
+    bool? isPlayingWordAudio,
+    bool? isPlayingExampleAudio,
+    int? playingExampleIndex,
+  }) {
+    return LearnState(
+      words: words ?? this.words,
+      currentIndex: currentIndex ?? this.currentIndex,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+      isPlayingWordAudio: isPlayingWordAudio ?? this.isPlayingWordAudio,
+      isPlayingExampleAudio:
+          isPlayingExampleAudio ?? this.isPlayingExampleAudio,
+      playingExampleIndex: playingExampleIndex,
+    );
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// 主页面 - Splash 完成后进入的页面
@@ -33,7 +34,7 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 48),
             ElevatedButton.icon(
               onPressed: () {
-                // TODO: 导航到学习页面
+                context.go('/learn');
               },
               icon: const Icon(Icons.play_arrow),
               label: Text(l10n.startLearning),

@@ -5,10 +5,17 @@
 *.swp
 .DS_Store
 .atom/
+.build/
 .buildlog/
 .history
 .svn/
+.swiftpm/
 migrate_working_dir/
+
+# Temporary files
+*.tmp
+*.temp
+*~
 
 # IntelliJ related
 *.iml
@@ -44,12 +51,15 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/.gradle
+/android/.kotlin
 /android/captures/
 /android/gradlew
 /android/gradlew.bat
 /android/local.properties
 *.jks
 *.keystore
+*.apk
+*.aab
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -95,6 +105,25 @@ app.*.map.json
 
 # Coverage
 coverage/
+
+# Generated files
+**/generated/
+**/*.g.dart
+**/*.freezed.dart
+lib/l10n/app_localizations*.dart
+
+# Database (keep the template, ignore copies)
+# Note: Keep assets/database/breeze_jp.sqlite in version control
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Firebase (if added later)
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
