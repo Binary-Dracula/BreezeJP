@@ -224,6 +224,8 @@ class StudyWordRepository {
     int wordId, {
     required double newInterval,
     required double newEaseFactor,
+    double? newStability,
+    double? newDifficulty,
   }) async {
     try {
       final studyWord = await getStudyWord(userId, wordId);
@@ -240,6 +242,8 @@ class StudyWordRepository {
         nextReviewAt: nextReview,
         interval: newInterval,
         easeFactor: newEaseFactor,
+        stability: newStability ?? studyWord.stability,
+        difficulty: newDifficulty ?? studyWord.difficulty,
         streak: studyWord.streak + 1,
         totalReviews: studyWord.totalReviews + 1,
         updatedAt: now,
@@ -259,6 +263,8 @@ class StudyWordRepository {
     int wordId, {
     required double newInterval,
     required double newEaseFactor,
+    double? newStability,
+    double? newDifficulty,
   }) async {
     try {
       final studyWord = await getStudyWord(userId, wordId);
@@ -275,6 +281,8 @@ class StudyWordRepository {
         nextReviewAt: nextReview,
         interval: newInterval,
         easeFactor: newEaseFactor,
+        stability: newStability ?? studyWord.stability,
+        difficulty: newDifficulty ?? studyWord.difficulty,
         streak: 0, // 重置连续答对次数
         totalReviews: studyWord.totalReviews + 1,
         failCount: studyWord.failCount + 1,
@@ -346,6 +354,8 @@ class StudyWordRepository {
         lastReviewedAt: null,
         interval: 0,
         easeFactor: 2.5,
+        stability: 0,
+        difficulty: 0,
         streak: 0,
         totalReviews: 0,
         failCount: 0,

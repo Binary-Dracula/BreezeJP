@@ -281,12 +281,12 @@ class DailyStatRepository {
       final result = await db.rawQuery(
         '''
         SELECT 
-          SUM(total_study_time) as total_time,
+          SUM(total_study_time_ms) as total_time,
           SUM(learned_words_count) as total_learned,
           SUM(reviewed_words_count) as total_reviewed,
           SUM(mastered_words_count) as total_mastered,
           SUM(failed_count) as total_failed,
-          AVG(total_study_time) as avg_time_per_day,
+          AVG(total_study_time_ms) as avg_time_per_day,
           COUNT(*) as active_days
         FROM daily_stats
         WHERE user_id = ?
@@ -310,12 +310,12 @@ class DailyStatRepository {
       final result = await db.rawQuery(
         '''
         SELECT 
-          SUM(total_study_time) as total_time,
+          SUM(total_study_time_ms) as total_time,
           SUM(learned_words_count) as total_learned,
           SUM(reviewed_words_count) as total_reviewed,
           SUM(mastered_words_count) as total_mastered,
           SUM(failed_count) as total_failed,
-          AVG(total_study_time) as avg_time_per_day,
+          AVG(total_study_time_ms) as avg_time_per_day,
           COUNT(*) as active_days
         FROM daily_stats
         WHERE user_id = ?

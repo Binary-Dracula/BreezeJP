@@ -340,6 +340,9 @@ class StudyLogRepository {
     double? intervalAfter,
     double? easeFactorAfter,
     DateTime? nextReviewAtAfter,
+    int algorithm = 1, // 1: SM-2, 2: FSRS
+    double? fsrsStabilityAfter,
+    double? fsrsDifficultyAfter,
   }) async {
     final log = StudyLog(
       id: 0,
@@ -350,6 +353,9 @@ class StudyLogRepository {
       intervalAfter: intervalAfter,
       easeFactorAfter: easeFactorAfter,
       nextReviewAtAfter: nextReviewAtAfter,
+      algorithm: algorithm,
+      fsrsStabilityAfter: fsrsStabilityAfter,
+      fsrsDifficultyAfter: fsrsDifficultyAfter,
       createdAt: DateTime.now(),
     );
 
@@ -365,6 +371,9 @@ class StudyLogRepository {
     required double intervalAfter,
     required double easeFactorAfter,
     required DateTime nextReviewAtAfter,
+    int algorithm = 1, // 1: SM-2, 2: FSRS
+    double? fsrsStabilityAfter,
+    double? fsrsDifficultyAfter,
   }) async {
     final log = StudyLog(
       id: 0,
@@ -376,6 +385,9 @@ class StudyLogRepository {
       intervalAfter: intervalAfter,
       easeFactorAfter: easeFactorAfter,
       nextReviewAtAfter: nextReviewAtAfter,
+      algorithm: algorithm,
+      fsrsStabilityAfter: fsrsStabilityAfter,
+      fsrsDifficultyAfter: fsrsDifficultyAfter,
       createdAt: DateTime.now(),
     );
 

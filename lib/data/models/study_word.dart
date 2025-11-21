@@ -9,6 +9,8 @@ class StudyWord {
   final DateTime? lastReviewedAt;
   final double interval;
   final double easeFactor;
+  final double stability;
+  final double difficulty;
   final int streak;
   final int totalReviews;
   final int failCount;
@@ -24,6 +26,8 @@ class StudyWord {
     this.lastReviewedAt,
     this.interval = 0,
     this.easeFactor = 2.5,
+    this.stability = 0,
+    this.difficulty = 0,
     this.streak = 0,
     this.totalReviews = 0,
     this.failCount = 0,
@@ -50,6 +54,8 @@ class StudyWord {
           : null,
       interval: (map['interval'] as num?)?.toDouble() ?? 0,
       easeFactor: (map['ease_factor'] as num?)?.toDouble() ?? 2.5,
+      stability: (map['stability'] as num?)?.toDouble() ?? 0,
+      difficulty: (map['difficulty'] as num?)?.toDouble() ?? 0,
       streak: map['streak'] as int? ?? 0,
       totalReviews: map['total_reviews'] as int? ?? 0,
       failCount: map['fail_count'] as int? ?? 0,
@@ -77,6 +83,8 @@ class StudyWord {
           : null,
       'interval': interval,
       'ease_factor': easeFactor,
+      'stability': stability,
+      'difficulty': difficulty,
       'streak': streak,
       'total_reviews': totalReviews,
       'fail_count': failCount,
@@ -95,6 +103,8 @@ class StudyWord {
     DateTime? lastReviewedAt,
     double? interval,
     double? easeFactor,
+    double? stability,
+    double? difficulty,
     int? streak,
     int? totalReviews,
     int? failCount,
@@ -110,6 +120,8 @@ class StudyWord {
       lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
       interval: interval ?? this.interval,
       easeFactor: easeFactor ?? this.easeFactor,
+      stability: stability ?? this.stability,
+      difficulty: difficulty ?? this.difficulty,
       streak: streak ?? this.streak,
       totalReviews: totalReviews ?? this.totalReviews,
       failCount: failCount ?? this.failCount,

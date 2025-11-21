@@ -1,342 +1,86 @@
-# Repository 层
+# 数据仓库 (Repositories)
 
-Repository 层负责封装所有数据访问逻辑，包括本地数据库查询和网络请求。
+本目录包含应用程序的数据仓库层，负责封装所有数据库操作，为业务逻辑层提供清晰的数据访问接口。
 
-## 架构说明
+## 目录结构
 
-```
-Controller/ViewModel
-       ↓
-   Repository  ← 统一的数据访问接口
-    ↙     ↘
-本地数据库  网络API
-```
+*   **`word_repository.dart`**: 单词数据仓库
+*   **`study_word_repository.dart`**: 学习进度数据仓库
+*   **`study_log_repository.dart`**: 学习日志数据仓库
+*   **`daily_stat_repository.dart`**: 每日统计数据仓库
+*   **`user_repository.dart`**: 用户数据仓库
+*   **`example_api_repository.dart`**: 示例 API 仓库 (用于演示或测试)
 
-## 已实现的 Repository
+## 详细说明
 
-### WordRepository - 单词数据仓库
+### 1. WordRepository (单词数据仓库)
 
-负责所有与单词相关的数据库操作。
+负责管理核心单词数据，包括单词的基本信息、释义、音频和例句。
 
-#### 功能列表
+*   **主要功能**:
+    *   `getWordById`: 根据 ID 获取单词。
+    *   `getWordsByLevel`: 根据 JLPT 等级获取单词列表。
+    *   `searchWords`: 搜索单词（支持单词、假名、罗马音）。
+    *   `getWordDetail`: 获取单词的完整详情（包含释义、音频、例句）。
+    *   `getRandomWords`: 随机获取单词（用于练习或测试）。
+    *   `getWordCountByLevel`: 获取各等级的单词数量统计。
 
-**基础查询**
-- `getWordById(int id)` - 根据 ID 获取单词
-- `getWordsByLevel(String jlptLevel)` - 根据 JLPT 等级获取单词列表
-- `getAllWords({int? limit, int? offset})` - 获取所有单词（支持分页）
-- `searchWords(String keyword)` - 搜索单词
-- `getWordCount({String? jlptLevel})` - 获取单词总数
+### 2. StudyWordRepository (学习进度数据仓库)
 
-**释义查询**
-- `getWordMeanings(int wordId)` - 获取单词的所有释义
+负责管理用户的单词学习进度，包括 SRS (间隔重复系统) 状态、复习时间等。支持 SM-2 和 FSRS 算法字段。
 
-**音频查询**
-- `getWordAudios(int wordId)` - 获取单词的所有音频
-- `getPrimaryWordAudio(int wordId)` - 获取单词的主要音频
+*   **主要功能**:
+    *   `getStudyWord`: 获取指定单词的学习记录。
+    *   `createStudyWord`: 创建新的学习记录。
+    *   `updateStudyWord`: 更新学习记录。
+    *   `getDueReviews`: 获取当前需要复习的单词列表。
+    *   `getNewWords`: 获取待学习的新单词列表。
+    *   `recordCorrectReview`: 记录复习成功，更新 SRS 参数（Interval, Ease Factor, Stability, Difficulty）。
+    *   `recordIncorrectReview`: 记录复习失败，重置或调整 SRS 参数。
+    *   `markAsMastered`: 标记单词为已掌握。
+    *   `markAsIgnored`: 标记单词为忽略。
+    *   `resetProgress`: 重置单词的学习进度。
 
-**例句查询**
-- `getExampleSentences(int wordId)` - 获取单词的所有例句
-- `getExampleAudio(int exampleId)` - 获取例句的音频
+### 3. StudyLogRepository (学习日志数据仓库)
 
-**组合查询**
-- `getWordDetail(int wordId)` - 获取单词完整详情（包含释义、音频、例句）
-- `getWordsWithMeanings({...})` - 获取单词列表及主要释义
+负责记录每一次的学习行为，用于生成统计数据和分析学习习惯。
 
-**随机查询**
-- `getRandomWords({int count, String? jlptLevel})` - 随机获取单词
+*   **主要功能**:
+    *   `createLog`: 创建一条学习日志。
+    *   `logFirstLearn`: 记录初次学习事件（支持 FSRS 参数）。
+    *   `logReview`: 记录复习事件（支持 FSRS 参数）。
+    *   `getDailyStatistics`: 获取每日学习统计数据。
+    *   `getRatingDistribution`: 获取复习评分分布。
+    *   `getTimeStatistics`: 获取学习时长统计。
+    *   `getHeatmapData`: 获取学习热力图数据。
 
-**统计查询**
-- `getWordCountByLevel()` - 获取各 JLPT 等级的单词数量
+### 4. DailyStatRepository (每日统计数据仓库)
 
-## 使用示例
+负责管理每日的学习汇总数据，用于快速展示进度和图表。
 
-### 1. 基础查询
+*   **主要功能**:
+    *   `getDailyStat`: 获取指定日期的统计数据。
+    *   `incrementStudyTime`: 增加学习时长（单位：毫秒）。
+    *   `incrementLearnedWords`: 增加新学单词数。
+    *   `incrementReviewedWords`: 增加复习单词数。
+    *   `getWeeklySummary`: 获取本周学习汇总。
+    *   `getMonthlySummary`: 获取本月学习汇总。
+    *   `calculateStreak`: 计算连续学习天数。
 
-```dart
-import 'package:breeze_jp/data/repositories/word_repository.dart';
+### 5. UserRepository (用户数据仓库)
 
-final repository = WordRepository();
+负责管理用户信息。
 
-// 获取单词
-final word = await repository.getWordById(123);
-print('单词: ${word?.word}');
+*   **主要功能**:
+    *   `createUser`: 创建新用户。
+    *   `getUserById`: 根据 ID 获取用户。
+    *   `getUserByUsername`: 根据用户名获取用户。
+    *   `updateUser`: 更新用户信息。
+    *   `deleteUser`: 删除用户。
 
-// 获取 N5 单词列表
-final n5Words = await repository.getWordsByLevel('N5');
-print('N5 单词数量: ${n5Words.length}');
+## 使用规范
 
-// 搜索单词
-final results = await repository.searchWords('学校');
-print('搜索结果: ${results.length} 个');
-```
-
-### 2. 获取完整单词详情
-
-```dart
-final detail = await repository.getWordDetail(123);
-
-if (detail != null) {
-  print('单词: ${detail.word.word}');
-  print('假名: ${detail.word.furigana}');
-  print('罗马音: ${detail.word.romaji}');
-  
-  // 释义
-  print('释义:');
-  for (final meaning in detail.meanings) {
-    print('  ${meaning.definitionOrder}. ${meaning.meaningCn}');
-  }
-  
-  // 音频
-  if (detail.primaryAudioPath != null) {
-    print('音频: ${detail.primaryAudioPath}');
-  }
-  
-  // 例句
-  print('例句:');
-  for (final example in detail.examples) {
-    print('  日文: ${example.sentence.sentenceJp}');
-    print('  中文: ${example.sentence.translationCn}');
-    if (example.audioPath != null) {
-      print('  音频: ${example.audioPath}');
-    }
-  }
-}
-```
-
-### 3. 在 Riverpod Controller 中使用
-
-```dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:breeze_jp/data/repositories/word_repository.dart';
-
-// 创建 Repository Provider
-final wordRepositoryProvider = Provider((ref) => WordRepository());
-
-// 在 Controller 中使用
-class WordListController extends Notifier<WordListState> {
-  @override
-  WordListState build() => const WordListState();
-  
-  Future<void> loadWords(String jlptLevel) async {
-    try {
-      state = state.copyWith(isLoading: true);
-      
-      final repository = ref.read(wordRepositoryProvider);
-      final words = await repository.getWordsByLevel(jlptLevel);
-      
-      state = state.copyWith(
-        isLoading: false,
-        words: words,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
-  }
-}
-```
-
-### 4. 分页加载
-
-```dart
-Future<void> loadMoreWords() async {
-  final repository = WordRepository();
-  
-  final currentPage = 0;
-  final pageSize = 20;
-  
-  final words = await repository.getAllWords(
-    limit: pageSize,
-    offset: currentPage * pageSize,
-  );
-  
-  print('加载了 ${words.length} 个单词');
-}
-```
-
-### 5. 随机学习
-
-```dart
-Future<void> startRandomLearning() async {
-  final repository = WordRepository();
-  
-  // 随机获取 10 个 N5 单词
-  final words = await repository.getRandomWords(
-    count: 10,
-    jlptLevel: 'N5',
-  );
-  
-  for (final word in words) {
-    print('学习单词: ${word.word}');
-  }
-}
-```
-
-### 6. 统计信息
-
-```dart
-Future<void> showStatistics() async {
-  final repository = WordRepository();
-  
-  // 获取各等级单词数量
-  final countByLevel = await repository.getWordCountByLevel();
-  
-  print('单词统计:');
-  countByLevel.forEach((level, count) {
-    print('  $level: $count 个');
-  });
-  
-  // 获取总数
-  final totalCount = await repository.getWordCount();
-  print('总计: $totalCount 个');
-}
-```
-
-### 7. 列表显示（带主要释义）
-
-```dart
-Future<void> displayWordList() async {
-  final repository = WordRepository();
-  
-  final wordsWithMeanings = await repository.getWordsWithMeanings(
-    jlptLevel: 'N5',
-    limit: 20,
-  );
-  
-  for (final row in wordsWithMeanings) {
-    final word = Word.fromMap(row);
-    final meaning = row['primary_meaning'] as String?;
-    
-    print('${word.word} - $meaning');
-  }
-}
-```
-
-## 数据模型
-
-### Word - 单词基本信息
-```dart
-class Word {
-  final int id;
-  final String word;
-  final String? furigana;
-  final String? romaji;
-  final String? jlptLevel;
-  final String? partOfSpeech;
-  final String? pitchAccent;
-}
-```
-
-### WordDetail - 单词完整详情
-```dart
-class WordDetail {
-  final Word word;
-  final List<WordMeaning> meanings;
-  final List<WordAudio> audios;
-  final List<ExampleSentenceWithAudio> examples;
-  
-  // 便捷方法
-  String? get primaryMeaning;
-  List<String> get allMeanings;
-  String? get primaryAudioFilename;
-  String? get primaryAudioPath;
-}
-```
-
-### ExampleSentenceWithAudio - 例句及音频
-```dart
-class ExampleSentenceWithAudio {
-  final ExampleSentence sentence;
-  final ExampleAudio? audio;
-  
-  String? get audioPath;
-}
-```
-
-## 错误处理
-
-所有 Repository 方法都会记录日志并重新抛出异常，调用方需要处理：
-
-```dart
-try {
-  final words = await repository.getWordsByLevel('N5');
-  // 处理成功
-} catch (e) {
-  // 处理错误
-  print('加载失败: $e');
-}
-```
-
-## 日志记录
-
-Repository 自动记录所有数据库操作：
-
-```
-🐛 DEBUG | 💾 DB[SELECT] words
-Data: {jlpt_level: N5}
-
-💡 INFO | 获取单词详情: 123
-💡 INFO | 单词详情获取成功: 学校 (2个释义, 3个例句)
-```
-
-## 性能优化建议
-
-1. **使用分页** - 大量数据时使用 `limit` 和 `offset`
-2. **缓存结果** - 在 Controller 层缓存常用数据
-3. **批量查询** - 使用 `getWordsWithMeanings` 而不是多次单独查询
-4. **索引优化** - 数据库表已有适当索引
-
-## 扩展 Repository
-
-### 添加新方法
-
-```dart
-class WordRepository {
-  // 添加自定义查询
-  Future<List<Word>> getWordsByPartOfSpeech(String pos) async {
-    final db = await _db;
-    final results = await db.query(
-      'words',
-      where: 'part_of_speech = ?',
-      whereArgs: [pos],
-    );
-    return results.map((map) => Word.fromMap(map)).toList();
-  }
-}
-```
-
-### 创建新 Repository
-
-```dart
-// lib/data/repositories/learning_record_repository.dart
-class LearningRecordRepository {
-  Future<Database> get _db async => await AppDatabase.instance.database;
-  
-  Future<void> saveLearningRecord(LearningRecord record) async {
-    final db = await _db;
-    await db.insert('learning_records', record.toMap());
-  }
-}
-```
-
-## 最佳实践
-
-1. ✅ 所有数据库操作都通过 Repository
-2. ✅ Repository 返回 Model 对象，不返回 Map
-3. ✅ 使用日志记录所有操作
-4. ✅ 统一错误处理
-5. ✅ 提供便捷的组合查询方法
-6. ✅ 在 Controller 中通过 Provider 注入 Repository
-
-## 待实现的 Repository
-
-- `LearningRecordRepository` - 学习记录
-- `ReviewRepository` - 复习记录
-- `UserProgressRepository` - 用户进度
-- `SettingsRepository` - 应用设置
-
----
-
-Repository 层是数据访问的唯一入口，确保数据操作的一致性和可维护性。
+1.  **依赖注入**: 建议通过 Provider 或 GetIt 等依赖注入方式使用 Repository，避免直接实例化。
+2.  **异常处理**: 所有 Repository 方法在发生数据库错误时会抛出异常，调用层应做好 try-catch 处理。
+3.  **日志记录**: Repository 内部已集成 `AppLogger`，会自动记录关键的数据库操作和错误信息。
+4.  **数据一致性**: 涉及多个表的操作（如同时更新进度和记录日志），建议在业务逻辑层（Service/Bloc）进行协调，或在 Repository 中使用事务（Transaction）。
