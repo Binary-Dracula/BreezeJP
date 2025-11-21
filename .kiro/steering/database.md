@@ -4,7 +4,7 @@ inclusion: always
 
 # 数据库架构
 
-BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`），包含 5 个核心表。
+BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`），包含 9 个核心表。
 
 ## 表结构总览
 
@@ -20,111 +20,125 @@ BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`）�
 7. `study_logs` - 学习日志和历史记录
 8. `daily_stats` - 每日学习统计汇总
 
+### 用户数据表
+9. `users` - 用户账户信息
+
 ## 表详细定义
 
 ### words
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键，唯一标识单词 |
-| word | TEXT NOT NULL | 单词文本（汉字/假名混合） |
-| furigana | TEXT | 单词假名（Furigana） |
-| romaji | TEXT | 单词罗马音 |
-| jlpt_level | TEXT | 单词对应 JLPT 等级，如 N5、N4 |
-| part_of_speech | TEXT | 词性，如名词、动词 |
-| pitch_accent | TEXT | 音调标记 |
+| 字段           | 类型                     | 描述                          |
+| -------------- | ------------------------ | ----------------------------- |
+| id             | INTEGER PK AUTOINCREMENT | 主键，唯一标识单词            |
+| word           | TEXT NOT NULL            | 单词文本（汉字/假名混合）     |
+| furigana       | TEXT                     | 单词假名（Furigana）          |
+| romaji         | TEXT                     | 单词罗马音                    |
+| jlpt_level     | TEXT                     | 单词对应 JLPT 等级，如 N5、N4 |
+| part_of_speech | TEXT                     | 词性，如名词、动词            |
+| pitch_accent   | TEXT                     | 音调标记                      |
 
 ### word_meanings
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键 |
-| word_id | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词 |
-| meaning_cn | TEXT NOT NULL | 中文释义 |
-| definition_order | INTEGER DEFAULT 1 | 释义顺序 |
-| notes | TEXT | 可选注释或例句来源 |
+| 字段             | 类型                                                    | 描述               |
+| ---------------- | ------------------------------------------------------- | ------------------ |
+| id               | INTEGER PK AUTOINCREMENT                                | 主键               |
+| word_id          | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词           |
+| meaning_cn       | TEXT NOT NULL                                           | 中文释义           |
+| definition_order | INTEGER DEFAULT 1                                       | 释义顺序           |
+| notes            | TEXT                                                    | 可选注释或例句来源 |
 
 ### word_audio
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键 |
-| word_id | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词 |
-| audio_filename | TEXT NOT NULL | 文件名，例如 `高校_koukou_default_default.mp3` |
-| audio_url | TEXT | 音频文件的 URL 地址（可选，用于在线音频） |
-| voice_type | TEXT | 音频类型，如 default / NHK / other |
-| source | TEXT | 来源，如 default / NHK / TTS |
+| 字段           | 类型                                                    | 描述                                           |
+| -------------- | ------------------------------------------------------- | ---------------------------------------------- |
+| id             | INTEGER PK AUTOINCREMENT                                | 主键                                           |
+| word_id        | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词                                       |
+| audio_filename | TEXT NOT NULL                                           | 文件名，例如 `高校_koukou_default_default.mp3` |
+| voice_type     | TEXT                                                    | 音频类型，如 default / NHK / other             |
+| source         | TEXT                                                    | 来源，如 default / NHK / TTS                   |
+| audio_url      | TEXT                                                    | 音频文件的 URL 地址（可选，用于在线音频）      |
 
 **音频文件路径**：
 - 本地文件：`assets/audio/words/[audio_filename]`
 - 在线文件：使用 `audio_url` 字段存储的 URL
 
 ### example_sentences
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键 |
-| word_id | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词 |
-| sentence_jp | TEXT NOT NULL | 日文例句，可能含 `<b>` 高亮学习单词 |
-| sentence_furigana | TEXT | 例句假名注音 |
-| translation_cn | TEXT | 中文翻译 |
-| notes | TEXT | 可选注释或来源 |
+| 字段              | 类型                                                    | 描述                                |
+| ----------------- | ------------------------------------------------------- | ----------------------------------- |
+| id                | INTEGER PK AUTOINCREMENT                                | 主键                                |
+| word_id           | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词                            |
+| sentence_jp       | TEXT NOT NULL                                           | 日文例句，可能含 `<b>` 高亮学习单词 |
+| sentence_furigana | TEXT                                                    | 例句假名注音                        |
+| translation_cn    | TEXT                                                    | 中文翻译                            |
+| notes             | TEXT                                                    | 可选注释或来源                      |
 
 **注意**：`sentence_jp` 中使用 `<b>` 标签高亮目标单词
 
 ### example_audio
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键 |
-| example_id | INTEGER NOT NULL REFERENCES example_sentences(id) ON DELETE CASCADE | 对应例句 |
-| audio_filename | TEXT NOT NULL UNIQUE | 文件名，例如 `sentence_1_default_default.mp3` |
-| audio_url | TEXT | 音频文件的 URL 地址（可选，用于在线音频） |
-| voice_type | TEXT DEFAULT 'default' | 音频类型 |
-| source | TEXT DEFAULT 'default' | 来源 |
+| 字段           | 类型                                                                | 描述                                          |
+| -------------- | ------------------------------------------------------------------- | --------------------------------------------- |
+| id             | INTEGER PK AUTOINCREMENT                                            | 主键                                          |
+| example_id     | INTEGER NOT NULL REFERENCES example_sentences(id) ON DELETE CASCADE | 对应例句                                      |
+| audio_filename | TEXT NOT NULL UNIQUE                                                | 文件名，例如 `sentence_1_default_default.mp3` |
+| voice_type     | TEXT DEFAULT 'default'                                              | 音频类型                                      |
+| source         | TEXT DEFAULT 'default'                                              | 来源                                          |
+| audio_url      | TEXT                                                                | 音频文件的 URL 地址（可选，用于在线音频）     |
 
 **音频文件路径**：
 - 本地文件：`assets/audio/examples/[audio_filename]`
 - 在线文件：使用 `audio_url` 字段存储的 URL
 
 ### study_words
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键 |
-| user_id | INTEGER NOT NULL | 用户 ID |
-| word_id | INTEGER NOT NULL | 对应单词 ID |
-| user_state | INTEGER NOT NULL DEFAULT 0 | 用户对单词的状态（见下方说明） |
-| next_review_at | INTEGER | 下次复习时间（Unix 时间戳） |
-| last_reviewed_at | INTEGER | 上次复习时间（Unix 时间戳） |
-| interval | REAL DEFAULT 0 | 当前复习间隔（天） |
-| ease_factor | REAL DEFAULT 2.5 | 难度因子 EF（越低越难） |
-| streak | INTEGER DEFAULT 0 | 连续答对次数 |
-| total_reviews | INTEGER DEFAULT 0 | 累计复习次数 |
-| fail_count | INTEGER DEFAULT 0 | 答错次数（不认识） |
-| created_at | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 创建时间 |
-| updated_at | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 更新时间 |
-| UNIQUE(user_id, word_id) | | 唯一约束：每个用户每个单词只有一条记录 |
+| 字段                     | 类型                                                    | 描述                                   |
+| ------------------------ | ------------------------------------------------------- | -------------------------------------- |
+| id                       | INTEGER PK AUTOINCREMENT                                | 主键                                   |
+| user_id                  | INTEGER NOT NULL                                        | 用户 ID                                |
+| word_id                  | INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE | 对应单词 ID                            |
+| user_state               | INTEGER NOT NULL DEFAULT 0                              | 用户对单词的状态（见下方说明）         |
+| next_review_at           | INTEGER                                                 | 下次复习时间（Unix 时间戳）            |
+| last_reviewed_at         | INTEGER                                                 | 上次复习时间（Unix 时间戳）            |
+| streak                   | INTEGER DEFAULT 0                                       | 连续答对次数                           |
+| total_reviews            | INTEGER DEFAULT 0                                       | 累计复习次数                           |
+| fail_count               | INTEGER DEFAULT 0                                       | 答错次数（不认识）                     |
+| interval                 | REAL DEFAULT 0                                          | 当前复习间隔（天，SM-2）               |
+| ease_factor              | REAL DEFAULT 2.5                                        | 难度因子 EF（SM-2，越低越难）          |
+| stability                | REAL DEFAULT 0                                          | 记忆稳定性 S（FSRS，记忆维持天数）     |
+| difficulty               | REAL DEFAULT 0                                          | 记忆难度 D（FSRS，1-10）               |
+| created_at               | INTEGER NOT NULL DEFAULT (strftime('%s','now'))         | 创建时间                               |
+| updated_at               | INTEGER NOT NULL DEFAULT (strftime('%s','now'))         | 更新时间                               |
+| UNIQUE(user_id, word_id) |                                                         | 唯一约束：每个用户每个单词只有一条记录 |
 
 **user_state 状态说明**：
 - `0` - 未学习（新单词）
-- `1` - 学习中（SRS 正常进行）
+- `1` - 学习中 (SRS)
 - `2` - 已掌握（用户主动标记"我已经会了，不需要学习"）
 - `3` - 忽略（例如脏词、用户不想学）
 
 **SRS 参数说明**：
-- `interval`: 当前复习间隔（天），随着答对次数增加而增长
-- `ease_factor`: 难度因子（默认 2.5），影响间隔增长速度
-- `streak`: 连续答对次数，用于判断是否掌握
-- `fail_count`: 累计答错次数，用于统计学习难度
+- **通用统计**：
+  - `streak`: 连续答对次数
+  - `total_reviews`: 累计复习次数
+  - `fail_count`: 累计答错次数
+- **SM-2 引擎 (默认)**：
+  - `interval`: 当前复习间隔（天）
+  - `ease_factor`: 难度因子（默认 2.5）
+- **FSRS 引擎 (高级)**：
+  - `stability`: 记忆稳定性 (S)，表示记忆能维持多少天
+  - `difficulty`: 记忆难度 (D)，范围通常为 1-10
 
 ### study_logs
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键 |
-| user_id | INTEGER NOT NULL | 用户 ID |
-| word_id | INTEGER NOT NULL | 单词 ID |
-| log_type | INTEGER NOT NULL | 事件类型（见下方说明） |
-| rating | INTEGER | 复习评分（1-4，仅用于复习事件） |
-| interval_after | REAL | 操作后的间隔（天） |
-| ease_factor_after | REAL | 操作后的难度因子 |
-| next_review_at_after | INTEGER | 操作后的下次复习时间戳 |
-| duration_ms | INTEGER DEFAULT 0 | 学习/复习花费时间（毫秒） |
-| created_at | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 创建时间 |
+| 字段                  | 类型                                            | 描述                            |
+| --------------------- | ----------------------------------------------- | ------------------------------- |
+| id                    | INTEGER PK AUTOINCREMENT                        | 主键                            |
+| user_id               | INTEGER NOT NULL                                | 用户 ID                         |
+| word_id               | INTEGER NOT NULL                                | 单词 ID                         |
+| log_type              | INTEGER NOT NULL                                | 事件类型（见下方说明）          |
+| rating                | INTEGER                                         | 复习评分（1-4，仅用于复习事件） |
+| algorithm             | INTEGER DEFAULT 1                               | 使用的算法（1=SM-2, 2=FSRS）    |
+| interval_after        | REAL                                            | 操作后的间隔（天）              |
+| next_review_at_after  | INTEGER                                         | 操作后的下次复习时间戳          |
+| ease_factor_after     | REAL                                            | 操作后的难度因子（SM-2）        |
+| fsrs_stability_after  | REAL                                            | 操作后的稳定性 S（FSRS）        |
+| fsrs_difficulty_after | REAL                                            | 操作后的难度 D（FSRS）          |
+| duration_ms           | INTEGER DEFAULT 0                               | 学习/复习花费时间（毫秒）       |
+| created_at            | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 创建时间                        |
 
 **log_type 事件类型说明**：
 - `1` - 初次学习（第一次学习该单词）
@@ -140,36 +154,51 @@ BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`）�
 - `3` - Good（一般，正常记起）
 - `4` - Easy（简单，轻松记起）
 
+**algorithm 算法说明**：
+- `1` - SM-2 (默认)
+- `2` - FSRS (高级)
+
 **用途**：
 - 记录用户的学习历史和行为轨迹
 - 分析学习效果和习惯
 - 生成学习报告和统计图表
-- 追踪 SRS 算法的调整过程
+- 追踪 SRS 算法的调整过程（支持多算法切换审计）
 
 ### daily_stats
-| 字段 | 类型 | 描述 |
-|------|------|------|
-| id | INTEGER PK AUTOINCREMENT | 主键 |
-| user_id | INTEGER NOT NULL | 用户 ID |
-| date | TEXT NOT NULL | 日期（YYYY-MM-DD 格式） |
-| total_study_time | INTEGER DEFAULT 0 | 当天学习总时长（秒） |
-| learned_words_count | INTEGER DEFAULT 0 | 当天新学单词数量 |
-| reviewed_words_count | INTEGER DEFAULT 0 | 当天复习单词数量 |
-| mastered_words_count | INTEGER DEFAULT 0 | 当天手动标记掌握数量 |
-| failed_count | INTEGER DEFAULT 0 | 当天错误次数（忘记次数） |
-| created_at | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 创建时间 |
-| updated_at | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 更新时间 |
-| UNIQUE(user_id, date) | | 唯一约束：每个用户每天只有一条记录 |
+| 字段                  | 类型                                            | 描述                               |
+| --------------------- | ----------------------------------------------- | ---------------------------------- |
+| id                    | INTEGER PK AUTOINCREMENT                        | 主键                               |
+| user_id               | INTEGER NOT NULL                                | 用户 ID                            |
+| date                  | TEXT NOT NULL                                   | 日期（YYYY-MM-DD 格式）            |
+| total_study_time_ms   | INTEGER DEFAULT 0                               | 当天学习总时长（毫秒）             |
+| learned_words_count   | INTEGER DEFAULT 0                               | 当天新学单词数量                   |
+| reviewed_words_count  | INTEGER DEFAULT 0                               | 当天复习单词数量                   |
+| mastered_words_count  | INTEGER DEFAULT 0                               | 当天手动标记掌握数量               |
+| failed_count          | INTEGER DEFAULT 0                               | 当天错误次数（忘记次数）           |
+| created_at            | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 创建时间                           |
+| updated_at            | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 更新时间                           |
+| UNIQUE(user_id, date) |                                                 | 唯一约束：每个用户每天只有一条记录 |
 
 **用途**：
 - 快速查询每日学习数据，无需实时聚合 study_logs
 - 生成学习报表和趋势图
 - 展示学习日历和热力图
 - 计算学习连续天数（streak）
-
-**更新时机**：
 - 每次学习/复习后实时更新当天记录
 - 或使用定时任务每天凌晨汇总前一天数据
+
+### users
+| 字段          | 类型                                            | 描述                            |
+| ------------- | ----------------------------------------------- | ------------------------------- |
+| id            | INTEGER PK AUTOINCREMENT                        | 用户唯一 ID                     |
+| username      | TEXT UNIQUE NOT NULL                            | 用户名（唯一）                  |
+| password_hash | TEXT NOT NULL                                   | 使用 bcrypt/argon2 加密后的密码 |
+| email         | TEXT UNIQUE                                     | 可选，用于找回密码              |
+| nickname      | TEXT                                            | 昵称，非必须                    |
+| avatar_url    | TEXT                                            | 头像 URL（未来可用）            |
+| status        | INTEGER DEFAULT 1                               | 用户状态（1=正常，0=禁用）      |
+| created_at    | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 注册时间                        |
+| updated_at    | INTEGER NOT NULL DEFAULT (strftime('%s','now')) | 最后更新时间                    |
 
 ## 数据关系
 
