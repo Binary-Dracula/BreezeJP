@@ -173,10 +173,11 @@ class DailyStatRepository {
   }
 
   /// 增加学习时长
+  /// 增加学习时长
   Future<void> incrementStudyTime(
     int userId,
     DateTime date,
-    int seconds,
+    int milliseconds,
   ) async {
     try {
       final stat = await getDailyStat(userId, date);
@@ -186,18 +187,18 @@ class DailyStatRepository {
         final newStat = DailyStat.createForDate(
           userId,
           date,
-        ).copyWith(totalStudyTime: seconds, updatedAt: DateTime.now());
+        ).copyWith(totalStudyTimeMs: milliseconds, updatedAt: DateTime.now());
         await createDailyStat(newStat);
       } else {
         // 更新现有记录
         final updated = stat.copyWith(
-          totalStudyTime: stat.totalStudyTime + seconds,
+          totalStudyTimeMs: stat.totalStudyTimeMs + milliseconds,
           updatedAt: DateTime.now(),
         );
         await updateDailyStat(updated);
       }
 
-      logger.info('增加学习时长: +${seconds}秒');
+      logger.info('增加学习时长: +${milliseconds}ms');
     } catch (e, stackTrace) {
       logger.error('增加学习时长失败', e, stackTrace);
       rethrow;

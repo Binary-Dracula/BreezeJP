@@ -6,8 +6,11 @@ class StudyLog {
   final int wordId;
   final LogType logType;
   final ReviewRating? rating;
+  final int algorithm;
   final double? intervalAfter;
   final double? easeFactorAfter;
+  final double? fsrsStabilityAfter;
+  final double? fsrsDifficultyAfter;
   final DateTime? nextReviewAtAfter;
   final int durationMs;
   final DateTime createdAt;
@@ -18,8 +21,11 @@ class StudyLog {
     required this.wordId,
     required this.logType,
     this.rating,
+    this.algorithm = 1,
     this.intervalAfter,
     this.easeFactorAfter,
+    this.fsrsStabilityAfter,
+    this.fsrsDifficultyAfter,
     this.nextReviewAtAfter,
     this.durationMs = 0,
     required this.createdAt,
@@ -35,8 +41,11 @@ class StudyLog {
       rating: map['rating'] != null
           ? ReviewRating.fromValue(map['rating'] as int)
           : null,
+      algorithm: map['algorithm'] as int? ?? 1,
       intervalAfter: (map['interval_after'] as num?)?.toDouble(),
       easeFactorAfter: (map['ease_factor_after'] as num?)?.toDouble(),
+      fsrsStabilityAfter: (map['fsrs_stability_after'] as num?)?.toDouble(),
+      fsrsDifficultyAfter: (map['fsrs_difficulty_after'] as num?)?.toDouble(),
       nextReviewAtAfter: map['next_review_at_after'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
               (map['next_review_at_after'] as int) * 1000,
@@ -57,8 +66,11 @@ class StudyLog {
       'word_id': wordId,
       'log_type': logType.value,
       'rating': rating?.value,
+      'algorithm': algorithm,
       'interval_after': intervalAfter,
       'ease_factor_after': easeFactorAfter,
+      'fsrs_stability_after': fsrsStabilityAfter,
+      'fsrs_difficulty_after': fsrsDifficultyAfter,
       'next_review_at_after': nextReviewAtAfter != null
           ? nextReviewAtAfter!.millisecondsSinceEpoch ~/ 1000
           : null,
@@ -74,8 +86,11 @@ class StudyLog {
     int? wordId,
     LogType? logType,
     ReviewRating? rating,
+    int? algorithm,
     double? intervalAfter,
     double? easeFactorAfter,
+    double? fsrsStabilityAfter,
+    double? fsrsDifficultyAfter,
     DateTime? nextReviewAtAfter,
     int? durationMs,
     DateTime? createdAt,
@@ -86,8 +101,11 @@ class StudyLog {
       wordId: wordId ?? this.wordId,
       logType: logType ?? this.logType,
       rating: rating ?? this.rating,
+      algorithm: algorithm ?? this.algorithm,
       intervalAfter: intervalAfter ?? this.intervalAfter,
       easeFactorAfter: easeFactorAfter ?? this.easeFactorAfter,
+      fsrsStabilityAfter: fsrsStabilityAfter ?? this.fsrsStabilityAfter,
+      fsrsDifficultyAfter: fsrsDifficultyAfter ?? this.fsrsDifficultyAfter,
       nextReviewAtAfter: nextReviewAtAfter ?? this.nextReviewAtAfter,
       durationMs: durationMs ?? this.durationMs,
       createdAt: createdAt ?? this.createdAt,

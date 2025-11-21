@@ -4,7 +4,7 @@ class DailyStat {
   final int id;
   final int userId;
   final DateTime date;
-  final int totalStudyTime; // 秒
+  final int totalStudyTimeMs; // 毫秒
   final int learnedWordsCount;
   final int reviewedWordsCount;
   final int masteredWordsCount;
@@ -16,7 +16,7 @@ class DailyStat {
     required this.id,
     required this.userId,
     required this.date,
-    this.totalStudyTime = 0,
+    this.totalStudyTimeMs = 0,
     this.learnedWordsCount = 0,
     this.reviewedWordsCount = 0,
     this.masteredWordsCount = 0,
@@ -31,7 +31,7 @@ class DailyStat {
       id: map['id'] as int,
       userId: map['user_id'] as int,
       date: DateTime.parse(map['date'] as String),
-      totalStudyTime: map['total_study_time'] as int? ?? 0,
+      totalStudyTimeMs: map['total_study_time_ms'] as int? ?? 0,
       learnedWordsCount: map['learned_words_count'] as int? ?? 0,
       reviewedWordsCount: map['reviewed_words_count'] as int? ?? 0,
       masteredWordsCount: map['mastered_words_count'] as int? ?? 0,
@@ -51,7 +51,7 @@ class DailyStat {
       'id': id,
       'user_id': userId,
       'date': _formatDate(date),
-      'total_study_time': totalStudyTime,
+      'total_study_time_ms': totalStudyTimeMs,
       'learned_words_count': learnedWordsCount,
       'reviewed_words_count': reviewedWordsCount,
       'mastered_words_count': masteredWordsCount,
@@ -66,7 +66,7 @@ class DailyStat {
     int? id,
     int? userId,
     DateTime? date,
-    int? totalStudyTime,
+    int? totalStudyTimeMs,
     int? learnedWordsCount,
     int? reviewedWordsCount,
     int? masteredWordsCount,
@@ -78,7 +78,7 @@ class DailyStat {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       date: date ?? this.date,
-      totalStudyTime: totalStudyTime ?? this.totalStudyTime,
+      totalStudyTimeMs: totalStudyTimeMs ?? this.totalStudyTimeMs,
       learnedWordsCount: learnedWordsCount ?? this.learnedWordsCount,
       reviewedWordsCount: reviewedWordsCount ?? this.reviewedWordsCount,
       masteredWordsCount: masteredWordsCount ?? this.masteredWordsCount,
@@ -99,16 +99,16 @@ class DailyStat {
   String get dateString => _formatDate(date);
 
   /// 学习时长（分钟）
-  double get totalStudyMinutes => totalStudyTime / 60.0;
+  double get totalStudyMinutes => totalStudyTimeMs / 1000.0 / 60.0;
 
   /// 学习时长（小时）
-  double get totalStudyHours => totalStudyTime / 3600.0;
+  double get totalStudyHours => totalStudyTimeMs / 1000.0 / 3600.0;
 
   /// 总学习单词数（新学 + 复习）
   int get totalWordsCount => learnedWordsCount + reviewedWordsCount;
 
   /// 是否有学习活动
-  bool get hasActivity => totalWordsCount > 0 || totalStudyTime > 0;
+  bool get hasActivity => totalWordsCount > 0 || totalStudyTimeMs > 0;
 
   /// 正确率（如果有复习的话）
   double? get accuracy {
@@ -127,7 +127,7 @@ class DailyStat {
   /// 平均每个单词的学习时间（秒）
   double? get avgTimePerWord {
     if (totalWordsCount == 0) return null;
-    return totalStudyTime / totalWordsCount;
+    return totalStudyTimeMs / 1000.0 / totalWordsCount;
   }
 
   /// 学习效率评级（基于时间和数量）
@@ -154,6 +154,7 @@ class DailyStat {
       id: 0,
       userId: userId,
       date: today,
+      totalStudyTimeMs: 0,
       createdAt: now,
       updatedAt: now,
     );
@@ -168,6 +169,7 @@ class DailyStat {
       id: 0,
       userId: userId,
       date: dateOnly,
+      totalStudyTimeMs: 0,
       createdAt: now,
       updatedAt: now,
     );
