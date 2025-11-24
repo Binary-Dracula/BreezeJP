@@ -59,5 +59,32 @@
         "example": "文件不存在"
       }
     }
-  }
+  },
+  "homeTodayGoal": "今日目标",
+  "homeWordsUnit": "词",
+  "homeReview": "复习",
+  "homeNewWords": "新词",
+  "loading": "加载中...",
+  "learning": "学习中",
+  "learnWords": "学习单词",
+  "loadingWords": "正在加载单词...",
+  "noWordsToLearn": "没有需要学习的单词",
+  "examples": "例句",
+  "ratingAgain": "重来",
+  "ratingAgainSub": "忘记",
+  "ratingHard": "困难",
+  "ratingHardSub": "模糊",
+  "ratingGood": "良好",
+  "ratingGoodSub": "记得",
+  "ratingEasy": "简单",
+  "ratingEasySub": "熟练",
+  "previous": "上一个",
+  "next": "下一个",
+  "learningFinished": "学习完成！",
+  "learningFinishedDesc": "你已完成本次学习。",
+  "backToHome": "返回主页",
+  "continueLearningTitle": "继续学习？",
+  "continueLearningContent": "你已完成当前队列。是否加载更多单词？",
+  "restABit": "休息一下",
+  "continueLearning": "继续学习"
 }

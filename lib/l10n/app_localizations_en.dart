@@ -47,4 +47,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String databaseInitFailed(String error) {
     return 'Database initialization failed: $error';
   }
+
+  @override
+  String get homeTodayGoal => 'Today\'s Goal';
+
+  @override
+  String get homeWordsUnit => 'Words';
+
+  @override
+  String get homeReview => 'Review';
+
+  @override
+  String get homeNewWords => 'New Words';
+
+  @override
+  String get loading => 'Loading...';
+
+  @override
+  String get learning => 'Learning';
+
+  @override
+  String get learnWords => 'Learn Words';
+
+  @override
+  String get loadingWords => 'Loading words...';
+
+  @override
+  String get noWordsToLearn => 'No words to learn';
+
+  @override
+  String get examples => 'Examples';
+
+  @override
+  String get ratingAgain => 'Again';
+
+  @override
+  String get ratingAgainSub => 'Again';
+
+  @override
+  String get ratingHard => 'Hard';
+
+  @override
+  String get ratingHardSub => 'Hard';
+
+  @override
+  String get ratingGood => 'Good';
+
+  @override
+  String get ratingGoodSub => 'Good';
+
+  @override
+  String get ratingEasy => 'Easy';
+
+  @override
+  String get ratingEasySub => 'Easy';
+
+  @override
+  String get previous => 'Previous';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get learningFinished => 'Learning Finished!';
+
+  @override
+  String get learningFinishedDesc => 'You have completed this session.';
+
+  @override
+  String get backToHome => 'Back to Home';
+
+  @override
+  String get continueLearningTitle => 'Continue Learning?';
+
+  @override
+  String get continueLearningContent =>
+      'You have finished the current queue. Do you want to load more words?';
+
+  @override
+  String get restABit => 'No, take a break';
+
+  @override
+  String get continueLearning => 'Continue Learning';
 }

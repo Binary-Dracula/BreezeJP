@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../controller/home_controller.dart';
+import '../../learn/pages/learn_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -22,6 +24,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeControllerProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     if (state.isLoading && !state.hasData) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -67,29 +70,21 @@ class _HomePageState extends ConsumerState<HomePage> {
                   context,
                   state.reviewCount,
                   state.newWordCount,
+                  l10n,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                // 3. 数据概览小条 (Stats Row)
+                // 3. 每日数据条
                 _buildDailyStatsRow(
                   state.streakDays,
                   state.masteredWordCount,
                   state.todayStudyDurationMinutes,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                // 4. 功能网格 (Tools Grid)
-                const Text(
-                  "工具箱",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // 4. 功能网格
                 _buildToolsGrid(context),
               ],
             ),
@@ -101,6 +96,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   // --- 1. 顶部 Header ---
   Widget _buildHeader(BuildContext context, String userName) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -108,40 +104,24 @@ class _HomePageState extends ConsumerState<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _getGreeting(), // 根据时间显示 早上好/晚上好
+              _getGreeting(),
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 4),
             Text(
-              userName, // 这里读数据库用户名
+              userName.isNotEmpty ? 'Hi, $userName' : l10n.homeWelcome,
               style: const TextStyle(
                 fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
           ],
         ),
-        // 设置按钮
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.black87),
-            onPressed: () {
-              // TODO: 跳转到设置页
-              // Navigator.push(...)
-            },
-          ),
+        CircleAvatar(
+          radius: 24,
+          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+          child: Icon(Icons.person, color: Theme.of(context).primaryColor),
         ),
       ],
     );
@@ -151,23 +131,22 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildHeroStudyCard(
     BuildContext context,
     int reviewCount,
-    int newCount,
+    int newWordCount,
+    AppLocalizations l10n,
   ) {
-    bool hasTask = reviewCount > 0 || newCount > 0;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF6B8EFF), Color(0xFF4E73DF)], // 清爽的蓝色渐变
+          colors: [Color(0xFF6B8DD6), Color(0xFF8E37D7)], // 清爽的蓝色渐变
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4E73DF).withOpacity(0.3),
+            color: const Color(0xFF8E37D7).withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -176,65 +155,73 @@ class _HomePageState extends ConsumerState<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 任务计数
+          Text(
+            l10n.homeTodayGoal,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _buildCountBadge(
-                "待复习",
-                reviewCount.toString(),
-                Colors.white.withOpacity(0.2),
+              Text(
+                "${reviewCount + newWordCount}",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  height: 1,
+                ),
               ),
-              const SizedBox(width: 12),
-              _buildCountBadge(
-                "新单词",
-                newCount.toString(),
-                Colors.white.withOpacity(0.2),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  l10n.homeWordsUnit,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-
-          const Text(
-            "准备好开始了吗?",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              _buildStatBadge(l10n.homeReview, "$reviewCount"),
+              const SizedBox(width: 12),
+              _buildStatBadge(l10n.homeNewWords, "$newWordCount"),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            hasTask ? "预计耗时 15 分钟" : "今日任务已完成，去休息吧！",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 14,
-            ),
-          ),
-
           const SizedBox(height: 24),
-
-          // 巨大的开始按钮
           SizedBox(
             width: double.infinity,
-            height: 56,
             child: ElevatedButton(
-              onPressed: hasTask
-                  ? () {
-                      // TODO: 跳转到 TikTokStudyPage
-                      // Navigator.push(context, MaterialPageRoute(builder: (_) => TikTokStudyPage(mode: ...)))
-                    }
-                  : null,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const LearnPage()),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF4E73DF),
-                elevation: 0,
+                foregroundColor: const Color(0xFF8E37D7),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
+                elevation: 0,
               ),
-              child: const Text(
-                "开始学习",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              child: Text(
+                l10n.startLearning,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -243,29 +230,27 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildCountBadge(String label, String count, Color bgColor) {
+  Widget _buildStatBadge(String label, String count) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(width: 8),
+          Text(
             count,
             style: const TextStyle(
               color: Colors.white,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 12,
             ),
           ),
         ],

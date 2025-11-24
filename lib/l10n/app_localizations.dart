@@ -171,6 +171,168 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'数据库初始化失败: {error}'**
   String databaseInitFailed(String error);
+
+  /// No description provided for @homeTodayGoal.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日目标'**
+  String get homeTodayGoal;
+
+  /// No description provided for @homeWordsUnit.
+  ///
+  /// In zh, this message translates to:
+  /// **'词'**
+  String get homeWordsUnit;
+
+  /// No description provided for @homeReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'复习'**
+  String get homeReview;
+
+  /// No description provided for @homeNewWords.
+  ///
+  /// In zh, this message translates to:
+  /// **'新词'**
+  String get homeNewWords;
+
+  /// No description provided for @loading.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载中...'**
+  String get loading;
+
+  /// No description provided for @learning.
+  ///
+  /// In zh, this message translates to:
+  /// **'学习中'**
+  String get learning;
+
+  /// No description provided for @learnWords.
+  ///
+  /// In zh, this message translates to:
+  /// **'学习单词'**
+  String get learnWords;
+
+  /// No description provided for @loadingWords.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在加载单词...'**
+  String get loadingWords;
+
+  /// No description provided for @noWordsToLearn.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有需要学习的单词'**
+  String get noWordsToLearn;
+
+  /// No description provided for @examples.
+  ///
+  /// In zh, this message translates to:
+  /// **'例句'**
+  String get examples;
+
+  /// No description provided for @ratingAgain.
+  ///
+  /// In zh, this message translates to:
+  /// **'重来'**
+  String get ratingAgain;
+
+  /// No description provided for @ratingAgainSub.
+  ///
+  /// In zh, this message translates to:
+  /// **'忘记'**
+  String get ratingAgainSub;
+
+  /// No description provided for @ratingHard.
+  ///
+  /// In zh, this message translates to:
+  /// **'困难'**
+  String get ratingHard;
+
+  /// No description provided for @ratingHardSub.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊'**
+  String get ratingHardSub;
+
+  /// No description provided for @ratingGood.
+  ///
+  /// In zh, this message translates to:
+  /// **'良好'**
+  String get ratingGood;
+
+  /// No description provided for @ratingGoodSub.
+  ///
+  /// In zh, this message translates to:
+  /// **'记得'**
+  String get ratingGoodSub;
+
+  /// No description provided for @ratingEasy.
+  ///
+  /// In zh, this message translates to:
+  /// **'简单'**
+  String get ratingEasy;
+
+  /// No description provided for @ratingEasySub.
+  ///
+  /// In zh, this message translates to:
+  /// **'熟练'**
+  String get ratingEasySub;
+
+  /// No description provided for @previous.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一个'**
+  String get previous;
+
+  /// No description provided for @next.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一个'**
+  String get next;
+
+  /// No description provided for @learningFinished.
+  ///
+  /// In zh, this message translates to:
+  /// **'学习完成！'**
+  String get learningFinished;
+
+  /// No description provided for @learningFinishedDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'你已完成本次学习。'**
+  String get learningFinishedDesc;
+
+  /// No description provided for @backToHome.
+  ///
+  /// In zh, this message translates to:
+  /// **'返回主页'**
+  String get backToHome;
+
+  /// No description provided for @continueLearningTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续学习？'**
+  String get continueLearningTitle;
+
+  /// No description provided for @continueLearningContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'你已完成当前队列。是否加载更多单词？'**
+  String get continueLearningContent;
+
+  /// No description provided for @restABit.
+  ///
+  /// In zh, this message translates to:
+  /// **'休息一下'**
+  String get restABit;
+
+  /// No description provided for @continueLearning.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续学习'**
+  String get continueLearning;
 }
 
 class _AppLocalizationsDelegate

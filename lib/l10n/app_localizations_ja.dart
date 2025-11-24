@@ -47,4 +47,85 @@ class AppLocalizationsJa extends AppLocalizations {
   String databaseInitFailed(String error) {
     return 'データベース初期化失敗: $error';
   }
+
+  @override
+  String get homeTodayGoal => '今日目标';
+
+  @override
+  String get homeWordsUnit => '词';
+
+  @override
+  String get homeReview => '复习';
+
+  @override
+  String get homeNewWords => '新词';
+
+  @override
+  String get loading => '加载中...';
+
+  @override
+  String get learning => '学习中';
+
+  @override
+  String get learnWords => '学习单词';
+
+  @override
+  String get loadingWords => '正在加载单词...';
+
+  @override
+  String get noWordsToLearn => '没有需要学习的单词';
+
+  @override
+  String get examples => '例句';
+
+  @override
+  String get ratingAgain => '重来';
+
+  @override
+  String get ratingAgainSub => '忘记';
+
+  @override
+  String get ratingHard => '困难';
+
+  @override
+  String get ratingHardSub => '模糊';
+
+  @override
+  String get ratingGood => '良好';
+
+  @override
+  String get ratingGoodSub => '记得';
+
+  @override
+  String get ratingEasy => '简单';
+
+  @override
+  String get ratingEasySub => '熟练';
+
+  @override
+  String get previous => '上一个';
+
+  @override
+  String get next => '下一个';
+
+  @override
+  String get learningFinished => '学习完成！';
+
+  @override
+  String get learningFinishedDesc => '你已完成本次学习。';
+
+  @override
+  String get backToHome => '返回主页';
+
+  @override
+  String get continueLearningTitle => '继续学习？';
+
+  @override
+  String get continueLearningContent => '你已完成当前队列。是否加载更多单词？';
+
+  @override
+  String get restABit => '休息一下';
+
+  @override
+  String get continueLearning => '继续学习';
 }
