@@ -9,7 +9,7 @@ class WordMeaning {
     required this.id,
     required this.wordId,
     required this.meaningCn,
-    required this.definitionOrder,
+    this.definitionOrder = 1,
     this.notes,
   });
 
