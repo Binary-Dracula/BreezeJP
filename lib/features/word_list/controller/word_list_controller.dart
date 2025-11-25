@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/l10n_utils.dart';
 import '../../../data/repositories/word_repository.dart';
 import '../state/word_list_state.dart';
 
@@ -35,7 +36,7 @@ class WordListController extends Notifier<WordListState> {
       logger.info('$jlptLevel 单词加载成功，共 ${words.length} 个');
     } catch (e, stackTrace) {
       logger.error('加载单词列表失败', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: '加载失败: $e');
+      state = state.copyWith(isLoading: false, error: l10n.loadFailed(e));
     }
   }
 
@@ -61,7 +62,7 @@ class WordListController extends Notifier<WordListState> {
       logger.info('单词加载成功，共 ${words.length} 个');
     } catch (e, stackTrace) {
       logger.error('加载所有单词失败', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: '加载失败: $e');
+      state = state.copyWith(isLoading: false, error: l10n.loadFailed(e));
     }
   }
 
@@ -87,7 +88,7 @@ class WordListController extends Notifier<WordListState> {
       logger.info('搜索完成，找到 ${words.length} 个结果');
     } catch (e, stackTrace) {
       logger.error('搜索单词失败', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: '搜索失败: $e');
+      state = state.copyWith(isLoading: false, error: l10n.searchFailed(e));
     }
   }
 

@@ -41,7 +41,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ElevatedButton(
                 onPressed: () =>
                     ref.read(homeControllerProvider.notifier).loadHomeData(),
-                child: const Text('重试'),
+                child: Text(l10n.retryButton),
               ),
             ],
           ),
@@ -80,12 +80,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   state.streakDays,
                   state.masteredWordCount,
                   state.todayStudyDurationMinutes,
+                  l10n,
                 ),
 
                 const SizedBox(height: 24),
 
                 // 4. 功能网格
-                _buildToolsGrid(context),
+                _buildToolsGrid(context, l10n),
               ],
             ),
           ),
@@ -104,12 +105,14 @@ class _HomePageState extends ConsumerState<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _getGreeting(),
+              _getGreeting(l10n),
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 4),
             Text(
-              userName.isNotEmpty ? 'Hi, $userName' : l10n.homeWelcome,
+              userName.isNotEmpty
+                  ? l10n.userGreeting(userName)
+                  : l10n.homeWelcome,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -263,6 +266,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     int streakDays,
     int masteredCount,
     int durationMinutes,
+    AppLocalizations l10n,
   ) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -277,21 +281,21 @@ class _HomePageState extends ConsumerState<HomePage> {
           _buildStatItem(
             Icons.local_fire_department_rounded,
             streakDays.toString(),
-            "连续打卡",
+            l10n.streakDays,
             Colors.orange,
           ),
           _buildVerticalDivider(),
           _buildStatItem(
             Icons.check_circle_outline_rounded,
             masteredCount.toString(),
-            "已掌握",
+            l10n.masteredWords,
             Colors.green,
           ),
           _buildVerticalDivider(),
           _buildStatItem(
             Icons.timer_outlined,
             "${durationMinutes}m",
-            "今日时长",
+            l10n.todayDuration,
             Colors.purple,
           ),
         ],
@@ -327,7 +331,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   // --- 4. 功能网格 (Tools Grid) ---
-  Widget _buildToolsGrid(BuildContext context) {
+  Widget _buildToolsGrid(BuildContext context, AppLocalizations l10n) {
     return GridView.count(
       shrinkWrap: true, // 关键：允许在 Column 中嵌套 GridView
       physics:
@@ -339,8 +343,8 @@ class _HomePageState extends ConsumerState<HomePage> {
       children: [
         _buildToolCard(
           icon: Icons.book_outlined,
-          title: "单词本",
-          subtitle: "查词与管理",
+          title: l10n.wordBook,
+          subtitle: l10n.wordBookSubtitle,
           color: Colors.amber,
           onTap: () {
             // TODO: 跳转到词库列表页 (LibraryPage)
@@ -348,8 +352,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
         _buildToolCard(
           icon: Icons.bar_chart_rounded,
-          title: "详细统计",
-          subtitle: "查看遗忘曲线",
+          title: l10n.detailedStats,
+          subtitle: l10n.detailedStatsSubtitle,
           color: Colors.teal,
           onTap: () {
             // TODO: 跳转到统计详情页
@@ -411,10 +415,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  String _getGreeting() {
+  String _getGreeting(AppLocalizations l10n) {
     var hour = DateTime.now().hour;
-    if (hour < 12) return "早上好 ☀️";
-    if (hour < 18) return "下午好 👋";
-    return "晚上好 🌙";
+    if (hour < 12) return l10n.greetingMorning;
+    if (hour < 18) return l10n.greetingAfternoon;
+    return l10n.greetingEvening;
   }
 }

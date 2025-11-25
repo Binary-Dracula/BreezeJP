@@ -1,5 +1,6 @@
 import 'package:just_audio/just_audio.dart';
 import '../core/utils/app_logger.dart';
+import '../core/utils/l10n_utils.dart';
 import '../data/models/word_audio.dart';
 import '../data/models/example_audio.dart';
 
@@ -150,13 +151,13 @@ class AudioService {
       } catch (e) {
         _currentAudioSource = null;
         logger.error('在线音频加载失败: $e');
-        throw Exception('无法加载在线音频: $audioUrl');
+        throw Exception(l10n.audioLoadFailedOnline(audioUrl));
       }
     }
 
     // 没有在线音频，跳过播放
     logger.warning('没有在线音频，跳过播放: $audioFilename');
-    throw Exception('没有可用的在线音频: $audioFilename');
+    throw Exception(l10n.audioNoOnlineSource(audioFilename));
   }
 
   /// 播放音频

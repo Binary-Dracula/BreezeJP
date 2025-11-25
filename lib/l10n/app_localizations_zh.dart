@@ -128,4 +128,115 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get continueLearning => '继续学习';
+
+  @override
+  String get retryButton => '重试';
+
+  @override
+  String get greetingMorning => '早上好 ☀️';
+
+  @override
+  String get greetingAfternoon => '下午好 👋';
+
+  @override
+  String get greetingEvening => '晚上好 🌙';
+
+  @override
+  String userGreeting(String userName) {
+    return 'Hi, $userName';
+  }
+
+  @override
+  String get streakDays => '连续打卡';
+
+  @override
+  String get masteredWords => '已掌握';
+
+  @override
+  String get todayDuration => '今日时长';
+
+  @override
+  String get wordBook => '单词本';
+
+  @override
+  String get wordBookSubtitle => '查词与管理';
+
+  @override
+  String get detailedStats => '详细统计';
+
+  @override
+  String get detailedStatsSubtitle => '查看遗忘曲线';
+
+  @override
+  String get networkConnectionTimeout => '连接超时，请检查网络设置';
+
+  @override
+  String get networkRequestCancelled => '请求已取消';
+
+  @override
+  String get networkConnectionFailed => '网络连接失败，请检查网络设置';
+
+  @override
+  String get networkCertificateFailed => '证书验证失败';
+
+  @override
+  String networkRequestFailed(String message) {
+    return '网络请求失败: $message';
+  }
+
+  @override
+  String networkRequestFailedWithCode(Object code) {
+    return '网络请求失败 (状态码: $code)';
+  }
+
+  @override
+  String get networkBadRequest => '请求参数错误';
+
+  @override
+  String get networkUnauthorized => '未授权，请重新登录';
+
+  @override
+  String get networkForbidden => '拒绝访问';
+
+  @override
+  String get networkNotFound => '请求的资源不存在';
+
+  @override
+  String get networkInternalServerError => '服务器内部错误';
+
+  @override
+  String get networkBadGateway => '网关错误';
+
+  @override
+  String get networkServiceUnavailable => '服务不可用';
+
+  @override
+  String loadFailed(Object error) {
+    return '加载失败: $error';
+  }
+
+  @override
+  String searchFailed(Object error) {
+    return '搜索失败: $error';
+  }
+
+  @override
+  String submitFailed(Object error) {
+    return '提交失败: $error';
+  }
+
+  @override
+  String playAudioFailed(Object error) {
+    return '播放音频失败: $error';
+  }
+
+  @override
+  String audioLoadFailedOnline(String url) {
+    return '无法加载在线音频: $url';
+  }
+
+  @override
+  String audioNoOnlineSource(String filename) {
+    return '没有可用的在线音频: $filename';
+  }
 }

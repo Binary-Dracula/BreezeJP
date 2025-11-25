@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/l10n_utils.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/repositories/word_repository.dart';
 import '../../../data/repositories/study_word_repository.dart';
@@ -138,7 +139,7 @@ class LearnController extends Notifier<LearnState> {
       logger.info('成功加载 ${studyQueue.length} 个单词');
     } catch (e, stackTrace) {
       logger.error('加载单词失败', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: '加载单词失败: $e');
+      state = state.copyWith(isLoading: false, error: l10n.loadFailed(e));
     }
   }
 
@@ -261,7 +262,7 @@ class LearnController extends Notifier<LearnState> {
       logger.info('提交答案: $rating, 下一个: ${state.currentIndex + 1}');
     } catch (e, stackTrace) {
       logger.error('提交答案失败', e, stackTrace);
-      state = state.copyWith(error: '提交失败: $e');
+      state = state.copyWith(error: l10n.submitFailed(e));
     }
   }
 
@@ -314,7 +315,10 @@ class LearnController extends Notifier<LearnState> {
       logger.info('播放单词音频: ${currentWord.word.word}');
     } catch (e, stackTrace) {
       logger.error('播放单词音频失败', e, stackTrace);
-      state = state.copyWith(isPlayingWordAudio: false, error: '播放音频失败: $e');
+      state = state.copyWith(
+        isPlayingWordAudio: false,
+        error: l10n.playAudioFailed(e),
+      );
     }
   }
 
@@ -361,7 +365,7 @@ class LearnController extends Notifier<LearnState> {
       state = state.copyWith(
         isPlayingExampleAudio: false,
         playingExampleIndex: null,
-        error: '播放音频失败: $e',
+        error: l10n.playAudioFailed(e),
       );
     }
   }

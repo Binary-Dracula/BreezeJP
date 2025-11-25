@@ -28,8 +28,6 @@ class MainApp extends StatelessWidget {
       ],
       supportedLocales: const [
         Locale('zh', ''), // 中文
-        Locale('ja', ''), // 日语
-        Locale('en', ''), // 英语
       ],
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,

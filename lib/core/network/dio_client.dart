@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../utils/app_logger.dart';
+import '../utils/l10n_utils.dart';
 import 'api_endpoints.dart';
 
 /// Dio 网络请求客户端（单例模式）
@@ -199,22 +200,22 @@ class DioClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return NetworkException('连接超时，请检查网络设置');
+        return NetworkException(l10n.networkConnectionTimeout);
 
       case DioExceptionType.badResponse:
         return _handleStatusCode(error.response?.statusCode);
 
       case DioExceptionType.cancel:
-        return NetworkException('请求已取消');
+        return NetworkException(l10n.networkRequestCancelled);
 
       case DioExceptionType.connectionError:
-        return NetworkException('网络连接失败，请检查网络设置');
+        return NetworkException(l10n.networkConnectionFailed);
 
       case DioExceptionType.badCertificate:
-        return NetworkException('证书验证失败');
+        return NetworkException(l10n.networkCertificateFailed);
 
       case DioExceptionType.unknown:
-        return NetworkException('网络请求失败: ${error.message}');
+        return NetworkException(l10n.networkRequestFailed(error.message ?? ''));
     }
   }
 
@@ -222,21 +223,23 @@ class DioClient {
   Exception _handleStatusCode(int? statusCode) {
     switch (statusCode) {
       case 400:
-        return NetworkException('请求参数错误');
+        return NetworkException(l10n.networkBadRequest);
       case 401:
-        return NetworkException('未授权，请重新登录');
+        return NetworkException(l10n.networkUnauthorized);
       case 403:
-        return NetworkException('拒绝访问');
+        return NetworkException(l10n.networkForbidden);
       case 404:
-        return NetworkException('请求的资源不存在');
+        return NetworkException(l10n.networkNotFound);
       case 500:
-        return NetworkException('服务器内部错误');
+        return NetworkException(l10n.networkInternalServerError);
       case 502:
-        return NetworkException('网关错误');
+        return NetworkException(l10n.networkBadGateway);
       case 503:
-        return NetworkException('服务不可用');
+        return NetworkException(l10n.networkServiceUnavailable);
       default:
-        return NetworkException('网络请求失败 (状态码: $statusCode)');
+        return NetworkException(
+          l10n.networkRequestFailedWithCode(statusCode ?? 0),
+        );
     }
   }
 }

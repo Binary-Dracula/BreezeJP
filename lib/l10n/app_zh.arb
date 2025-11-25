@@ -86,5 +86,135 @@
   "continueLearningTitle": "继续学习？",
   "continueLearningContent": "你已完成当前队列。是否加载更多单词？",
   "restABit": "休息一下",
-  "continueLearning": "继续学习"
+  "continueLearning": "继续学习",
+  "retryButton": "重试",
+  "@retryButton": {
+    "description": "重试按钮文字"
+  },
+  "greetingMorning": "早上好 ☀️",
+  "@greetingMorning": {
+    "description": "早上的问候语"
+  },
+  "greetingAfternoon": "下午好 👋",
+  "@greetingAfternoon": {
+    "description": "下午的问候语"
+  },
+  "greetingEvening": "晚上好 🌙",
+  "@greetingEvening": {
+    "description": "晚上的问候语"
+  },
+  "userGreeting": "Hi, {userName}",
+  "@userGreeting": {
+    "description": "用户问候语",
+    "placeholders": {
+      "userName": {
+        "type": "String",
+        "example": "张三"
+      }
+    }
+  },
+  "streakDays": "连续打卡",
+  "@streakDays": {
+    "description": "连续打卡天数标签"
+  },
+  "masteredWords": "已掌握",
+  "@masteredWords": {
+    "description": "已掌握单词数标签"
+  },
+  "todayDuration": "今日时长",
+  "@todayDuration": {
+    "description": "今日学习时长标签"
+  },
+  "wordBook": "单词本",
+  "@wordBook": {
+    "description": "单词本功能标题"
+  },
+  "wordBookSubtitle": "查词与管理",
+  "@wordBookSubtitle": {
+    "description": "单词本功能副标题"
+  },
+  "detailedStats": "详细统计",
+  "@detailedStats": {
+    "description": "详细统计功能标题"
+  },
+  "detailedStatsSubtitle": "查看遗忘曲线",
+  "@detailedStatsSubtitle": {
+    "description": "详细统计功能副标题"
+  },
+  "networkConnectionTimeout": "连接超时，请检查网络设置",
+  "networkRequestCancelled": "请求已取消",
+  "networkConnectionFailed": "网络连接失败，请检查网络设置",
+  "networkCertificateFailed": "证书验证失败",
+  "networkRequestFailed": "网络请求失败: {message}",
+  "@networkRequestFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "networkRequestFailedWithCode": "网络请求失败 (状态码: {code})",
+  "@networkRequestFailedWithCode": {
+    "placeholders": {
+      "code": {
+        "type": "Object"
+      }
+    }
+  },
+  "networkBadRequest": "请求参数错误",
+  "networkUnauthorized": "未授权，请重新登录",
+  "networkForbidden": "拒绝访问",
+  "networkNotFound": "请求的资源不存在",
+  "networkInternalServerError": "服务器内部错误",
+  "networkBadGateway": "网关错误",
+  "networkServiceUnavailable": "服务不可用",
+  "loadFailed": "加载失败: {error}",
+  "@loadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "searchFailed": "搜索失败: {error}",
+  "@searchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "submitFailed": "提交失败: {error}",
+  "@submitFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "playAudioFailed": "播放音频失败: {error}",
+  "@playAudioFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "audioLoadFailedOnline": "无法加载在线音频: {url}",
+  "@audioLoadFailedOnline": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "audioNoOnlineSource": "没有可用的在线音频: {filename}",
+  "@audioNoOnlineSource": {
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
+  }
+
 }

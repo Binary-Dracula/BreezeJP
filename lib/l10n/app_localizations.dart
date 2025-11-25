@@ -5,8 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'app_localizations_en.dart';
-import 'app_localizations_ja.dart';
 import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
@@ -94,11 +92,7 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
-    Locale('ja'),
-    Locale('zh'),
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('zh')];
 
   /// 应用名称
   ///
@@ -333,6 +327,192 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'继续学习'**
   String get continueLearning;
+
+  /// 重试按钮文字
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get retryButton;
+
+  /// 早上的问候语
+  ///
+  /// In zh, this message translates to:
+  /// **'早上好 ☀️'**
+  String get greetingMorning;
+
+  /// 下午的问候语
+  ///
+  /// In zh, this message translates to:
+  /// **'下午好 👋'**
+  String get greetingAfternoon;
+
+  /// 晚上的问候语
+  ///
+  /// In zh, this message translates to:
+  /// **'晚上好 🌙'**
+  String get greetingEvening;
+
+  /// 用户问候语
+  ///
+  /// In zh, this message translates to:
+  /// **'Hi, {userName}'**
+  String userGreeting(String userName);
+
+  /// 连续打卡天数标签
+  ///
+  /// In zh, this message translates to:
+  /// **'连续打卡'**
+  String get streakDays;
+
+  /// 已掌握单词数标签
+  ///
+  /// In zh, this message translates to:
+  /// **'已掌握'**
+  String get masteredWords;
+
+  /// 今日学习时长标签
+  ///
+  /// In zh, this message translates to:
+  /// **'今日时长'**
+  String get todayDuration;
+
+  /// 单词本功能标题
+  ///
+  /// In zh, this message translates to:
+  /// **'单词本'**
+  String get wordBook;
+
+  /// 单词本功能副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'查词与管理'**
+  String get wordBookSubtitle;
+
+  /// 详细统计功能标题
+  ///
+  /// In zh, this message translates to:
+  /// **'详细统计'**
+  String get detailedStats;
+
+  /// 详细统计功能副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'查看遗忘曲线'**
+  String get detailedStatsSubtitle;
+
+  /// No description provided for @networkConnectionTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接超时，请检查网络设置'**
+  String get networkConnectionTimeout;
+
+  /// No description provided for @networkRequestCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求已取消'**
+  String get networkRequestCancelled;
+
+  /// No description provided for @networkConnectionFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络连接失败，请检查网络设置'**
+  String get networkConnectionFailed;
+
+  /// No description provided for @networkCertificateFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'证书验证失败'**
+  String get networkCertificateFailed;
+
+  /// No description provided for @networkRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络请求失败: {message}'**
+  String networkRequestFailed(String message);
+
+  /// No description provided for @networkRequestFailedWithCode.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络请求失败 (状态码: {code})'**
+  String networkRequestFailedWithCode(Object code);
+
+  /// No description provided for @networkBadRequest.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求参数错误'**
+  String get networkBadRequest;
+
+  /// No description provided for @networkUnauthorized.
+  ///
+  /// In zh, this message translates to:
+  /// **'未授权，请重新登录'**
+  String get networkUnauthorized;
+
+  /// No description provided for @networkForbidden.
+  ///
+  /// In zh, this message translates to:
+  /// **'拒绝访问'**
+  String get networkForbidden;
+
+  /// No description provided for @networkNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求的资源不存在'**
+  String get networkNotFound;
+
+  /// No description provided for @networkInternalServerError.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器内部错误'**
+  String get networkInternalServerError;
+
+  /// No description provided for @networkBadGateway.
+  ///
+  /// In zh, this message translates to:
+  /// **'网关错误'**
+  String get networkBadGateway;
+
+  /// No description provided for @networkServiceUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务不可用'**
+  String get networkServiceUnavailable;
+
+  /// No description provided for @loadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载失败: {error}'**
+  String loadFailed(Object error);
+
+  /// No description provided for @searchFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索失败: {error}'**
+  String searchFailed(Object error);
+
+  /// No description provided for @submitFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'提交失败: {error}'**
+  String submitFailed(Object error);
+
+  /// No description provided for @playAudioFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放音频失败: {error}'**
+  String playAudioFailed(Object error);
+
+  /// No description provided for @audioLoadFailedOnline.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法加载在线音频: {url}'**
+  String audioLoadFailedOnline(String url);
+
+  /// No description provided for @audioNoOnlineSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有可用的在线音频: {filename}'**
+  String audioNoOnlineSource(String filename);
 }
 
 class _AppLocalizationsDelegate
@@ -346,7 +526,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'ja', 'zh'].contains(locale.languageCode);
+      <String>['zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -355,10 +535,6 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
-    case 'ja':
-      return AppLocalizationsJa();
     case 'zh':
       return AppLocalizationsZh();
   }
