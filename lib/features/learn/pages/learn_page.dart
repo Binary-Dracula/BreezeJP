@@ -104,7 +104,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
               l10n.learningFinishedDesc,
               style: TextStyle(
                 fontSize: 16,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 32),
@@ -185,7 +185,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
               l10n.loadingWords,
               style: TextStyle(
                 fontSize: 16,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -226,14 +226,14 @@ class _LearnPageState extends ConsumerState<LearnPage> {
             Icon(
               Icons.inbox_outlined,
               size: 64,
-              color: theme.colorScheme.onSurface.withOpacity(0.3),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               l10n.noWordsToLearn,
               style: TextStyle(
                 fontSize: 16,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -249,7 +249,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.primary.withValues(alpha: 0.1),
             theme.colorScheme.surface,
           ],
         ),
@@ -349,7 +349,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
         color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -407,13 +407,13 @@ class _LearnPageState extends ConsumerState<LearnPage> {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             foregroundColor: color,
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: color.withOpacity(0.5)),
+              side: BorderSide(color: color.withValues(alpha: 0.5)),
             ),
           ),
           child: Column(
@@ -429,7 +429,10 @@ class _LearnPageState extends ConsumerState<LearnPage> {
               const SizedBox(height: 2),
               Text(
                 subLabel,
-                style: TextStyle(fontSize: 12, color: color.withOpacity(0.8)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: color.withValues(alpha: 0.8),
+                ),
               ),
             ],
           ),

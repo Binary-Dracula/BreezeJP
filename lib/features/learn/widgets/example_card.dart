@@ -48,7 +48,7 @@ class ExampleCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                if (example.audioPath != null)
+                if (example.audio != null)
                   IconButton(
                     onPressed: onPlayAudio,
                     icon: Icon(

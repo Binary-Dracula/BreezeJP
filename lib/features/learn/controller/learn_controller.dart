@@ -72,7 +72,7 @@ class LearnController extends Notifier<LearnState> {
       if (users.isEmpty) {
         throw Exception('No user found');
       }
-      final userId = users.first.id!;
+      final userId = users.first.id;
 
       // 1. 获取待复习单词
       final dueReviews = await _studyWordRepository.getDueReviews(

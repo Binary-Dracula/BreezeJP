@@ -55,7 +55,9 @@ class WordCard extends StatelessWidget {
                 word.furigana!,
                 style: TextStyle(
                   fontSize: 20,
-                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                  color: theme.colorScheme.onPrimaryContainer.withValues(
+                    alpha: 0.8,
+                  ),
                 ),
               ),
 
@@ -66,7 +68,9 @@ class WordCard extends StatelessWidget {
                 word.romaji!,
                 style: TextStyle(
                   fontSize: 16,
-                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.6),
+                  color: theme.colorScheme.onPrimaryContainer.withValues(
+                    alpha: 0.6,
+                  ),
                 ),
               ),
             ],
@@ -74,7 +78,7 @@ class WordCard extends StatelessWidget {
             const SizedBox(height: 16),
 
             // 音频播放按钮
-            if (wordDetail.primaryAudioPath != null)
+            if (wordDetail.audios.isNotEmpty)
               IconButton.filled(
                 onPressed: onPlayAudio,
                 icon: Icon(isPlayingAudio ? Icons.stop : Icons.volume_up),

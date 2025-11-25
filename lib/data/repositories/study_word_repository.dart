@@ -250,7 +250,7 @@ class StudyWordRepository {
       );
 
       await updateStudyWord(updated);
-      logger.info('记录答对: word_id=$wordId, 新间隔=${newInterval}天');
+      logger.info('记录答对: word_id=$wordId, 新间隔=$newInterval天');
     } catch (e, stackTrace) {
       logger.error('记录答对失败', e, stackTrace);
       rethrow;
@@ -290,7 +290,7 @@ class StudyWordRepository {
       );
 
       await updateStudyWord(updated);
-      logger.info('记录答错: word_id=$wordId, 新间隔=${newInterval}天');
+      logger.info('记录答错: word_id=$wordId, 新间隔=$newInterval天');
     } catch (e, stackTrace) {
       logger.error('记录答错失败', e, stackTrace);
       rethrow;
