@@ -15,6 +15,9 @@ class LearnState {
   final bool isPlayingExampleAudio;
   final int? playingExampleIndex;
 
+  // 是否已经加载过数据（区分初始状态和真正的空数据）
+  final bool hasLoaded;
+
   LearnState({
     this.studyQueue = const [],
     this.wordDetails = const {},
@@ -24,6 +27,7 @@ class LearnState {
     this.isPlayingWordAudio = false,
     this.isPlayingExampleAudio = false,
     this.playingExampleIndex,
+    this.hasLoaded = false,
   });
 
   /// 当前正在学习的单词进度
@@ -45,8 +49,18 @@ class LearnState {
   bool get hasNext => currentIndex < studyQueue.length - 1;
   bool get hasPrevious => currentIndex > 0;
 
-  /// 队列是否为空（学习完成）
-  bool get isFinished => studyQueue.isEmpty && !isLoading;
+  /// 是否为初始状态（还没加载过数据）
+  bool get isInitial => !hasLoaded && studyQueue.isEmpty && !isLoading;
+
+  /// 队列是否为空（加载后没有可学习的单词）
+  bool get isEmpty => hasLoaded && studyQueue.isEmpty && !isLoading;
+
+  /// 当前批次是否学习完成（已学完所有加载的单词）
+  bool get isBatchCompleted =>
+      hasLoaded && studyQueue.isNotEmpty && currentIndex >= studyQueue.length;
+
+  /// 学习进度（当前/总数）
+  String get progressText => '${currentIndex + 1}/${studyQueue.length}';
 
   LearnState copyWith({
     List<StudyWord>? studyQueue,
@@ -57,6 +71,7 @@ class LearnState {
     bool? isPlayingWordAudio,
     bool? isPlayingExampleAudio,
     int? playingExampleIndex,
+    bool? hasLoaded,
   }) {
     return LearnState(
       studyQueue: studyQueue ?? this.studyQueue,
@@ -68,6 +83,7 @@ class LearnState {
       isPlayingExampleAudio:
           isPlayingExampleAudio ?? this.isPlayingExampleAudio,
       playingExampleIndex: playingExampleIndex,
+      hasLoaded: hasLoaded ?? this.hasLoaded,
     );
   }
 }

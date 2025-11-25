@@ -56,6 +56,9 @@ View (UI) ←→ ViewModel (Controller/State) ←→ Repository ←→ Database
 - 数据库操作必须通过 Repository → ViewModel → View 链路
 - View 不直接访问数据库或修改 Model
 - Repository 返回 Model 对象，不返回 Map
+- Repository 仅提供 CRUD 操作，不包含复杂的业务逻辑
+- ViewModel 仅提供业务逻辑，不包含数据处理逻辑
+- View 不包含业务逻辑，仅负责 UI 展示
 
 ## 代码规范
 

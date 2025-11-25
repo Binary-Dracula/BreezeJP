@@ -15,6 +15,7 @@ import '../../../data/repositories/user_repository_provider.dart';
 import '../../../data/models/word_detail.dart';
 import '../../../data/models/study_word.dart';
 import '../../../data/models/study_log.dart';
+import '../../../data/models/daily_stat.dart';
 import '../../../services/audio_service.dart';
 import '../../../services/audio_service_provider.dart';
 import '../../../core/algorithm/algorithm_service.dart';
@@ -25,6 +26,15 @@ import '../state/learn_state.dart';
 /// 学习页面控制器
 class LearnController extends Notifier<LearnState> {
   final WordRepository _wordRepository = WordRepository();
+
+  // 当前用户 ID 缓存
+  int? _currentUserId;
+  // 今日统计缓存
+  DailyStat? _todayStat;
+  // 学习开始时间（用于计算时长）
+  DateTime? _sessionStartTime;
+  // 当前单词开始时间
+  DateTime? _wordStartTime;
 
   StudyWordRepository get _studyWordRepository =>
       ref.read(studyWordRepositoryProvider);
@@ -44,6 +54,23 @@ class LearnController extends Notifier<LearnState> {
   /// 获取音频服务
   AudioService get _audioService => ref.read(audioServiceProvider);
 
+  /// 获取当前用户 ID
+  Future<int> _getUserId() async {
+    if (_currentUserId != null) return _currentUserId!;
+    final users = await _userRepository.getAllUsers();
+    if (users.isEmpty) {
+      throw Exception('No user found');
+    }
+    _currentUserId = users.first.id;
+    return _currentUserId!;
+  }
+
+  /// 初始化今日统计（进入学习页面时调用）
+  Future<void> _initTodayStat(int userId) async {
+    _todayStat = await _dailyStatRepository.getOrCreateTodayStat(userId);
+    logger.info('初始化今日统计: id=${_todayStat!.id}');
+  }
+
   void _initAudioListener() {
     // 监听音频播放状态
     _audioService.player.playerStateStream.listen((playerState) {
@@ -59,20 +86,26 @@ class LearnController extends Notifier<LearnState> {
 
   /// 加载单词列表（按 JLPT 等级）
   /// 优先加载待复习的单词，如果不足 count 个，则补充新单词
+  /// [append] 为 true 时追加到现有队列（继续学习）
   Future<void> loadWords({
     String? jlptLevel,
     int count = AppConstants.defaultLearnCount,
+    bool append = false,
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      logger.info('加载单词列表: jlptLevel=$jlptLevel, count=$count');
+      logger.info('加载单词列表: jlptLevel=$jlptLevel, count=$count, append=$append');
 
-      // 获取当前用户 (这里简化处理，假设只有一个用户或默认用户)
-      final users = await _userRepository.getAllUsers();
-      if (users.isEmpty) {
-        throw Exception('No user found');
+      // 获取当前用户
+      final userId = await _getUserId();
+
+      // 初始化今日统计（进入学习页面时）
+      if (_todayStat == null) {
+        await _initTodayStat(userId);
       }
-      final userId = users.first.id;
+
+      // 记录学习开始时间
+      _sessionStartTime ??= DateTime.now();
 
       // 1. 获取待复习单词
       final dueReviews = await _studyWordRepository.getDueReviews(
@@ -85,10 +118,6 @@ class LearnController extends Notifier<LearnState> {
       final newWords = <StudyWord>[];
       if (dueReviews.length < count) {
         final newCount = count - dueReviews.length;
-        // 获取新单词 ID 列表
-        // 注意：这里需要 WordRepository 提供一个方法来获取用户未学习的单词
-        // 暂时使用随机获取未学习单词的逻辑
-        // TODO: 优化 WordRepository 以支持排除已学习单词
         final randomWords = await _wordRepository.getRandomWords(
           count: newCount,
           jlptLevel: jlptLevel,
@@ -118,29 +147,65 @@ class LearnController extends Notifier<LearnState> {
       }
 
       // 3. 合并队列
-      final studyQueue = [...dueReviews, ...newWords];
+      final loadedWords = [...dueReviews, ...newWords];
 
       // 4. 获取单词详情
-      final wordDetails = <int, WordDetail>{};
-      for (final studyWord in studyQueue) {
+      final newWordDetails = <int, WordDetail>{};
+      for (final studyWord in loadedWords) {
         final detail = await _wordRepository.getWordDetail(studyWord.wordId);
         if (detail != null) {
-          wordDetails[studyWord.wordId] = detail;
+          newWordDetails[studyWord.wordId] = detail;
         }
       }
 
-      state = state.copyWith(
-        studyQueue: studyQueue,
-        wordDetails: wordDetails,
-        currentIndex: 0,
-        isLoading: false,
-      );
+      // 5. 根据 append 决定是替换还是追加
+      if (append) {
+        // 追加模式：合并到现有队列
+        final mergedQueue = [...state.studyQueue, ...loadedWords];
+        final mergedDetails = {...state.wordDetails, ...newWordDetails};
+        state = state.copyWith(
+          studyQueue: mergedQueue,
+          wordDetails: mergedDetails,
+          isLoading: false,
+          hasLoaded: true,
+        );
+        logger.info('追加加载完成，队列总数: ${mergedQueue.length}');
+      } else {
+        // 替换模式：重置队列
+        state = state.copyWith(
+          studyQueue: loadedWords,
+          wordDetails: newWordDetails,
+          currentIndex: 0,
+          isLoading: false,
+          hasLoaded: true,
+        );
+        logger.info('成功加载 ${loadedWords.length} 个单词');
+      }
 
-      logger.info('成功加载 ${studyQueue.length} 个单词');
+      // 开始计时当前单词
+      _wordStartTime = DateTime.now();
     } catch (e, stackTrace) {
       logger.error('加载单词失败', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: l10n.loadFailed(e));
+      state = state.copyWith(
+        isLoading: false,
+        hasLoaded: true,
+        error: l10n.loadFailed(e),
+      );
     }
+  }
+
+  /// 继续学习（追加加载更多单词）
+  Future<void> continueLearn({
+    String? jlptLevel,
+    int count = AppConstants.defaultLearnCount,
+  }) async {
+    await loadWords(jlptLevel: jlptLevel, count: count, append: true);
+  }
+
+  /// 检查当前批次是否学习完成
+  bool get isBatchCompleted {
+    return state.currentIndex >= state.studyQueue.length &&
+        state.studyQueue.isNotEmpty;
   }
 
   /// 提交答案
@@ -151,8 +216,14 @@ class LearnController extends Notifier<LearnState> {
     try {
       _stopAllAudio();
 
-      // 1. 计算 SRS 结果
       final now = DateTime.now();
+
+      // 计算本单词学习时长
+      final wordDurationMs = _wordStartTime != null
+          ? now.difference(_wordStartTime!).inMilliseconds
+          : 0;
+
+      // 1. 计算 SRS 结果
       double elapsedDays = 0;
       if (currentStudyWord.lastReviewedAt != null) {
         final diff = now.difference(currentStudyWord.lastReviewedAt!);
@@ -170,15 +241,16 @@ class LearnController extends Notifier<LearnState> {
         elapsedDays: elapsedDays,
       );
 
-      // 使用 FSRS 算法 (TODO: 根据用户设置选择算法)
       final srsOutput = _algorithmService.calculate(
         algorithmType: AlgorithmType.fsrs,
         input: srsInput,
       );
 
       // 2. 更新/创建 StudyWord
+      final isNewWord = currentStudyWord.id == 0;
       StudyWord updatedWord;
-      if (currentStudyWord.id == 0) {
+
+      if (isNewWord) {
         // 新单词，创建
         final newWord = currentStudyWord.copyWith(
           userState: UserWordState.learning,
@@ -196,6 +268,7 @@ class LearnController extends Notifier<LearnState> {
         );
         final id = await _studyWordRepository.createStudyWord(newWord);
         updatedWord = newWord.copyWith(id: id);
+        logger.info('创建新学习记录: word_id=${updatedWord.wordId}, id=$id');
       } else {
         // 已有单词，更新
         updatedWord = currentStudyWord.copyWith(
@@ -214,6 +287,7 @@ class LearnController extends Notifier<LearnState> {
           updatedAt: now,
         );
         await _studyWordRepository.updateStudyWord(updatedWord);
+        logger.info('更新学习记录: word_id=${updatedWord.wordId}');
       }
 
       // 3. 创建 StudyLog
@@ -221,7 +295,7 @@ class LearnController extends Notifier<LearnState> {
         id: 0,
         userId: updatedWord.userId,
         wordId: updatedWord.wordId,
-        logType: currentStudyWord.isNew ? LogType.firstLearn : LogType.review,
+        logType: isNewWord ? LogType.firstLearn : LogType.review,
         rating: rating,
         algorithm: AlgorithmService.getAlgorithmValue(AlgorithmType.fsrs),
         intervalAfter: srsOutput.interval,
@@ -229,41 +303,68 @@ class LearnController extends Notifier<LearnState> {
         fsrsStabilityAfter: srsOutput.stability,
         fsrsDifficultyAfter: srsOutput.difficulty,
         nextReviewAtAfter: srsOutput.nextReviewAt,
-        durationMs: 0, // TODO: 记录实际时长
+        durationMs: wordDurationMs,
         createdAt: now,
       );
       await _studyLogRepository.createLog(log);
-
-      // 4. 更新 DailyStat
-      final todayStat = await _dailyStatRepository.getOrCreateTodayStat(
-        updatedWord.userId,
+      logger.info(
+        '创建学习日志: type=${log.logType.description}, duration=${wordDurationMs}ms',
       );
-      final updatedStat = todayStat.copyWith(
-        learnedWordsCount: currentStudyWord.isNew
-            ? todayStat.learnedWordsCount + 1
-            : todayStat.learnedWordsCount,
-        reviewedWordsCount: !currentStudyWord.isNew
-            ? todayStat.reviewedWordsCount + 1
-            : todayStat.reviewedWordsCount,
-        failedCount: rating == ReviewRating.again
-            ? todayStat.failedCount + 1
-            : todayStat.failedCount,
-        totalStudyTimeMs: todayStat.totalStudyTimeMs + 0, // TODO: 累加时长
-        updatedAt: now,
-      );
-      await _dailyStatRepository.updateDailyStat(updatedStat);
 
-      // 5. 更新队列状态
-      // 如果是 Again，可能需要重新加入队列 (这里简化为直接下一个)
-      // 实际应用中，Again 的单词通常会在本次学习 session 中再次出现
+      // 4. 更新 DailyStat（使用缓存的统计对象）
+      if (_todayStat != null) {
+        _todayStat = _todayStat!.copyWith(
+          learnedWordsCount: isNewWord
+              ? _todayStat!.learnedWordsCount + 1
+              : _todayStat!.learnedWordsCount,
+          reviewedWordsCount: !isNewWord
+              ? _todayStat!.reviewedWordsCount + 1
+              : _todayStat!.reviewedWordsCount,
+          failedCount: rating == ReviewRating.again
+              ? _todayStat!.failedCount + 1
+              : _todayStat!.failedCount,
+          totalStudyTimeMs: _todayStat!.totalStudyTimeMs + wordDurationMs,
+          updatedAt: now,
+        );
+        await _dailyStatRepository.updateDailyStat(_todayStat!);
+        logger.info(
+          '更新今日统计: learned=${_todayStat!.learnedWordsCount}, reviewed=${_todayStat!.reviewedWordsCount}',
+        );
+      }
 
-      // 移动到下一个
+      // 5. 更新队列中的 StudyWord（更新 id）
+      if (isNewWord) {
+        final updatedQueue = List<StudyWord>.from(state.studyQueue);
+        updatedQueue[state.currentIndex] = updatedWord;
+        state = state.copyWith(studyQueue: updatedQueue);
+      }
+
+      // 6. 移动到下一个，重置单词计时
       state = state.copyWith(currentIndex: state.currentIndex + 1);
-      logger.info('提交答案: $rating, 下一个: ${state.currentIndex + 1}');
+      _wordStartTime = DateTime.now();
+
+      logger.info(
+        '提交答案: $rating, 进度: ${state.currentIndex}/${state.studyQueue.length}',
+      );
     } catch (e, stackTrace) {
       logger.error('提交答案失败', e, stackTrace);
       state = state.copyWith(error: l10n.submitFailed(e));
     }
+  }
+
+  /// 结束学习会话，保存最终统计
+  Future<void> endSession() async {
+    if (_sessionStartTime != null && _todayStat != null) {
+      final sessionDuration = DateTime.now()
+          .difference(_sessionStartTime!)
+          .inMilliseconds;
+      logger.info('学习会话结束，总时长: ${sessionDuration}ms');
+    }
+
+    // 重置会话状态
+    _sessionStartTime = null;
+    _wordStartTime = null;
+    _todayStat = null;
   }
 
   /// 下一个单词

@@ -103,7 +103,7 @@ CREATE TABLE study_logs (
     user_id               INTEGER NOT NULL,
     word_id               INTEGER NOT NULL,
     log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=忽略, 5=重置
-    rating                INTEGER,                      -- 1=Forget, 2=Hard, 3=Good, 4=Easy
+    rating                INTEGER,                      -- 1=Hard, 2=Good, 3=Easy
     algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS
     interval_after        REAL,                         -- 操作后间隔
     next_review_at_after  INTEGER,                      -- 操作后复习时间

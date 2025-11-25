@@ -37,13 +37,9 @@ class _LearnPageState extends ConsumerState<LearnPage> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    // 检查是否完成
-    if (state.isFinished) {
-      // 延迟弹出对话框，避免在 build 中直接调用
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showFinishedDialog(context, controller, l10n);
-      });
-      return _buildFinishedScreen(theme, l10n);
+    // 检查当前批次是否学习完成（需要已加载过数据）
+    if (state.isBatchCompleted) {
+      return _buildFinishedScreen(controller, theme, l10n);
     }
 
     return Scaffold(
@@ -79,7 +75,11 @@ class _LearnPageState extends ConsumerState<LearnPage> {
     );
   }
 
-  Widget _buildFinishedScreen(ThemeData theme, AppLocalizations l10n) {
+  Widget _buildFinishedScreen(
+    LearnController controller,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return Scaffold(
       body: Center(
         child: Column(
@@ -107,63 +107,39 @@ class _LearnPageState extends ConsumerState<LearnPage> {
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.backToHome),
+            const SizedBox(height: 48),
+            // 继续学习按钮
+            FilledButton.icon(
+              onPressed: () {
+                controller.loadWords(jlptLevel: widget.jlptLevel);
+              },
+              icon: const Icon(Icons.play_arrow),
+              label: Text(l10n.continueLearning),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // 返回首页按钮
+            OutlinedButton.icon(
+              onPressed: () {
+                controller.endSession();
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.home),
+              label: Text(l10n.backToHome),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Future<void> _showFinishedDialog(
-    BuildContext context,
-    LearnController controller,
-    AppLocalizations l10n,
-  ) async {
-    // 避免重复弹出
-    if (!mounted) return;
-
-    // 检查是否已经弹出过 (可以通过状态控制，这里简化处理)
-    // 更好的方式是在 state 中增加一个字段标记是否已显示完成对话框
-    // 但由于 isFinished 状态持续存在，addPostFrameCallback 会一直调用
-    // 所以我们需要一个简单的方式来防止无限弹窗
-    // 这里我们假设用户点击后会改变状态或导航离开
-
-    // 实际上，由于 addPostFrameCallback 会在每一帧后调用如果 build 被触发
-    // 我们应该只在状态变为 finished 的那一刻触发
-    // 为了简单起见，我们可以在这里不做处理，而是依靠 showDialog 的模态特性
-    // 并且在对话框关闭前不进行其他操作
-
-    // 但是为了防止重复弹窗，我们可以检查是否已经有对话框打开
-    // 或者在 controller 中增加一个 flag
-
-    // 让我们先简单实现，如果遇到问题再优化
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.continueLearningTitle),
-        content: Text(l10n.continueLearningContent),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // 关闭对话框
-              Navigator.of(context).pop(); // 返回主页
-            },
-            child: Text(l10n.restABit),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // 关闭对话框
-              controller.loadWords(jlptLevel: widget.jlptLevel);
-            },
-            child: Text(l10n.continueLearning),
-          ),
-        ],
       ),
     );
   }
@@ -360,13 +336,6 @@ class _LearnPageState extends ConsumerState<LearnPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildAnswerButton(
-              context,
-              l10n.ratingAgain,
-              l10n.ratingAgainSub,
-              const Color(0xFFF44336),
-              () => controller.submitAnswer(ReviewRating.again),
-            ),
             _buildAnswerButton(
               context,
               l10n.ratingHard,
