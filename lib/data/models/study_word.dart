@@ -155,8 +155,9 @@ class StudyWord {
 }
 
 /// 用户对单词的状态
+/// 注意：数据库中只存储已学习过的单词，所以实际上 newWord 状态只用于内存中的临时对象
 enum UserWordState {
-  /// 未学习（新单词）
+  /// 未学习（新单词）- 仅用于内存中临时对象，数据库中不会有此状态
   newWord(0),
 
   /// 学习中（SRS 正常进行）
@@ -176,7 +177,7 @@ enum UserWordState {
   static UserWordState fromValue(int value) {
     return UserWordState.values.firstWhere(
       (state) => state.value == value,
-      orElse: () => UserWordState.newWord,
+      orElse: () => UserWordState.learning, // 数据库中默认是 learning
     );
   }
 
