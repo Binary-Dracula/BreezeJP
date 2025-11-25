@@ -513,6 +513,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'没有可用的在线音频: {filename}'**
   String audioNoOnlineSource(String filename);
+
+  /// 复习模式提示点击查看答案
+  ///
+  /// In zh, this message translates to:
+  /// **'点击查看释义'**
+  String get tapToShowAnswer;
+
+  /// 学习模式下一个单词按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'下一个'**
+  String get nextWord;
+
+  /// 学习模式最后一个单词完成按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get finish;
 }
 
 class _AppLocalizationsDelegate

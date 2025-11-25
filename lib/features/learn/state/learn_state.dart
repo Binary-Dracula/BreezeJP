@@ -1,6 +1,24 @@
 import '../../../data/models/study_word.dart';
 import '../../../data/models/word_detail.dart';
 
+/// 学习模式
+enum StudyMode {
+  /// 复习模式：处理旧单词，先显示问题再显示答案
+  review,
+
+  /// 学习模式：学习新单词，直接显示全部内容
+  learn,
+}
+
+/// 复习阶段（仅用于复习模式）
+enum ReviewPhase {
+  /// 提问阶段：只显示单词
+  question,
+
+  /// 回答阶段：显示完整内容和评分按钮
+  answer,
+}
+
 /// 学习页面状态
 class LearnState {
   // 学习队列
@@ -18,6 +36,9 @@ class LearnState {
   // 是否已经加载过数据（区分初始状态和真正的空数据）
   final bool hasLoaded;
 
+  // 复习阶段（仅用于复习模式）
+  final ReviewPhase reviewPhase;
+
   LearnState({
     this.studyQueue = const [],
     this.wordDetails = const {},
@@ -28,6 +49,7 @@ class LearnState {
     this.isPlayingExampleAudio = false,
     this.playingExampleIndex,
     this.hasLoaded = false,
+    this.reviewPhase = ReviewPhase.question,
   });
 
   /// 当前正在学习的单词进度
@@ -62,6 +84,19 @@ class LearnState {
   /// 学习进度（当前/总数）
   String get progressText => '${currentIndex + 1}/${studyQueue.length}';
 
+  /// 当前是复习模式还是学习模式
+  StudyMode get currentMode {
+    final studyWord = currentStudyWord;
+    if (studyWord == null) return StudyMode.learn;
+    // 如果是新单词（id=0 表示还没插入数据库），则是学习模式
+    // 如果是已有单词（id>0），则是复习模式
+    return studyWord.id == 0 ? StudyMode.learn : StudyMode.review;
+  }
+
+  /// 是否显示答案（复习模式的回答阶段，或学习模式）
+  bool get showAnswer =>
+      currentMode == StudyMode.learn || reviewPhase == ReviewPhase.answer;
+
   LearnState copyWith({
     List<StudyWord>? studyQueue,
     Map<int, WordDetail>? wordDetails,
@@ -72,6 +107,7 @@ class LearnState {
     bool? isPlayingExampleAudio,
     int? playingExampleIndex,
     bool? hasLoaded,
+    ReviewPhase? reviewPhase,
   }) {
     return LearnState(
       studyQueue: studyQueue ?? this.studyQueue,
@@ -84,6 +120,7 @@ class LearnState {
           isPlayingExampleAudio ?? this.isPlayingExampleAudio,
       playingExampleIndex: playingExampleIndex,
       hasLoaded: hasLoaded ?? this.hasLoaded,
+      reviewPhase: reviewPhase ?? this.reviewPhase,
     );
   }
 }

@@ -217,6 +217,82 @@ class _LearnPageState extends ConsumerState<LearnPage> {
       );
     }
 
+    // 根据模式显示不同的 UI
+    if (state.currentMode == StudyMode.review && !state.showAnswer) {
+      // 复习模式 - 提问阶段：只显示单词
+      return _buildReviewQuestionView(state, controller, theme, l10n);
+    } else {
+      // 学习模式 或 复习模式的回答阶段：显示完整内容
+      return _buildFullContentView(state, controller, theme, l10n);
+    }
+  }
+
+  /// 复习模式 - 提问阶段：只显示单词大字
+  Widget _buildReviewQuestionView(
+    LearnState state,
+    LearnController controller,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    final wordDetail = state.currentWordDetail!;
+
+    return GestureDetector(
+      onTap: controller.showAnswer,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.primary.withValues(alpha: 0.1),
+              theme.colorScheme.surface,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 单词大字
+              Text(
+                    wordDetail.word.word,
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  )
+                  .animate()
+                  .fadeIn(duration: 300.ms)
+                  .scale(
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1, 1),
+                    duration: 300.ms,
+                  ),
+              const SizedBox(height: 24),
+              // 提示文字
+              Text(
+                l10n.tapToShowAnswer,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 学习模式 或 复习回答阶段：显示完整内容
+  Widget _buildFullContentView(
+    LearnState state,
+    LearnController controller,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     final wordDetail = state.currentWordDetail!;
 
     return Container(
@@ -320,6 +396,47 @@ class _LearnPageState extends ConsumerState<LearnPage> {
       return const SizedBox.shrink();
     }
 
+    // 复习模式的提问阶段：不显示底部栏（点击屏幕显示答案）
+    if (state.currentMode == StudyMode.review && !state.showAnswer) {
+      return const SizedBox.shrink();
+    }
+
+    // 判断是否是最后一个单词
+    final isLastWord = state.currentIndex >= state.studyQueue.length - 1;
+
+    // 学习模式：显示"下一个"或"完成"按钮
+    if (state.currentMode == StudyMode.learn) {
+      return Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: SafeArea(
+          child: FilledButton(
+            onPressed: () => controller.submitAnswer(ReviewRating.good),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              isLastWord ? l10n.finish : l10n.nextWord,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 复习模式的回答阶段：显示评分按钮
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,

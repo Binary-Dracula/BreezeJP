@@ -339,8 +339,11 @@ class LearnController extends Notifier<LearnState> {
         state = state.copyWith(studyQueue: updatedQueue);
       }
 
-      // 6. 移动到下一个，重置单词计时
-      state = state.copyWith(currentIndex: state.currentIndex + 1);
+      // 6. 移动到下一个，重置单词计时和复习阶段
+      state = state.copyWith(
+        currentIndex: state.currentIndex + 1,
+        reviewPhase: ReviewPhase.question, // 重置为提问阶段
+      );
       _wordStartTime = DateTime.now();
 
       logger.info(
@@ -352,7 +355,7 @@ class LearnController extends Notifier<LearnState> {
     }
   }
 
-  /// 结束学习会话，保存最终统计
+  /// 结束学习会话，保存最终统计并重置状态
   Future<void> endSession() async {
     if (_sessionStartTime != null && _todayStat != null) {
       final sessionDuration = DateTime.now()
@@ -365,13 +368,31 @@ class LearnController extends Notifier<LearnState> {
     _sessionStartTime = null;
     _wordStartTime = null;
     _todayStat = null;
+    _currentUserId = null;
+
+    // 重置 UI 状态，避免下次进入时短暂显示完成页面
+    state = LearnState();
+  }
+
+  /// 显示答案（复习模式：从提问阶段切换到回答阶段）
+  void showAnswer() {
+    if (state.currentMode == StudyMode.review &&
+        state.reviewPhase == ReviewPhase.question) {
+      state = state.copyWith(reviewPhase: ReviewPhase.answer);
+      // 自动播放单词音频
+      playWordAudio();
+      logger.info('显示答案');
+    }
   }
 
   /// 下一个单词
   void nextWord() {
     if (state.hasNext) {
       _stopAllAudio();
-      state = state.copyWith(currentIndex: state.currentIndex + 1);
+      state = state.copyWith(
+        currentIndex: state.currentIndex + 1,
+        reviewPhase: ReviewPhase.question, // 重置为提问阶段
+      );
       logger.info(
         '切换到下一个单词: ${state.currentIndex + 1}/${state.studyQueue.length}',
       );
@@ -382,7 +403,10 @@ class LearnController extends Notifier<LearnState> {
   void previousWord() {
     if (state.hasPrevious) {
       _stopAllAudio();
-      state = state.copyWith(currentIndex: state.currentIndex - 1);
+      state = state.copyWith(
+        currentIndex: state.currentIndex - 1,
+        reviewPhase: ReviewPhase.question, // 重置为提问阶段
+      );
       logger.info(
         '切换到上一个单词: ${state.currentIndex + 1}/${state.studyQueue.length}',
       );

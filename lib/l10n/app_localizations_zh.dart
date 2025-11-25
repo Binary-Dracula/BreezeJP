@@ -239,4 +239,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String audioNoOnlineSource(String filename) {
     return '没有可用的在线音频: $filename';
   }
+
+  @override
+  String get tapToShowAnswer => '点击查看释义';
+
+  @override
+  String get nextWord => '下一个';
+
+  @override
+  String get finish => '完成';
 }

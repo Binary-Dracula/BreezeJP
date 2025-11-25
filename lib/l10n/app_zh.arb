@@ -215,6 +215,18 @@
         "type": "String"
       }
     }
+  },
+  "tapToShowAnswer": "点击查看释义",
+  "@tapToShowAnswer": {
+    "description": "复习模式提示点击查看答案"
+  },
+  "nextWord": "下一个",
+  "@nextWord": {
+    "description": "学习模式下一个单词按钮"
+  },
+  "finish": "完成",
+  "@finish": {
+    "description": "学习模式最后一个单词完成按钮"
   }
 
 }
