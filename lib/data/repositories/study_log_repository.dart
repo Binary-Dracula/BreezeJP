@@ -14,13 +14,14 @@ class StudyLogRepository {
   /// 创建学习日志
   Future<int> createLog(StudyLog log) async {
     try {
-      logger.database('INSERT', table: 'study_logs', data: log.toMap());
+      final data = log.toMapForInsert();
+      logger.database('INSERT', table: 'study_logs', data: data);
 
       final db = await _db;
-      final id = await db.insert('study_logs', log.toMap());
+      final id = await db.insert('study_logs', data);
 
       logger.info(
-        '创建学习日志: type=${log.logType.description}, word_id=${log.wordId}',
+        '创建学习日志: type=${log.logType.description}, word_id=${log.wordId}, id=$id',
       );
       return id;
     } catch (e, stackTrace) {
@@ -36,7 +37,7 @@ class StudyLogRepository {
       final batch = db.batch();
 
       for (final log in logs) {
-        batch.insert('study_logs', log.toMap());
+        batch.insert('study_logs', log.toMapForInsert());
       }
 
       await batch.commit(noResult: true);

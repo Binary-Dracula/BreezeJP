@@ -78,16 +78,16 @@ CREATE TABLE study_words (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id          INTEGER NOT NULL,
     word_id          INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
-    user_state       INTEGER DEFAULT 0 NOT NULL,
-    next_review_at   INTEGER,
-    last_reviewed_at INTEGER,
-    streak           INTEGER DEFAULT 0,
-    total_reviews    INTEGER DEFAULT 0,
-    fail_count       INTEGER DEFAULT 0,
-    interval         REAL DEFAULT 0,
-    ease_factor      REAL DEFAULT 2.5,
-    stability        REAL DEFAULT 0,
-    difficulty       REAL DEFAULT 0,
+    user_state       INTEGER DEFAULT 0 NOT NULL,    -- 0=未学, 1=学习中, 2=已掌握, 3=忽略
+    next_review_at   INTEGER,                       -- 下次复习时间戳 (Unix)
+    last_reviewed_at INTEGER,                       -- 上次复习时间戳 (Unix)
+    streak           INTEGER DEFAULT 0,             -- 连续答对次数
+    total_reviews    INTEGER DEFAULT 0,             -- 累计复习次数
+    fail_count       INTEGER DEFAULT 0,             -- 累计失败次数
+    interval         REAL DEFAULT 0,                -- [SM-2] 复习间隔 (天)
+    ease_factor      REAL DEFAULT 2.5,              -- [SM-2] 难度因子
+    stability        REAL DEFAULT 0,                -- [FSRS] 记忆稳定性 (S)
+    difficulty       REAL DEFAULT 0,                -- [FSRS] 记忆难度 (D)
     created_at       INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
     updated_at       INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
     UNIQUE (user_id, word_id)
@@ -102,16 +102,16 @@ CREATE TABLE study_logs (
     id                    INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id               INTEGER NOT NULL,
     word_id               INTEGER NOT NULL,
-    log_type              INTEGER NOT NULL,
-    rating                INTEGER,
-    algorithm             INTEGER DEFAULT 1,
-    interval_after        REAL,
-    next_review_at_after  INTEGER,
-    ease_factor_after     REAL,
-    fsrs_stability_after  REAL,
-    fsrs_difficulty_after REAL,
-    duration_ms           INTEGER DEFAULT 0,
-    created_at            INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL
+    log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=忽略, 5=重置
+    rating                INTEGER,                      -- 1=Forget, 2=Hard, 3=Good, 4=Easy
+    algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS
+    interval_after        REAL,                         -- 操作后间隔
+    next_review_at_after  INTEGER,                      -- 操作后复习时间
+    ease_factor_after     REAL,                         -- [SM-2] 操作后 EF
+    fsrs_stability_after  REAL,                         -- [FSRS] 操作后 S
+    fsrs_difficulty_after REAL,                         -- [FSRS] 操作后 D
+    duration_ms           INTEGER DEFAULT 0,            -- 学习耗时 (毫秒)
+    created_at            INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL -- 创建时间
 );
 
 CREATE INDEX idx_logs_word ON study_logs (user_id, word_id, created_at);
@@ -122,11 +122,11 @@ CREATE INDEX idx_logs_word ON study_logs (user_id, word_id, created_at);
 CREATE TABLE daily_stats (
     id                   INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id              INTEGER NOT NULL,
-    date                 TEXT NOT NULL,
-    total_study_time_ms  INTEGER DEFAULT 0,
-    learned_words_count  INTEGER DEFAULT 0,
-    reviewed_words_count INTEGER DEFAULT 0,
-    mastered_words_count INTEGER DEFAULT 0,
+    date                 TEXT NOT NULL,                     -- 日期 (YYYY-MM-DD)
+    total_study_time_ms  INTEGER DEFAULT 0,                 -- 总学习时长 (毫秒)
+    learned_words_count  INTEGER DEFAULT 0,                 -- 新学单词数
+    reviewed_words_count INTEGER DEFAULT 0,                 -- 手动掌握数
+    mastered_words_count INTEGER DEFAULT 0,                 -- 失败/忘记次数
     failed_count         INTEGER DEFAULT 0,
     created_at           INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
     updated_at           INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,

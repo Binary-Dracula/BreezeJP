@@ -39,12 +39,13 @@ class StudyWordRepository {
   /// 创建学习记录
   Future<int> createStudyWord(StudyWord studyWord) async {
     try {
-      logger.database('INSERT', table: 'study_words', data: studyWord.toMap());
+      final data = studyWord.toMapForInsert();
+      logger.database('INSERT', table: 'study_words', data: data);
 
       final db = await _db;
-      final id = await db.insert('study_words', studyWord.toMap());
+      final id = await db.insert('study_words', data);
 
-      logger.info('创建学习记录成功: word_id=${studyWord.wordId}');
+      logger.info('创建学习记录成功: word_id=${studyWord.wordId}, id=$id');
       return id;
     } catch (e, stackTrace) {
       logger.error('创建学习记录失败', e, stackTrace);

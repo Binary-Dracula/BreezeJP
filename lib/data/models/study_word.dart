@@ -68,10 +68,9 @@ class StudyWord {
     );
   }
 
-  /// 转换为数据库 Map
-  Map<String, dynamic> toMap() {
+  /// 转换为数据库 Map（用于插入，不包含 id）
+  Map<String, dynamic> toMapForInsert() {
     return {
-      'id': id,
       'user_id': userId,
       'word_id': wordId,
       'user_state': userState.value,
@@ -91,6 +90,13 @@ class StudyWord {
       'created_at': createdAt.millisecondsSinceEpoch ~/ 1000,
       'updated_at': updatedAt.millisecondsSinceEpoch ~/ 1000,
     };
+  }
+
+  /// 转换为数据库 Map（用于更新，包含 id）
+  Map<String, dynamic> toMap() {
+    final map = toMapForInsert();
+    map['id'] = id;
+    return map;
   }
 
   /// 复制并修改部分字段

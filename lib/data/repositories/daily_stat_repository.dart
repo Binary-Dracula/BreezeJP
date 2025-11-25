@@ -40,12 +40,13 @@ class DailyStatRepository {
   /// 创建每日统计
   Future<int> createDailyStat(DailyStat stat) async {
     try {
-      logger.database('INSERT', table: 'daily_stats', data: stat.toMap());
+      final data = stat.toMapForInsert();
+      logger.database('INSERT', table: 'daily_stats', data: data);
 
       final db = await _db;
-      final id = await db.insert('daily_stats', stat.toMap());
+      final id = await db.insert('daily_stats', data);
 
-      logger.info('创建每日统计: date=${stat.dateString}');
+      logger.info('创建每日统计: date=${stat.dateString}, id=$id');
       return id;
     } catch (e, stackTrace) {
       logger.error('创建每日统计失败', e, stackTrace);
