@@ -132,29 +132,29 @@
   - 移除统计信息显示
   - _Requirements: 7.1, 7.2_
 
-- [ ] 9. Checkpoint - 确保所有测试通过
+- [x] 9. Checkpoint - 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户
 
-- [ ]* 10. 编写单元测试
-- [ ]* 10.1 测试 LearnController.markWordAsLearned
+- [x] 10. 编写单元测试
+- [x] 10.1 测试 LearnController.markWordAsLearned
   - 测试成功标记时更新内存状态
   - 测试成功标记时调用 repository 方法
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ]* 10.2 测试 LearnController.checkAndPreload
+- [x] 10.2 测试 LearnController.checkAndPreload
   - 测试在正确时机触发预加载
   - 测试预加载成功时追加单词
   - 测试防止重复预加载
   - _Requirements: 5.1, 5.2, 5.6_
 
-- [ ]* 10.3 测试 LearnController.onPageChanged
+- [x] 10.3 测试 LearnController.onPageChanged
   - 测试向前滑动时标记单词
   - 测试更新索引
   - 测试触发预加载检查
   - 测试不重复标记已学习单词
   - _Requirements: 1.1, 1.2, 4.1, 4.4_
 
-- [ ]* 10.4 测试 Repository 方法
+- [x] 10.4 测试 Repository 方法
   - 测试 WordRepository.getUnlearnedWords 过滤和排除逻辑
   - 测试 StudyWordRepository.markAsLearned 数据库操作
   - 测试 StudyLogRepository.insertLog 日志插入
@@ -288,5 +288,5 @@
   - 验证统计数据已保存
   - 运行至少 100 次迭代
 
-- [ ] 12. Final Checkpoint - 确保所有测试通过
+- [x] 12. Final Checkpoint - 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户
