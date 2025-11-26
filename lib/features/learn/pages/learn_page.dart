@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../controller/learn_controller.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../state/learn_state.dart';
 import '../widgets/word_card.dart';
 import '../widgets/example_card.dart';
-import '../../../data/models/study_log.dart';
 import '../../../core/constants/app_constants.dart';
 
 /// 学习页面 - 背单词主界面
@@ -20,9 +19,17 @@ class LearnPage extends ConsumerStatefulWidget {
 }
 
 class _LearnPageState extends ConsumerState<LearnPage> {
+  late PageController _pageController;
+  DateTime? _sessionStartTime;
+
   @override
   void initState() {
     super.initState();
+    // 初始化 PageController
+    _pageController = PageController();
+    // 记录会话开始时间
+    _sessionStartTime = DateTime.now();
+
     // 页面加载时获取单词
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
@@ -32,6 +39,33 @@ class _LearnPageState extends ConsumerState<LearnPage> {
             count: AppConstants.defaultLearnCount,
           );
     });
+  }
+
+  @override
+  void dispose() {
+    // 保存学习统计数据
+    if (_sessionStartTime != null) {
+      // 计算学习时长
+      final duration = DateTime.now().difference(_sessionStartTime!);
+      final durationMs = duration.inMilliseconds;
+
+      // 获取已学习单词数
+      final state = ref.read(learnControllerProvider);
+      final learnedCount = state.learnedWordIds.length;
+
+      // 调用 LearnController 方法更新统计
+      // 注意：这里不能使用 async/await，因为 dispose 是同步的
+      // 但 updateDailyStats 内部会处理异步操作
+      if (learnedCount > 0 || durationMs > 0) {
+        ref
+            .read(learnControllerProvider.notifier)
+            .updateDailyStats(durationMs: durationMs);
+      }
+    }
+
+    // 释放 PageController
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -57,13 +91,13 @@ class _LearnPageState extends ConsumerState<LearnPage> {
         foregroundColor: theme.colorScheme.onPrimary,
         elevation: 0,
         actions: [
-          // 进度指示器
+          // 序号指示器（显示"第 X 个"）
           if (state.studyQueue.isNotEmpty)
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  '${state.currentIndex + 1}/${state.studyQueue.length}',
+                  '第 ${state.currentIndex + 1} 个',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -75,7 +109,6 @@ class _LearnPageState extends ConsumerState<LearnPage> {
         ],
       ),
       body: _buildBody(state, controller, theme, l10n),
-      bottomNavigationBar: _buildNavigationBar(state, controller, theme, l10n),
     );
   }
 
@@ -103,39 +136,16 @@ class _LearnPageState extends ConsumerState<LearnPage> {
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.learningFinishedDesc,
-              style: TextStyle(
-                fontSize: 16,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
             const SizedBox(height: 48),
-            // 继续学习按钮
-            FilledButton.icon(
-              onPressed: () {
-                controller.loadWords(jlptLevel: widget.jlptLevel);
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: Text(l10n.continueLearning),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             // 返回首页按钮
-            OutlinedButton.icon(
+            FilledButton.icon(
               onPressed: () {
                 controller.endSession();
                 Navigator.of(context).pop();
               },
               icon: const Icon(Icons.home),
               label: Text(l10n.backToHome),
-              style: OutlinedButton.styleFrom(
+              style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
                   vertical: 16,
@@ -198,7 +208,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
       );
     }
 
-    if (state.currentWordDetail == null) {
+    if (state.studyQueue.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -221,150 +231,74 @@ class _LearnPageState extends ConsumerState<LearnPage> {
       );
     }
 
-    // 学习模式：显示完整内容
-    return _buildFullContentView(state, controller, theme, l10n);
-  }
-
-  /// 学习模式：显示完整内容
-  Widget _buildFullContentView(
-    LearnState state,
-    LearnController controller,
-    ThemeData theme,
-    AppLocalizations l10n,
-  ) {
-    final wordDetail = state.currentWordDetail!;
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            theme.colorScheme.primary.withValues(alpha: 0.1),
-            theme.colorScheme.surface,
-          ],
-        ),
-      ),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // 单词卡片
-          WordCard(
-                wordDetail: wordDetail,
-                isPlayingAudio: state.isPlayingWordAudio,
-                onPlayAudio: controller.playWordAudio,
-              )
-              .animate()
-              .fadeIn(duration: 300.ms)
-              .slideY(
-                begin: 0.2,
-                end: 0,
-                duration: 300.ms,
-                curve: Curves.easeOut,
-              ),
-
-          const SizedBox(height: 24),
-
-          // 例句标题
-          if (wordDetail.examples.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.menu_book, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.examples,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 例句列表
-            ...wordDetail.examples.asMap().entries.map((entry) {
-              final index = entry.key;
-              final example = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child:
-                    ExampleCard(
-                          example: example,
-                          index: index,
-                          isPlaying:
-                              state.isPlayingExampleAudio &&
-                              state.playingExampleIndex == index,
-                          onPlayAudio: () => controller.playExampleAudio(index),
-                        )
-                        .animate()
-                        .fadeIn(
-                          duration: 300.ms,
-                          delay: Duration(
-                            milliseconds: (100 * (index + 1)).toInt(),
-                          ),
-                        )
-                        .slideX(
-                          begin: 0.2,
-                          end: 0,
-                          duration: 300.ms,
-                          curve: Curves.easeOut,
-                        ),
-              );
-            }),
-          ],
-
-          const SizedBox(height: 80), // 底部导航栏的空间
-        ],
-      ),
+    // 使用 PageView.builder 实现水平滑动
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: state.studyQueue.length,
+      onPageChanged: (index) {
+        // 触觉反馈
+        HapticFeedback.lightImpact();
+        // 调用 LearnController.onPageChanged
+        controller.onPageChanged(index);
+      },
+      itemBuilder: (context, index) {
+        // 构建单词页面（在下一个子任务中实现）
+        return _buildWordPage(state, controller, theme, l10n, index);
+      },
     );
   }
 
-  Widget _buildNavigationBar(
+  /// 构建单词页面（用于 PageView.builder 的 itemBuilder）
+  Widget _buildWordPage(
     LearnState state,
     LearnController controller,
     ThemeData theme,
     AppLocalizations l10n,
+    int index,
   ) {
-    // 如果正在加载或没有数据，不显示底部栏
-    if (state.isLoading || state.currentWordDetail == null) {
+    // 获取指定索引的单词详情
+    if (index >= state.studyQueue.length) {
       return const SizedBox.shrink();
     }
 
-    // 判断是否是最后一个单词
-    final isLastWord = state.currentIndex >= state.studyQueue.length - 1;
+    final studyWord = state.studyQueue[index];
+    final wordDetail = state.wordDetails[studyWord.wordId];
 
-    // 学习模式：显示"下一个"或"完成"按钮
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+    if (wordDetail == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 使用 SingleChildScrollView 包裹内容，支持垂直滚动
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // 单词卡片
+          WordCard(
+            wordDetail: wordDetail,
+            isPlayingAudio: state.isPlayingWordAudio,
+            onPlayAudio: controller.playWordAudio,
           ),
+
+          const SizedBox(height: 24),
+
+          // 例句列表
+          ...wordDetail.examples.asMap().entries.map((entry) {
+            final exampleIndex = entry.key;
+            final example = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ExampleCard(
+                example: example,
+                index: exampleIndex,
+                isPlaying:
+                    state.isPlayingExampleAudio &&
+                    state.playingExampleIndex == exampleIndex,
+                onPlayAudio: () => controller.playExampleAudio(exampleIndex),
+              ),
+            );
+          }),
         ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: SafeArea(
-        child: FilledButton(
-          onPressed: () => controller.submitAnswer(ReviewRating.good),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Text(
-            isLastWord ? l10n.finish : l10n.nextWord,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
       ),
     );
   }

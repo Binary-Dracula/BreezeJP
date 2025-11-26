@@ -310,6 +310,52 @@ class WordRepository {
     }
   }
 
+  // ==================== 预加载查询 ====================
+
+  /// 获取未学习的单词（用于预加载）
+  ///
+  /// 排除 study_words 表中 user_state > 0 的单词
+  /// 支持排除指定 ID 列表
+  ///
+  /// [limit] 返回的单词数量，默认 20
+  /// [excludeIds] 需要排除的单词 ID 列表，默认空列表
+  Future<List<Word>> getUnlearnedWords({
+    int limit = 20,
+    List<int> excludeIds = const [],
+  }) async {
+    try {
+      logger.database(
+        'SELECT UNLEARNED',
+        table: 'words',
+        data: {'limit': limit, 'excludeIds': excludeIds},
+      );
+
+      final db = await _db;
+
+      // 构建 WHERE 子句
+      String whereClause =
+          'id NOT IN (SELECT word_id FROM study_words WHERE user_state > 0)';
+
+      if (excludeIds.isNotEmpty) {
+        final excludeIdsStr = excludeIds.join(',');
+        whereClause += ' AND id NOT IN ($excludeIdsStr)';
+      }
+
+      final results = await db.query(
+        'words',
+        where: whereClause,
+        orderBy: 'id ASC',
+        limit: limit,
+      );
+
+      logger.info('获取未学习单词成功: ${results.length} 个');
+      return results.map((map) => Word.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.error('获取未学习单词失败', e, stackTrace);
+      rethrow;
+    }
+  }
+
   // ==================== 随机查询 ====================
 
   /// 随机获取单词

@@ -359,6 +359,227 @@ class LearnController extends Notifier<LearnState> {
     }
   }
 
+  /// 标记单词为已学习
+  ///
+  /// 更新内存状态：将 wordId 添加到 learnedWordIds 集合
+  /// 调用 StudyWordRepository 方法更新数据库
+  /// 调用 StudyLogRepository 方法插入日志
+  Future<void> markWordAsLearned(int wordId) async {
+    try {
+      // 检查是否已经标记过
+      if (state.learnedWordIds.contains(wordId)) {
+        logger.info('单词已标记为已学习，跳过: word_id=$wordId');
+        return;
+      }
+
+      // 获取用户 ID
+      final userId = await _getUserId();
+      final now = DateTime.now();
+
+      // 1. 更新内存状态：添加到已学习集合
+      state = state.copyWith(learnedWordIds: {...state.learnedWordIds, wordId});
+      logger.info('添加到已学习集合: word_id=$wordId');
+
+      // 2. 更新数据库：创建或更新 study_words 记录
+      final existingStudyWord = await _studyWordRepository.getStudyWord(
+        userId,
+        wordId,
+      );
+
+      if (existingStudyWord == null) {
+        // 创建新的学习记录
+        final newStudyWord = StudyWord(
+          id: 0,
+          userId: userId,
+          wordId: wordId,
+          userState: UserWordState.learning,
+          lastReviewedAt: now,
+          totalReviews: 1,
+          createdAt: now,
+          updatedAt: now,
+        );
+        await _studyWordRepository.createStudyWord(newStudyWord);
+        logger.info('创建学习记录: word_id=$wordId');
+      } else if (existingStudyWord.userState == UserWordState.newWord) {
+        // 更新现有记录为学习中
+        final updatedStudyWord = existingStudyWord.copyWith(
+          userState: UserWordState.learning,
+          lastReviewedAt: now,
+          totalReviews: existingStudyWord.totalReviews + 1,
+          updatedAt: now,
+        );
+        await _studyWordRepository.updateStudyWord(updatedStudyWord);
+        logger.info('更新学习记录: word_id=$wordId');
+      }
+
+      // 3. 插入学习日志
+      final log = StudyLog(
+        id: 0,
+        userId: userId,
+        wordId: wordId,
+        logType: LogType.firstLearn,
+        durationMs: 0, // 水平滑动模式下不计算单个单词时长
+        createdAt: now,
+      );
+      await _studyLogRepository.createLog(log);
+      logger.info('插入学习日志: word_id=$wordId');
+    } catch (e, stackTrace) {
+      logger.error('标记单词为已学习失败', e, stackTrace);
+      // 不抛出异常，避免中断用户体验
+    }
+  }
+
+  /// 检查并预加载单词
+  ///
+  /// 当剩余单词数小于等于预加载阈值时，自动加载下一批单词
+  Future<void> checkAndPreload() async {
+    try {
+      // 1. 检查是否正在预加载或没有更多单词
+      if (state.isPreloading || !state.hasMoreWords) {
+        logger.info(
+          '跳过预加载: isPreloading=${state.isPreloading}, hasMoreWords=${state.hasMoreWords}',
+        );
+        return;
+      }
+
+      // 2. 计算剩余单词数
+      final remainingWords = state.studyQueue.length - state.currentIndex - 1;
+      logger.info('剩余单词数: $remainingWords');
+
+      // 3. 如果剩余单词数大于预加载阈值，则不需要预加载
+      if (remainingWords > AppConstants.preloadThreshold) {
+        logger.info('剩余单词充足，无需预加载');
+        return;
+      }
+
+      // 4. 设置预加载状态
+      state = state.copyWith(isPreloading: true);
+      logger.info('开始预加载单词...');
+
+      // 5. 获取已加载的单词 ID 列表（用于排除）
+      final loadedWordIds = state.studyQueue.map((sw) => sw.wordId).toList();
+
+      // 6. 调用 WordRepository 加载未学习的单词
+      final newWords = await _wordRepository.getUnlearnedWords(
+        limit: AppConstants.defaultLearnCount,
+        excludeIds: loadedWordIds,
+      );
+
+      // 7. 如果返回空列表，设置 hasMoreWords = false
+      if (newWords.isEmpty) {
+        logger.info('没有更多单词可加载');
+        state = state.copyWith(isPreloading: false, hasMoreWords: false);
+        return;
+      }
+
+      // 8. 获取用户 ID
+      final userId = await _getUserId();
+
+      // 9. 为新单词创建 StudyWord 对象
+      final newStudyWords = <StudyWord>[];
+      for (final word in newWords) {
+        newStudyWords.add(
+          StudyWord(
+            id: 0, // 临时 ID，尚未存入数据库
+            userId: userId,
+            wordId: word.id,
+            userState: UserWordState.newWord,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+      }
+
+      // 10. 获取新单词的详情
+      final newWordDetails = <int, WordDetail>{};
+      for (final studyWord in newStudyWords) {
+        final detail = await _wordRepository.getWordDetail(studyWord.wordId);
+        if (detail != null) {
+          newWordDetails[studyWord.wordId] = detail;
+        }
+      }
+
+      // 11. 追加到学习队列
+      final updatedQueue = [...state.studyQueue, ...newStudyWords];
+      final updatedDetails = {...state.wordDetails, ...newWordDetails};
+
+      state = state.copyWith(
+        studyQueue: updatedQueue,
+        wordDetails: updatedDetails,
+        isPreloading: false,
+      );
+
+      logger.info(
+        '预加载完成: 新增 ${newStudyWords.length} 个单词，队列总数: ${updatedQueue.length}',
+      );
+    } catch (e, stackTrace) {
+      logger.error('预加载失败', e, stackTrace);
+      // 预加载失败不影响当前学习流程
+      state = state.copyWith(isPreloading: false);
+    }
+  }
+
+  /// 页面切换回调（用于水平滑动导航）
+  ///
+  /// 如果是向前滑动，标记上一个单词为已学习
+  /// 更新当前索引
+  /// 检查是否需要预加载
+  Future<void> onPageChanged(int newIndex) async {
+    try {
+      final oldIndex = state.currentIndex;
+      logger.info('页面切换: $oldIndex -> $newIndex');
+
+      // 1. 如果是向前滑动（newIndex > currentIndex），标记上一个单词为已学习
+      if (newIndex > oldIndex && oldIndex < state.studyQueue.length) {
+        final previousWord = state.studyQueue[oldIndex];
+        final previousWordId = previousWord.wordId;
+
+        // 检查单词是否已在 learnedWordIds 中，避免重复标记
+        if (!state.learnedWordIds.contains(previousWordId)) {
+          await markWordAsLearned(previousWordId);
+          logger.info('标记单词为已学习: word_id=$previousWordId');
+        } else {
+          logger.info('单词已标记，跳过: word_id=$previousWordId');
+        }
+      }
+
+      // 2. 更新 currentIndex 为 newIndex
+      state = state.copyWith(currentIndex: newIndex);
+      logger.info('更新索引: $newIndex');
+
+      // 3. 调用 checkAndPreload 检查是否需要预加载
+      await checkAndPreload();
+    } catch (e, stackTrace) {
+      logger.error('页面切换处理失败', e, stackTrace);
+      // 不抛出异常，避免中断用户体验
+    }
+  }
+
+  /// 更新每日统计
+  ///
+  /// 在学习会话结束时调用，更新学习时长和已学单词数
+  Future<void> updateDailyStats({required int durationMs}) async {
+    try {
+      // 获取用户 ID
+      final userId = await _getUserId();
+
+      // 获取已学习单词数
+      final learnedCount = state.learnedWordIds.length;
+
+      // 调用 DailyStatRepository 更新统计
+      await _dailyStatRepository.updateDailyStats(
+        userId: userId,
+        learnedCount: learnedCount,
+        durationMs: durationMs,
+      );
+
+      logger.info('更新每日统计: learnedCount=$learnedCount, durationMs=$durationMs');
+    } catch (e, stackTrace) {
+      logger.error('更新每日统计失败', e, stackTrace);
+      // 不抛出异常，避免中断用户体验
+    }
+  }
+
   /// 结束学习会话，保存最终统计并重置状态
   Future<void> endSession() async {
     if (_sessionStartTime != null && _todayStat != null) {

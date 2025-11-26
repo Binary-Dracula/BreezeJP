@@ -39,6 +39,11 @@ class LearnState {
   // 复习阶段（仅用于复习模式）
   final ReviewPhase reviewPhase;
 
+  // 预加载相关字段
+  final bool isPreloading;
+  final bool hasMoreWords;
+  final Set<int> learnedWordIds;
+
   LearnState({
     this.studyQueue = const [],
     this.wordDetails = const {},
@@ -50,6 +55,9 @@ class LearnState {
     this.playingExampleIndex,
     this.hasLoaded = false,
     this.reviewPhase = ReviewPhase.question,
+    this.isPreloading = false,
+    this.hasMoreWords = true,
+    this.learnedWordIds = const {},
   });
 
   /// 当前正在学习的单词进度
@@ -108,6 +116,9 @@ class LearnState {
     int? playingExampleIndex,
     bool? hasLoaded,
     ReviewPhase? reviewPhase,
+    bool? isPreloading,
+    bool? hasMoreWords,
+    Set<int>? learnedWordIds,
   }) {
     return LearnState(
       studyQueue: studyQueue ?? this.studyQueue,
@@ -121,6 +132,9 @@ class LearnState {
       playingExampleIndex: playingExampleIndex,
       hasLoaded: hasLoaded ?? this.hasLoaded,
       reviewPhase: reviewPhase ?? this.reviewPhase,
+      isPreloading: isPreloading ?? this.isPreloading,
+      hasMoreWords: hasMoreWords ?? this.hasMoreWords,
+      learnedWordIds: learnedWordIds ?? this.learnedWordIds,
     );
   }
 }

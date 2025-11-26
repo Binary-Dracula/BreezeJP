@@ -173,6 +173,70 @@ class DailyStatRepository {
     return newStat.copyWith(id: id);
   }
 
+  /// 更新每日统计（用于学习会话结束时）
+  ///
+  /// 查询当天是否已有记录
+  /// 如果没有记录，创建新记录
+  /// 如果有记录，累加更新 total_study_time_ms 和 learned_words_count
+  Future<void> updateDailyStats({
+    required int userId,
+    required int learnedCount,
+    required int durationMs,
+  }) async {
+    try {
+      final today = DateTime.now();
+      final dateStr = _formatDate(today);
+      final db = await _db;
+
+      // 尝试获取今天的记录
+      final existing = await db.query(
+        'daily_stats',
+        where: 'user_id = ? AND date = ?',
+        whereArgs: [userId, dateStr],
+      );
+
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      if (existing.isEmpty) {
+        // 创建新记录
+        await db.insert('daily_stats', {
+          'user_id': userId,
+          'date': dateStr,
+          'total_study_time_ms': durationMs,
+          'learned_words_count': learnedCount,
+          'reviewed_words_count': 0,
+          'mastered_words_count': 0,
+          'failed_count': 0,
+          'created_at': now,
+          'updated_at': now,
+        });
+        logger.info(
+          '创建每日统计: date=$dateStr, learned=$learnedCount, duration=${durationMs}ms',
+        );
+      } else {
+        // 累加更新
+        final existingStat = DailyStat.fromMap(existing.first);
+        await db.update(
+          'daily_stats',
+          {
+            'total_study_time_ms': existingStat.totalStudyTimeMs + durationMs,
+            'learned_words_count':
+                existingStat.learnedWordsCount + learnedCount,
+            'updated_at': now,
+          },
+          where: 'user_id = ? AND date = ?',
+          whereArgs: [userId, dateStr],
+        );
+        logger.info(
+          '累加更新每日统计: date=$dateStr, +learned=$learnedCount, +duration=${durationMs}ms',
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.error('更新每日统计失败', e, stackTrace);
+      rethrow;
+    }
+  }
+
   /// 增加学习时长
   /// 增加学习时长
   Future<void> incrementStudyTime(
