@@ -134,15 +134,24 @@ class AudioService {
     required String audioFilename,
     required bool isWordAudio,
   }) async {
-    // 如果正在播放，先停止
-    if (_player.playing) {
-      await _player.stop();
-    }
-
     // 仅使用在线音频
     if (audioUrl != null && audioUrl.isNotEmpty) {
       try {
         logger.info('播放在线音频: $audioUrl');
+
+        // 如果是同一个音频源，重新播放
+        if (_currentAudioSource == audioUrl) {
+          await _player.seek(Duration.zero);
+          await _player.play();
+          logger.info('重新播放音频');
+          return;
+        }
+
+        // 不同音频源，先停止再加载
+        if (_player.playing) {
+          await _player.stop();
+        }
+
         _currentAudioSource = audioUrl;
         await _player.setUrl(audioUrl);
         await _player.play();
@@ -163,7 +172,15 @@ class AudioService {
   /// 播放音频
   Future<void> _playAudio(String source) async {
     try {
-      // 如果正在播放，先停止
+      // 如果是同一个音频源，重新播放
+      if (_currentAudioSource == source) {
+        await _player.seek(Duration.zero);
+        await _player.play();
+        logger.info('重新播放音频');
+        return;
+      }
+
+      // 不同音频源，先停止再加载
       if (_player.playing) {
         await _player.stop();
       }

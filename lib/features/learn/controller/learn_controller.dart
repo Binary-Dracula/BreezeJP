@@ -74,7 +74,11 @@ class LearnController extends Notifier<LearnState> {
   void _initAudioListener() {
     // 监听音频播放状态
     _audioService.player.playerStateStream.listen((playerState) {
-      if (playerState.processingState == ProcessingState.completed) {
+      final isPlaying = playerState.playing;
+      final processingState = playerState.processingState;
+
+      // 播放完成或停止时，更新状态
+      if (processingState == ProcessingState.completed || !isPlaying) {
         state = state.copyWith(
           isPlayingWordAudio: false,
           isPlayingExampleAudio: false,
@@ -422,15 +426,25 @@ class LearnController extends Notifier<LearnState> {
         return;
       }
 
-      // 停止当前播放
-      if (state.isPlayingWordAudio || state.isPlayingExampleAudio) {
+      // 如果正在播放单词音频，则停止
+      if (state.isPlayingWordAudio) {
         await _audioService.stop();
         state = state.copyWith(
           isPlayingWordAudio: false,
           isPlayingExampleAudio: false,
           playingExampleIndex: null,
         );
+        logger.info('停止单词音频');
         return;
+      }
+
+      // 停止例句音频（如果正在播放）
+      if (state.isPlayingExampleAudio) {
+        await _audioService.stop();
+        state = state.copyWith(
+          isPlayingExampleAudio: false,
+          playingExampleIndex: null,
+        );
       }
 
       // 播放第一个音频
@@ -469,17 +483,23 @@ class LearnController extends Notifier<LearnState> {
           isPlayingExampleAudio: false,
           playingExampleIndex: null,
         );
+        logger.info('停止例句音频');
         return;
       }
 
-      // 停止当前播放
-      if (state.isPlayingWordAudio || state.isPlayingExampleAudio) {
+      // 停止单词音频（如果正在播放）
+      if (state.isPlayingWordAudio) {
+        await _audioService.stop();
+        state = state.copyWith(isPlayingWordAudio: false);
+      }
+
+      // 停止其他例句音频（如果正在播放）
+      if (state.isPlayingExampleAudio) {
         await _audioService.stop();
       }
 
       // 播放例句音频
       state = state.copyWith(
-        isPlayingWordAudio: false,
         isPlayingExampleAudio: true,
         playingExampleIndex: exampleIndex,
       );
