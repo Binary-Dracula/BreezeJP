@@ -207,46 +207,32 @@ class AppLogger {
 
   /// 记录音频播放开始
   /// Requirements: 1.4, 4.1
-  void audioPlayStart({
-    required String sourceType,
-    required String source,
-    int? wordId,
-  }) {
-    final parts = <String>['type=$sourceType', 'source="$source"'];
-    if (wordId != null) parts.add('wordId=$wordId');
-    info('${LogCategory.audio.prefix} play_start: ${parts.join(', ')}');
+  void audioPlayStart({required String source}) {
+    info('${LogCategory.audio.prefix} play_start: $source');
   }
 
   /// 记录音频播放完成
   /// Requirements: 1.4, 4.2
-  void audioPlayComplete({required String source, required int durationMs}) {
-    final duration = LogFormatter.formatDuration(durationMs);
-    info(
-      '${LogCategory.audio.prefix} play_complete: source="$source", duration=$duration',
-    );
+  void audioPlayComplete({required String source}) {
+    info('${LogCategory.audio.prefix} play_complete: source="$source"');
   }
 
   /// 记录音频播放失败
   /// Requirements: 1.4, 4.3
   void audioPlayError({
-    required String source,
+    required String audio,
     required String errorType,
     required String errorMessage,
   }) {
     error(
-      '${LogCategory.audio.prefix} play_error: source="$source", type=$errorType, msg="$errorMessage"',
+      '${LogCategory.audio.prefix} play_error: source="$audio", type=$errorType, msg="$errorMessage"',
     );
   }
 
   /// 记录音频状态变化
   /// Requirements: 1.4, 4.4
-  void audioStateChange({
-    required String previousState,
-    required String newState,
-  }) {
-    info(
-      '${LogCategory.audio.prefix} state_change: $previousState -> $newState',
-    );
+  void audioStateChange({required String newState}) {
+    info('${LogCategory.audio.prefix} state_change: $newState');
   }
 
   // ==================== 算法状态日志 [ALGO] ====================

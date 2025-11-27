@@ -738,7 +738,7 @@ class LearnController extends Notifier<LearnState> {
       // 播放第一个音频
       final audio = currentWord.audios.first;
       state = state.copyWith(isPlayingWordAudio: true);
-      await _audioService.playWordAudio(audio);
+      await _audioService.playAudio(audio.audioUrl);
       logger.debug('播放单词音频: ${currentWord.word.word}');
     } catch (e, stackTrace) {
       logger.error('播放单词音频失败', e, stackTrace);
@@ -791,7 +791,7 @@ class LearnController extends Notifier<LearnState> {
         isPlayingExampleAudio: true,
         playingExampleIndex: exampleIndex,
       );
-      await _audioService.playExampleAudio(example.audio!);
+      await _audioService.playAudio(example.audio?.audioUrl);
       logger.debug('播放例句音频: 例句 ${exampleIndex + 1}');
     } catch (e, stackTrace) {
       logger.error('播放例句音频失败', e, stackTrace);
