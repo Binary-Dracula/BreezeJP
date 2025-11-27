@@ -16,6 +16,12 @@ class AudioService {
   /// 当前播放的音频来源
   String _currentAudioSource = '';
 
+  /// 获取当前播放状态
+  AudioStateEnum get currentState => _currentState;
+
+  /// 获取当前音频源
+  String get currentAudioSource => _currentAudioSource;
+
   /// 播放音频
   Future<void> playAudio(String? source) async {
     if (source == null || source.isEmpty) {
@@ -61,6 +67,11 @@ class AudioService {
     } catch (e) {
       _currentAudioSource = '';
       _currentState = AudioStateEnum.unplayed;
+      logger.audioPlayError(
+        audio: source,
+        errorType: e.runtimeType.toString(),
+        errorMessage: '播放音频失败: ${e.toString()}',
+      );
       rethrow;
     }
   }
@@ -69,7 +80,7 @@ class AudioService {
   Future<void> pause() async {
     try {
       await _player.pause();
-      _currentState = AudioStateEnum.unplayed;
+      _currentState = AudioStateEnum.pause;
       logger.audioStateChange(newState: _currentState.name);
     } catch (e) {
       logger.audioPlayError(
