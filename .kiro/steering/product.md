@@ -24,11 +24,12 @@ BreezeJP 是一款追求极致"心流"体验的日语单词记忆 App。采用�
 ### 学习路径
 
 1. 首页点击"开始学习"
-2. **复习阶段**（如有到期单词）：优先进入极简复习模式，清理 SRS 队列
-3. **无尽探索阶段**（复习完成后/无复习时）：
+2. **无尽探索阶段**:
    - 无缝进入语义分支模式
    - 学完一个词 → 选择下一个关联词 → 学完 → 选择...
-   - 用户随时通过手势（右滑返回）结束 Session
+
+1. 首页点击"待复习"
+2. 进入极简复习模式，清理 SRS 队列
 
 ## 功能模块
 
@@ -39,17 +40,24 @@ BreezeJP 是一款追求极致"心流"体验的日语单词记忆 App。采用�
 | 组件 | 功能 | 数据逻辑 |
 |------|------|----------|
 | Header | 问候语、用户名、设置入口 | 读取本地配置 |
-| Hero Card | 状态 A：显示待复习数，"清理今日记忆债务"<br>状态 B：显示"开始探索"，"发现新的日语世界" | 查询 `study_words` 表中 `next_review_at <= now` 的数量 |
+| Review Card | 显示待复习数量，"清理今日记忆债务"<br>点击进入复习模式 | 查询 `study_words` 表中 `next_review_at <= now` 的数量 |
+| Explore Card | 显示"开始探索"，"发现新的日语世界"<br>点击进入语义分支学习模式 | 无需数据查询，始终可用 |
 | Stats Row | 连续打卡天数、已掌握词数、今日已学数 | 读取 `daily_stats` 表 |
 | Tools Grid | 2x2 网格：单词本、详细统计、(预留位) | 路由跳转 |
 
+**设计说明**：
+- Review Card 和 Explore Card 是两个独立的入口卡片，互不干扰
+- 即使有待复习单词，用户仍可选择进入探索模式学习新词
+- 即使没有待复习单词，Review Card 仍然显示（显示 0 个待复习）
+- 两种模式可以自由切换，用户完全掌控学习节奏
+
 ### 学习流容器
 
-技术实现：`PageView` (scrollDirection: Axis.vertical) 全屏翻页
+技术实现：`PageView` (scrollDirection: Axis.horizontal) 全屏翻页
 
 支持三种页面类型：
-- **WordPage (Review)**：复习页（极简版）
-- **WordPage (Learn)**：学习页（全展示）
+- **ReviewPage**：复习页（极简版，两阶段交互）
+- **LearnPage**：学习页（完整展示，左右切换）
 - **ChoicePage**：分支选择页（路由节点）
 
 ### 复习模式 (Review Mode)
@@ -61,7 +69,7 @@ BreezeJP 是一款追求极致"心流"体验的日语单词记忆 App。采用�
 - 下方灰色小字"点击查看释义"
 - 点击屏幕任意区域进入阶段二
 
-**阶段二：回答**
+**阶段二：回答 暂时不需要**
 - 展开显示假名、释义、例句
 - 自动播放单词发音
 - 底部 3 个评分按钮：
@@ -74,39 +82,99 @@ BreezeJP 是一款追求极致"心流"体验的日语单词记忆 App。采用�
 
 ### 语义分支学习模式 (Associative Learn Mode)
 
-场景：学习新单词 (`user_state = 0`)，无尽模式
+场景：学习新单词，无尽探索模式
 
-**单词学习页**
+#### 启动流程
+
+**初始选择页 (Initial Choice Page)**
+- 从 `words` 表随机选取 5 个单词作为起点
+- 筛选条件：
+  ```sql
+  SELECT w.* FROM words w
+  LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = [CurrentUserID]
+  WHERE sw.user_state IS NULL OR sw.user_state IN (0, 1)
+  ORDER BY RANDOM()
+  LIMIT 5;
+  ```
+- 展示 5 个选项卡片，显示单词、假名、难度标签
+- 用户点击其中一个 → 进入该单词的学习页 → 同时加载该单词的所有关联词
+
+#### 学习流程
+
+**单词学习页 (LearnPage)**
 - 全屏展示单词、假名、释义、例句
-- 自动播放音频
-- 底部提示"上滑继续"
-- 页面展示时标记为"学习中"，写入 `study_logs`
+- 左右滑动切换单词（在当前关联词队列中切换）
+- 页面展示时：
+  - 标记为"学习中"（`user_state = 1`）
+  - 写入 `study_logs` (log_type = 1)
+  - 更新 `study_words` 表
 
-**路径选择页 (Choice Page)**
-- 文案："学完了「狗」，接下来你想探索什么？"
-- 动态生成选项列表：
-  - 选项 A：猫 (关联: 强 | 难度: N5 🟢)
-  - 选项 B：动物 (关联: 中 | 难度: N5 🟢)
-  - 选项 C：脊索动物 (关联: 弱 | 难度: N1 🔴)
-- 兜底选项："随机推荐一个"
-- 点击选项 → 加入 PageView 队列 → 滑入学习页
+#### 关联词加载逻辑
 
-**退出**：点击左上角"关闭"或右滑返回，结算本次学习时长和数量
+**获取关联单词（所有关联词）**
+```sql
+SELECT w.*, wr.score, wr.relation_type
+FROM word_relations wr
+JOIN words w ON wr.related_word_id = w.id
+LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = [CurrentUserID]
+WHERE wr.word_id = [CurrentWordID]
+  AND (sw.user_state IS NULL OR sw.user_state IN (0, 1))
+ORDER BY wr.score DESC;
+```
+
+**加载时机**：
+1. 用户在初始选择页选择单词时 → 加载该单词的所有关联词
+2. 用户学完当前队列的最后一个单词时 → 自动基于最后一个单词加载新的关联词
+3. 如果某个单词没有找到关联词 → 回到初始选择页，随机展示 5 个新单词
+
+**队列管理**：
+- 当前学习队列包含该单词的所有关联词（数量不固定）
+- 学完最后一个单词后，自动追加该单词的所有关联词到队列
+- 形成无限链条：词A → [所有关联词] → 基于最后一个词 → [新的所有关联词] → ...
+
+#### 无尽循环机制
+
+**正常流程**：
+- 学习词1 → 学习词2 → ... → 学习词N（最后一个关联词） → 自动加载词N的关联词 → 继续学习 → ...
+
+**断链处理**：
+- 如果最后一个单词没有关联词 → 显示"已探索完这条路径" → 返回初始选择页
+- 用户重新选择 5 个随机单词中的一个 → 继续探索
+
+**已学词过滤**：
+- 已掌握的词（`user_state = 2`）不会出现在关联词列表中
+- 确保用户始终学习新词或复习中的词
+
+#### 退出机制
+
+- 点击左上角"关闭"按钮或右滑返回
+- 结算本次 Session：
+  - 统计学习时长
+  - 统计学习单词数
+  - 更新 `daily_stats` 表
 
 ## 算法逻辑
 
 ### 推荐算法
 
-生成路径选择页时执行：
-
+**关联词推荐（所有关联词）**：
 ```sql
-SELECT w.*, wa.weight 
-FROM word_associations wa
-JOIN words w ON wa.target_word_id = w.id
-WHERE wa.source_word_id = [CurrentWordID]
-  AND w.id NOT IN (SELECT word_id FROM study_words WHERE user_state > 0)
-ORDER BY wa.weight DESC
-LIMIT 3;
+SELECT w.*, wr.score, wr.relation_type
+FROM word_relations wr
+JOIN words w ON wr.related_word_id = w.id
+LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = [CurrentUserID]
+WHERE wr.word_id = [CurrentWordID]
+  AND (sw.user_state IS NULL OR sw.user_state IN (0, 1))
+ORDER BY wr.score DESC;
+```
+
+**随机起点推荐（5 个）**：
+```sql
+SELECT w.* FROM words w
+LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = [CurrentUserID]
+WHERE sw.user_state IS NULL OR sw.user_state IN (0, 1)
+ORDER BY RANDOM()
+LIMIT 5;
 ```
 
 UI 层根据 `jlpt_level` 渲染难度标签（N5=绿, N1=红）
@@ -118,9 +186,8 @@ UI 层根据 `jlpt_level` 渲染难度标签（N5=绿, N1=红）
 
 ## UI/UX 规范
 
-- **手势**：全屏垂直滑动
+- **手势**：学习模式左右滑动切换单词
 - **震动反馈**：页面切换时触发 `HapticFeedback.lightImpact()`
-- **防误触**：复习模式下未评分前锁定向下滑动
 - **进度反馈**：右上角显示本次 Session 计数器（本次已学 +5）
 
 ## MVP 范围外
