@@ -4,7 +4,7 @@ inclusion: always
 
 # 数据库架构
 
-BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`），包含 9 个核心表。
+BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`），包含 10 个核心表。
 
 ## 表结构
 
@@ -149,6 +149,22 @@ CREATE TABLE users (
 );
 ```
 
+### word_relations
+```sql
+CREATE TABLE word_relations (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    word_id         INTEGER NOT NULL,
+    related_word_id INTEGER NOT NULL,
+    score           REAL NOT NULL,
+    relation_type   TEXT DEFAULT 'semantic',
+    FOREIGN KEY(word_id) REFERENCES words(id),
+    FOREIGN KEY(related_word_id) REFERENCES words(id)
+);
+
+CREATE INDEX idx_word_relations_word_id ON word_relations (word_id, score DESC);
+CREATE INDEX idx_word_relations_related_word_id ON word_relations (related_word_id);
+```
+
 ## 数据关系
 
 ```
@@ -157,5 +173,6 @@ words (1) ──< (N) word_meanings
       (1) ──< (N) example_sentences (1) ──< (N) example_audio
       (1) ──< (N) study_words (N) >── (1) users
       (1) ──< (N) study_logs  (N) >── (1) users
+      (1) ──< (N) word_relations (N) >── (1) words (关联单词)
                                      (1) ──< (N) daily_stats
 ```
