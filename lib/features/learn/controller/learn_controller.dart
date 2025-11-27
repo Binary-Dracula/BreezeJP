@@ -68,7 +68,7 @@ class LearnController extends Notifier<LearnState> {
   /// 初始化今日统计（进入学习页面时调用）
   Future<void> _initTodayStat(int userId) async {
     _todayStat = await _dailyStatRepository.getOrCreateTodayStat(userId);
-    logger.info('初始化今日统计: id=${_todayStat!.id}');
+    logger.debug('初始化今日统计: id=${_todayStat!.id}');
   }
 
   void _initAudioListener() {
@@ -98,7 +98,9 @@ class LearnController extends Notifier<LearnState> {
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      logger.info('加载单词列表: jlptLevel=$jlptLevel, count=$count, append=$append');
+      logger.debug(
+        '加载单词列表: jlptLevel=$jlptLevel, count=$count, append=$append',
+      );
 
       // 获取当前用户
       final userId = await _getUserId();
@@ -108,15 +110,19 @@ class LearnController extends Notifier<LearnState> {
         await _initTodayStat(userId);
       }
 
-      // 记录学习开始时间
-      _sessionStartTime ??= DateTime.now();
+      // 记录学习开始时间，并记录会话开始日志
+      if (_sessionStartTime == null) {
+        _sessionStartTime = DateTime.now();
+        // [LEARN] 记录学习会话开始 (Requirements: 2.1)
+        logger.learnSessionStart(userId: userId);
+      }
 
       // 1. 获取待复习单词
       final dueReviews = await _studyWordRepository.getDueReviews(
         userId,
         limit: count,
       );
-      logger.info('获取到 ${dueReviews.length} 个待复习单词');
+      logger.debug('获取到 ${dueReviews.length} 个待复习单词');
 
       // 2. 如果不足，获取新单词
       final newWords = <StudyWord>[];
@@ -147,7 +153,7 @@ class LearnController extends Notifier<LearnState> {
             );
           }
         }
-        logger.info('获取到 ${newWords.length} 个新单词');
+        logger.debug('获取到 ${newWords.length} 个新单词');
       }
 
       // 3. 合并队列
@@ -173,7 +179,7 @@ class LearnController extends Notifier<LearnState> {
           isLoading: false,
           hasLoaded: true,
         );
-        logger.info('追加加载完成，队列总数: ${mergedQueue.length}');
+        logger.debug('追加加载完成，队列总数: ${mergedQueue.length}');
       } else {
         // 替换模式：重置队列
         state = state.copyWith(
@@ -183,8 +189,15 @@ class LearnController extends Notifier<LearnState> {
           isLoading: false,
           hasLoaded: true,
         );
-        logger.info('成功加载 ${loadedWords.length} 个单词');
+        logger.debug('成功加载 ${loadedWords.length} 个单词');
       }
+
+      // [LEARN] 记录单词加载完成 (Requirements: 2.2)
+      logger.learnWordsLoaded(
+        reviewCount: dueReviews.length,
+        newCount: newWords.length,
+        totalCount: loadedWords.length,
+      );
 
       // 开始计时当前单词
       _wordStartTime = DateTime.now();
@@ -254,6 +267,20 @@ class LearnController extends Notifier<LearnState> {
       final isNewWord = currentStudyWord.id == 0;
       StudyWord updatedWord;
 
+      // 记录更新前的参数（用于日志）
+      final beforeParams = {
+        'interval': currentStudyWord.interval.toStringAsFixed(2),
+        'easeFactor': currentStudyWord.easeFactor.toStringAsFixed(3),
+        'stability': currentStudyWord.stability.toStringAsFixed(2),
+        'difficulty': currentStudyWord.difficulty.toStringAsFixed(2),
+      };
+      final afterParams = {
+        'interval': srsOutput.interval.toStringAsFixed(2),
+        'easeFactor': srsOutput.easeFactor.toStringAsFixed(3),
+        'stability': srsOutput.stability.toStringAsFixed(2),
+        'difficulty': srsOutput.difficulty.toStringAsFixed(2),
+      };
+
       if (isNewWord) {
         // 新单词，创建
         final newWord = currentStudyWord.copyWith(
@@ -272,7 +299,7 @@ class LearnController extends Notifier<LearnState> {
         );
         final id = await _studyWordRepository.createStudyWord(newWord);
         updatedWord = newWord.copyWith(id: id);
-        logger.info('创建新学习记录: word_id=${updatedWord.wordId}, id=$id');
+        logger.debug('创建新学习记录: word_id=${updatedWord.wordId}, id=$id');
       } else {
         // 已有单词，更新
         updatedWord = currentStudyWord.copyWith(
@@ -291,8 +318,22 @@ class LearnController extends Notifier<LearnState> {
           updatedAt: now,
         );
         await _studyWordRepository.updateStudyWord(updatedWord);
-        logger.info('更新学习记录: word_id=${updatedWord.wordId}');
+        logger.debug('更新学习记录: word_id=${updatedWord.wordId}');
       }
+
+      // [ALGO] 记录参数更新 (Requirements: 5.3)
+      logger.algoParamsUpdate(
+        wordId: currentStudyWord.wordId,
+        before: beforeParams,
+        after: afterParams,
+      );
+
+      // [ALGO] 记录复习计划变更 (Requirements: 5.4)
+      logger.algoScheduleChange(
+        wordId: currentStudyWord.wordId,
+        oldSchedule: currentStudyWord.nextReviewAt,
+        newSchedule: srsOutput.nextReviewAt,
+      );
 
       // 3. 创建 StudyLog
       final log = StudyLog(
@@ -311,7 +352,7 @@ class LearnController extends Notifier<LearnState> {
         createdAt: now,
       );
       await _studyLogRepository.createLog(log);
-      logger.info(
+      logger.debug(
         '创建学习日志: type=${log.logType.description}, duration=${wordDurationMs}ms',
       );
 
@@ -331,7 +372,7 @@ class LearnController extends Notifier<LearnState> {
           updatedAt: now,
         );
         await _dailyStatRepository.updateDailyStat(_todayStat!);
-        logger.info(
+        logger.debug(
           '更新今日统计: learned=${_todayStat!.learnedWordsCount}, reviewed=${_todayStat!.reviewedWordsCount}',
         );
       }
@@ -350,7 +391,15 @@ class LearnController extends Notifier<LearnState> {
       );
       _wordStartTime = DateTime.now();
 
-      logger.info(
+      // [LEARN] 记录答案提交 (Requirements: 2.4)
+      logger.learnAnswerSubmit(
+        wordId: currentStudyWord.wordId,
+        rating: rating.name,
+        newInterval: srsOutput.interval,
+        newEaseFactor: srsOutput.easeFactor,
+      );
+
+      logger.debug(
         '提交答案: $rating, 进度: ${state.currentIndex}/${state.studyQueue.length}',
       );
     } catch (e, stackTrace) {
@@ -368,7 +417,7 @@ class LearnController extends Notifier<LearnState> {
     try {
       // 检查是否已经标记过
       if (state.learnedWordIds.contains(wordId)) {
-        logger.info('单词已标记为已学习，跳过: word_id=$wordId');
+        logger.debug('单词已标记为已学习，跳过: word_id=$wordId');
         return;
       }
 
@@ -378,7 +427,7 @@ class LearnController extends Notifier<LearnState> {
 
       // 1. 更新内存状态：添加到已学习集合
       state = state.copyWith(learnedWordIds: {...state.learnedWordIds, wordId});
-      logger.info('添加到已学习集合: word_id=$wordId');
+      logger.debug('添加到已学习集合: word_id=$wordId');
 
       // 2. 更新数据库：创建或更新 study_words 记录
       final existingStudyWord = await _studyWordRepository.getStudyWord(
@@ -399,7 +448,7 @@ class LearnController extends Notifier<LearnState> {
           updatedAt: now,
         );
         await _studyWordRepository.createStudyWord(newStudyWord);
-        logger.info('创建学习记录: word_id=$wordId');
+        logger.debug('创建学习记录: word_id=$wordId');
       } else if (existingStudyWord.userState == UserWordState.newWord) {
         // 更新现有记录为学习中
         final updatedStudyWord = existingStudyWord.copyWith(
@@ -409,7 +458,7 @@ class LearnController extends Notifier<LearnState> {
           updatedAt: now,
         );
         await _studyWordRepository.updateStudyWord(updatedStudyWord);
-        logger.info('更新学习记录: word_id=$wordId');
+        logger.debug('更新学习记录: word_id=$wordId');
       }
 
       // 3. 插入学习日志
@@ -422,7 +471,7 @@ class LearnController extends Notifier<LearnState> {
         createdAt: now,
       );
       await _studyLogRepository.createLog(log);
-      logger.info('插入学习日志: word_id=$wordId');
+      logger.debug('插入学习日志: word_id=$wordId');
     } catch (e, stackTrace) {
       logger.error('标记单词为已学习失败', e, stackTrace);
       // 不抛出异常，避免中断用户体验
@@ -436,7 +485,7 @@ class LearnController extends Notifier<LearnState> {
     try {
       // 1. 检查是否正在预加载或没有更多单词
       if (state.isPreloading || !state.hasMoreWords) {
-        logger.info(
+        logger.trace(
           '跳过预加载: isPreloading=${state.isPreloading}, hasMoreWords=${state.hasMoreWords}',
         );
         return;
@@ -444,17 +493,17 @@ class LearnController extends Notifier<LearnState> {
 
       // 2. 计算剩余单词数
       final remainingWords = state.studyQueue.length - state.currentIndex - 1;
-      logger.info('剩余单词数: $remainingWords');
+      logger.trace('剩余单词数: $remainingWords');
 
       // 3. 如果剩余单词数大于预加载阈值，则不需要预加载
       if (remainingWords > AppConstants.preloadThreshold) {
-        logger.info('剩余单词充足，无需预加载');
+        logger.trace('剩余单词充足，无需预加载');
         return;
       }
 
       // 4. 设置预加载状态
       state = state.copyWith(isPreloading: true);
-      logger.info('开始预加载单词...');
+      logger.debug('开始预加载单词...');
 
       // 5. 获取已加载的单词 ID 列表（用于排除）
       final loadedWordIds = state.studyQueue.map((sw) => sw.wordId).toList();
@@ -467,7 +516,7 @@ class LearnController extends Notifier<LearnState> {
 
       // 7. 如果返回空列表，设置 hasMoreWords = false
       if (newWords.isEmpty) {
-        logger.info('没有更多单词可加载');
+        logger.debug('没有更多单词可加载');
         state = state.copyWith(isPreloading: false, hasMoreWords: false);
         return;
       }
@@ -509,7 +558,7 @@ class LearnController extends Notifier<LearnState> {
         isPreloading: false,
       );
 
-      logger.info(
+      logger.debug(
         '预加载完成: 新增 ${newStudyWords.length} 个单词，队列总数: ${updatedQueue.length}',
       );
     } catch (e, stackTrace) {
@@ -527,7 +576,7 @@ class LearnController extends Notifier<LearnState> {
   Future<void> onPageChanged(int newIndex) async {
     try {
       final oldIndex = state.currentIndex;
-      logger.info('页面切换: $oldIndex -> $newIndex');
+      logger.debug('页面切换: $oldIndex -> $newIndex');
 
       // 1. 如果是向前滑动（newIndex > currentIndex），标记上一个单词为已学习
       if (newIndex > oldIndex && oldIndex < state.studyQueue.length) {
@@ -537,15 +586,25 @@ class LearnController extends Notifier<LearnState> {
         // 检查单词是否已在 learnedWordIds 中，避免重复标记
         if (!state.learnedWordIds.contains(previousWordId)) {
           await markWordAsLearned(previousWordId);
-          logger.info('标记单词为已学习: word_id=$previousWordId');
+          logger.debug('标记单词为已学习: word_id=$previousWordId');
         } else {
-          logger.info('单词已标记，跳过: word_id=$previousWordId');
+          logger.debug('单词已标记，跳过: word_id=$previousWordId');
         }
       }
 
       // 2. 更新 currentIndex 为 newIndex
       state = state.copyWith(currentIndex: newIndex);
-      logger.info('更新索引: $newIndex');
+      logger.debug('更新索引: $newIndex');
+
+      // [LEARN] 记录单词查看 (Requirements: 2.3)
+      if (newIndex < state.studyQueue.length) {
+        final currentWord = state.studyQueue[newIndex];
+        logger.learnWordView(
+          wordId: currentWord.wordId,
+          position: newIndex + 1,
+          total: state.studyQueue.length,
+        );
+      }
 
       // 3. 调用 checkAndPreload 检查是否需要预加载
       await checkAndPreload();
@@ -573,7 +632,9 @@ class LearnController extends Notifier<LearnState> {
         durationMs: durationMs,
       );
 
-      logger.info('更新每日统计: learnedCount=$learnedCount, durationMs=$durationMs');
+      logger.debug(
+        '更新每日统计: learnedCount=$learnedCount, durationMs=$durationMs',
+      );
     } catch (e, stackTrace) {
       logger.error('更新每日统计失败', e, stackTrace);
       // 不抛出异常，避免中断用户体验
@@ -586,7 +647,13 @@ class LearnController extends Notifier<LearnState> {
       final sessionDuration = DateTime.now()
           .difference(_sessionStartTime!)
           .inMilliseconds;
-      logger.info('学习会话结束，总时长: ${sessionDuration}ms');
+
+      // [LEARN] 记录学习会话结束 (Requirements: 2.5)
+      logger.learnSessionEnd(
+        durationMs: sessionDuration,
+        learnedCount: _todayStat!.learnedWordsCount,
+        reviewedCount: _todayStat!.reviewedWordsCount,
+      );
     }
 
     // 重置会话状态
@@ -606,7 +673,7 @@ class LearnController extends Notifier<LearnState> {
       state = state.copyWith(reviewPhase: ReviewPhase.answer);
       // 自动播放单词音频
       playWordAudio();
-      logger.info('显示答案');
+      logger.debug('显示答案');
     }
   }
 
@@ -618,7 +685,7 @@ class LearnController extends Notifier<LearnState> {
         currentIndex: state.currentIndex + 1,
         reviewPhase: ReviewPhase.question, // 重置为提问阶段
       );
-      logger.info(
+      logger.debug(
         '切换到下一个单词: ${state.currentIndex + 1}/${state.studyQueue.length}',
       );
     }
@@ -632,7 +699,7 @@ class LearnController extends Notifier<LearnState> {
         currentIndex: state.currentIndex - 1,
         reviewPhase: ReviewPhase.question, // 重置为提问阶段
       );
-      logger.info(
+      logger.debug(
         '切换到上一个单词: ${state.currentIndex + 1}/${state.studyQueue.length}',
       );
     }
@@ -655,7 +722,7 @@ class LearnController extends Notifier<LearnState> {
           isPlayingExampleAudio: false,
           playingExampleIndex: null,
         );
-        logger.info('停止单词音频');
+        logger.debug('停止单词音频');
         return;
       }
 
@@ -672,7 +739,7 @@ class LearnController extends Notifier<LearnState> {
       final audio = currentWord.audios.first;
       state = state.copyWith(isPlayingWordAudio: true);
       await _audioService.playWordAudio(audio);
-      logger.info('播放单词音频: ${currentWord.word.word}');
+      logger.debug('播放单词音频: ${currentWord.word.word}');
     } catch (e, stackTrace) {
       logger.error('播放单词音频失败', e, stackTrace);
       state = state.copyWith(
@@ -704,7 +771,7 @@ class LearnController extends Notifier<LearnState> {
           isPlayingExampleAudio: false,
           playingExampleIndex: null,
         );
-        logger.info('停止例句音频');
+        logger.debug('停止例句音频');
         return;
       }
 
@@ -725,7 +792,7 @@ class LearnController extends Notifier<LearnState> {
         playingExampleIndex: exampleIndex,
       );
       await _audioService.playExampleAudio(example.audio!);
-      logger.info('播放例句音频: 例句 ${exampleIndex + 1}');
+      logger.debug('播放例句音频: 例句 ${exampleIndex + 1}');
     } catch (e, stackTrace) {
       logger.error('播放例句音频失败', e, stackTrace);
       state = state.copyWith(

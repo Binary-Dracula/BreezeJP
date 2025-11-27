@@ -1,6 +1,7 @@
 import 'srs_types.dart';
 import 'sm2_algorithm.dart';
 import 'fsrs_algorithm.dart';
+import '../utils/app_logger.dart';
 
 /// 算法服务
 /// 负责管理和调度不同的 SRS 算法
@@ -20,12 +21,22 @@ class AlgorithmService {
     required AlgorithmType algorithmType,
     required SRSInput input,
   }) {
+    // [ALGO] 记录 SRS 计算开始 (Requirements: 5.1)
+    final algorithmName = algorithmType == AlgorithmType.fsrs ? 'FSRS' : 'SM-2';
+    logger.algoCalculateStart(algorithmType: algorithmName, input: input);
+
+    SRSOutput output;
     switch (algorithmType) {
       case AlgorithmType.sm2:
-        return _sm2.calculate(input);
+        output = _sm2.calculate(input);
       case AlgorithmType.fsrs:
-        return _fsrs.calculate(input);
+        output = _fsrs.calculate(input);
     }
+
+    // [ALGO] 记录 SRS 计算完成 (Requirements: 5.2)
+    logger.algoCalculateComplete(algorithmType: algorithmName, output: output);
+
+    return output;
   }
 
   /// 获取默认算法 (免费版默认 SM-2)

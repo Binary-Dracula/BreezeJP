@@ -174,3 +174,70 @@ Text(l10n.appName);
 ```
 
 添加翻译：在 `app_zh.arb` 添加键值对，保存后自动生成代码
+
+## Log 日志规则
+
+### 日志工具
+
+使用 `logger` 包进行日志输出，统一通过 `lib/core/utils/app_logger.dart` 管理。
+
+### 日志级别
+
+| 级别 | 使用场景 | 方法 |
+|------|----------|------|
+| Trace | 详细的调试信息（开发阶段） | `logger.t()` |
+| Debug | 调试信息（开发阶段） | `logger.d()` |
+| Info | 一般信息（关键流程节点） | `logger.i()` |
+| Warning | 警告信息（可恢复的异常） | `logger.w()` |
+| Error | 错误信息（需要关注的异常） | `logger.e()` |
+| Fatal | 致命错误（应用崩溃级别） | `logger.f()` |
+
+### 日志规范
+
+```dart
+// ✅ 推荐：使用 logger
+import 'package:breeze_jp/core/utils/app_logger.dart';
+
+logger.i('用户开始学习 Session');
+logger.d('加载单词详情: wordId=$wordId');
+logger.w('音频文件不存在: $audioPath');
+logger.e('数据库查询失败', error: e, stackTrace: stackTrace);
+
+// ❌ 禁止：使用 print()
+print('这是不规范的日志');
+```
+
+### 日志内容要求
+
+- 使用中文描述业务逻辑
+- 关键变量使用英文命名并附带值
+- 异常日志必须包含 `error` 和 `stackTrace`
+- 避免在循环中输出大量日志
+
+### 关键日志点
+
+| 场景 | 级别 | 示例 |
+|------|------|------|
+| 应用启动 | Info | `logger.i('应用启动完成')` |
+| 数据库初始化 | Info | `logger.i('数据库初始化成功')` |
+| 用户操作 | Info | `logger.i('用户点击开始学习')` |
+| 数据加载 | Debug | `logger.d('加载待复习单词: count=$count')` |
+| 算法计算 | Debug | `logger.d('SM-2 计算结果: interval=$interval')` |
+| 网络请求 | Debug | `logger.d('API 请求: $url')` |
+| 文件操作 | Warning | `logger.w('音频文件缺失: $filename')` |
+| 异常捕获 | Error | `logger.e('Repository 操作失败', error: e)` |
+| 崩溃级错误 | Fatal | `logger.f('数据库损坏无法恢复', error: e)` |
+
+### 生产环境配置
+
+在 `main.dart` 中根据编译模式调整日志级别：
+
+```dart
+void main() {
+  // Release 模式下仅输出 Warning 及以上级别
+  if (kReleaseMode) {
+    Logger.level = Level.warning;
+  }
+  runApp(const MyApp());
+}
+```

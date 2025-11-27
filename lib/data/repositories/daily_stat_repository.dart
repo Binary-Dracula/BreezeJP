@@ -15,12 +15,6 @@ class DailyStatRepository {
   Future<DailyStat?> getDailyStat(int userId, DateTime date) async {
     try {
       final dateStr = _formatDate(date);
-      logger.database(
-        'SELECT',
-        table: 'daily_stats',
-        data: {'user_id': userId, 'date': dateStr},
-      );
-
       final db = await _db;
       final results = await db.query(
         'daily_stats',
@@ -29,10 +23,21 @@ class DailyStatRepository {
         limit: 1,
       );
 
+      logger.dbQuery(
+        table: 'daily_stats',
+        where: 'user_id = $userId AND date = $dateStr',
+        resultCount: results.length,
+      );
+
       if (results.isEmpty) return null;
       return DailyStat.fromMap(results.first);
     } catch (e, stackTrace) {
-      logger.error('获取每日统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -41,15 +46,22 @@ class DailyStatRepository {
   Future<int> createDailyStat(DailyStat stat) async {
     try {
       final data = stat.toMapForInsert();
-      logger.database('INSERT', table: 'daily_stats', data: data);
-
       final db = await _db;
       final id = await db.insert('daily_stats', data);
 
-      logger.info('创建每日统计: date=${stat.dateString}, id=$id');
+      logger.dbInsert(
+        table: 'daily_stats',
+        id: id,
+        keyFields: {'date': stat.dateString, 'userId': stat.userId},
+      );
       return id;
     } catch (e, stackTrace) {
-      logger.error('创建每日统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'INSERT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -57,19 +69,30 @@ class DailyStatRepository {
   /// 更新每日统计
   Future<void> updateDailyStat(DailyStat stat) async {
     try {
-      logger.database('UPDATE', table: 'daily_stats', data: stat.toMap());
-
       final db = await _db;
-      await db.update(
+      final affectedRows = await db.update(
         'daily_stats',
         stat.toMap(),
         where: 'id = ?',
         whereArgs: [stat.id],
       );
 
-      logger.info('更新每日统计: id=${stat.id}');
+      logger.dbUpdate(
+        table: 'daily_stats',
+        affectedRows: affectedRows,
+        updatedFields: [
+          'total_study_time_ms',
+          'learned_words_count',
+          'reviewed_words_count',
+        ],
+      );
     } catch (e, stackTrace) {
-      logger.error('更新每日统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -78,10 +101,20 @@ class DailyStatRepository {
   Future<void> deleteDailyStat(int id) async {
     try {
       final db = await _db;
-      await db.delete('daily_stats', where: 'id = ?', whereArgs: [id]);
-      logger.info('删除每日统计: id=$id');
+      final deletedRows = await db.delete(
+        'daily_stats',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      logger.dbDelete(table: 'daily_stats', deletedRows: deletedRows);
     } catch (e, stackTrace) {
-      logger.error('删除每日统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -105,9 +138,20 @@ class DailyStatRepository {
         offset: offset,
       );
 
+      logger.dbQuery(
+        table: 'daily_stats',
+        where: 'user_id = $userId',
+        resultCount: results.length,
+      );
+
       return results.map((map) => DailyStat.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取用户每日统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -130,9 +174,20 @@ class DailyStatRepository {
         orderBy: 'date ASC',
       );
 
+      logger.dbQuery(
+        table: 'daily_stats',
+        where: 'user_id = $userId AND date range',
+        resultCount: results.length,
+      );
+
       return results.map((map) => DailyStat.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取日期范围统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -152,7 +207,12 @@ class DailyStatRepository {
         endDate: endDate,
       );
     } catch (e, stackTrace) {
-      logger.error('获取最近统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -174,10 +234,6 @@ class DailyStatRepository {
   }
 
   /// 更新每日统计（用于学习会话结束时）
-  ///
-  /// 查询当天是否已有记录
-  /// 如果没有记录，创建新记录
-  /// 如果有记录，累加更新 total_study_time_ms 和 learned_words_count
   Future<void> updateDailyStats({
     required int userId,
     required int learnedCount,
@@ -199,7 +255,7 @@ class DailyStatRepository {
 
       if (existing.isEmpty) {
         // 创建新记录
-        await db.insert('daily_stats', {
+        final id = await db.insert('daily_stats', {
           'user_id': userId,
           'date': dateStr,
           'total_study_time_ms': durationMs,
@@ -210,13 +266,16 @@ class DailyStatRepository {
           'created_at': now,
           'updated_at': now,
         });
-        logger.info(
-          '创建每日统计: date=$dateStr, learned=$learnedCount, duration=${durationMs}ms',
+
+        logger.dbInsert(
+          table: 'daily_stats',
+          id: id,
+          keyFields: {'date': dateStr, 'learned': learnedCount},
         );
       } else {
         // 累加更新
         final existingStat = DailyStat.fromMap(existing.first);
-        await db.update(
+        final affectedRows = await db.update(
           'daily_stats',
           {
             'total_study_time_ms': existingStat.totalStudyTimeMs + durationMs,
@@ -227,17 +286,24 @@ class DailyStatRepository {
           where: 'user_id = ? AND date = ?',
           whereArgs: [userId, dateStr],
         );
-        logger.info(
-          '累加更新每日统计: date=$dateStr, +learned=$learnedCount, +duration=${durationMs}ms',
+
+        logger.dbUpdate(
+          table: 'daily_stats',
+          affectedRows: affectedRows,
+          updatedFields: ['total_study_time_ms', 'learned_words_count'],
         );
       }
     } catch (e, stackTrace) {
-      logger.error('更新每日统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
 
-  /// 增加学习时长
   /// 增加学习时长
   Future<void> incrementStudyTime(
     int userId,
@@ -262,10 +328,13 @@ class DailyStatRepository {
         );
         await updateDailyStat(updated);
       }
-
-      logger.info('增加学习时长: +${milliseconds}ms');
     } catch (e, stackTrace) {
-      logger.error('增加学习时长失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -318,7 +387,6 @@ class DailyStatRepository {
       final db = await _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-      // 使用 INSERT OR REPLACE 确保记录存在
       await db.rawInsert(
         '''
         INSERT INTO daily_stats (user_id, date, $fieldName, created_at, updated_at)
@@ -330,9 +398,18 @@ class DailyStatRepository {
         [userId, dateStr, increment, now, now, increment, now],
       );
 
-      logger.info('增加 $fieldName: +$increment');
+      logger.dbUpdate(
+        table: 'daily_stats',
+        affectedRows: 1,
+        updatedFields: [fieldName],
+      );
     } catch (e, stackTrace) {
-      logger.error('增加字段失败: $fieldName', e, stackTrace);
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -361,9 +438,20 @@ class DailyStatRepository {
         [userId],
       );
 
+      logger.dbQuery(
+        table: 'daily_stats',
+        where: 'user_id = $userId (weekly summary)',
+        resultCount: 1,
+      );
+
       return result.first;
     } catch (e, stackTrace) {
-      logger.error('获取本周统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -390,9 +478,20 @@ class DailyStatRepository {
         [userId],
       );
 
+      logger.dbQuery(
+        table: 'daily_stats',
+        where: 'user_id = $userId (monthly summary)',
+        resultCount: 1,
+      );
+
       return result.first;
     } catch (e, stackTrace) {
-      logger.error('获取本月统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -402,7 +501,6 @@ class DailyStatRepository {
     try {
       final db = await _db;
 
-      // 获取最近的学习日期
       final recentDays = await db.rawQuery(
         '''
         SELECT date
@@ -415,9 +513,14 @@ class DailyStatRepository {
         [userId],
       );
 
+      logger.dbQuery(
+        table: 'daily_stats',
+        where: 'user_id = $userId (streak)',
+        resultCount: recentDays.length,
+      );
+
       if (recentDays.isEmpty) return 0;
 
-      // 检查是否包含今天或昨天
       final today = DateTime.now();
       final yesterday = today.subtract(const Duration(days: 1));
       final todayStr = _formatDate(today);
@@ -425,10 +528,9 @@ class DailyStatRepository {
 
       final latestDate = recentDays.first['date'] as String;
       if (latestDate != todayStr && latestDate != yesterdayStr) {
-        return 0; // 连续天数已中断
+        return 0;
       }
 
-      // 计算连续天数
       int streak = 0;
       DateTime currentDate = DateTime.parse(latestDate);
 
@@ -447,7 +549,12 @@ class DailyStatRepository {
 
       return streak;
     } catch (e, stackTrace) {
-      logger.error('计算连续天数失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -471,7 +578,12 @@ class DailyStatRepository {
 
       return heatmap;
     } catch (e, stackTrace) {
-      logger.error('获取热力图数据失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -506,10 +618,15 @@ class DailyStatRepository {
         whereArgs: [dateStr],
       );
 
-      logger.info('删除旧统计: $count 条');
+      logger.dbDelete(table: 'daily_stats', deletedRows: count);
       return count;
     } catch (e, stackTrace) {
-      logger.error('删除旧统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -524,10 +641,15 @@ class DailyStatRepository {
         whereArgs: [userId],
       );
 
-      logger.info('删除用户统计: $count 条');
+      logger.dbDelete(table: 'daily_stats', deletedRows: count);
       return count;
     } catch (e, stackTrace) {
-      logger.error('删除用户统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

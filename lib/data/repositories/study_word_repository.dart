@@ -14,13 +14,8 @@ class StudyWordRepository {
   /// 获取用户对某个单词的学习记录
   Future<StudyWord?> getStudyWord(int userId, int wordId) async {
     try {
-      logger.database(
-        'SELECT',
-        table: 'study_words',
-        data: {'user_id': userId, 'word_id': wordId},
-      );
-
       final db = await _db;
+      final whereClause = 'user_id = $userId AND word_id = $wordId';
       final results = await db.query(
         'study_words',
         where: 'user_id = ? AND word_id = ?',
@@ -28,10 +23,21 @@ class StudyWordRepository {
         limit: 1,
       );
 
+      logger.dbQuery(
+        table: 'study_words',
+        where: whereClause,
+        resultCount: results.length,
+      );
+
       if (results.isEmpty) return null;
       return StudyWord.fromMap(results.first);
     } catch (e, stackTrace) {
-      logger.error('获取学习记录失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -40,15 +46,22 @@ class StudyWordRepository {
   Future<int> createStudyWord(StudyWord studyWord) async {
     try {
       final data = studyWord.toMapForInsert();
-      logger.database('INSERT', table: 'study_words', data: data);
-
       final db = await _db;
       final id = await db.insert('study_words', data);
 
-      logger.info('创建学习记录成功: word_id=${studyWord.wordId}, id=$id');
+      logger.dbInsert(
+        table: 'study_words',
+        id: id,
+        keyFields: {'wordId': studyWord.wordId, 'userId': studyWord.userId},
+      );
       return id;
     } catch (e, stackTrace) {
-      logger.error('创建学习记录失败', e, stackTrace);
+      logger.dbError(
+        operation: 'INSERT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -56,19 +69,31 @@ class StudyWordRepository {
   /// 更新学习记录
   Future<void> updateStudyWord(StudyWord studyWord) async {
     try {
-      logger.database('UPDATE', table: 'study_words', data: studyWord.toMap());
-
       final db = await _db;
-      await db.update(
+      final affectedRows = await db.update(
         'study_words',
         studyWord.toMap(),
         where: 'id = ?',
         whereArgs: [studyWord.id],
       );
 
-      logger.info('更新学习记录成功: id=${studyWord.id}');
+      logger.dbUpdate(
+        table: 'study_words',
+        affectedRows: affectedRows,
+        updatedFields: [
+          'user_state',
+          'interval',
+          'ease_factor',
+          'next_review_at',
+        ],
+      );
     } catch (e, stackTrace) {
-      logger.error('更新学习记录失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -76,14 +101,21 @@ class StudyWordRepository {
   /// 删除学习记录
   Future<void> deleteStudyWord(int id) async {
     try {
-      logger.database('DELETE', table: 'study_words', data: {'id': id});
-
       final db = await _db;
-      await db.delete('study_words', where: 'id = ?', whereArgs: [id]);
+      final deletedRows = await db.delete(
+        'study_words',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
 
-      logger.info('删除学习记录成功: id=$id');
+      logger.dbDelete(table: 'study_words', deletedRows: deletedRows);
     } catch (e, stackTrace) {
-      logger.error('删除学习记录失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -98,13 +130,10 @@ class StudyWordRepository {
     int? offset,
   }) async {
     try {
-      logger.database(
-        'SELECT',
-        table: 'study_words',
-        data: {'user_id': userId},
-      );
-
       final db = await _db;
+      final whereClause = state != null
+          ? 'user_id = $userId AND user_state = ${state.value}'
+          : 'user_id = $userId';
       final results = await db.query(
         'study_words',
         where: state != null ? 'user_id = ? AND user_state = ?' : 'user_id = ?',
@@ -114,9 +143,20 @@ class StudyWordRepository {
         offset: offset,
       );
 
+      logger.dbQuery(
+        table: 'study_words',
+        where: whereClause,
+        resultCount: results.length,
+      );
+
       return results.map((map) => StudyWord.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取用户学习记录失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -124,10 +164,10 @@ class StudyWordRepository {
   /// 获取需要复习的单词
   Future<List<StudyWord>> getDueReviews(int userId, {int? limit}) async {
     try {
-      logger.database('SELECT DUE REVIEWS', table: 'study_words');
-
       final db = await _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final whereClause =
+          'user_id = $userId AND user_state = 1 AND next_review_at <= $now';
 
       final results = await db.query(
         'study_words',
@@ -137,9 +177,20 @@ class StudyWordRepository {
         limit: limit,
       );
 
+      logger.dbQuery(
+        table: 'study_words',
+        where: whereClause,
+        resultCount: results.length,
+      );
+
       return results.map((map) => StudyWord.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取待复习单词失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -148,6 +199,7 @@ class StudyWordRepository {
   Future<List<StudyWord>> getNewWords(int userId, {int? limit}) async {
     try {
       final db = await _db;
+      final whereClause = 'user_id = $userId AND user_state = 0';
       final results = await db.query(
         'study_words',
         where: 'user_id = ? AND user_state = 0',
@@ -156,9 +208,20 @@ class StudyWordRepository {
         limit: limit,
       );
 
+      logger.dbQuery(
+        table: 'study_words',
+        where: whereClause,
+        resultCount: results.length,
+      );
+
       return results.map((map) => StudyWord.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取新单词失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -168,8 +231,6 @@ class StudyWordRepository {
   /// 获取用户的学习统计
   Future<Map<String, dynamic>> getUserStatistics(int userId) async {
     try {
-      logger.database('SELECT STATISTICS', table: 'study_words');
-
       final db = await _db;
       final result = await db.rawQuery(
         '''
@@ -188,9 +249,20 @@ class StudyWordRepository {
         [userId],
       );
 
+      logger.dbQuery(
+        table: 'study_words',
+        where: 'user_id = $userId (statistics)',
+        resultCount: 1,
+      );
+
       return result.first;
     } catch (e, stackTrace) {
-      logger.error('获取学习统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -210,9 +282,20 @@ class StudyWordRepository {
         [userId, now],
       );
 
+      logger.dbQuery(
+        table: 'study_words',
+        where: 'user_id = $userId AND user_state = 1 (due count)',
+        resultCount: 1,
+      );
+
       return result.first['count'] as int;
     } catch (e, stackTrace) {
-      logger.error('获取待复习数量失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -251,9 +334,13 @@ class StudyWordRepository {
       );
 
       await updateStudyWord(updated);
-      logger.info('记录答对: word_id=$wordId, 新间隔=$newInterval天');
     } catch (e, stackTrace) {
-      logger.error('记录答对失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -291,9 +378,13 @@ class StudyWordRepository {
       );
 
       await updateStudyWord(updated);
-      logger.info('记录答错: word_id=$wordId, 新间隔=$newInterval天');
     } catch (e, stackTrace) {
-      logger.error('记录答错失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -312,9 +403,13 @@ class StudyWordRepository {
       );
 
       await updateStudyWord(updated);
-      logger.info('标记为已掌握: word_id=$wordId');
     } catch (e, stackTrace) {
-      logger.error('标记已掌握失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -333,9 +428,13 @@ class StudyWordRepository {
       );
 
       await updateStudyWord(updated);
-      logger.info('标记为忽略: word_id=$wordId');
     } catch (e, stackTrace) {
-      logger.error('标记忽略失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -364,9 +463,13 @@ class StudyWordRepository {
       );
 
       await updateStudyWord(updated);
-      logger.info('重置学习进度: word_id=$wordId');
     } catch (e, stackTrace) {
-      logger.error('重置学习进度失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

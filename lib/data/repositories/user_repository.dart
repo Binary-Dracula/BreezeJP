@@ -14,15 +14,22 @@ class UserRepository {
   /// 创建用户
   Future<int> createUser(User user) async {
     try {
-      logger.database('INSERT', table: 'users', data: user.toMap());
-
       final db = await _db;
       final id = await db.insert('users', user.toMap());
 
-      logger.info('创建用户成功: username=${user.username}');
+      logger.dbInsert(
+        table: 'users',
+        id: id,
+        keyFields: {'username': user.username},
+      );
       return id;
     } catch (e, stackTrace) {
-      logger.error('创建用户失败', e, stackTrace);
+      logger.dbError(
+        operation: 'INSERT',
+        table: 'users',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -30,8 +37,6 @@ class UserRepository {
   /// 根据 ID 获取用户
   Future<User?> getUserById(int id) async {
     try {
-      logger.database('SELECT', table: 'users', data: {'id': id});
-
       final db = await _db;
       final results = await db.query(
         'users',
@@ -40,10 +45,21 @@ class UserRepository {
         limit: 1,
       );
 
+      logger.dbQuery(
+        table: 'users',
+        where: 'id = $id',
+        resultCount: results.length,
+      );
+
       if (results.isEmpty) return null;
       return User.fromMap(results.first);
     } catch (e, stackTrace) {
-      logger.error('获取用户失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'users',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -51,8 +67,6 @@ class UserRepository {
   /// 根据用户名获取用户
   Future<User?> getUserByUsername(String username) async {
     try {
-      logger.database('SELECT', table: 'users', data: {'username': username});
-
       final db = await _db;
       final results = await db.query(
         'users',
@@ -61,10 +75,21 @@ class UserRepository {
         limit: 1,
       );
 
+      logger.dbQuery(
+        table: 'users',
+        where: 'username = $username',
+        resultCount: results.length,
+      );
+
       if (results.isEmpty) return null;
       return User.fromMap(results.first);
     } catch (e, stackTrace) {
-      logger.error('获取用户失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'users',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -72,19 +97,26 @@ class UserRepository {
   /// 更新用户
   Future<void> updateUser(User user) async {
     try {
-      logger.database('UPDATE', table: 'users', data: user.toMap());
-
       final db = await _db;
-      await db.update(
+      final affectedRows = await db.update(
         'users',
         user.toMap(),
         where: 'id = ?',
         whereArgs: [user.id],
       );
 
-      logger.info('更新用户成功: id=${user.id}');
+      logger.dbUpdate(
+        table: 'users',
+        affectedRows: affectedRows,
+        updatedFields: ['username', 'nickname', 'email', 'avatar_url'],
+      );
     } catch (e, stackTrace) {
-      logger.error('更新用户失败', e, stackTrace);
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'users',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -92,14 +124,21 @@ class UserRepository {
   /// 删除用户
   Future<void> deleteUser(int id) async {
     try {
-      logger.database('DELETE', table: 'users', data: {'id': id});
-
       final db = await _db;
-      await db.delete('users', where: 'id = ?', whereArgs: [id]);
+      final deletedRows = await db.delete(
+        'users',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
 
-      logger.info('删除用户成功: id=$id');
+      logger.dbDelete(table: 'users', deletedRows: deletedRows);
     } catch (e, stackTrace) {
-      logger.error('删除用户失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'users',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -107,14 +146,19 @@ class UserRepository {
   /// 获取所有用户
   Future<List<User>> getAllUsers() async {
     try {
-      logger.database('SELECT ALL', table: 'users');
-
       final db = await _db;
       final results = await db.query('users', orderBy: 'created_at DESC');
 
+      logger.dbQuery(table: 'users', where: null, resultCount: results.length);
+
       return results.map((map) => User.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取所有用户失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'users',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

@@ -15,17 +15,22 @@ class StudyLogRepository {
   Future<int> createLog(StudyLog log) async {
     try {
       final data = log.toMapForInsert();
-      logger.database('INSERT', table: 'study_logs', data: data);
-
       final db = await _db;
       final id = await db.insert('study_logs', data);
 
-      logger.info(
-        '创建学习日志: type=${log.logType.description}, word_id=${log.wordId}, id=$id',
+      logger.dbInsert(
+        table: 'study_logs',
+        id: id,
+        keyFields: {'wordId': log.wordId, 'logType': log.logType.description},
       );
       return id;
     } catch (e, stackTrace) {
-      logger.error('创建学习日志失败', e, stackTrace);
+      logger.dbError(
+        operation: 'INSERT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -41,9 +46,18 @@ class StudyLogRepository {
       }
 
       await batch.commit(noResult: true);
-      logger.info('批量创建学习日志: ${logs.length} 条');
+      logger.dbInsert(
+        table: 'study_logs',
+        id: 0,
+        keyFields: {'batchCount': logs.length},
+      );
     } catch (e, stackTrace) {
-      logger.error('批量创建学习日志失败', e, stackTrace);
+      logger.dbError(
+        operation: 'BATCH INSERT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -59,10 +73,21 @@ class StudyLogRepository {
         limit: 1,
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'id = $id',
+        resultCount: results.length,
+      );
+
       if (results.isEmpty) return null;
       return StudyLog.fromMap(results.first);
     } catch (e, stackTrace) {
-      logger.error('获取日志详情失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -71,10 +96,20 @@ class StudyLogRepository {
   Future<void> deleteLog(int id) async {
     try {
       final db = await _db;
-      await db.delete('study_logs', where: 'id = ?', whereArgs: [id]);
-      logger.info('删除学习日志: id=$id');
+      final deletedRows = await db.delete(
+        'study_logs',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      logger.dbDelete(table: 'study_logs', deletedRows: deletedRows);
     } catch (e, stackTrace) {
-      logger.error('删除学习日志失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -88,8 +123,6 @@ class StudyLogRepository {
     int? offset,
   }) async {
     try {
-      logger.database('SELECT', table: 'study_logs', data: {'user_id': userId});
-
       final db = await _db;
       final results = await db.query(
         'study_logs',
@@ -100,9 +133,20 @@ class StudyLogRepository {
         offset: offset,
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId',
+        resultCount: results.length,
+      );
+
       return results.map((map) => StudyLog.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取用户学习历史失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -118,9 +162,20 @@ class StudyLogRepository {
         orderBy: 'created_at ASC',
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId AND word_id = $wordId',
+        resultCount: results.length,
+      );
+
       return results.map((map) => StudyLog.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取单词学习历史失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -141,9 +196,20 @@ class StudyLogRepository {
         limit: limit,
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId AND log_type = ${logType.value}',
+        resultCount: results.length,
+      );
+
       return results.map((map) => StudyLog.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取特定类型日志失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -166,9 +232,20 @@ class StudyLogRepository {
         orderBy: 'created_at DESC',
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId AND date range',
+        resultCount: results.length,
+      );
+
       return results.map((map) => StudyLog.fromMap(map)).toList();
     } catch (e, stackTrace) {
-      logger.error('获取日期范围日志失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -181,8 +258,6 @@ class StudyLogRepository {
     int days = 30,
   }) async {
     try {
-      logger.database('SELECT DAILY STATS', table: 'study_logs');
-
       final db = await _db;
       final startDate = DateTime.now().subtract(Duration(days: days));
       final startTimestamp = startDate.millisecondsSinceEpoch ~/ 1000;
@@ -204,9 +279,20 @@ class StudyLogRepository {
         [userId, startTimestamp],
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId (daily stats)',
+        resultCount: results.length,
+      );
+
       return results;
     } catch (e, stackTrace) {
-      logger.error('获取每日统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -225,6 +311,12 @@ class StudyLogRepository {
         [userId],
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId (rating distribution)',
+        resultCount: results.length,
+      );
+
       final distribution = <ReviewRating, int>{};
       for (final row in results) {
         final rating = ReviewRating.fromValue(row['rating'] as int);
@@ -234,7 +326,12 @@ class StudyLogRepository {
 
       return distribution;
     } catch (e, stackTrace) {
-      logger.error('获取评分分布失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -263,9 +360,20 @@ class StudyLogRepository {
         [userId, startTimestamp],
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId (time stats)',
+        resultCount: 1,
+      );
+
       return result.first;
     } catch (e, stackTrace) {
-      logger.error('获取时长统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -289,6 +397,12 @@ class StudyLogRepository {
         [userId, startTimestamp],
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId (heatmap)',
+        resultCount: results.length,
+      );
+
       final heatmap = <String, int>{};
       for (final row in results) {
         final date = row['date'] as String;
@@ -298,7 +412,12 @@ class StudyLogRepository {
 
       return heatmap;
     } catch (e, stackTrace) {
-      logger.error('获取热力图数据失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -324,9 +443,20 @@ class StudyLogRepository {
         [userId],
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId (overall stats)',
+        resultCount: 1,
+      );
+
       return result.first;
     } catch (e, stackTrace) {
-      logger.error('获取总体统计失败', e, stackTrace);
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -451,10 +581,15 @@ class StudyLogRepository {
         whereArgs: [timestamp],
       );
 
-      logger.info('删除旧日志: $count 条');
+      logger.dbDelete(table: 'study_logs', deletedRows: count);
       return count;
     } catch (e, stackTrace) {
-      logger.error('删除旧日志失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -469,10 +604,15 @@ class StudyLogRepository {
         whereArgs: [userId],
       );
 
-      logger.info('删除用户日志: $count 条');
+      logger.dbDelete(table: 'study_logs', deletedRows: count);
       return count;
     } catch (e, stackTrace) {
-      logger.error('删除用户日志失败', e, stackTrace);
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

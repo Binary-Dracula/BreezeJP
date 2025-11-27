@@ -1,6 +1,10 @@
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
 
+import '../algorithm/srs_types.dart';
+import 'log_category.dart';
+import 'log_formatter.dart';
+
 /// 应用日志工具类
 /// 统一管理所有日志输出
 class AppLogger {
@@ -69,10 +73,241 @@ class AppLogger {
     this.error('❌ [$method] $url\nError: $error');
   }
 
-  /// 数据库日志
+  /// 数据库日志 (旧方法，保留兼容性)
   void database(String operation, {String? table, dynamic data}) {
     debug(
       '💾 DB[$operation]${table != null ? ' $table' : ''}${data != null ? '\nData: $data' : ''}',
+    );
+  }
+
+  // ==================== 学习流程日志 [LEARN] ====================
+
+  /// 记录学习会话开始
+  /// Requirements: 1.2, 2.1
+  void learnSessionStart({required int userId}) {
+    final timestamp = LogFormatter.formatTimestamp(DateTime.now());
+    info(
+      '${LogCategory.learn.prefix} session_start: userId=$userId, timestamp=$timestamp',
+    );
+  }
+
+  /// 记录单词加载
+  /// Requirements: 1.2, 2.2
+  void learnWordsLoaded({
+    required int reviewCount,
+    required int newCount,
+    required int totalCount,
+  }) {
+    info(
+      '${LogCategory.learn.prefix} words_loaded: review=$reviewCount, new=$newCount, total=$totalCount',
+    );
+  }
+
+  /// 记录单词查看
+  /// Requirements: 1.2, 2.3
+  void learnWordView({
+    required int wordId,
+    required int position,
+    required int total,
+  }) {
+    info(
+      '${LogCategory.learn.prefix} word_view: wordId=$wordId, position=$position/$total',
+    );
+  }
+
+  /// 记录答案提交
+  /// Requirements: 1.2, 2.4
+  void learnAnswerSubmit({
+    required int wordId,
+    required String rating,
+    required double newInterval,
+    required double newEaseFactor,
+  }) {
+    info(
+      '${LogCategory.learn.prefix} answer_submit: wordId=$wordId, rating=$rating, interval=${newInterval.toStringAsFixed(2)}, ef=${newEaseFactor.toStringAsFixed(3)}',
+    );
+  }
+
+  /// 记录学习会话结束
+  /// Requirements: 1.2, 2.5
+  void learnSessionEnd({
+    required int durationMs,
+    required int learnedCount,
+    required int reviewedCount,
+  }) {
+    final duration = LogFormatter.formatDuration(durationMs);
+    info(
+      '${LogCategory.learn.prefix} session_end: duration=$duration, learned=$learnedCount, reviewed=$reviewedCount',
+    );
+  }
+
+  // ==================== 数据库操作日志 [DB] ====================
+
+  /// 记录数据库查询
+  /// Requirements: 1.3, 3.1
+  void dbQuery({required String table, String? where, int? resultCount}) {
+    final parts = <String>['table=$table'];
+    if (where != null) parts.add('where="$where"');
+    if (resultCount != null) parts.add('results=$resultCount');
+    debug('${LogCategory.db.prefix} query: ${parts.join(', ')}');
+  }
+
+  /// 记录数据库插入
+  /// Requirements: 1.3, 3.2
+  void dbInsert({
+    required String table,
+    required int id,
+    Map<String, dynamic>? keyFields,
+  }) {
+    final parts = <String>['table=$table', 'id=$id'];
+    if (keyFields != null && keyFields.isNotEmpty) {
+      parts.add(LogFormatter.formatKeyValues(keyFields));
+    }
+    debug('${LogCategory.db.prefix} insert: ${parts.join(', ')}');
+  }
+
+  /// 记录数据库更新
+  /// Requirements: 1.3, 3.3
+  void dbUpdate({
+    required String table,
+    required int affectedRows,
+    List<String>? updatedFields,
+  }) {
+    final parts = <String>['table=$table', 'affected=$affectedRows'];
+    if (updatedFields != null && updatedFields.isNotEmpty) {
+      parts.add('fields=[${updatedFields.join(', ')}]');
+    }
+    debug('${LogCategory.db.prefix} update: ${parts.join(', ')}');
+  }
+
+  /// 记录数据库删除
+  /// Requirements: 1.3, 3.4
+  void dbDelete({required String table, required int deletedRows}) {
+    debug(
+      '${LogCategory.db.prefix} delete: table=$table, deleted=$deletedRows',
+    );
+  }
+
+  /// 记录数据库错误
+  /// Requirements: 1.3, 3.5
+  void dbError({
+    required String operation,
+    required String table,
+    required dynamic dbError,
+    StackTrace? stackTrace,
+  }) {
+    error(
+      '${LogCategory.db.prefix} error: op=$operation, table=$table, error="$dbError"',
+      dbError,
+      stackTrace,
+    );
+  }
+
+  // ==================== 音频状态日志 [AUDIO] ====================
+
+  /// 记录音频播放开始
+  /// Requirements: 1.4, 4.1
+  void audioPlayStart({
+    required String sourceType,
+    required String source,
+    int? wordId,
+  }) {
+    final parts = <String>['type=$sourceType', 'source="$source"'];
+    if (wordId != null) parts.add('wordId=$wordId');
+    info('${LogCategory.audio.prefix} play_start: ${parts.join(', ')}');
+  }
+
+  /// 记录音频播放完成
+  /// Requirements: 1.4, 4.2
+  void audioPlayComplete({required String source, required int durationMs}) {
+    final duration = LogFormatter.formatDuration(durationMs);
+    info(
+      '${LogCategory.audio.prefix} play_complete: source="$source", duration=$duration',
+    );
+  }
+
+  /// 记录音频播放失败
+  /// Requirements: 1.4, 4.3
+  void audioPlayError({
+    required String source,
+    required String errorType,
+    required String errorMessage,
+  }) {
+    error(
+      '${LogCategory.audio.prefix} play_error: source="$source", type=$errorType, msg="$errorMessage"',
+    );
+  }
+
+  /// 记录音频状态变化
+  /// Requirements: 1.4, 4.4
+  void audioStateChange({
+    required String previousState,
+    required String newState,
+  }) {
+    info(
+      '${LogCategory.audio.prefix} state_change: $previousState -> $newState',
+    );
+  }
+
+  // ==================== 算法状态日志 [ALGO] ====================
+
+  /// 记录 SRS 计算开始
+  /// Requirements: 1.5, 5.1
+  void algoCalculateStart({
+    required String algorithmType,
+    required SRSInput input,
+  }) {
+    final inputStr = LogFormatter.formatSRSInput(input);
+    info(
+      '${LogCategory.algo.prefix} calculate_start: type=$algorithmType, $inputStr',
+    );
+  }
+
+  /// 记录 SRS 计算完成
+  /// Requirements: 1.5, 5.2
+  void algoCalculateComplete({
+    required String algorithmType,
+    required SRSOutput output,
+  }) {
+    final outputStr = LogFormatter.formatSRSOutput(output);
+    info(
+      '${LogCategory.algo.prefix} calculate_complete: type=$algorithmType, $outputStr',
+    );
+  }
+
+  /// 记录参数更新
+  /// Requirements: 1.5, 5.3
+  void algoParamsUpdate({
+    required int wordId,
+    required Map<String, dynamic> before,
+    required Map<String, dynamic> after,
+  }) {
+    final changes = <String>[];
+    for (final key in after.keys) {
+      final beforeVal = before[key];
+      final afterVal = after[key];
+      if (beforeVal != afterVal) {
+        changes.add('$key: $beforeVal -> $afterVal');
+      }
+    }
+    info(
+      '${LogCategory.algo.prefix} params_update: wordId=$wordId, ${changes.join(', ')}',
+    );
+  }
+
+  /// 记录复习计划变更
+  /// Requirements: 1.5, 5.4
+  void algoScheduleChange({
+    required int wordId,
+    required DateTime? oldSchedule,
+    required DateTime newSchedule,
+  }) {
+    final oldStr = oldSchedule != null
+        ? LogFormatter.formatTimestamp(oldSchedule)
+        : 'null';
+    final newStr = LogFormatter.formatTimestamp(newSchedule);
+    info(
+      '${LogCategory.algo.prefix} schedule_change: wordId=$wordId, old=$oldStr, new=$newStr',
     );
   }
 }

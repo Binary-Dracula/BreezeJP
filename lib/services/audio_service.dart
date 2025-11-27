@@ -10,6 +10,8 @@ import '../data/models/example_audio.dart';
 class AudioService {
   final AudioPlayer _player = AudioPlayer();
   String? _currentAudioSource;
+  String _currentState = 'stopped'; // 当前播放状态: stopped, playing, paused
+  DateTime? _playStartTime; // 播放开始时间，用于计算播放时长
 
   /// 获取播放器实例
   AudioPlayer get player => _player;
@@ -19,41 +21,65 @@ class AudioService {
 
   /// 播放单词音频
   /// 优先使用 audioUrl，如果不存在则使用本地 audioFilename
-  Future<void> playWordAudio(WordAudio audio) async {
+  Future<void> playWordAudio(WordAudio audio, {int? wordId}) async {
+    final source = audio.audioUrl ?? audio.audioFilename;
     try {
+      logger.audioPlayStart(sourceType: 'word', source: source, wordId: wordId);
       await _playAudioWithFallback(
         audioUrl: audio.audioUrl,
         audioFilename: audio.audioFilename,
         isWordAudio: true,
       );
-    } catch (e, stackTrace) {
-      logger.error('播放单词音频失败', e, stackTrace);
+    } catch (e) {
+      logger.audioPlayError(
+        source: source,
+        errorType: e.runtimeType.toString(),
+        errorMessage: e.toString(),
+      );
       rethrow;
     }
   }
 
   /// 播放例句音频
   /// 优先使用 audioUrl，如果不存在则使用本地 audioFilename
-  Future<void> playExampleAudio(ExampleAudio audio) async {
+  Future<void> playExampleAudio(ExampleAudio audio, {int? wordId}) async {
+    final source = audio.audioUrl ?? audio.audioFilename;
     try {
+      logger.audioPlayStart(
+        sourceType: 'example',
+        source: source,
+        wordId: wordId,
+      );
       await _playAudioWithFallback(
         audioUrl: audio.audioUrl,
         audioFilename: audio.audioFilename,
         isWordAudio: false,
       );
-    } catch (e, stackTrace) {
-      logger.error('播放例句音频失败', e, stackTrace);
+    } catch (e) {
+      logger.audioPlayError(
+        source: source,
+        errorType: e.runtimeType.toString(),
+        errorMessage: e.toString(),
+      );
       rethrow;
     }
   }
 
   /// 根据文件名或 URL 播放音频
-  Future<void> playAudioBySource(String source) async {
+  Future<void> playAudioBySource(String source, {int? wordId}) async {
     try {
-      logger.info('播放音频: $source');
+      logger.audioPlayStart(
+        sourceType: 'unknown',
+        source: source,
+        wordId: wordId,
+      );
       await _playAudio(source);
-    } catch (e, stackTrace) {
-      logger.error('播放音频失败', e, stackTrace);
+    } catch (e) {
+      logger.audioPlayError(
+        source: source,
+        errorType: e.runtimeType.toString(),
+        errorMessage: e.toString(),
+      );
       rethrow;
     }
   }
@@ -61,10 +87,19 @@ class AudioService {
   /// 暂停播放
   Future<void> pause() async {
     try {
+      final previousState = _currentState;
       await _player.pause();
-      logger.debug('音频已暂停');
-    } catch (e, stackTrace) {
-      logger.error('暂停音频失败', e, stackTrace);
+      _currentState = 'paused';
+      logger.audioStateChange(
+        previousState: previousState,
+        newState: _currentState,
+      );
+    } catch (e) {
+      logger.audioPlayError(
+        source: _currentAudioSource ?? 'unknown',
+        errorType: e.runtimeType.toString(),
+        errorMessage: '暂停音频失败: ${e.toString()}',
+      );
       rethrow;
     }
   }
@@ -72,11 +107,31 @@ class AudioService {
   /// 停止播放
   Future<void> stop() async {
     try {
+      final previousState = _currentState;
+      final source = _currentAudioSource;
       await _player.stop();
+      _currentState = 'stopped';
       _currentAudioSource = null;
-      logger.debug('音频已停止');
-    } catch (e, stackTrace) {
-      logger.error('停止音频失败', e, stackTrace);
+
+      // 记录播放完成（如果有播放开始时间）
+      if (_playStartTime != null && source != null) {
+        final durationMs = DateTime.now()
+            .difference(_playStartTime!)
+            .inMilliseconds;
+        logger.audioPlayComplete(source: source, durationMs: durationMs);
+        _playStartTime = null;
+      }
+
+      logger.audioStateChange(
+        previousState: previousState,
+        newState: _currentState,
+      );
+    } catch (e) {
+      logger.audioPlayError(
+        source: _currentAudioSource ?? 'unknown',
+        errorType: e.runtimeType.toString(),
+        errorMessage: '停止音频失败: ${e.toString()}',
+      );
       rethrow;
     }
   }
@@ -86,8 +141,12 @@ class AudioService {
     try {
       await _player.seek(position);
       logger.debug('跳转到: ${position.inSeconds}秒');
-    } catch (e, stackTrace) {
-      logger.error('跳转音频失败', e, stackTrace);
+    } catch (e) {
+      logger.audioPlayError(
+        source: _currentAudioSource ?? 'unknown',
+        errorType: e.runtimeType.toString(),
+        errorMessage: '跳转音频失败: ${e.toString()}',
+      );
       rethrow;
     }
   }
@@ -97,8 +156,12 @@ class AudioService {
     try {
       await _player.setVolume(volume.clamp(0.0, 1.0));
       logger.debug('音量设置为: $volume');
-    } catch (e, stackTrace) {
-      logger.error('设置音量失败', e, stackTrace);
+    } catch (e) {
+      logger.audioPlayError(
+        source: _currentAudioSource ?? 'unknown',
+        errorType: e.runtimeType.toString(),
+        errorMessage: '设置音量失败: ${e.toString()}',
+      );
       rethrow;
     }
   }
@@ -108,8 +171,12 @@ class AudioService {
     try {
       await _player.setSpeed(speed.clamp(0.5, 2.0));
       logger.debug('播放速度设置为: $speed');
-    } catch (e, stackTrace) {
-      logger.error('设置播放速度失败', e, stackTrace);
+    } catch (e) {
+      logger.audioPlayError(
+        source: _currentAudioSource ?? 'unknown',
+        errorType: e.runtimeType.toString(),
+        errorMessage: '设置播放速度失败: ${e.toString()}',
+      );
       rethrow;
     }
   }
@@ -117,11 +184,21 @@ class AudioService {
   /// 释放资源
   Future<void> dispose() async {
     try {
+      final previousState = _currentState;
       await _player.dispose();
+      _currentState = 'stopped';
       _currentAudioSource = null;
-      logger.debug('音频服务已释放');
-    } catch (e, stackTrace) {
-      logger.error('释放音频服务失败', e, stackTrace);
+      _playStartTime = null;
+      logger.audioStateChange(
+        previousState: previousState,
+        newState: 'disposed',
+      );
+    } catch (e) {
+      logger.audioPlayError(
+        source: _currentAudioSource ?? 'unknown',
+        errorType: e.runtimeType.toString(),
+        errorMessage: '释放音频服务失败: ${e.toString()}',
+      );
     }
   }
 
@@ -137,13 +214,18 @@ class AudioService {
     // 仅使用在线音频
     if (audioUrl != null && audioUrl.isNotEmpty) {
       try {
-        logger.info('播放在线音频: $audioUrl');
+        final previousState = _currentState;
 
         // 如果是同一个音频源，重新播放
         if (_currentAudioSource == audioUrl) {
           await _player.seek(Duration.zero);
+          _playStartTime = DateTime.now();
           await _player.play();
-          logger.info('重新播放音频');
+          _currentState = 'playing';
+          logger.audioStateChange(
+            previousState: previousState,
+            newState: _currentState,
+          );
           return;
         }
 
@@ -153,30 +235,42 @@ class AudioService {
         }
 
         _currentAudioSource = audioUrl;
+        _playStartTime = DateTime.now();
         await _player.setUrl(audioUrl);
         await _player.play();
-        logger.info('在线音频播放成功');
+        _currentState = 'playing';
+        logger.audioStateChange(
+          previousState: previousState,
+          newState: _currentState,
+        );
         return;
       } catch (e) {
         _currentAudioSource = null;
-        logger.error('在线音频加载失败: $e');
+        _playStartTime = null;
+        _currentState = 'stopped';
         throw Exception(l10n.audioLoadFailedOnline(audioUrl));
       }
     }
 
     // 没有在线音频，跳过播放
-    logger.warning('没有在线音频，跳过播放: $audioFilename');
     throw Exception(l10n.audioNoOnlineSource(audioFilename));
   }
 
   /// 播放音频
   Future<void> _playAudio(String source) async {
     try {
+      final previousState = _currentState;
+
       // 如果是同一个音频源，重新播放
       if (_currentAudioSource == source) {
         await _player.seek(Duration.zero);
+        _playStartTime = DateTime.now();
         await _player.play();
-        logger.info('重新播放音频');
+        _currentState = 'playing';
+        logger.audioStateChange(
+          previousState: previousState,
+          newState: _currentState,
+        );
         return;
       }
 
@@ -186,6 +280,7 @@ class AudioService {
       }
 
       _currentAudioSource = source;
+      _playStartTime = DateTime.now();
 
       // 判断是 URL 还是本地资源
       if (source.startsWith('http://') || source.startsWith('https://')) {
@@ -198,8 +293,15 @@ class AudioService {
 
       // 开始播放
       await _player.play();
+      _currentState = 'playing';
+      logger.audioStateChange(
+        previousState: previousState,
+        newState: _currentState,
+      );
     } catch (e) {
       _currentAudioSource = null;
+      _playStartTime = null;
+      _currentState = 'stopped';
       rethrow;
     }
   }

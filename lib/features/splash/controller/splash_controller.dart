@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../data/db/app_database.dart';
+import '../../../core/utils/app_logger.dart';
 import '../state/splash_state.dart';
 
 /// Splash 控制器 Provider
@@ -17,6 +18,10 @@ class SplashController extends Notifier<SplashState> {
   Future<void> initialize(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
 
+    // 记录初始化流程开始
+    logger.learnSessionStart(userId: 1);
+    logger.info('[LEARN] app_init_start: initializing application');
+
     try {
       state = state.copyWith(
         isLoading: true,
@@ -26,6 +31,7 @@ class SplashController extends Notifier<SplashState> {
 
       // 1. 初始化数据库
       state = state.copyWith(message: l10n.splashLoadingDatabase);
+      logger.info('[LEARN] init_step: step=database_init');
       await _initializeDatabase(l10n);
 
       // 2. 可以在这里添加其他初始化任务
@@ -38,7 +44,9 @@ class SplashController extends Notifier<SplashState> {
         message: l10n.splashInitComplete,
         isInitialized: true,
       );
+      logger.info('[LEARN] app_init_complete: initialization successful');
     } catch (e) {
+      logger.error('[LEARN] app_init_error: error="${e.toString()}"');
       state = state.copyWith(
         isLoading: false,
         error: l10n.splashInitFailed(e.toString()),
@@ -57,10 +65,15 @@ class SplashController extends Notifier<SplashState> {
       final result = await db.rawQuery('SELECT COUNT(*) as count FROM words');
       final count = result.first['count'] as int;
 
+      logger.dbQuery(table: 'words', where: 'COUNT(*)', resultCount: count);
+
       if (count == 0) {
         throw Exception(l10n.databaseEmpty);
       }
+
+      logger.info('[LEARN] database_verified: wordCount=$count');
     } catch (e) {
+      logger.dbError(operation: 'INIT', table: 'words', dbError: e);
       throw Exception(l10n.databaseInitFailed(e.toString()));
     }
   }
