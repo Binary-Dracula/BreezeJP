@@ -16,24 +16,116 @@ class KanaGrid extends StatelessWidget {
     required this.kanaType,
   });
 
+  // ==================== 常量定义 ====================
+
+  /// 类型常量
+  static const String typeSeion = '清音';
+  static const String typeDakuon = '濁音';
+  static const String typeHandakuon = '半濁音';
+  static const String typeYouon = '拗音';
+  static const String typeGairaion = '外来音';
+
+  /// 元音列标题
+  static const List<String> _vowelHeaders = ['あ段', 'い段', 'う段', 'え段', 'お段'];
+
+  /// 拗音列标题
+  static const List<String> _youonHeaders = ['ゃ列', 'ゅ列', 'ょ列'];
+
+  /// 元音顺序
+  static const List<String> _vowelOrder = ['a', 'i', 'u', 'e', 'o'];
+
+  /// 清音行顺序
+  static const List<String> _seionRowOrder = [
+    'a',
+    'ka',
+    'sa',
+    'ta',
+    'na',
+    'ha',
+    'ma',
+    'ya',
+    'ra',
+    'wa',
+    'special',
+  ];
+
+  /// 濁音行顺序
+  static const List<String> _dakuonRowOrder = ['ga', 'za', 'da', 'ba'];
+
+  /// 半濁音行顺序
+  static const List<String> _handakuonRowOrder = ['pa'];
+
+  /// 拗音行顺序
+  static const List<String> _youonRowOrder = [
+    'kya',
+    'sha',
+    'cha',
+    'nya',
+    'hya',
+    'mya',
+    'rya',
+    'gya',
+    'ja',
+    'bya',
+    'pya',
+  ];
+
+  /// 行标签映射
+  static const Map<String, String> _rowLabels = {
+    'a': 'あ行',
+    'ka': 'か行',
+    'sa': 'さ行',
+    'ta': 'た行',
+    'na': 'な行',
+    'ha': 'は行',
+    'ma': 'ま行',
+    'ya': 'や行',
+    'ra': 'ら行',
+    'wa': 'わ行',
+    'special': '特殊',
+    'ga': 'が行',
+    'za': 'ざ行',
+    'da': 'だ行',
+    'ba': 'ば行',
+    'pa': 'ぱ行',
+  };
+
+  /// 拗音行标签映射
+  static const Map<String, String> _youonRowLabels = {
+    'kya': 'きゃ行',
+    'sha': 'しゃ行',
+    'cha': 'ちゃ行',
+    'nya': 'にゃ行',
+    'hya': 'ひゃ行',
+    'mya': 'みゃ行',
+    'rya': 'りゃ行',
+    'gya': 'ぎゃ行',
+    'ja': 'じゃ行',
+    'bya': 'びゃ行',
+    'pya': 'ぴゃ行',
+  };
+
+  /// 特殊行标识
+  static const String _specialGroup = 'special';
+
+  // ==================== 构建方法 ====================
+
   @override
   Widget build(BuildContext context) {
     // 根据类型选择不同的布局
     switch (kanaType) {
-      case 'youon':
+      case typeYouon:
         return _buildYouonGrid(context);
-      case 'extended':
+      case typeGairaion:
         return _buildExtendedGrid(context);
       default:
+        // 清音、濁音、半濁音 使用标准网格
         return _buildStandardGrid(context);
     }
   }
 
   /// 标准五十音网格（清音、浊音、半浊音）
   Widget _buildStandardGrid(BuildContext context) {
-    // 元音列标题
-    const vowels = ['あ段', 'い段', 'う段', 'え段', 'お段'];
-
     // 按行分组
     final groupedByRow = <String, List<KanaLetterWithState>>{};
     for (final kana in kanaLetters) {
@@ -58,11 +150,15 @@ class KanaGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 列标题（段）
-        _buildColumnHeaders(vowels),
+        _buildColumnHeaders(_vowelHeaders),
         const SizedBox(height: 8),
         // 每一行
         ...sortedGroups.map((group) {
           final kanaInRow = groupedByRow[group]!;
+          // 特殊行单独处理
+          if (group == _specialGroup) {
+            return _buildSpecialRow(context, _getRowLabel(group), kanaInRow);
+          }
           return _buildKanaRow(context, _getRowLabel(group), kanaInRow, 5);
         }),
       ],
@@ -71,9 +167,6 @@ class KanaGrid extends StatelessWidget {
 
   /// 拗音网格
   Widget _buildYouonGrid(BuildContext context) {
-    // 拗音列标题
-    const youonVowels = ['ゃ列', 'ゅ列', 'ょ列'];
-
     // 按行分组
     final groupedByRow = <String, List<KanaLetterWithState>>{};
     for (final kana in kanaLetters) {
@@ -81,21 +174,7 @@ class KanaGrid extends StatelessWidget {
       groupedByRow.putIfAbsent(group, () => []).add(kana);
     }
 
-    // 拗音行顺序
-    final rowOrder = [
-      'kya',
-      'sha',
-      'cha',
-      'nya',
-      'hya',
-      'mya',
-      'rya',
-      'gya',
-      'ja',
-      'bya',
-      'pya',
-    ];
-    final sortedGroups = rowOrder
+    final sortedGroups = _youonRowOrder
         .where((g) => groupedByRow.containsKey(g))
         .toList();
 
@@ -103,7 +182,7 @@ class KanaGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 列标题
-        _buildColumnHeaders(youonVowels),
+        _buildColumnHeaders(_youonHeaders),
         const SizedBox(height: 8),
         // 每一行
         ...sortedGroups.map((group) {
@@ -114,7 +193,7 @@ class KanaGrid extends StatelessWidget {
     );
   }
 
-  /// 特殊假名网格
+  /// 特殊假名网格（外来音）
   Widget _buildExtendedGrid(BuildContext context) {
     return Wrap(
       spacing: 8,
@@ -189,6 +268,41 @@ class KanaGrid extends StatelessWidget {
                   ? _buildKanaCell(context, kana)
                   : const SizedBox.shrink(),
             );
+          }),
+        ],
+      ),
+    );
+  }
+
+  /// 构建特殊行（ん、を 等不规则假名）
+  Widget _buildSpecialRow(
+    BuildContext context,
+    String rowLabel,
+    List<KanaLetterWithState> kanaInRow,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          // 行标题
+          SizedBox(
+            width: 56,
+            child: Text(
+              rowLabel,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          // 特殊假名直接显示，不按元音排列
+          ...kanaInRow.map((kana) {
+            return Expanded(child: _buildKanaCell(context, kana));
+          }),
+          // 填充空位保持对齐
+          ...List.generate(5 - kanaInRow.length, (_) {
+            return const Expanded(child: SizedBox.shrink());
           }),
         ],
       ),
@@ -314,77 +428,31 @@ class KanaGrid extends StatelessWidget {
     );
   }
 
+  // ==================== 辅助方法 ====================
+
   /// 获取行顺序
   List<String> _getRowOrder(String type) {
     switch (type) {
-      case 'basic':
-        return [
-          'a',
-          'ka',
-          'sa',
-          'ta',
-          'na',
-          'ha',
-          'ma',
-          'ya',
-          'ra',
-          'wa',
-          'special',
-        ];
-      case 'dakuon':
-        return ['ga', 'za', 'da', 'ba'];
-      case 'handakuon':
-        return ['pa'];
+      case typeSeion:
+        return _seionRowOrder;
+      case typeDakuon:
+        return _dakuonRowOrder;
+      case typeHandakuon:
+        return _handakuonRowOrder;
       default:
         return [];
     }
   }
 
   /// 获取行标签
-  String _getRowLabel(String group) {
-    const labels = {
-      'a': 'あ行',
-      'ka': 'か行',
-      'sa': 'さ行',
-      'ta': 'た行',
-      'na': 'な行',
-      'ha': 'は行',
-      'ma': 'ま行',
-      'ya': 'や行',
-      'ra': 'ら行',
-      'wa': 'わ行',
-      'special': '特殊',
-      'ga': 'が行',
-      'za': 'ざ行',
-      'da': 'だ行',
-      'ba': 'ば行',
-      'pa': 'ぱ行',
-    };
-    return labels[group] ?? group;
-  }
+  String _getRowLabel(String group) => _rowLabels[group] ?? group;
 
   /// 获取拗音行标签
-  String _getYouonRowLabel(String group) {
-    const labels = {
-      'kya': 'きゃ行',
-      'sha': 'しゃ行',
-      'cha': 'ちゃ行',
-      'nya': 'にゃ行',
-      'hya': 'ひゃ行',
-      'mya': 'みゃ行',
-      'rya': 'りゃ行',
-      'gya': 'ぎゃ行',
-      'ja': 'じゃ行',
-      'bya': 'びゃ行',
-      'pya': 'ぴゃ行',
-    };
-    return labels[group] ?? group;
-  }
+  String _getYouonRowLabel(String group) => _youonRowLabels[group] ?? group;
 
   /// 获取元音索引
   int _getVowelIndex(String? vowel) {
     if (vowel == null) return -1;
-    const vowels = ['a', 'i', 'u', 'e', 'o'];
-    return vowels.indexOf(vowel);
+    return _vowelOrder.indexOf(vowel);
   }
 }
