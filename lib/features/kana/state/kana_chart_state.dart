@@ -11,7 +11,10 @@ class KanaChartState {
   /// 所有假名（带学习状态）
   final List<KanaLetterWithState> kanaLetters;
 
-  /// 当前选中的类型筛选 (null=全部, basic/dakuten/handakuten/combo)
+  /// 所有类型列表（从数据库获取）
+  final List<String> kanaTypes;
+
+  /// 当前选中的类型筛选 (null=全部)
   final String? selectedType;
 
   /// 当前显示模式 (hiragana/katakana)
@@ -25,6 +28,7 @@ class KanaChartState {
     this.isLoading = false,
     this.error,
     this.kanaLetters = const [],
+    this.kanaTypes = const [],
     this.selectedType,
     this.displayMode = KanaDisplayMode.hiragana,
     this.totalCount = 0,
@@ -61,6 +65,7 @@ class KanaChartState {
     bool? isLoading,
     String? error,
     List<KanaLetterWithState>? kanaLetters,
+    List<String>? kanaTypes,
     String? selectedType,
     KanaDisplayMode? displayMode,
     int? totalCount,
@@ -70,6 +75,7 @@ class KanaChartState {
       isLoading: isLoading ?? this.isLoading,
       error: error,
       kanaLetters: kanaLetters ?? this.kanaLetters,
+      kanaTypes: kanaTypes ?? this.kanaTypes,
       selectedType: selectedType,
       displayMode: displayMode ?? this.displayMode,
       totalCount: totalCount ?? this.totalCount,

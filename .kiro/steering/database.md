@@ -184,7 +184,7 @@ CREATE TABLE kana_letters (
     consonant  TEXT,                              -- 辅音 (如 k, s, t)
     vowel      TEXT,                              -- 元音 (如 a, i, u, e, o)
     kana_group TEXT,                              -- 行分组 (如 あ行, か行)
-    type       TEXT,                              -- 类型 (basic/dakuten/handakuten/combo)
+    type       TEXT,                              -- 类型 (清音/濁音/半濁音/拗音/外来音)
     sort_index INTEGER,                           -- 排序索引
     mnemonic   TEXT,                              -- 记忆助记词
     created_at TEXT,

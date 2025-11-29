@@ -159,6 +159,36 @@ class KanaRepository {
     }
   }
 
+  /// 获取所有假名类型（按排序顺序）
+  Future<List<String>> getAllKanaTypes() async {
+    try {
+      final db = await _db;
+      final results = await db.rawQuery('''
+        SELECT DISTINCT type
+        FROM kana_letters
+        WHERE type IS NOT NULL
+        GROUP BY type
+        ORDER BY MIN(sort_index)
+      ''');
+
+      logger.dbQuery(
+        table: 'kana_letters',
+        where: 'DISTINCT type',
+        resultCount: results.length,
+      );
+
+      return results.map((map) => map['type'] as String).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_letters',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   // ==================== 假名音频 ====================
 
   /// 获取假名的音频

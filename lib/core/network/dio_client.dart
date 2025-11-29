@@ -238,7 +238,7 @@ class DioClient {
         return NetworkException(l10n.networkServiceUnavailable);
       default:
         return NetworkException(
-          l10n.networkRequestFailedWithCode(statusCode ?? 0),
+          l10n.networkRequestFailedWithCode((statusCode ?? 0).toString()),
         );
     }
   }

@@ -13,23 +13,12 @@ class KanaChartPage extends ConsumerStatefulWidget {
 }
 
 class _KanaChartPageState extends ConsumerState<KanaChartPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  // Tab 类型定义（匹配数据库中的 type 字段）
-  static const List<_KanaTabInfo> _tabs = [
-    _KanaTabInfo(type: 'basic', label: '清音'),
-    _KanaTabInfo(type: 'dakuon', label: '濁音'),
-    _KanaTabInfo(type: 'handakuon', label: '半濁音'),
-    _KanaTabInfo(type: 'youon', label: '拗音'),
-    _KanaTabInfo(type: 'extended', label: '特殊'),
-  ];
+    with TickerProviderStateMixin {
+  TabController? _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
-
     // 加载数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(kanaChartControllerProvider.notifier).loadKanaChart();
@@ -38,13 +27,26 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
+  }
+
+  /// 更新 TabController
+  void _updateTabController(int length) {
+    if (_tabController?.length != length) {
+      _tabController?.dispose();
+      _tabController = TabController(length: length, vsync: this);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(kanaChartControllerProvider);
+
+    // 数据加载完成后更新 TabController
+    if (state.kanaTypes.isNotEmpty) {
+      _updateTabController(state.kanaTypes.length);
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -58,36 +60,52 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
           // 平假名/片假名切换
           _buildDisplayModeToggle(state.displayMode),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Theme.of(context).primaryColor,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Theme.of(context).primaryColor,
-          indicatorWeight: 3,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          tabs: _tabs.map((tab) => Tab(text: tab.label)).toList(),
-        ),
+        bottom: state.kanaTypes.isNotEmpty && _tabController != null
+            ? TabBar(
+                controller: _tabController,
+                labelColor: Theme.of(context).primaryColor,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Theme.of(context).primaryColor,
+                indicatorWeight: 3,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: state.kanaTypes.map((type) => Tab(text: type)).toList(),
+              )
+            : null,
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.hasError
-          ? _buildErrorView(state.error!)
-          : Column(
-              children: [
-                // 学习进度
-                _buildProgressBar(state),
-                // Tab 内容
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: _tabs.map((tab) {
-                      return _buildKanaTabContent(state, tab.type);
-                    }).toList(),
-                  ),
-                ),
-              ],
-            ),
+      body: _buildBody(state),
+    );
+  }
+
+  Widget _buildBody(KanaChartState state) {
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.hasError) {
+      return _buildErrorView(state.error!);
+    }
+
+    if (state.kanaTypes.isEmpty || _tabController == null) {
+      return const Center(
+        child: Text('暂无数据', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return Column(
+      children: [
+        // 学习进度
+        _buildProgressBar(state),
+        // Tab 内容
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: state.kanaTypes
+                .map((type) => _buildKanaTabContent(state, type))
+                .toList(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -202,12 +220,4 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
       ),
     );
   }
-}
-
-/// Tab 信息
-class _KanaTabInfo {
-  final String type;
-  final String label;
-
-  const _KanaTabInfo({required this.type, required this.label});
 }

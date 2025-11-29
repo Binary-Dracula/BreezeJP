@@ -23,20 +23,24 @@ class KanaChartController extends Notifier<KanaChartState> {
       logger.info('开始加载五十音表数据');
       state = state.copyWith(isLoading: true, error: null);
 
-      // 1. 获取所有假名及学习状态
+      // 1. 获取所有假名类型
+      final kanaTypes = await _kanaRepository.getAllKanaTypes();
+
+      // 2. 获取所有假名及学习状态
       final kanaLetters = await _kanaRepository.getAllKanaLettersWithState();
 
-      // 2. 获取学习统计
+      // 3. 获取学习统计
       final stats = await _kanaRepository.getKanaLearningStats();
 
       state = state.copyWith(
         isLoading: false,
+        kanaTypes: kanaTypes,
         kanaLetters: kanaLetters,
         totalCount: stats['total'] ?? 0,
         learnedCount: stats['learned'] ?? 0,
       );
 
-      logger.info('五十音表加载成功: ${kanaLetters.length}个假名, 已学${stats['learned']}个');
+      logger.info('五十音表加载成功: ${kanaLetters.length}个假名, ${kanaTypes.length}个类型');
     } catch (e, stackTrace) {
       logger.error('加载五十音表失败', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());
