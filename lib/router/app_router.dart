@@ -3,6 +3,7 @@ import '../features/splash/pages/splash_page.dart';
 import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
 import '../features/learn/pages/learn_page.dart';
+import '../features/kana/pages/kana_chart_page.dart';
 
 /// 应用路由配置
 final appRouter = GoRouter(
@@ -38,6 +39,13 @@ final appRouter = GoRouter(
         final wordId = int.tryParse(wordIdStr ?? '') ?? 0;
         return LearnPage(initialWordId: wordId);
       },
+    ),
+
+    // 五十音图页面
+    GoRoute(
+      path: '/kana-chart',
+      name: 'kana-chart',
+      builder: (context, state) => const KanaChartPage(),
     ),
   ],
 );

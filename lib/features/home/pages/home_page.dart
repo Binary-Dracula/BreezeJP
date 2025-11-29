@@ -342,6 +342,15 @@ class _HomePageState extends ConsumerState<HomePage> {
       childAspectRatio: 1.5, // 宽长比，控制卡片形状
       children: [
         _buildToolCard(
+          icon: Icons.grid_view_rounded,
+          title: '五十音図',
+          subtitle: '学习日语假名',
+          color: Colors.indigo,
+          onTap: () {
+            context.go('/kana-chart');
+          },
+        ),
+        _buildToolCard(
           icon: Icons.book_outlined,
           title: l10n.wordBook,
           subtitle: l10n.wordBookSubtitle,
