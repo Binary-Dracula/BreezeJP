@@ -39,14 +39,21 @@ lib/
 │   │   ├── study_word.dart
 │   │   ├── study_log.dart
 │   │   ├── daily_stat.dart
-│   │   └── user.dart
+│   │   ├── user.dart
+│   │   ├── kana_letter.dart           # 五十音字母
+│   │   ├── kana_audio.dart            # 五十音音频
+│   │   ├── kana_example.dart          # 五十音示例
+│   │   ├── kana_learning_state.dart   # 五十音学习状态
+│   │   ├── kana_quiz_record.dart      # 五十音测验记录
+│   │   └── kana_stroke_order.dart     # 五十音笔顺
 │   └── repositories/
 │       ├── word_repository.dart
 │       ├── study_word_repository.dart
 │       ├── study_log_repository.dart
 │       ├── daily_stat_repository.dart
 │       ├── user_repository.dart
-│       └── example_api_repository.dart
+│       ├── example_api_repository.dart
+│       └── kana_repository.dart       # 五十音数据仓库
 ├── features/                # 功能模块
 │   ├── splash/              # 启动页面 ✅
 │   ├── home/                # 首页 ✅
@@ -54,6 +61,11 @@ lib/
 │   ├── review/              # 复习功能 📋
 │   ├── word_detail/         # 单词详情 🚧
 │   ├── word_list/           # 单词列表 🚧
+│   ├── kana/                # 五十音图学习 📋
+│   │   ├── controller/      # 控制器
+│   │   ├── pages/           # 页面 (五十音表、学习、测验)
+│   │   ├── state/           # 状态
+│   │   └── widgets/         # 组件 (假名卡片、笔顺动画等)
 │   └── settings/            # 设置 📋
 ├── l10n/                    # 国际化
 │   ├── app_zh.arb
@@ -114,7 +126,8 @@ features/[功能名]/
 assets/
 ├── audio/
 │   ├── words/      # 单词音频
-│   └── examples/   # 例句音频
+│   ├── examples/   # 例句音频
+│   └── kana/       # 五十音音频
 ├── database/
 │   └── breeze_jp.sqlite
 └── images/

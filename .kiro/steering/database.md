@@ -4,7 +4,11 @@ inclusion: always
 
 # 数据库架构
 
-BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`），包含 10 个核心表。
+BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`），包含 16 个核心表。
+
+- **单词学习相关**：words, word_meanings, word_audio, example_sentences, example_audio, word_relations
+- **学习进度相关**：study_words, study_logs, daily_stats, users
+- **五十音图学习相关**：kana_letters, kana_audio, kana_examples, kana_learning_state, kana_quiz_records, kana_stroke_order
 
 ## 表结构
 
@@ -165,8 +169,93 @@ CREATE INDEX idx_word_relations_word_id ON word_relations (word_id, score DESC);
 CREATE INDEX idx_word_relations_related_word_id ON word_relations (related_word_id);
 ```
 
+---
+
+## 五十音图学习表
+
+### kana_letters
+五十音字母主表，存储平假名、片假名及其属性。
+```sql
+CREATE TABLE kana_letters (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    hiragana   TEXT,                              -- 平假名 (如 あ)
+    katakana   TEXT,                              -- 片假名 (如 ア)
+    romaji     TEXT,                              -- 罗马音 (如 a)
+    consonant  TEXT,                              -- 辅音 (如 k, s, t)
+    vowel      TEXT,                              -- 元音 (如 a, i, u, e, o)
+    kana_group TEXT,                              -- 行分组 (如 あ行, か行)
+    type       TEXT,                              -- 类型 (basic/dakuten/handakuten/combo)
+    sort_index INTEGER,                           -- 排序索引
+    mnemonic   TEXT,                              -- 记忆助记词
+    created_at TEXT,
+    updated_at TEXT
+);
+```
+
+### kana_audio
+五十音发音音频。
+```sql
+CREATE TABLE kana_audio (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    kana_id        INTEGER REFERENCES kana_letters(id),  -- 关联假名
+    audio_filename TEXT,                                  -- 音频文件名
+    source         TEXT,                                  -- 音频来源
+    created_at     TEXT
+);
+```
+
+### kana_examples
+五十音示例词汇，用于辅助记忆。
+```sql
+CREATE TABLE kana_examples (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    kana_id          INTEGER REFERENCES kana_letters(id),  -- 关联假名
+    example_jp       TEXT,                                  -- 日语示例词
+    example_furigana TEXT,                                  -- 假名注音
+    example_cn       TEXT,                                  -- 中文翻译
+    created_at       TEXT
+);
+```
+
+### kana_learning_state
+用户五十音学习状态，支持 SRS 复习。
+```sql
+CREATE TABLE kana_learning_state (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    kana_id     INTEGER REFERENCES kana_letters(id),  -- 关联假名
+    is_learned  INTEGER DEFAULT 0,                    -- 是否已学习 (0=未学, 1=已学)
+    last_review TEXT,                                 -- 上次复习时间
+    next_review TEXT,                                 -- 下次复习时间
+    easiness    REAL DEFAULT 2.5,                     -- SM-2 难度因子
+    interval    INTEGER DEFAULT 0                     -- 复习间隔 (天)
+);
+```
+
+### kana_quiz_records
+五十音测验记录。
+```sql
+CREATE TABLE kana_quiz_records (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    kana_id    INTEGER REFERENCES kana_letters(id),  -- 关联假名
+    correct    INTEGER,                               -- 是否正确 (0=错误, 1=正确)
+    created_at TEXT                                   -- 测验时间
+);
+```
+
+### kana_stroke_order
+五十音笔顺数据。
+```sql
+CREATE TABLE kana_stroke_order (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    kana_id    INTEGER REFERENCES kana_letters(id),  -- 关联假名
+    stroke_svg TEXT,                                  -- SVG 笔顺数据
+    created_at TEXT
+);
+```
+
 ## 数据关系
 
+### 单词学习模块
 ```
 words (1) ──< (N) word_meanings
       (1) ──< (N) word_audio
@@ -175,4 +264,13 @@ words (1) ──< (N) word_meanings
       (1) ──< (N) study_logs  (N) >── (1) users
       (1) ──< (N) word_relations (N) >── (1) words (关联单词)
                                      (1) ──< (N) daily_stats
+```
+
+### 五十音图学习模块
+```
+kana_letters (1) ──< (N) kana_audio           -- 发音音频
+             (1) ──< (N) kana_examples        -- 示例词汇
+             (1) ──< (1) kana_learning_state  -- 学习状态
+             (1) ──< (N) kana_quiz_records    -- 测验记录
+             (1) ──< (1) kana_stroke_order    -- 笔顺数据
 ```
