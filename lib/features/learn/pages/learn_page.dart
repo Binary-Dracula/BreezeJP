@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../l10n/app_localizations.dart';
 import '../controller/learn_controller.dart';
-import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../state/learn_state.dart';
 import '../widgets/word_card.dart';
 import '../widgets/example_card.dart';
-import '../../../core/constants/app_constants.dart';
 
-/// 学习页面 - 背单词主界面
+/// 学习页面
+/// 全屏展示单词详情，支持左右滑动切换单词
 class LearnPage extends ConsumerStatefulWidget {
-  final String? jlptLevel;
+  final int initialWordId;
 
-  const LearnPage({super.key, this.jlptLevel});
+  const LearnPage({super.key, required this.initialWordId});
 
   @override
   ConsumerState<LearnPage> createState() => _LearnPageState();
@@ -20,50 +20,24 @@ class LearnPage extends ConsumerStatefulWidget {
 
 class _LearnPageState extends ConsumerState<LearnPage> {
   late PageController _pageController;
-  DateTime? _sessionStartTime;
 
   @override
   void initState() {
     super.initState();
-    // 初始化 PageController
     _pageController = PageController();
-    // 记录会话开始时间
-    _sessionStartTime = DateTime.now();
 
-    // 页面加载时获取单词
+    // 页面加载时初始化学习
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(learnControllerProvider.notifier)
-          .loadWords(
-            jlptLevel: widget.jlptLevel,
-            count: AppConstants.defaultLearnCount,
-          );
+          .initWithWord(widget.initialWordId);
     });
   }
 
   @override
   void dispose() {
-    // 保存学习统计数据
-    if (_sessionStartTime != null) {
-      // 计算学习时长
-      final duration = DateTime.now().difference(_sessionStartTime!);
-      final durationMs = duration.inMilliseconds;
-
-      // 获取已学习单词数
-      final state = ref.read(learnControllerProvider);
-      final learnedCount = state.learnedWordIds.length;
-
-      // 调用 LearnController 方法更新统计
-      // 注意：这里不能使用 async/await，因为 dispose 是同步的
-      // 但 updateDailyStats 内部会处理异步操作
-      if (learnedCount > 0 || durationMs > 0) {
-        ref
-            .read(learnControllerProvider.notifier)
-            .updateDailyStats(durationMs: durationMs);
-      }
-    }
-
-    // 释放 PageController
+    // 离开页面时更新每日统计
+    ref.read(learnControllerProvider.notifier).updateDailyStats();
     _pageController.dispose();
     super.dispose();
   }
@@ -71,116 +45,72 @@ class _LearnPageState extends ConsumerState<LearnPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(learnControllerProvider);
-    final controller = ref.read(learnControllerProvider.notifier);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    // 检查当前批次是否学习完成（需要已加载过数据）
-    if (state.isBatchCompleted) {
-      return _buildFinishedScreen(controller, theme, l10n);
-    }
+    // 监听路径结束状态
+    ref.listen(learnControllerProvider, (previous, next) {
+      if (next.pathEnded && !(previous?.pathEnded ?? false)) {
+        _showPathEndedDialog(context, l10n);
+      }
+    });
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.jlptLevel != null
-              ? '${l10n.learning} ${widget.jlptLevel}'
-              : l10n.learnWords,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 顶部操作栏
+            _buildTopBar(context, state, l10n),
+            // 内容区域
+            Expanded(child: _buildContent(context, state)),
+          ],
         ),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
-        elevation: 0,
-        actions: [
-          // 序号指示器（显示"第 X 个"）
-          if (state.studyQueue.isNotEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '第 ${state.currentIndex + 1} 个',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onPrimary,
-                  ),
+      ),
+    );
+  }
+
+  /// 顶部操作栏
+  Widget _buildTopBar(
+    BuildContext context,
+    LearnState state,
+    AppLocalizations l10n,
+  ) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 关闭按钮
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => context.pop(),
+          ),
+          // 已学计数
+          if (state.learnedCount > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                l10n.learnedCount(state.learnedCount),
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
         ],
       ),
-      body: _buildBody(state, controller, theme, l10n),
     );
   }
 
-  Widget _buildFinishedScreen(
-    LearnController controller,
-    ThemeData theme,
-    AppLocalizations l10n,
-  ) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 80,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              l10n.learningFinished,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 48),
-            // 返回首页按钮
-            FilledButton.icon(
-              onPressed: () {
-                controller.endSession();
-                Navigator.of(context).pop();
-              },
-              icon: const Icon(Icons.home),
-              label: Text(l10n.backToHome),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody(
-    LearnState state,
-    LearnController controller,
-    ThemeData theme,
-    AppLocalizations l10n,
-  ) {
+  /// 构建内容区域
+  Widget _buildContent(BuildContext context, LearnState state) {
     if (state.isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: theme.colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(
-              l10n.loadingWords,
-              style: TextStyle(
-                fontSize: 16,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-        ),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (state.error != null) {
@@ -188,116 +118,98 @@ class _LearnPageState extends ConsumerState<LearnPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
-              state.error!,
-              style: TextStyle(fontSize: 16, color: theme.colorScheme.error),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
+            Text(state.error!),
+            const SizedBox(height: 16),
+            ElevatedButton(
               onPressed: () {
-                controller.loadWords(jlptLevel: widget.jlptLevel);
+                ref
+                    .read(learnControllerProvider.notifier)
+                    .initWithWord(widget.initialWordId);
               },
-              icon: const Icon(Icons.refresh),
-              label: Text(l10n.retry),
+              child: const Text('重试'),
             ),
           ],
         ),
       );
     }
 
-    if (state.studyQueue.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.noWordsToLearn,
-              style: TextStyle(
-                fontSize: 16,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-        ),
-      );
+    if (state.isEmpty) {
+      return const Center(child: Text('没有可学习的单词'));
     }
 
-    // 使用 PageView.builder 实现水平滑动
     return PageView.builder(
       controller: _pageController,
-      itemCount: state.studyQueue.length,
       onPageChanged: (index) {
-        // 触觉反馈
-        HapticFeedback.lightImpact();
-        // 调用 LearnController.onPageChanged
-        controller.onPageChanged(index);
+        ref.read(learnControllerProvider.notifier).onPageChanged(index);
       },
+      itemCount: state.studyQueue.length,
       itemBuilder: (context, index) {
-        // 构建单词页面（在下一个子任务中实现）
-        return _buildWordPage(state, controller, theme, l10n, index);
+        final wordDetail = state.studyQueue[index];
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // 单词卡片
+              WordCard(wordDetail: wordDetail),
+              const SizedBox(height: 8),
+              // 例句列表
+              if (wordDetail.examples.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.format_quote,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '例句',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                ...wordDetail.examples.map(
+                  (example) => ExampleCard(example: example),
+                ),
+              ],
+              const SizedBox(height: 32),
+              // 加载更多指示器
+              if (state.isLoadingMore && index == state.studyQueue.length - 1)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(),
+                ),
+            ],
+          ),
+        );
       },
     );
   }
 
-  /// 构建单词页面（用于 PageView.builder 的 itemBuilder）
-  Widget _buildWordPage(
-    LearnState state,
-    LearnController controller,
-    ThemeData theme,
-    AppLocalizations l10n,
-    int index,
-  ) {
-    // 获取指定索引的单词详情
-    if (index >= state.studyQueue.length) {
-      return const SizedBox.shrink();
-    }
-
-    final studyWord = state.studyQueue[index];
-    final wordDetail = state.wordDetails[studyWord.wordId];
-
-    if (wordDetail == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // 使用 SingleChildScrollView 包裹内容，支持垂直滚动
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // 单词卡片
-          WordCard(
-            wordDetail: wordDetail,
-            isPlayingAudio: state.isPlayingWordAudio,
-            onPlayAudio: controller.playWordAudio,
+  /// 显示路径结束对话框
+  void _showPathEndedDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.pathEndedTitle),
+        content: Text(l10n.pathEndedContent),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.go('/initial-choice');
+            },
+            child: Text(l10n.chooseNewPath),
           ),
-
-          const SizedBox(height: 24),
-
-          // 例句列表
-          ...wordDetail.examples.asMap().entries.map((entry) {
-            final exampleIndex = entry.key;
-            final example = entry.value;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: ExampleCard(
-                example: example,
-                index: exampleIndex,
-                isPlaying:
-                    state.isPlayingExampleAudio &&
-                    state.playingExampleIndex == exampleIndex,
-                onPlayAudio: () => controller.playExampleAudio(exampleIndex),
-              ),
-            );
-          }),
         ],
       ),
     );

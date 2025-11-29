@@ -531,6 +531,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'完成'**
   String get finish;
+
+  /// 初始选择页标题
+  ///
+  /// In zh, this message translates to:
+  /// **'选择起点'**
+  String get initialChoiceTitle;
+
+  /// 初始选择页副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'选择一个单词开始探索'**
+  String get initialChoiceSubtitle;
+
+  /// 已学单词计数
+  ///
+  /// In zh, this message translates to:
+  /// **'+{count}'**
+  String learnedCount(int count);
+
+  /// 路径结束对话框标题
+  ///
+  /// In zh, this message translates to:
+  /// **'已探索完这条路径'**
+  String get pathEndedTitle;
+
+  /// 路径结束对话框内容
+  ///
+  /// In zh, this message translates to:
+  /// **'当前单词没有更多关联词了，选择新的起点继续探索吧！'**
+  String get pathEndedContent;
+
+  /// 选择新路径按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'选择新路径'**
+  String get chooseNewPath;
 }
 
 class _AppLocalizationsDelegate

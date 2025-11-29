@@ -248,4 +248,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get finish => '完成';
+
+  @override
+  String get initialChoiceTitle => '选择起点';
+
+  @override
+  String get initialChoiceSubtitle => '选择一个单词开始探索';
+
+  @override
+  String learnedCount(int count) {
+    return '+$count';
+  }
+
+  @override
+  String get pathEndedTitle => '已探索完这条路径';
+
+  @override
+  String get pathEndedContent => '当前单词没有更多关联词了，选择新的起点继续探索吧！';
+
+  @override
+  String get chooseNewPath => '选择新路径';
 }

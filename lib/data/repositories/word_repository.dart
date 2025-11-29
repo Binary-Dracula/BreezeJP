@@ -7,6 +7,8 @@ import '../models/word_audio.dart';
 import '../models/example_sentence.dart';
 import '../models/example_audio.dart';
 import '../models/word_detail.dart';
+import '../models/word_choice.dart';
+import '../models/word_with_relation.dart';
 
 /// 单词数据仓库
 /// 负责所有与单词相关的数据库操作
@@ -512,6 +514,91 @@ class WordRepository {
       logger.dbError(
         operation: 'SELECT',
         table: 'words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  // ==================== 语义分支学习模式 ====================
+
+  /// 获取随机未掌握的单词（包含释义，用于初始选择）
+  /// 筛选条件：user_state IS NULL OR user_state IN (0, 1)
+  Future<List<WordChoice>> getRandomUnmasteredWordsWithMeaning({
+    int count = 5,
+  }) async {
+    try {
+      final db = await _db;
+
+      // 1. 获取随机未掌握单词
+      final wordResults = await db.rawQuery(
+        '''
+        SELECT w.*
+        FROM words w
+        LEFT JOIN study_words sw ON w.id = sw.word_id
+        WHERE sw.user_state IS NULL OR sw.user_state IN (0, 1)
+        ORDER BY RANDOM()
+        LIMIT ?
+      ''',
+        [count],
+      );
+
+      logger.dbQuery(
+        table: 'words',
+        where: 'unmastered RANDOM() limit $count',
+        resultCount: wordResults.length,
+      );
+
+      // 2. 为每个单词获取释义
+      final choices = <WordChoice>[];
+      for (final wordMap in wordResults) {
+        final word = Word.fromMap(wordMap);
+        final meanings = await getWordMeanings(word.id);
+        choices.add(WordChoice(word: word, meanings: meanings));
+      }
+
+      return choices;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'words + word_meanings',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 获取单词的关联词（过滤已掌握）
+  /// 筛选条件：user_state IS NULL OR user_state IN (0, 1)
+  Future<List<WordWithRelation>> getRelatedWords(int wordId) async {
+    try {
+      final db = await _db;
+      final results = await db.rawQuery(
+        '''
+        SELECT w.*, wr.score, wr.relation_type
+        FROM word_relations wr
+        JOIN words w ON wr.related_word_id = w.id
+        LEFT JOIN study_words sw ON w.id = sw.word_id
+        WHERE wr.word_id = ?
+          AND (sw.user_state IS NULL OR sw.user_state IN (0, 1))
+        ORDER BY wr.score DESC
+      ''',
+        [wordId],
+      );
+
+      logger.dbQuery(
+        table: 'word_relations + words',
+        where: 'word_id = $wordId (unmastered)',
+        resultCount: results.length,
+      );
+
+      return results.map((map) => WordWithRelation.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'word_relations',
         dbError: e,
         stackTrace: stackTrace,
       );

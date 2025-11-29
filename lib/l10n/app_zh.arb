@@ -227,6 +227,35 @@
   "finish": "完成",
   "@finish": {
     "description": "学习模式最后一个单词完成按钮"
+  },
+  "initialChoiceTitle": "选择起点",
+  "@initialChoiceTitle": {
+    "description": "初始选择页标题"
+  },
+  "initialChoiceSubtitle": "选择一个单词开始探索",
+  "@initialChoiceSubtitle": {
+    "description": "初始选择页副标题"
+  },
+  "learnedCount": "+{count}",
+  "@learnedCount": {
+    "description": "已学单词计数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pathEndedTitle": "已探索完这条路径",
+  "@pathEndedTitle": {
+    "description": "路径结束对话框标题"
+  },
+  "pathEndedContent": "当前单词没有更多关联词了，选择新的起点继续探索吧！",
+  "@pathEndedContent": {
+    "description": "路径结束对话框内容"
+  },
+  "chooseNewPath": "选择新路径",
+  "@chooseNewPath": {
+    "description": "选择新路径按钮"
   }
 
 }

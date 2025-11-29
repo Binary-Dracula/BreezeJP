@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../controller/home_controller.dart';
-import '../../learn/pages/learn_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -208,9 +208,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const LearnPage()),
-                );
+                context.go('/initial-choice');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,

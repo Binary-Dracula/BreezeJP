@@ -473,4 +473,48 @@ class StudyWordRepository {
       rethrow;
     }
   }
+
+  // ==================== 语义分支学习模式 ====================
+
+  /// 标记单词为学习中（user_state = 1）
+  /// 如果记录不存在则创建，存在则更新
+  Future<void> markAsLearned({required int userId, required int wordId}) async {
+    try {
+      final db = await _db;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // 使用 INSERT OR REPLACE 实现 upsert
+      await db.rawInsert(
+        '''
+        INSERT INTO study_words (user_id, word_id, user_state, created_at, updated_at)
+        VALUES (?, ?, 1, ?, ?)
+        ON CONFLICT(user_id, word_id) DO UPDATE SET
+          user_state = CASE 
+            WHEN user_state = 2 THEN 2  -- 已掌握的不降级
+            ELSE 1 
+          END,
+          updated_at = ?
+      ''',
+        [userId, wordId, now, now, now],
+      );
+
+      logger.dbInsert(
+        table: 'study_words',
+        id: 0,
+        keyFields: {
+          'userId': userId,
+          'wordId': wordId,
+          'action': 'markAsLearned',
+        },
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
 }
