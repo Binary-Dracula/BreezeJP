@@ -61,32 +61,113 @@
     }
   },
   "homeTodayGoal": "今日目标",
+  "@homeTodayGoal": {
+    "description": "首页今日目标标签"
+  },
   "homeWordsUnit": "词",
+  "@homeWordsUnit": {
+    "description": "单词数量单位"
+  },
   "homeReview": "复习",
+  "@homeReview": {
+    "description": "首页复习标签"
+  },
   "homeNewWords": "新词",
+  "@homeNewWords": {
+    "description": "首页新词标签"
+  },
   "loading": "加载中...",
+  "@loading": {
+    "description": "通用加载提示"
+  },
   "learning": "学习中",
+  "@learning": {
+    "description": "学习状态标签"
+  },
   "learnWords": "学习单词",
+  "@learnWords": {
+    "description": "学习单词按钮"
+  },
   "loadingWords": "正在加载单词...",
+  "@loadingWords": {
+    "description": "加载单词提示"
+  },
   "noWordsToLearn": "没有需要学习的单词",
+  "@noWordsToLearn": {
+    "description": "无单词可学提示"
+  },
   "examples": "例句",
+  "@examples": {
+    "description": "例句标签"
+  },
   "ratingAgain": "重来",
+  "@ratingAgain": {
+    "description": "评分按钮-重来"
+  },
   "ratingAgainSub": "忘记",
+  "@ratingAgainSub": {
+    "description": "评分按钮-重来副标题"
+  },
   "ratingHard": "困难",
+  "@ratingHard": {
+    "description": "评分按钮-困难"
+  },
   "ratingHardSub": "模糊",
+  "@ratingHardSub": {
+    "description": "评分按钮-困难副标题"
+  },
   "ratingGood": "良好",
+  "@ratingGood": {
+    "description": "评分按钮-良好"
+  },
   "ratingGoodSub": "记得",
+  "@ratingGoodSub": {
+    "description": "评分按钮-良好副标题"
+  },
   "ratingEasy": "简单",
+  "@ratingEasy": {
+    "description": "评分按钮-简单"
+  },
   "ratingEasySub": "熟练",
+  "@ratingEasySub": {
+    "description": "评分按钮-简单副标题"
+  },
   "previous": "上一个",
+  "@previous": {
+    "description": "上一个按钮"
+  },
   "next": "下一个",
+  "@next": {
+    "description": "下一个按钮"
+  },
   "learningFinished": "学习完成！",
+  "@learningFinished": {
+    "description": "学习完成标题"
+  },
   "learningFinishedDesc": "你已完成本次学习。",
+  "@learningFinishedDesc": {
+    "description": "学习完成描述"
+  },
   "backToHome": "返回主页",
+  "@backToHome": {
+    "description": "返回主页按钮"
+  },
   "continueLearningTitle": "继续学习？",
+  "@continueLearningTitle": {
+    "description": "继续学习对话框标题"
+  },
   "continueLearningContent": "你已完成当前队列。是否加载更多单词？",
+  "@continueLearningContent": {
+    "description": "继续学习对话框内容"
+  },
   "restABit": "休息一下",
+  "@restABit": {
+    "description": "休息按钮"
+  },
   "continueLearning": "继续学习",
+  "@continueLearning": {
+    "description": "继续学习按钮"
+  },
   "retryButton": "重试",
   "@retryButton": {
     "description": "重试按钮文字"
@@ -142,11 +223,24 @@
     "description": "详细统计功能副标题"
   },
   "networkConnectionTimeout": "连接超时，请检查网络设置",
+  "@networkConnectionTimeout": {
+    "description": "网络连接超时错误"
+  },
   "networkRequestCancelled": "请求已取消",
+  "@networkRequestCancelled": {
+    "description": "网络请求取消提示"
+  },
   "networkConnectionFailed": "网络连接失败，请检查网络设置",
+  "@networkConnectionFailed": {
+    "description": "网络连接失败错误"
+  },
   "networkCertificateFailed": "证书验证失败",
+  "@networkCertificateFailed": {
+    "description": "SSL证书验证失败错误"
+  },
   "networkRequestFailed": "网络请求失败: {message}",
   "@networkRequestFailed": {
+    "description": "网络请求失败错误",
     "placeholders": {
       "message": {
         "type": "String"
@@ -155,53 +249,80 @@
   },
   "networkRequestFailedWithCode": "网络请求失败 (状态码: {code})",
   "@networkRequestFailedWithCode": {
+    "description": "带状态码的网络请求失败错误",
     "placeholders": {
       "code": {
-        "type": "Object"
+        "type": "String"
       }
     }
   },
   "networkBadRequest": "请求参数错误",
+  "@networkBadRequest": {
+    "description": "HTTP 400 错误"
+  },
   "networkUnauthorized": "未授权，请重新登录",
+  "@networkUnauthorized": {
+    "description": "HTTP 401 错误"
+  },
   "networkForbidden": "拒绝访问",
+  "@networkForbidden": {
+    "description": "HTTP 403 错误"
+  },
   "networkNotFound": "请求的资源不存在",
+  "@networkNotFound": {
+    "description": "HTTP 404 错误"
+  },
   "networkInternalServerError": "服务器内部错误",
+  "@networkInternalServerError": {
+    "description": "HTTP 500 错误"
+  },
   "networkBadGateway": "网关错误",
+  "@networkBadGateway": {
+    "description": "HTTP 502 错误"
+  },
   "networkServiceUnavailable": "服务不可用",
+  "@networkServiceUnavailable": {
+    "description": "HTTP 503 错误"
+  },
   "loadFailed": "加载失败: {error}",
   "@loadFailed": {
+    "description": "通用加载失败错误",
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "String"
       }
     }
   },
   "searchFailed": "搜索失败: {error}",
   "@searchFailed": {
+    "description": "搜索失败错误",
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "String"
       }
     }
   },
   "submitFailed": "提交失败: {error}",
   "@submitFailed": {
+    "description": "提交失败错误",
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "String"
       }
     }
   },
   "playAudioFailed": "播放音频失败: {error}",
   "@playAudioFailed": {
+    "description": "音频播放失败错误",
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "String"
       }
     }
   },
   "audioLoadFailedOnline": "无法加载在线音频: {url}",
   "@audioLoadFailedOnline": {
+    "description": "在线音频加载失败错误",
     "placeholders": {
       "url": {
         "type": "String"
@@ -210,6 +331,7 @@
   },
   "audioNoOnlineSource": "没有可用的在线音频: {filename}",
   "@audioNoOnlineSource": {
+    "description": "无在线音频源错误",
     "placeholders": {
       "filename": {
         "type": "String"

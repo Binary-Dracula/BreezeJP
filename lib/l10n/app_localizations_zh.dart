@@ -185,7 +185,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String networkRequestFailedWithCode(Object code) {
+  String networkRequestFailedWithCode(String code) {
     return '网络请求失败 (状态码: $code)';
   }
 
@@ -211,22 +211,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get networkServiceUnavailable => '服务不可用';
 
   @override
-  String loadFailed(Object error) {
+  String loadFailed(String error) {
     return '加载失败: $error';
   }
 
   @override
-  String searchFailed(Object error) {
+  String searchFailed(String error) {
     return '搜索失败: $error';
   }
 
   @override
-  String submitFailed(Object error) {
+  String submitFailed(String error) {
     return '提交失败: $error';
   }
 
   @override
-  String playAudioFailed(Object error) {
+  String playAudioFailed(String error) {
     return '播放音频失败: $error';
   }
 

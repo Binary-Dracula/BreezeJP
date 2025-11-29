@@ -166,163 +166,163 @@ abstract class AppLocalizations {
   /// **'数据库初始化失败: {error}'**
   String databaseInitFailed(String error);
 
-  /// No description provided for @homeTodayGoal.
+  /// 首页今日目标标签
   ///
   /// In zh, this message translates to:
   /// **'今日目标'**
   String get homeTodayGoal;
 
-  /// No description provided for @homeWordsUnit.
+  /// 单词数量单位
   ///
   /// In zh, this message translates to:
   /// **'词'**
   String get homeWordsUnit;
 
-  /// No description provided for @homeReview.
+  /// 首页复习标签
   ///
   /// In zh, this message translates to:
   /// **'复习'**
   String get homeReview;
 
-  /// No description provided for @homeNewWords.
+  /// 首页新词标签
   ///
   /// In zh, this message translates to:
   /// **'新词'**
   String get homeNewWords;
 
-  /// No description provided for @loading.
+  /// 通用加载提示
   ///
   /// In zh, this message translates to:
   /// **'加载中...'**
   String get loading;
 
-  /// No description provided for @learning.
+  /// 学习状态标签
   ///
   /// In zh, this message translates to:
   /// **'学习中'**
   String get learning;
 
-  /// No description provided for @learnWords.
+  /// 学习单词按钮
   ///
   /// In zh, this message translates to:
   /// **'学习单词'**
   String get learnWords;
 
-  /// No description provided for @loadingWords.
+  /// 加载单词提示
   ///
   /// In zh, this message translates to:
   /// **'正在加载单词...'**
   String get loadingWords;
 
-  /// No description provided for @noWordsToLearn.
+  /// 无单词可学提示
   ///
   /// In zh, this message translates to:
   /// **'没有需要学习的单词'**
   String get noWordsToLearn;
 
-  /// No description provided for @examples.
+  /// 例句标签
   ///
   /// In zh, this message translates to:
   /// **'例句'**
   String get examples;
 
-  /// No description provided for @ratingAgain.
+  /// 评分按钮-重来
   ///
   /// In zh, this message translates to:
   /// **'重来'**
   String get ratingAgain;
 
-  /// No description provided for @ratingAgainSub.
+  /// 评分按钮-重来副标题
   ///
   /// In zh, this message translates to:
   /// **'忘记'**
   String get ratingAgainSub;
 
-  /// No description provided for @ratingHard.
+  /// 评分按钮-困难
   ///
   /// In zh, this message translates to:
   /// **'困难'**
   String get ratingHard;
 
-  /// No description provided for @ratingHardSub.
+  /// 评分按钮-困难副标题
   ///
   /// In zh, this message translates to:
   /// **'模糊'**
   String get ratingHardSub;
 
-  /// No description provided for @ratingGood.
+  /// 评分按钮-良好
   ///
   /// In zh, this message translates to:
   /// **'良好'**
   String get ratingGood;
 
-  /// No description provided for @ratingGoodSub.
+  /// 评分按钮-良好副标题
   ///
   /// In zh, this message translates to:
   /// **'记得'**
   String get ratingGoodSub;
 
-  /// No description provided for @ratingEasy.
+  /// 评分按钮-简单
   ///
   /// In zh, this message translates to:
   /// **'简单'**
   String get ratingEasy;
 
-  /// No description provided for @ratingEasySub.
+  /// 评分按钮-简单副标题
   ///
   /// In zh, this message translates to:
   /// **'熟练'**
   String get ratingEasySub;
 
-  /// No description provided for @previous.
+  /// 上一个按钮
   ///
   /// In zh, this message translates to:
   /// **'上一个'**
   String get previous;
 
-  /// No description provided for @next.
+  /// 下一个按钮
   ///
   /// In zh, this message translates to:
   /// **'下一个'**
   String get next;
 
-  /// No description provided for @learningFinished.
+  /// 学习完成标题
   ///
   /// In zh, this message translates to:
   /// **'学习完成！'**
   String get learningFinished;
 
-  /// No description provided for @learningFinishedDesc.
+  /// 学习完成描述
   ///
   /// In zh, this message translates to:
   /// **'你已完成本次学习。'**
   String get learningFinishedDesc;
 
-  /// No description provided for @backToHome.
+  /// 返回主页按钮
   ///
   /// In zh, this message translates to:
   /// **'返回主页'**
   String get backToHome;
 
-  /// No description provided for @continueLearningTitle.
+  /// 继续学习对话框标题
   ///
   /// In zh, this message translates to:
   /// **'继续学习？'**
   String get continueLearningTitle;
 
-  /// No description provided for @continueLearningContent.
+  /// 继续学习对话框内容
   ///
   /// In zh, this message translates to:
   /// **'你已完成当前队列。是否加载更多单词？'**
   String get continueLearningContent;
 
-  /// No description provided for @restABit.
+  /// 休息按钮
   ///
   /// In zh, this message translates to:
   /// **'休息一下'**
   String get restABit;
 
-  /// No description provided for @continueLearning.
+  /// 继续学习按钮
   ///
   /// In zh, this message translates to:
   /// **'继续学习'**
@@ -400,115 +400,115 @@ abstract class AppLocalizations {
   /// **'查看遗忘曲线'**
   String get detailedStatsSubtitle;
 
-  /// No description provided for @networkConnectionTimeout.
+  /// 网络连接超时错误
   ///
   /// In zh, this message translates to:
   /// **'连接超时，请检查网络设置'**
   String get networkConnectionTimeout;
 
-  /// No description provided for @networkRequestCancelled.
+  /// 网络请求取消提示
   ///
   /// In zh, this message translates to:
   /// **'请求已取消'**
   String get networkRequestCancelled;
 
-  /// No description provided for @networkConnectionFailed.
+  /// 网络连接失败错误
   ///
   /// In zh, this message translates to:
   /// **'网络连接失败，请检查网络设置'**
   String get networkConnectionFailed;
 
-  /// No description provided for @networkCertificateFailed.
+  /// SSL证书验证失败错误
   ///
   /// In zh, this message translates to:
   /// **'证书验证失败'**
   String get networkCertificateFailed;
 
-  /// No description provided for @networkRequestFailed.
+  /// 网络请求失败错误
   ///
   /// In zh, this message translates to:
   /// **'网络请求失败: {message}'**
   String networkRequestFailed(String message);
 
-  /// No description provided for @networkRequestFailedWithCode.
+  /// 带状态码的网络请求失败错误
   ///
   /// In zh, this message translates to:
   /// **'网络请求失败 (状态码: {code})'**
-  String networkRequestFailedWithCode(Object code);
+  String networkRequestFailedWithCode(String code);
 
-  /// No description provided for @networkBadRequest.
+  /// HTTP 400 错误
   ///
   /// In zh, this message translates to:
   /// **'请求参数错误'**
   String get networkBadRequest;
 
-  /// No description provided for @networkUnauthorized.
+  /// HTTP 401 错误
   ///
   /// In zh, this message translates to:
   /// **'未授权，请重新登录'**
   String get networkUnauthorized;
 
-  /// No description provided for @networkForbidden.
+  /// HTTP 403 错误
   ///
   /// In zh, this message translates to:
   /// **'拒绝访问'**
   String get networkForbidden;
 
-  /// No description provided for @networkNotFound.
+  /// HTTP 404 错误
   ///
   /// In zh, this message translates to:
   /// **'请求的资源不存在'**
   String get networkNotFound;
 
-  /// No description provided for @networkInternalServerError.
+  /// HTTP 500 错误
   ///
   /// In zh, this message translates to:
   /// **'服务器内部错误'**
   String get networkInternalServerError;
 
-  /// No description provided for @networkBadGateway.
+  /// HTTP 502 错误
   ///
   /// In zh, this message translates to:
   /// **'网关错误'**
   String get networkBadGateway;
 
-  /// No description provided for @networkServiceUnavailable.
+  /// HTTP 503 错误
   ///
   /// In zh, this message translates to:
   /// **'服务不可用'**
   String get networkServiceUnavailable;
 
-  /// No description provided for @loadFailed.
+  /// 通用加载失败错误
   ///
   /// In zh, this message translates to:
   /// **'加载失败: {error}'**
-  String loadFailed(Object error);
+  String loadFailed(String error);
 
-  /// No description provided for @searchFailed.
+  /// 搜索失败错误
   ///
   /// In zh, this message translates to:
   /// **'搜索失败: {error}'**
-  String searchFailed(Object error);
+  String searchFailed(String error);
 
-  /// No description provided for @submitFailed.
+  /// 提交失败错误
   ///
   /// In zh, this message translates to:
   /// **'提交失败: {error}'**
-  String submitFailed(Object error);
+  String submitFailed(String error);
 
-  /// No description provided for @playAudioFailed.
+  /// 音频播放失败错误
   ///
   /// In zh, this message translates to:
   /// **'播放音频失败: {error}'**
-  String playAudioFailed(Object error);
+  String playAudioFailed(String error);
 
-  /// No description provided for @audioLoadFailedOnline.
+  /// 在线音频加载失败错误
   ///
   /// In zh, this message translates to:
   /// **'无法加载在线音频: {url}'**
   String audioLoadFailedOnline(String url);
 
-  /// No description provided for @audioNoOnlineSource.
+  /// 无在线音频源错误
   ///
   /// In zh, this message translates to:
   /// **'没有可用的在线音频: {filename}'**
