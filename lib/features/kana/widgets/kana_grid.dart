@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/widgets/stroke_order_animator.dart';
 import '../../../data/models/kana_detail.dart';
+import '../../../data/repositories/kana_repository_provider.dart';
+import '../../../services/audio_service_provider.dart';
 import '../state/kana_chart_state.dart';
 
 /// 五十音网格组件
 /// 按行列展示假名，清晰显示行和段
-class KanaGrid extends StatelessWidget {
+class KanaGrid extends ConsumerWidget {
   final List<KanaLetterWithState> kanaLetters;
   final KanaDisplayMode displayMode;
   final String kanaType;
@@ -111,21 +115,30 @@ class KanaGrid extends StatelessWidget {
   // ==================== 构建方法 ====================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // 根据类型选择不同的布局
     switch (kanaType) {
       case typeYouon:
-        return _buildYouonGrid(context);
+        return _buildYouonGrid(context, ref);
       case typeGairaion:
-        return _buildExtendedGrid(context);
+        return _buildExtendedGrid(context, ref);
       default:
         // 清音、濁音、半濁音 使用标准网格
-        return _buildStandardGrid(context);
+        return _buildStandardGrid(context, ref);
     }
   }
 
   /// 标准五十音网格（清音、浊音、半浊音）
-  Widget _buildStandardGrid(BuildContext context) {
+  Widget _buildStandardGrid(BuildContext context, WidgetRef ref) {
+    // 只有清音显示行和段标题
+    final showHeaders = kanaType == typeSeion;
+
+    // 非清音使用简单网格布局
+    if (!showHeaders) {
+      return _buildSimpleGrid(context, ref);
+    }
+
+    // 清音使用带标题的布局
     // 按行分组
     final groupedByRow = <String, List<KanaLetterWithState>>{};
     for (final kana in kanaLetters) {
@@ -157,16 +170,39 @@ class KanaGrid extends StatelessWidget {
           final kanaInRow = groupedByRow[group]!;
           // 特殊行单独处理
           if (group == _specialGroup) {
-            return _buildSpecialRow(context, _getRowLabel(group), kanaInRow);
+            return _buildSpecialRow(
+              context,
+              ref,
+              _getRowLabel(group),
+              kanaInRow,
+            );
           }
-          return _buildKanaRow(context, _getRowLabel(group), kanaInRow, 5);
+          return _buildKanaRow(context, ref, _getRowLabel(group), kanaInRow, 5);
         }),
       ],
     );
   }
 
+  /// 简单网格布局（浊音、半浊音等无标题）
+  Widget _buildSimpleGrid(BuildContext context, WidgetRef ref) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 5,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+        childAspectRatio: 1,
+      ),
+      itemCount: kanaLetters.length,
+      itemBuilder: (context, index) {
+        return _buildKanaCell(context, ref, kanaLetters[index]);
+      },
+    );
+  }
+
   /// 拗音网格
-  Widget _buildYouonGrid(BuildContext context) {
+  Widget _buildYouonGrid(BuildContext context, WidgetRef ref) {
     // 按行分组
     final groupedByRow = <String, List<KanaLetterWithState>>{};
     for (final kana in kanaLetters) {
@@ -181,26 +217,30 @@ class KanaGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 列标题
-        _buildColumnHeaders(_youonHeaders),
-        const SizedBox(height: 8),
-        // 每一行
+        // 每一行（不显示行和列标题）
         ...sortedGroups.map((group) {
           final kanaInRow = groupedByRow[group]!;
-          return _buildYouonRow(context, _getYouonRowLabel(group), kanaInRow);
+          return _buildYouonRow(context, ref, null, kanaInRow);
         }),
       ],
     );
   }
 
   /// 特殊假名网格（外来音）
-  Widget _buildExtendedGrid(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: kanaLetters.map((kana) {
-        return _buildKanaCell(context, kana, size: 72);
-      }).toList(),
+  Widget _buildExtendedGrid(BuildContext context, WidgetRef ref) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 5,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+        childAspectRatio: 1,
+      ),
+      itemCount: kanaLetters.length,
+      itemBuilder: (context, index) {
+        return _buildKanaCell(context, ref, kanaLetters[index]);
+      },
     );
   }
 
@@ -232,7 +272,8 @@ class KanaGrid extends StatelessWidget {
   /// 构建一行假名（标准五十音）
   Widget _buildKanaRow(
     BuildContext context,
-    String rowLabel,
+    WidgetRef ref,
+    String? rowLabel,
     List<KanaLetterWithState> kanaInRow,
     int columnCount,
   ) {
@@ -249,23 +290,24 @@ class KanaGrid extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          // 行标题
-          SizedBox(
-            width: 56,
-            child: Text(
-              rowLabel,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
+          // 行标题（可选）
+          if (rowLabel != null)
+            SizedBox(
+              width: 56,
+              child: Text(
+                rowLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
           // 假名格子
           ...sortedKana.map((kana) {
             return Expanded(
               child: kana != null
-                  ? _buildKanaCell(context, kana)
+                  ? _buildKanaCell(context, ref, kana)
                   : const SizedBox.shrink(),
             );
           }),
@@ -277,28 +319,30 @@ class KanaGrid extends StatelessWidget {
   /// 构建特殊行（ん、を 等不规则假名）
   Widget _buildSpecialRow(
     BuildContext context,
-    String rowLabel,
+    WidgetRef ref,
+    String? rowLabel,
     List<KanaLetterWithState> kanaInRow,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          // 行标题
-          SizedBox(
-            width: 56,
-            child: Text(
-              rowLabel,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
+          // 行标题（可选）
+          if (rowLabel != null)
+            SizedBox(
+              width: 56,
+              child: Text(
+                rowLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
           // 特殊假名直接显示，不按元音排列
           ...kanaInRow.map((kana) {
-            return Expanded(child: _buildKanaCell(context, kana));
+            return Expanded(child: _buildKanaCell(context, ref, kana));
           }),
           // 填充空位保持对齐
           ...List.generate(5 - kanaInRow.length, (_) {
@@ -312,7 +356,8 @@ class KanaGrid extends StatelessWidget {
   /// 构建一行拗音
   Widget _buildYouonRow(
     BuildContext context,
-    String rowLabel,
+    WidgetRef ref,
+    String? rowLabel,
     List<KanaLetterWithState> kanaInRow,
   ) {
     // 拗音按 a, u, o 排序
@@ -332,23 +377,24 @@ class KanaGrid extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          // 行标题
-          SizedBox(
-            width: 56,
-            child: Text(
-              rowLabel,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
+          // 行标题（可选）
+          if (rowLabel != null)
+            SizedBox(
+              width: 56,
+              child: Text(
+                rowLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
           // 假名格子
           ...sortedKana.map((kana) {
             return Expanded(
               child: kana != null
-                  ? _buildKanaCell(context, kana)
+                  ? _buildKanaCell(context, ref, kana)
                   : const SizedBox.shrink(),
             );
           }),
@@ -360,6 +406,7 @@ class KanaGrid extends StatelessWidget {
   /// 单个假名格子
   Widget _buildKanaCell(
     BuildContext context,
+    WidgetRef ref,
     KanaLetterWithState kana, {
     double? size,
   }) {
@@ -418,14 +465,63 @@ class KanaGrid extends StatelessWidget {
       ),
     );
 
+    final wrappedCell = GestureDetector(
+      onTap: () => _onKanaTap(context, ref, kana),
+      child: cell,
+    );
+
     if (size != null) {
-      return SizedBox(width: size, height: size, child: cell);
+      return SizedBox(width: size, height: size, child: wrappedCell);
     }
 
     return Container(
       margin: const EdgeInsets.all(2),
-      child: AspectRatio(aspectRatio: 1, child: cell),
+      child: AspectRatio(aspectRatio: 1, child: wrappedCell),
     );
+  }
+
+  /// 处理假名点击
+  void _onKanaTap(
+    BuildContext context,
+    WidgetRef ref,
+    KanaLetterWithState kana,
+  ) async {
+    final repository = ref.read(kanaRepositoryProvider);
+    final strokeOrder = await repository.getKanaStrokeOrder(kana.letter.id);
+    final kanaAudio = await repository.getKanaAudio(kana.letter.id);
+
+    // 根据显示模式选择对应的 SVG
+    final svgData = displayMode == KanaDisplayMode.hiragana
+        ? strokeOrder?.hiraganaSvg
+        : strokeOrder?.katakanaSvg;
+
+    // 没有笔顺数据（拗音等），直接播放音频
+    if (svgData == null || svgData.isEmpty) {
+      if (kanaAudio?.audioFilename != null &&
+          kanaAudio!.audioFilename!.isNotEmpty) {
+        final audioService = ref.read(audioServiceProvider);
+        final audioPath = 'assets/audio/kana/${kanaAudio.audioFilename}';
+        audioService.playAudio(audioPath);
+      }
+      return;
+    }
+
+    final displayText = displayMode == KanaDisplayMode.hiragana
+        ? kana.letter.hiragana
+        : kana.letter.katakana;
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => _StrokeOrderDialog(
+          kanaText: displayText ?? '',
+          romaji: kana.letter.romaji ?? '',
+          svgData: svgData,
+          audioFilename: kanaAudio?.audioFilename,
+          ref: ref,
+        ),
+      );
+    }
   }
 
   // ==================== 辅助方法 ====================
@@ -454,5 +550,96 @@ class KanaGrid extends StatelessWidget {
   int _getVowelIndex(String? vowel) {
     if (vowel == null) return -1;
     return _vowelOrder.indexOf(vowel);
+  }
+}
+
+/// 笔顺动画弹窗
+class _StrokeOrderDialog extends StatelessWidget {
+  final String kanaText;
+  final String romaji;
+  final String svgData;
+  final String? audioFilename;
+  final WidgetRef ref;
+
+  const _StrokeOrderDialog({
+    required this.kanaText,
+    required this.romaji,
+    required this.svgData,
+    required this.ref,
+    this.audioFilename,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final animatorKey = GlobalKey<StrokeOrderAnimatorState>();
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 标题
+            Text(
+              kanaText,
+              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              romaji,
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 24),
+            // 笔顺动画
+            StrokeOrderAnimator(
+              key: animatorKey,
+              svgData: svgData,
+              size: 200,
+              strokeColor: Theme.of(context).primaryColor,
+              completedColor: Colors.black87,
+              backgroundStrokeColor: Colors.grey.withValues(alpha: 0.2),
+              strokeDuration: const Duration(milliseconds: 600),
+              autoPlay: true,
+              loop: false,
+            ),
+            const SizedBox(height: 24),
+            // 控制按钮
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 播放音频按钮
+                if (audioFilename != null && audioFilename!.isNotEmpty)
+                  IconButton(
+                    onPressed: () => _playAudio(ref),
+                    icon: const Icon(Icons.volume_up),
+                    tooltip: '播放发音',
+                  ),
+                if (audioFilename != null && audioFilename!.isNotEmpty)
+                  const SizedBox(width: 16),
+                IconButton(
+                  onPressed: () => animatorKey.currentState?.play(),
+                  icon: const Icon(Icons.play_arrow),
+                  tooltip: '播放笔顺',
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                  tooltip: '关闭',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 播放假名音频
+  void _playAudio(WidgetRef ref) {
+    if (audioFilename == null || audioFilename!.isEmpty) return;
+    final audioService = ref.read(audioServiceProvider);
+    final audioPath = 'assets/audio/kana/$audioFilename';
+    audioService.playAudio(audioPath);
   }
 }

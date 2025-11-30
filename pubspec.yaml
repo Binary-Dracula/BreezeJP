@@ -38,6 +38,7 @@ dependencies:
   dio: ^5.7.0
   # 日志
   logger: ^2.5.0
+  xml: ^6.6.1
 
 dev_dependencies:
   flutter_test:
