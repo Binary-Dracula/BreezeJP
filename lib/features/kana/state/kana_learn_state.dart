@@ -2,6 +2,7 @@ import '../../../data/models/kana_detail.dart';
 import '../../../data/models/kana_letter.dart';
 
 /// 五十音学习页面状态
+/// 控制学习队列、当前详情、显示选项等
 class KanaLearnState {
   /// 是否正在加载
   final bool isLoading;

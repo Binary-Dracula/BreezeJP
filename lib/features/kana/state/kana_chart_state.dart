@@ -1,17 +1,18 @@
 import '../../../data/models/kana_detail.dart';
 
 /// 五十音表页面状态
+/// 负责承载五十音网格展示、过滤、显示模式等数据
 class KanaChartState {
   /// 是否正在加载
   final bool isLoading;
 
-  /// 错误信息
+  /// 错误信息（存在即表示当前视图不可用）
   final String? error;
 
-  /// 所有假名（带学习状态）
+  /// 所有假名（携带学习状态）
   final List<KanaLetterWithState> kanaLetters;
 
-  /// 所有类型列表（从数据库获取）
+  /// 数据库返回的所有假名类型列表
   final List<String> kanaTypes;
 
   /// 当前选中的类型筛选 (null=全部)
@@ -20,8 +21,10 @@ class KanaChartState {
   /// 当前显示模式 (hiragana/katakana)
   final KanaDisplayMode displayMode;
 
-  /// 学习统计
+  /// 学习统计 - 总数
   final int totalCount;
+
+  /// 学习统计 - 已完成数量
   final int learnedCount;
 
   const KanaChartState({

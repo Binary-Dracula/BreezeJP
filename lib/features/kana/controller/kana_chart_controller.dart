@@ -56,7 +56,7 @@ class KanaChartController extends Notifier<KanaChartState> {
     logger.info('切换显示模式: $newMode');
   }
 
-  /// 设置显示模式
+  /// 设置显示模式（外部直接指定）
   void setDisplayMode(KanaDisplayMode mode) {
     state = state.copyWith(displayMode: mode);
   }

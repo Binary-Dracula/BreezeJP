@@ -268,4 +268,44 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chooseNewPath => '选择新路径';
+
+  @override
+  String kanaStrokePracticeTitle(String kana) {
+    return '$kana 笔顺练习';
+  }
+
+  @override
+  String get kanaStrokePlayAudio => '播放音频';
+
+  @override
+  String get kanaStrokeReplay => '重新播放';
+
+  @override
+  String get kanaStrokeWatchFirst => '先观看完整书写动画，动画结束后开始描红练习。';
+
+  @override
+  String get kanaStrokeTraceHint => '按照提示轨迹描红，每一笔都要准确。';
+
+  @override
+  String get kanaStrokeNoData => '暂无笔顺数据';
+
+  @override
+  String get kanaStrokeLoadingData => '加载笔顺数据...';
+
+  @override
+  String get kanaStrokePlayingAnimation => '正在播放笔顺动画...';
+
+  @override
+  String kanaStrokeProgress(int current, int total) {
+    return '当前第 $current/$total 笔';
+  }
+
+  @override
+  String get kanaStrokePracticeDone => '练习完成！';
+
+  @override
+  String get kanaStrokeStartFromAnchor => '从起笔点开始';
+
+  @override
+  String get kanaStrokeTryAgain => '再试一次';
 }

@@ -567,6 +567,78 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'选择新路径'**
   String get chooseNewPath;
+
+  /// 笔顺练习页面标题
+  ///
+  /// In zh, this message translates to:
+  /// **'{kana} 笔顺练习'**
+  String kanaStrokePracticeTitle(String kana);
+
+  /// 笔顺练习播放音频按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'播放音频'**
+  String get kanaStrokePlayAudio;
+
+  /// 笔顺练习重新播放动画按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'重新播放'**
+  String get kanaStrokeReplay;
+
+  /// 提示先观看动画
+  ///
+  /// In zh, this message translates to:
+  /// **'先观看完整书写动画，动画结束后开始描红练习。'**
+  String get kanaStrokeWatchFirst;
+
+  /// 描红阶段提示
+  ///
+  /// In zh, this message translates to:
+  /// **'按照提示轨迹描红，每一笔都要准确。'**
+  String get kanaStrokeTraceHint;
+
+  /// 无笔顺数据提示
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无笔顺数据'**
+  String get kanaStrokeNoData;
+
+  /// 笔顺数据加载提示
+  ///
+  /// In zh, this message translates to:
+  /// **'加载笔顺数据...'**
+  String get kanaStrokeLoadingData;
+
+  /// 动画播放提示
+  ///
+  /// In zh, this message translates to:
+  /// **'正在播放笔顺动画...'**
+  String get kanaStrokePlayingAnimation;
+
+  /// 描红进度提示
+  ///
+  /// In zh, this message translates to:
+  /// **'当前第 {current}/{total} 笔'**
+  String kanaStrokeProgress(int current, int total);
+
+  /// 描红完成提示
+  ///
+  /// In zh, this message translates to:
+  /// **'练习完成！'**
+  String get kanaStrokePracticeDone;
+
+  /// 提示需要从起笔点开始描红
+  ///
+  /// In zh, this message translates to:
+  /// **'从起笔点开始'**
+  String get kanaStrokeStartFromAnchor;
+
+  /// 提示重试描红
+  ///
+  /// In zh, this message translates to:
+  /// **'再试一次'**
+  String get kanaStrokeTryAgain;
 }
 
 class _AppLocalizationsDelegate

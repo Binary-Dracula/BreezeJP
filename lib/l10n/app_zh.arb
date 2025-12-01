@@ -378,6 +378,70 @@
   "chooseNewPath": "选择新路径",
   "@chooseNewPath": {
     "description": "选择新路径按钮"
+  },
+  "kanaStrokePracticeTitle": "{kana} 笔顺练习",
+  "@kanaStrokePracticeTitle": {
+    "description": "笔顺练习页面标题",
+    "placeholders": {
+      "kana": {
+        "type": "String",
+        "example": "あ"
+      }
+    }
+  },
+  "kanaStrokePlayAudio": "播放音频",
+  "@kanaStrokePlayAudio": {
+    "description": "笔顺练习播放音频按钮"
+  },
+  "kanaStrokeReplay": "重新播放",
+  "@kanaStrokeReplay": {
+    "description": "笔顺练习重新播放动画按钮"
+  },
+  "kanaStrokeWatchFirst": "先观看完整书写动画，动画结束后开始描红练习。",
+  "@kanaStrokeWatchFirst": {
+    "description": "提示先观看动画"
+  },
+  "kanaStrokeTraceHint": "按照提示轨迹描红，每一笔都要准确。",
+  "@kanaStrokeTraceHint": {
+    "description": "描红阶段提示"
+  },
+  "kanaStrokeNoData": "暂无笔顺数据",
+  "@kanaStrokeNoData": {
+    "description": "无笔顺数据提示"
+  },
+  "kanaStrokeLoadingData": "加载笔顺数据...",
+  "@kanaStrokeLoadingData": {
+    "description": "笔顺数据加载提示"
+  },
+  "kanaStrokePlayingAnimation": "正在播放笔顺动画...",
+  "@kanaStrokePlayingAnimation": {
+    "description": "动画播放提示"
+  },
+  "kanaStrokeProgress": "当前第 {current}/{total} 笔",
+  "@kanaStrokeProgress": {
+    "description": "描红进度提示",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "1"
+      },
+      "total": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "kanaStrokePracticeDone": "练习完成！",
+  "@kanaStrokePracticeDone": {
+    "description": "描红完成提示"
+  },
+  "kanaStrokeStartFromAnchor": "从起笔点开始",
+  "@kanaStrokeStartFromAnchor": {
+    "description": "提示需要从起笔点开始描红"
+  },
+  "kanaStrokeTryAgain": "再试一次",
+  "@kanaStrokeTryAgain": {
+    "description": "提示重试描红"
   }
 
 }

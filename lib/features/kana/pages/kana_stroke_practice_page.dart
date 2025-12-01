@@ -9,11 +9,14 @@ import '../../../core/widgets/stroke_order_animator.dart';
 import '../../../data/models/kana_detail.dart';
 import '../../../data/repositories/kana_repository_provider.dart';
 import '../../../services/audio_service_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../state/kana_chart_state.dart';
 
 const double _progressInfoHeight = 36;
 
 /// 假名笔顺练习页面（全屏）
+/// 展示逻辑：进入页面先自动播放完整笔顺动画，动画完成后才解锁描红练习。
+/// 提供音频播放、动画重播、左右切换假名等操作，保证教学和练习的节奏分离。
 class KanaStrokePracticePage extends ConsumerStatefulWidget {
   final List<KanaLetterWithState> kanaLetters;
   final int initialIndex;
@@ -33,12 +36,25 @@ class KanaStrokePracticePage extends ConsumerStatefulWidget {
 
 class _KanaStrokePracticePageState
     extends ConsumerState<KanaStrokePracticePage> {
+  /// 当前选中的假名索引
   late int _currentIndex;
+
+  /// 当前假名的笔顺 SVG 数据
   String? _svgData;
+
+  /// 当前假名的音频文件名
   String? _audioFilename;
+
+  /// UI 状态：是否在加载/切换假名
   bool _isLoading = true;
+
+  /// UI 状态：完整字形是否需要淡入
   bool _showFinalGlyph = false;
+
+  /// 是否允许开始描红
   bool _canPractice = false;
+
+  /// 当前假名的笔画引导数据
   StrokeGuideData? _currentGuide;
 
   final _animatorKey = GlobalKey<StrokeOrderAnimatorState>();
@@ -52,6 +68,7 @@ class _KanaStrokePracticePageState
   }
 
   Future<void> _loadCurrentKana() async {
+    // 切换假名时重置所有阶段状态
     setState(() {
       _isLoading = true;
       _showFinalGlyph = false;
@@ -100,6 +117,7 @@ class _KanaStrokePracticePageState
   }
 
   void _replayAnimation() {
+    // 重新播放动画时同时锁定描红层
     setState(() {
       _showFinalGlyph = false;
       _canPractice = false;
@@ -122,11 +140,12 @@ class _KanaStrokePracticePageState
   @override
   Widget build(BuildContext context) {
     final kana = _currentKana;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text('${_displayText(kana)} 笔顺练习'),
+        title: Text(l10n.kanaStrokePracticeTitle(_displayText(kana))),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -139,7 +158,12 @@ class _KanaStrokePracticePageState
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _svgData == null || _svgData!.isEmpty
-                ? const Center(child: Text('暂无笔顺数据', style: TextStyle(color: Colors.grey)))
+                ? Center(
+                    child: Text(
+                      l10n.kanaStrokeNoData,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  )
                 : Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -147,15 +171,15 @@ class _KanaStrokePracticePageState
                       children: [
                         _buildHeader(context, kana),
                         const SizedBox(height: 12),
-                        _buildControls(context),
+                        _buildControls(context, l10n),
                         const SizedBox(height: 16),
                         Expanded(
                           child: Center(
-                            child: _buildPracticeArea(context),
+                            child: _buildPracticeArea(context, l10n),
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _buildBottomHint(),
+                        _buildBottomHint(l10n),
                       ],
                     ),
                   ),
@@ -214,7 +238,7 @@ class _KanaStrokePracticePageState
     );
   }
 
-  Widget _buildControls(BuildContext context) {
+  Widget _buildControls(BuildContext context, AppLocalizations l10n) {
     return Wrap(
       spacing: 12,
       runSpacing: 8,
@@ -223,18 +247,18 @@ class _KanaStrokePracticePageState
         FilledButton.icon(
           onPressed: _playAudio,
           icon: const Icon(Icons.volume_up),
-          label: const Text('播放音频'),
+          label: Text(l10n.kanaStrokePlayAudio),
         ),
         FilledButton.icon(
           onPressed: _replayAnimation,
           icon: const Icon(Icons.refresh),
-          label: const Text('重新播放'),
+          label: Text(l10n.kanaStrokeReplay),
         ),
       ],
     );
   }
 
-  Widget _buildPracticeArea(BuildContext context) {
+  Widget _buildPracticeArea(BuildContext context, AppLocalizations l10n) {
     final size = min(MediaQuery.of(context).size.width * 0.8, 360.0);
     final guide = _currentGuide;
     final painterSize =
@@ -305,8 +329,8 @@ class _KanaStrokePracticePageState
             child: Center(
               child: Text(
                 guide != null
-                    ? '正在播放笔顺动画...'
-                    : '加载笔顺数据...',
+                    ? l10n.kanaStrokePlayingAnimation
+                    : l10n.kanaStrokeLoadingData,
                 style: TextStyle(color: Colors.grey.shade700),
               ),
             ),
@@ -318,6 +342,7 @@ class _KanaStrokePracticePageState
     return StrokeTraceCanvas(
       key: _traceKey,
       svgData: _svgData ?? '',
+      l10n: l10n,
       size: size,
       enabled: _canPractice,
       backgroundBuilder: (canvasSize, guide) {
@@ -344,7 +369,7 @@ class _KanaStrokePracticePageState
     );
   }
 
-  Widget _buildBottomHint() {
+  Widget _buildBottomHint(AppLocalizations l10n) {
     const double messageHeight = 48;
     return SizedBox(
       height: messageHeight,
@@ -353,8 +378,8 @@ class _KanaStrokePracticePageState
           duration: const Duration(milliseconds: 200),
           child: Text(
             _canPractice
-                ? '按照提示轨迹描红，每一笔都要准确。'
-                : '先观看完整书写动画，动画结束后开始描红练习。',
+                ? l10n.kanaStrokeTraceHint
+                : l10n.kanaStrokeWatchFirst,
             key: ValueKey<bool>(_canPractice),
             style: TextStyle(color: Colors.grey.shade600),
             textAlign: TextAlign.center,
@@ -368,6 +393,7 @@ class _KanaStrokePracticePageState
 }
 
 /// 练习描红画布
+/// 负责描红进度控制、偏移判断、提示文案，接收背景层构建以复用动画/字形底图
 class StrokeTraceCanvas extends StatefulWidget {
   final String svgData;
   final double size;
@@ -375,10 +401,12 @@ class StrokeTraceCanvas extends StatefulWidget {
   final List<Widget> Function(Size painterSize, StrokeGuideData guide)?
       backgroundBuilder;
   final bool enabled;
+  final AppLocalizations l10n;
 
   const StrokeTraceCanvas({
     super.key,
     required this.svgData,
+    required this.l10n,
     this.size = 280,
     this.onAllCompleted,
     this.backgroundBuilder,
@@ -430,7 +458,8 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
   Widget build(BuildContext context) {
     final guide = _guide;
     if (guide == null || guide.paths.isEmpty) {
-      return const Text('暂无笔画数据', style: TextStyle(color: Colors.grey));
+      return Text(widget.l10n.kanaStrokeNoData,
+          style: const TextStyle(color: Colors.grey));
     }
 
     return LayoutBuilder(
@@ -508,8 +537,9 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
               child: Center(
                 child: Text(
                   _allDone
-                      ? '练习完成！'
-                      : '当前第 ${_currentStroke + 1}/${guide.paths.length} 笔',
+                      ? widget.l10n.kanaStrokePracticeDone
+                      : widget.l10n
+                          .kanaStrokeProgress(_currentStroke + 1, guide.paths.length),
                   style: TextStyle(color: Colors.grey.shade700),
                 ),
               ),
@@ -529,7 +559,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
 
     if (distance > 10) {
       setState(() {
-        _feedback = '从起笔点开始';
+        _feedback = widget.l10n.kanaStrokeStartFromAnchor;
         _showRetry = true;
       });
       HapticFeedback.lightImpact();
@@ -556,7 +586,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
         _guide!.distanceToPath(_guide!.paths[_currentStroke], point);
     if (deviation > 25 && !_showRetry) {
       setState(() {
-        _feedback = '再试一次';
+        _feedback = widget.l10n.kanaStrokeTryAgain;
         _showRetry = true;
       });
       HapticFeedback.lightImpact();
@@ -581,7 +611,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
 
     if (maxDeviation > 25) {
       setState(() {
-        _feedback = '再试一次';
+        _feedback = widget.l10n.kanaStrokeTryAgain;
         _showRetry = true;
         _currentPoints.clear();
       });

@@ -1,6 +1,7 @@
 import '../../../data/models/kana_letter.dart';
 
 /// 五十音测验页面状态
+/// 管理题目、进度、答题结果等数据
 class KanaQuizState {
   /// 是否正在加载
   final bool isLoading;
