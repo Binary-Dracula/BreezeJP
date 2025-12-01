@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/widgets/stroke_order_animator.dart';
 import '../../../data/models/kana_detail.dart';
-import '../../../data/repositories/kana_repository_provider.dart';
-import '../../../services/audio_service_provider.dart';
+import '../pages/kana_stroke_practice_page.dart';
 import '../state/kana_chart_state.dart';
 
 /// 五十音网格组件
@@ -31,9 +29,6 @@ class KanaGrid extends ConsumerWidget {
 
   /// 元音列标题
   static const List<String> _vowelHeaders = ['あ段', 'い段', 'う段', 'え段', 'お段'];
-
-  /// 拗音列标题
-  static const List<String> _youonHeaders = ['ゃ列', 'ゅ列', 'ょ列'];
 
   /// 元音顺序
   static const List<String> _vowelOrder = ['a', 'i', 'u', 'e', 'o'];
@@ -92,21 +87,6 @@ class KanaGrid extends ConsumerWidget {
     'da': 'だ行',
     'ba': 'ば行',
     'pa': 'ぱ行',
-  };
-
-  /// 拗音行标签映射
-  static const Map<String, String> _youonRowLabels = {
-    'kya': 'きゃ行',
-    'sha': 'しゃ行',
-    'cha': 'ちゃ行',
-    'nya': 'にゃ行',
-    'hya': 'ひゃ行',
-    'mya': 'みゃ行',
-    'rya': 'りゃ行',
-    'gya': 'ぎゃ行',
-    'ja': 'じゃ行',
-    'bya': 'びゃ行',
-    'pya': 'ぴゃ行',
   };
 
   /// 特殊行标识
@@ -483,45 +463,22 @@ class KanaGrid extends ConsumerWidget {
   /// 处理假名点击
   void _onKanaTap(
     BuildContext context,
-    WidgetRef ref,
+    WidgetRef _ref,
     KanaLetterWithState kana,
-  ) async {
-    final repository = ref.read(kanaRepositoryProvider);
-    final strokeOrder = await repository.getKanaStrokeOrder(kana.letter.id);
-    final kanaAudio = await repository.getKanaAudio(kana.letter.id);
-
-    // 根据显示模式选择对应的 SVG
-    final svgData = displayMode == KanaDisplayMode.hiragana
-        ? strokeOrder?.hiraganaSvg
-        : strokeOrder?.katakanaSvg;
-
-    // 没有笔顺数据（拗音等），直接播放音频
-    if (svgData == null || svgData.isEmpty) {
-      if (kanaAudio?.audioFilename != null &&
-          kanaAudio!.audioFilename!.isNotEmpty) {
-        final audioService = ref.read(audioServiceProvider);
-        final audioPath = 'assets/audio/kana/${kanaAudio.audioFilename}';
-        audioService.playAudio(audioPath);
-      }
-      return;
-    }
-
-    final displayText = displayMode == KanaDisplayMode.hiragana
-        ? kana.letter.hiragana
-        : kana.letter.katakana;
-
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        builder: (dialogContext) => _StrokeOrderDialog(
-          kanaText: displayText ?? '',
-          romaji: kana.letter.romaji ?? '',
-          svgData: svgData,
-          audioFilename: kanaAudio?.audioFilename,
-          ref: ref,
+  ) {
+    final index = kanaLetters.indexWhere(
+      (item) => item.letter.id == kana.letter.id,
+    );
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => KanaStrokePracticePage(
+          kanaLetters: kanaLetters,
+          initialIndex: index >= 0 ? index : 0,
+          displayMode: displayMode,
         ),
-      );
-    }
+      ),
+    );
   }
 
   // ==================== 辅助方法 ====================
@@ -543,103 +500,9 @@ class KanaGrid extends ConsumerWidget {
   /// 获取行标签
   String _getRowLabel(String group) => _rowLabels[group] ?? group;
 
-  /// 获取拗音行标签
-  String _getYouonRowLabel(String group) => _youonRowLabels[group] ?? group;
-
   /// 获取元音索引
   int _getVowelIndex(String? vowel) {
     if (vowel == null) return -1;
     return _vowelOrder.indexOf(vowel);
-  }
-}
-
-/// 笔顺动画弹窗
-class _StrokeOrderDialog extends StatelessWidget {
-  final String kanaText;
-  final String romaji;
-  final String svgData;
-  final String? audioFilename;
-  final WidgetRef ref;
-
-  const _StrokeOrderDialog({
-    required this.kanaText,
-    required this.romaji,
-    required this.svgData,
-    required this.ref,
-    this.audioFilename,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final animatorKey = GlobalKey<StrokeOrderAnimatorState>();
-
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 标题
-            Text(
-              kanaText,
-              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              romaji,
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 24),
-            // 笔顺动画
-            StrokeOrderAnimator(
-              key: animatorKey,
-              svgData: svgData,
-              size: 200,
-              strokeColor: Theme.of(context).primaryColor,
-              completedColor: Colors.black87,
-              backgroundStrokeColor: Colors.grey.withValues(alpha: 0.2),
-              strokeDuration: const Duration(milliseconds: 600),
-              autoPlay: true,
-              loop: false,
-            ),
-            const SizedBox(height: 24),
-            // 控制按钮
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 播放音频按钮
-                if (audioFilename != null && audioFilename!.isNotEmpty)
-                  IconButton(
-                    onPressed: () => _playAudio(ref),
-                    icon: const Icon(Icons.volume_up),
-                    tooltip: '播放发音',
-                  ),
-                if (audioFilename != null && audioFilename!.isNotEmpty)
-                  const SizedBox(width: 16),
-                IconButton(
-                  onPressed: () => animatorKey.currentState?.play(),
-                  icon: const Icon(Icons.play_arrow),
-                  tooltip: '播放笔顺',
-                ),
-                const SizedBox(width: 16),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                  tooltip: '关闭',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 播放假名音频
-  void _playAudio(WidgetRef ref) {
-    if (audioFilename == null || audioFilename!.isEmpty) return;
-    final audioService = ref.read(audioServiceProvider);
-    final audioPath = 'assets/audio/kana/$audioFilename';
-    audioService.playAudio(audioPath);
   }
 }
