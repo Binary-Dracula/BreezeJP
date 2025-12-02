@@ -311,8 +311,9 @@ class KanaRepository {
   Future<int> upsertKanaLearningState(KanaLearningState state) async {
     try {
       final db = await _db;
-      final map = state.toMap();
-      map.remove('id'); // 移除 id，让数据库自动生成
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final map = state.toInsertMap();
+      map['updated_at'] = now;
 
       final result = await db.insert(
         'kana_learning_state',
@@ -363,7 +364,7 @@ class KanaRepository {
   Future<void> markKanaAsLearned(int kanaId) async {
     try {
       final db = await _db;
-      final now = DateTime.now().toIso8601String();
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       // 检查是否已存在记录
       final existing = await getKanaLearningState(kanaId);
@@ -371,7 +372,11 @@ class KanaRepository {
       if (existing != null) {
         await db.update(
           'kana_learning_state',
-          {'is_learned': 1, 'last_review': now},
+          {
+            'learning_status': KanaLearningStatus.mastered.index,
+            'last_reviewed_at': now,
+            'updated_at': now,
+          },
           where: 'kana_id = ?',
           whereArgs: [kanaId],
         );
@@ -379,10 +384,17 @@ class KanaRepository {
       } else {
         await db.insert('kana_learning_state', {
           'kana_id': kanaId,
-          'is_learned': 1,
-          'last_review': now,
-          'easiness': 2.5,
+          'learning_status': KanaLearningStatus.mastered.index,
+          'last_reviewed_at': now,
+          'streak': 0,
+          'total_reviews': 0,
+          'fail_count': 0,
           'interval': 0,
+          'ease_factor': 2.5,
+          'stability': 0,
+          'difficulty': 0,
+          'created_at': now,
+          'updated_at': now,
         });
         logger.dbInsert(table: 'kana_learning_state', id: kanaId);
       }
@@ -582,11 +594,18 @@ class KanaRepository {
         SELECT 
           kl.*,
           kls.id as state_id,
-          kls.is_learned,
-          kls.last_review,
-          kls.next_review,
-          kls.easiness,
-          kls.interval
+          kls.learning_status,
+          kls.next_review_at,
+          kls.last_reviewed_at,
+          kls.streak,
+          kls.total_reviews,
+          kls.fail_count,
+          kls.interval,
+          kls.ease_factor,
+          kls.stability,
+          kls.difficulty,
+          kls.created_at as state_created_at,
+          kls.updated_at as state_updated_at
         FROM kana_letters kl
         LEFT JOIN kana_learning_state kls ON kl.id = kls.kana_id
         ORDER BY kl.sort_index ASC
@@ -606,11 +625,20 @@ class KanaRepository {
           state = KanaLearningState(
             id: map['state_id'] as int,
             kanaId: letter.id,
-            isLearned: map['is_learned'] as int? ?? 0,
-            lastReview: map['last_review'] as String?,
-            nextReview: map['next_review'] as String?,
-            easiness: (map['easiness'] as num?)?.toDouble() ?? 2.5,
-            interval: map['interval'] as int? ?? 0,
+            learningStatus:
+                KanaLearningStatus.values[(map['learning_status'] as int? ?? 0)
+                    .clamp(0, KanaLearningStatus.values.length - 1)],
+            nextReviewAt: map['next_review_at'] as int?,
+            lastReviewedAt: map['last_reviewed_at'] as int?,
+            streak: map['streak'] as int? ?? 0,
+            totalReviews: map['total_reviews'] as int? ?? 0,
+            failCount: map['fail_count'] as int? ?? 0,
+            interval: (map['interval'] as num?)?.toDouble() ?? 0,
+            easeFactor: (map['ease_factor'] as num?)?.toDouble() ?? 2.5,
+            stability: (map['stability'] as num?)?.toDouble() ?? 0,
+            difficulty: (map['difficulty'] as num?)?.toDouble() ?? 0,
+            createdAt: map['state_created_at'] as int?,
+            updatedAt: map['state_updated_at'] as int?,
           );
         }
 
@@ -640,9 +668,14 @@ class KanaRepository {
       );
       final total = totalResult.first['count'] as int;
 
-      // 已学习数
+      // 已学习数（掌握）
       final learnedResult = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM kana_learning_state WHERE is_learned = 1',
+        '''
+        SELECT COUNT(*) as count 
+        FROM kana_learning_state 
+        WHERE learning_status = ?
+        ''',
+        [KanaLearningStatus.mastered.index],
       );
       final learned = learnedResult.first['count'] as int;
 
@@ -668,18 +701,18 @@ class KanaRepository {
   Future<List<KanaLetter>> getKanaDueForReview() async {
     try {
       final db = await _db;
-      final now = DateTime.now().toIso8601String();
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       final results = await db.rawQuery(
         '''
         SELECT kl.*
         FROM kana_letters kl
         INNER JOIN kana_learning_state kls ON kl.id = kls.kana_id
-        WHERE kls.is_learned = 1
-          AND (kls.next_review IS NULL OR kls.next_review <= ?)
-        ORDER BY kls.next_review ASC
+        WHERE kls.learning_status = ?
+          AND (kls.next_review_at IS NULL OR kls.next_review_at <= ?)
+        ORDER BY kls.next_review_at ASC
       ''',
-        [now],
+        [KanaLearningStatus.mastered.index, now],
       );
 
       logger.dbQuery(
@@ -693,6 +726,61 @@ class KanaRepository {
       logger.dbError(
         operation: 'SELECT',
         table: 'kana_letters',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 更新假名复习结果（SRS 算法）
+  Future<void> updateKanaReviewResult({
+    required int kanaId,
+    required int rating,
+    required double newInterval,
+    required double newEaseFactor,
+    required int nextReviewAt,
+  }) async {
+    try {
+      final db = await _db;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      final existing = await getKanaLearningState(kanaId);
+      if (existing == null) {
+        logger.warning('假名学习状态不存在: kanaId=$kanaId');
+        return;
+      }
+
+      final isCorrect = rating >= 2;
+      final newStreak = isCorrect ? existing.streak + 1 : 0;
+      final newFailCount = isCorrect
+          ? existing.failCount
+          : existing.failCount + 1;
+
+      await db.update(
+        'kana_learning_state',
+        {
+          'last_reviewed_at': now,
+          'next_review_at': nextReviewAt,
+          'streak': newStreak,
+          'total_reviews': existing.totalReviews + 1,
+          'fail_count': newFailCount,
+          'interval': newInterval,
+          'ease_factor': newEaseFactor,
+          'updated_at': now,
+        },
+        where: 'kana_id = ?',
+        whereArgs: [kanaId],
+      );
+
+      logger.dbUpdate(table: 'kana_learning_state', affectedRows: 1);
+      logger.info(
+        '假名复习结果更新: kanaId=$kanaId, rating=$rating, interval=$newInterval',
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'kana_learning_state',
         dbError: e,
         stackTrace: stackTrace,
       );

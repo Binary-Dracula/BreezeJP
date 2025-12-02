@@ -29,6 +29,9 @@ class KanaLetterWithState {
 
   KanaLetterWithState({required this.letter, this.learningState});
 
-  /// 是否已学习
-  bool get isLearned => learningState?.learned ?? false;
+  /// 是否已掌握
+  bool get isMastered => learningState?.isMastered ?? false;
+
+  /// 是否处于学习中（含掌握态）
+  bool get isLearning => learningState?.isLearning ?? false;
 }

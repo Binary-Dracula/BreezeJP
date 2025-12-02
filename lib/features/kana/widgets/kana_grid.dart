@@ -394,7 +394,7 @@ class KanaGrid extends ConsumerWidget {
         ? kana.letter.hiragana
         : kana.letter.katakana;
 
-    final isLearned = kana.isLearned;
+    final isLearned = kana.isMastered;
 
     final cell = Container(
       decoration: BoxDecoration(

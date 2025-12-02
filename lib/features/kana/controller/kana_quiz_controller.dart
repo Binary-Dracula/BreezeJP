@@ -77,7 +77,7 @@ class KanaQuizController extends Notifier<KanaQuizState> {
         // 获取已学习的假名
         final allWithState = await _kanaRepository.getAllKanaLettersWithState();
         return allWithState
-            .where((k) => k.isLearned)
+            .where((k) => k.isMastered)
             .map((k) => k.letter)
             .toList();
       case KanaQuizScope.all:

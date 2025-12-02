@@ -72,7 +72,7 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
                 indicatorColor: Theme.of(context).primaryColor,
                 indicatorWeight: 3,
                 isScrollable: true,
-                tabAlignment: TabAlignment.start,
+                tabAlignment: TabAlignment.center,
                 tabs: state.kanaTypes.map((type) => Tab(text: type)).toList(),
               )
             : null,
@@ -173,6 +173,7 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
               .read(kanaChartControllerProvider.notifier)
               .setDisplayMode(selected.first);
         },
+        showSelectedIcon: false,
         style: const ButtonStyle(
           visualDensity: VisualDensity.compact,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,

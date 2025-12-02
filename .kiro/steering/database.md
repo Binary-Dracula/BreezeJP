@@ -13,6 +13,7 @@ BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`）�
 ## 表结构
 
 ### words
+
 ```sql
 CREATE TABLE words (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,6 +27,7 @@ CREATE TABLE words (
 ```
 
 ### word_meanings
+
 ```sql
 CREATE TABLE word_meanings (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +41,7 @@ CREATE INDEX idx_meanings_word_id ON word_meanings (word_id);
 ```
 
 ### word_audio
+
 ```sql
 CREATE TABLE word_audio (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,6 +54,7 @@ CREATE TABLE word_audio (
 ```
 
 ### example_sentences
+
 ```sql
 CREATE TABLE example_sentences (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,6 +69,7 @@ CREATE INDEX idx_examples_word_id ON example_sentences (word_id);
 ```
 
 ### example_audio
+
 ```sql
 CREATE TABLE example_audio (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,6 +82,7 @@ CREATE TABLE example_audio (
 ```
 
 ### study_words
+
 ```sql
 CREATE TABLE study_words (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,6 +107,7 @@ CREATE INDEX idx_study_schedule ON study_words (user_id, user_state, next_review
 ```
 
 ### study_logs
+
 ```sql
 CREATE TABLE study_logs (
     id                    INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,6 +129,7 @@ CREATE INDEX idx_logs_word ON study_logs (user_id, word_id, created_at);
 ```
 
 ### daily_stats
+
 ```sql
 CREATE TABLE daily_stats (
     id                   INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -139,6 +147,7 @@ CREATE TABLE daily_stats (
 ```
 
 ### users
+
 ```sql
 CREATE TABLE users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,6 +163,7 @@ CREATE TABLE users (
 ```
 
 ### word_relations
+
 ```sql
 CREATE TABLE word_relations (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -174,7 +184,9 @@ CREATE INDEX idx_word_relations_related_word_id ON word_relations (related_word_
 ## 五十音图学习表
 
 ### kana_letters
+
 五十音字母主表，存储平假名、片假名及其属性。
+
 ```sql
 CREATE TABLE kana_letters (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -193,7 +205,9 @@ CREATE TABLE kana_letters (
 ```
 
 ### kana_audio
+
 五十音发音音频。
+
 ```sql
 CREATE TABLE kana_audio (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -205,7 +219,9 @@ CREATE TABLE kana_audio (
 ```
 
 ### kana_examples
+
 五十音示例词汇，用于辅助记忆。
+
 ```sql
 CREATE TABLE kana_examples (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -218,21 +234,41 @@ CREATE TABLE kana_examples (
 ```
 
 ### kana_learning_state
-用户五十音学习状态，支持 SRS 复习。
+
+用户五十音学习状态，与 `study_words` 表结构保持一致，支持 SM-2 和 FSRS 双算法。
+
 ```sql
 CREATE TABLE kana_learning_state (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    kana_id     INTEGER REFERENCES kana_letters(id),  -- 关联假名
-    is_learned  INTEGER DEFAULT 0,                    -- 是否已学习 (0=未学, 1=已学)
-    last_review TEXT,                                 -- 上次复习时间
-    next_review TEXT,                                 -- 下次复习时间
-    easiness    REAL DEFAULT 2.5,                     -- SM-2 难度因子
-    interval    INTEGER DEFAULT 0                     -- 复习间隔 (天)
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    kana_id          INTEGER NOT NULL REFERENCES kana_letters(id),
+    -- 学习生命周期：与 study_words 完全一致
+    learning_status  INTEGER DEFAULT 0 NOT NULL,    -- 0=未学, 1=学习中, 2=已掌握, 3=忽略
+    -- SRS 时间调度
+    next_review_at   INTEGER,                       -- 下次复习时间 (Unix)
+    last_reviewed_at INTEGER,                       -- 上次复习时间 (Unix)
+    -- 复习统计
+    streak           INTEGER DEFAULT 0,             -- 连续答对次数
+    total_reviews    INTEGER DEFAULT 0,             -- 累计复习次数
+    fail_count       INTEGER DEFAULT 0,             -- 累计失败次数
+    -- SM-2 算法（与 study_words 保持一致）
+    interval         REAL DEFAULT 0,                -- 复习间隔 (天)
+    ease_factor      REAL DEFAULT 2.5,              -- 难度系数
+    -- FSRS 算法（Pro 模式预留）
+    stability        REAL DEFAULT 0,                -- 记忆稳定性 (S)
+    difficulty       REAL DEFAULT 0,                -- 记忆难度 (D)
+    -- 创建 & 更新
+    created_at       INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
+    updated_at       INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
+    UNIQUE (kana_id)
 );
+
+CREATE INDEX idx_kana_review_schedule ON kana_learning_state (learning_status, next_review_at);
 ```
 
 ### kana_quiz_records
+
 五十音测验记录。
+
 ```sql
 CREATE TABLE kana_quiz_records (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -243,7 +279,9 @@ CREATE TABLE kana_quiz_records (
 ```
 
 ### kana_stroke_order
+
 五十音笔顺数据。
+
 ```sql
 CREATE TABLE kana_stroke_order (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -256,6 +294,7 @@ CREATE TABLE kana_stroke_order (
 ## 数据关系
 
 ### 单词学习模块
+
 ```
 words (1) ──< (N) word_meanings
       (1) ──< (N) word_audio
@@ -267,6 +306,7 @@ words (1) ──< (N) word_meanings
 ```
 
 ### 五十音图学习模块
+
 ```
 kana_letters (1) ──< (N) kana_audio           -- 发音音频
              (1) ──< (N) kana_examples        -- 示例词汇
