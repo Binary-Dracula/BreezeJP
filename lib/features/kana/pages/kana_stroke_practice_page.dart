@@ -13,6 +13,12 @@ import '../../../l10n/app_localizations.dart';
 import '../state/kana_chart_state.dart';
 
 const double _progressInfoHeight = 36;
+// 起笔允许的距离误差（px）
+const double _startTolerancePx = 10;
+// 描红路径允许的最大偏移（px）
+const double _maxDeviationPx = 25;
+// 认为用户确实书写的最小移动距离（px），防止轻触即判定完成
+const double _minStrokeTravelPx = 12;
 
 /// 假名笔顺练习页面（全屏）
 /// 展示逻辑：进入页面先自动播放完整笔顺动画，动画完成后才解锁描红练习。
@@ -557,7 +563,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
     final targetStart = _guide!.startPoints[_currentStroke];
     final distance = (point - targetStart).distance;
 
-    if (distance > 10) {
+    if (distance > _startTolerancePx) {
       setState(() {
         _feedback = widget.l10n.kanaStrokeStartFromAnchor;
         _showRetry = true;
@@ -584,7 +590,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
 
     final deviation =
         _guide!.distanceToPath(_guide!.paths[_currentStroke], point);
-    if (deviation > 25 && !_showRetry) {
+    if (deviation > _maxDeviationPx && !_showRetry) {
       setState(() {
         _feedback = widget.l10n.kanaStrokeTryAgain;
         _showRetry = true;
@@ -601,6 +607,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
     }
 
     final path = _guide!.paths[_currentStroke];
+    final totalTravel = _calculateTravelDistance(_currentPoints);
     double maxDeviation = 0;
     for (final point in _currentPoints) {
       maxDeviation = max(
@@ -609,7 +616,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
       );
     }
 
-    if (maxDeviation > 25) {
+    if (totalTravel < _minStrokeTravelPx || maxDeviation > _maxDeviationPx) {
       setState(() {
         _feedback = widget.l10n.kanaStrokeTryAgain;
         _showRetry = true;
@@ -637,6 +644,15 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
     final scaleX = painterSize.width / guide.viewBoxWidth;
     final scaleY = painterSize.height / guide.viewBoxHeight;
     return Offset(local.dx / scaleX, local.dy / scaleY);
+  }
+
+  double _calculateTravelDistance(List<Offset> points) {
+    if (points.length < 2) return 0;
+    double distance = 0;
+    for (var i = 1; i < points.length; i++) {
+      distance += (points[i] - points[i - 1]).distance;
+    }
+    return distance;
   }
 }
 
