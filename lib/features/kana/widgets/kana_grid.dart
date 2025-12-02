@@ -463,7 +463,7 @@ class KanaGrid extends ConsumerWidget {
   /// 处理假名点击
   void _onKanaTap(
     BuildContext context,
-    WidgetRef _ref,
+    WidgetRef ref,
     KanaLetterWithState kana,
   ) {
     final index = kanaLetters.indexWhere(

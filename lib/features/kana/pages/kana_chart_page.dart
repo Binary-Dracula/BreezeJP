@@ -56,6 +56,10 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           // 平假名/片假名切换
           _buildDisplayModeToggle(state.displayMode),

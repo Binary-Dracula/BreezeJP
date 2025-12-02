@@ -7,10 +7,11 @@ import 'package:xml/xml.dart';
 
 import '../../../core/widgets/stroke_order_animator.dart';
 import '../../../data/models/kana_detail.dart';
-import '../../../data/repositories/kana_repository_provider.dart';
 import '../../../services/audio_service_provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../controller/kana_stroke_controller.dart';
 import '../state/kana_chart_state.dart';
+import '../state/kana_stroke_state.dart';
 
 const double _progressInfoHeight = 36;
 // 起笔允许的距离误差（px）
@@ -42,18 +43,6 @@ class KanaStrokePracticePage extends ConsumerStatefulWidget {
 
 class _KanaStrokePracticePageState
     extends ConsumerState<KanaStrokePracticePage> {
-  /// 当前选中的假名索引
-  late int _currentIndex;
-
-  /// 当前假名的笔顺 SVG 数据
-  String? _svgData;
-
-  /// 当前假名的音频文件名
-  String? _audioFilename;
-
-  /// UI 状态：是否在加载/切换假名
-  bool _isLoading = true;
-
   /// UI 状态：完整字形是否需要淡入
   bool _showFinalGlyph = false;
 
@@ -64,62 +53,72 @@ class _KanaStrokePracticePageState
   StrokeGuideData? _currentGuide;
 
   final _animatorKey = GlobalKey<StrokeOrderAnimatorState>();
-  final _traceKey = GlobalKey<_StrokeTraceCanvasState>();
+  final _traceKey = GlobalKey<StrokeTraceCanvasState>();
+  ProviderSubscription<KanaStrokeState>? _strokeSubscription;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
-    _loadCurrentKana();
-  }
-
-  Future<void> _loadCurrentKana() async {
-    // 切换假名时重置所有阶段状态
-    setState(() {
-      _isLoading = true;
-      _showFinalGlyph = false;
-      _canPractice = false;
-      _currentGuide = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(kanaStrokeControllerProvider.notifier)
+          .init(
+            kanaLetters: widget.kanaLetters,
+            initialIndex: widget.initialIndex,
+            displayMode: widget.displayMode,
+          );
     });
 
-    final kana = widget.kanaLetters[_currentIndex];
-    final repository = ref.read(kanaRepositoryProvider);
-    final strokeOrder = await repository.getKanaStrokeOrder(kana.letter.id);
-    final kanaAudio = await repository.getKanaAudio(kana.letter.id);
+    _strokeSubscription = ref.listenManual<KanaStrokeState>(
+      kanaStrokeControllerProvider,
+      (previous, next) {
+        final svgChanged = previous?.svgData != next.svgData;
+        final indexChanged = previous?.currentIndex != next.currentIndex;
+        if (svgChanged || indexChanged) {
+          _handleKanaChange(next);
+        }
+      },
+    );
+  }
 
-    final svgData = widget.displayMode == KanaDisplayMode.hiragana
-        ? strokeOrder?.hiraganaSvg
-        : strokeOrder?.katakanaSvg;
+  @override
+  void dispose() {
+    _strokeSubscription?.close();
+    super.dispose();
+  }
 
+  void _handleKanaChange(KanaStrokeState state) {
     if (!mounted) return;
+
     setState(() {
-      _svgData = svgData;
-      _audioFilename = kanaAudio?.audioFilename;
-      _isLoading = false;
+      _showFinalGlyph = false;
       _canPractice = false;
-      _currentGuide =
-          svgData != null && svgData.isNotEmpty ? StrokeGuideData.fromSvg(svgData) : null;
+      _currentGuide = state.svgData != null && state.svgData!.isNotEmpty
+          ? StrokeGuideData.fromSvg(state.svgData!)
+          : null;
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animatorKey.currentState?.reset();
-      _animatorKey.currentState?.play();
+      if ((state.svgData ?? '').isNotEmpty) {
+        _animatorKey.currentState?.play();
+      }
       _traceKey.currentState?.resetProgress();
     });
   }
 
-  KanaLetterWithState get _currentKana => widget.kanaLetters[_currentIndex];
-
-  String _displayText(KanaLetterWithState kana) {
-    return widget.displayMode == KanaDisplayMode.hiragana
+  String _displayText(KanaStrokeState state) {
+    final kana = state.currentKana;
+    if (kana == null) return '';
+    return state.displayMode == KanaDisplayMode.hiragana
         ? kana.letter.hiragana ?? ''
         : kana.letter.katakana ?? '';
   }
 
-  void _playAudio() {
-    if (_audioFilename == null || _audioFilename!.isEmpty) return;
+  void _playAudio(String? audioFilename) {
+    if (audioFilename == null || audioFilename.isEmpty) return;
     final audioService = ref.read(audioServiceProvider);
-    audioService.playAudio('assets/audio/kana/${_audioFilename!}');
+    audioService.playAudio('assets/audio/kana/$audioFilename');
   }
 
   void _replayAnimation() {
@@ -133,25 +132,16 @@ class _KanaStrokePracticePageState
     _traceKey.currentState?.resetProgress();
   }
 
-  void _goToIndex(int index) {
-    if (index < 0 || index >= widget.kanaLetters.length) return;
-    _currentIndex = index;
-    _loadCurrentKana();
-  }
-
-  void _goPrev() => _goToIndex(_currentIndex - 1);
-
-  void _goNext() => _goToIndex(_currentIndex + 1);
-
   @override
   Widget build(BuildContext context) {
-    final kana = _currentKana;
+    final state = ref.watch(kanaStrokeControllerProvider);
+    final kana = state.currentKana;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text(l10n.kanaStrokePracticeTitle(_displayText(kana))),
+        title: Text(l10n.kanaStrokePracticeTitle(_displayText(state))),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -161,39 +151,49 @@ class _KanaStrokePracticePageState
         ),
       ),
       body: SafeArea(
-        child: _isLoading
+        child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _svgData == null || _svgData!.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.kanaStrokeNoData,
-                      style: const TextStyle(color: Colors.grey),
+            : state.hasError
+            ? Center(
+                child: Text(
+                  state.error ?? '',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              )
+            : (state.svgData == null || state.svgData!.isEmpty || kana == null)
+            ? Center(
+                child: Text(
+                  l10n.kanaStrokeNoData,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Column(
+                  children: [
+                    _buildHeader(context, state),
+                    const SizedBox(height: 12),
+                    _buildControls(context, l10n, state.audioFilename),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Center(
+                        child: _buildPracticeArea(context, l10n, state.svgData),
+                      ),
                     ),
-                  )
-                : Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Column(
-                      children: [
-                        _buildHeader(context, kana),
-                        const SizedBox(height: 12),
-                        _buildControls(context, l10n),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: Center(
-                            child: _buildPracticeArea(context, l10n),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildBottomHint(l10n),
-                      ],
-                    ),
-                  ),
+                    const SizedBox(height: 12),
+                    _buildBottomHint(l10n),
+                  ],
+                ),
+              ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, KanaLetterWithState kana) {
+  Widget _buildHeader(BuildContext context, KanaStrokeState state) {
+    final kana = state.currentKana;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -210,7 +210,9 @@ class _KanaStrokePracticePageState
       child: Row(
         children: [
           IconButton(
-            onPressed: _currentIndex > 0 ? _goPrev : null,
+            onPressed: state.canGoPrev
+                ? () => ref.read(kanaStrokeControllerProvider.notifier).goPrev()
+                : null,
             icon: const Icon(Icons.chevron_left),
           ),
           Expanded(
@@ -218,25 +220,23 @@ class _KanaStrokePracticePageState
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _displayText(kana),
+                  _displayText(state),
                   style: const TextStyle(
                     fontSize: 54,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  kana.letter.romaji ?? '',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade700,
-                  ),
+                  kana?.letter.romaji ?? '',
+                  style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
                 ),
               ],
             ),
           ),
           IconButton(
-            onPressed:
-                _currentIndex < widget.kanaLetters.length - 1 ? _goNext : null,
+            onPressed: state.canGoNext
+                ? () => ref.read(kanaStrokeControllerProvider.notifier).goNext()
+                : null,
             icon: const Icon(Icons.chevron_right),
           ),
         ],
@@ -244,14 +244,20 @@ class _KanaStrokePracticePageState
     );
   }
 
-  Widget _buildControls(BuildContext context, AppLocalizations l10n) {
+  Widget _buildControls(
+    BuildContext context,
+    AppLocalizations l10n,
+    String? audioFilename,
+  ) {
     return Wrap(
       spacing: 12,
       runSpacing: 8,
       alignment: WrapAlignment.center,
       children: [
         FilledButton.icon(
-          onPressed: _playAudio,
+          onPressed: (audioFilename == null || audioFilename.isEmpty)
+              ? null
+              : () => _playAudio(audioFilename),
           icon: const Icon(Icons.volume_up),
           label: Text(l10n.kanaStrokePlayAudio),
         ),
@@ -264,11 +270,16 @@ class _KanaStrokePracticePageState
     );
   }
 
-  Widget _buildPracticeArea(BuildContext context, AppLocalizations l10n) {
+  Widget _buildPracticeArea(
+    BuildContext context,
+    AppLocalizations l10n,
+    String? svgData,
+  ) {
     final size = min(MediaQuery.of(context).size.width * 0.8, 360.0);
     final guide = _currentGuide;
-    final painterSize =
-        guide != null ? guide.displaySizeFor(size) : Size.square(size);
+    final painterSize = guide != null
+        ? guide.displaySizeFor(size)
+        : Size.square(size);
     final cardDecoration = BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -293,12 +304,10 @@ class _KanaStrokePracticePageState
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  Container(
-                    color: Colors.white,
-                  ),
+                  Container(color: Colors.white),
                   StrokeOrderAnimator(
                     key: _animatorKey,
-                    svgData: _svgData ?? '',
+                    svgData: svgData ?? '',
                     size: size,
                     strokeColor: Theme.of(context).primaryColor,
                     completedColor: Colors.black87,
@@ -347,7 +356,7 @@ class _KanaStrokePracticePageState
 
     return StrokeTraceCanvas(
       key: _traceKey,
-      svgData: _svgData ?? '',
+      svgData: svgData ?? '',
       l10n: l10n,
       size: size,
       enabled: _canPractice,
@@ -383,9 +392,7 @@ class _KanaStrokePracticePageState
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: Text(
-            _canPractice
-                ? l10n.kanaStrokeTraceHint
-                : l10n.kanaStrokeWatchFirst,
+            _canPractice ? l10n.kanaStrokeTraceHint : l10n.kanaStrokeWatchFirst,
             key: ValueKey<bool>(_canPractice),
             style: TextStyle(color: Colors.grey.shade600),
             textAlign: TextAlign.center,
@@ -395,7 +402,6 @@ class _KanaStrokePracticePageState
       ),
     );
   }
-
 }
 
 /// 练习描红画布
@@ -405,7 +411,7 @@ class StrokeTraceCanvas extends StatefulWidget {
   final double size;
   final VoidCallback? onAllCompleted;
   final List<Widget> Function(Size painterSize, StrokeGuideData guide)?
-      backgroundBuilder;
+  backgroundBuilder;
   final bool enabled;
   final AppLocalizations l10n;
 
@@ -420,10 +426,10 @@ class StrokeTraceCanvas extends StatefulWidget {
   });
 
   @override
-  _StrokeTraceCanvasState createState() => _StrokeTraceCanvasState();
+  StrokeTraceCanvasState createState() => StrokeTraceCanvasState();
 }
 
-class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
+class StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
   StrokeGuideData? _guide;
   int _currentStroke = 0;
   final List<Path> _completed = [];
@@ -464,8 +470,10 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
   Widget build(BuildContext context) {
     final guide = _guide;
     if (guide == null || guide.paths.isEmpty) {
-      return Text(widget.l10n.kanaStrokeNoData,
-          style: const TextStyle(color: Colors.grey));
+      return Text(
+        widget.l10n.kanaStrokeNoData,
+        style: const TextStyle(color: Colors.grey),
+      );
     }
 
     return LayoutBuilder(
@@ -474,7 +482,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
         final painterSize = guide.displaySizeFor(maxSide);
         final backgroundLayers =
             widget.backgroundBuilder?.call(painterSize, guide) ??
-                const <Widget>[];
+            const <Widget>[];
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -544,8 +552,10 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
                 child: Text(
                   _allDone
                       ? widget.l10n.kanaStrokePracticeDone
-                      : widget.l10n
-                          .kanaStrokeProgress(_currentStroke + 1, guide.paths.length),
+                      : widget.l10n.kanaStrokeProgress(
+                          _currentStroke + 1,
+                          guide.paths.length,
+                        ),
                   style: TextStyle(color: Colors.grey.shade700),
                 ),
               ),
@@ -588,8 +598,10 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
     final point = _toSvg(details.localPosition, painterSize);
     _currentPoints.add(point);
 
-    final deviation =
-        _guide!.distanceToPath(_guide!.paths[_currentStroke], point);
+    final deviation = _guide!.distanceToPath(
+      _guide!.paths[_currentStroke],
+      point,
+    );
     if (deviation > _maxDeviationPx && !_showRetry) {
       setState(() {
         _feedback = widget.l10n.kanaStrokeTryAgain;
@@ -602,7 +614,10 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
   }
 
   void _onPanEnd() {
-    if (_guide == null || _currentPoints.isEmpty || _allDone || !widget.enabled) {
+    if (_guide == null ||
+        _currentPoints.isEmpty ||
+        _allDone ||
+        !widget.enabled) {
       return;
     }
 
@@ -610,10 +625,7 @@ class _StrokeTraceCanvasState extends State<StrokeTraceCanvas> {
     final totalTravel = _calculateTravelDistance(_currentPoints);
     double maxDeviation = 0;
     for (final point in _currentPoints) {
-      maxDeviation = max(
-        maxDeviation,
-        _guide!.distanceToPath(path, point),
-      );
+      maxDeviation = max(maxDeviation, _guide!.distanceToPath(path, point));
     }
 
     if (totalTravel < _minStrokeTravelPx || maxDeviation > _maxDeviationPx) {
@@ -729,7 +741,8 @@ class _StrokeTracePainter extends CustomPainter {
 
     // 用户当前绘制的路径
     if (currentPoints.isNotEmpty) {
-      final path = Path()..moveTo(currentPoints.first.dx, currentPoints.first.dy);
+      final path = Path()
+        ..moveTo(currentPoints.first.dx, currentPoints.first.dy);
       for (int i = 1; i < currentPoints.length; i++) {
         path.lineTo(currentPoints[i].dx, currentPoints[i].dy);
       }

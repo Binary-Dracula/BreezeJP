@@ -347,7 +347,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           subtitle: '学习日语假名',
           color: Colors.indigo,
           onTap: () {
-            context.go('/kana-chart');
+            context.push('/kana-chart');
           },
         ),
         _buildToolCard(
