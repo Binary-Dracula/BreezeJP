@@ -12,6 +12,9 @@ final kanaChartControllerProvider =
 
 /// 五十音表控制器
 class KanaChartController extends Notifier<KanaChartState> {
+  /// 当前用户 ID（暂时硬编码为 1）
+  static const int _userId = 1;
+
   @override
   KanaChartState build() => const KanaChartState();
 
@@ -27,10 +30,12 @@ class KanaChartController extends Notifier<KanaChartState> {
       final kanaTypes = await _kanaRepository.getAllKanaTypes();
 
       // 2. 获取所有假名及学习状态
-      final kanaLetters = await _kanaRepository.getAllKanaLettersWithState();
+      final kanaLetters = await _kanaRepository.getAllKanaLettersWithState(
+        _userId,
+      );
 
       // 3. 获取学习统计
-      final stats = await _kanaRepository.getKanaLearningStats();
+      final stats = await _kanaRepository.getKanaLearningStats(_userId);
 
       state = state.copyWith(
         isLoading: false,

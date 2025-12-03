@@ -11,6 +11,7 @@ enum KanaLearningStatus {
 /// 与 study_words 表结构保持一致，支持 SM-2 和 FSRS 双算法
 class KanaLearningState {
   final int id;
+  final int userId;
   final int kanaId;
 
   /// 学习状态：0=未学, 1=学习中, 2=已掌握, 3=忽略
@@ -51,6 +52,7 @@ class KanaLearningState {
 
   KanaLearningState({
     required this.id,
+    required this.userId,
     required this.kanaId,
     this.learningStatus = KanaLearningStatus.notLearned,
     this.nextReviewAt,
@@ -88,6 +90,7 @@ class KanaLearningState {
         .toInt();
     return KanaLearningState(
       id: map['id'] as int,
+      userId: map['user_id'] as int,
       kanaId: map['kana_id'] as int,
       learningStatus: KanaLearningStatus.values[statusValue],
       nextReviewAt: map['next_review_at'] as int?,
@@ -107,6 +110,7 @@ class KanaLearningState {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'user_id': userId,
       'kana_id': kanaId,
       'learning_status': learningStatus.index,
       'next_review_at': nextReviewAt,
@@ -133,6 +137,7 @@ class KanaLearningState {
   /// 创建副本并更新字段
   KanaLearningState copyWith({
     int? id,
+    int? userId,
     int? kanaId,
     KanaLearningStatus? learningStatus,
     int? nextReviewAt,
@@ -149,6 +154,7 @@ class KanaLearningState {
   }) {
     return KanaLearningState(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       kanaId: kanaId ?? this.kanaId,
       learningStatus: learningStatus ?? this.learningStatus,
       nextReviewAt: nextReviewAt ?? this.nextReviewAt,

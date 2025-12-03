@@ -254,19 +254,22 @@ class KanaRepository {
   // ==================== 学习状态 ====================
 
   /// 获取假名的学习状态
-  Future<KanaLearningState?> getKanaLearningState(int kanaId) async {
+  Future<KanaLearningState?> getKanaLearningState(
+    int userId,
+    int kanaId,
+  ) async {
     try {
       final db = await _db;
       final results = await db.query(
         'kana_learning_state',
-        where: 'kana_id = ?',
-        whereArgs: [kanaId],
+        where: 'user_id = ? AND kana_id = ?',
+        whereArgs: [userId, kanaId],
         limit: 1,
       );
 
       logger.dbQuery(
         table: 'kana_learning_state',
-        where: 'kana_id = $kanaId',
+        where: 'user_id = $userId, kana_id = $kanaId',
         resultCount: results.length,
       );
 
@@ -283,15 +286,19 @@ class KanaRepository {
     }
   }
 
-  /// 获取所有假名的学习状态
-  Future<List<KanaLearningState>> getAllKanaLearningStates() async {
+  /// 获取用户所有假名的学习状态
+  Future<List<KanaLearningState>> getAllKanaLearningStates(int userId) async {
     try {
       final db = await _db;
-      final results = await db.query('kana_learning_state');
+      final results = await db.query(
+        'kana_learning_state',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
 
       logger.dbQuery(
         table: 'kana_learning_state',
-        where: null,
+        where: 'user_id = $userId',
         resultCount: results.length,
       );
 
@@ -361,13 +368,13 @@ class KanaRepository {
   }
 
   /// 标记假名为已学习
-  Future<void> markKanaAsLearned(int kanaId) async {
+  Future<void> markKanaAsLearned(int userId, int kanaId) async {
     try {
       final db = await _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       // 检查是否已存在记录
-      final existing = await getKanaLearningState(kanaId);
+      final existing = await getKanaLearningState(userId, kanaId);
 
       if (existing != null) {
         await db.update(
@@ -377,12 +384,13 @@ class KanaRepository {
             'last_reviewed_at': now,
             'updated_at': now,
           },
-          where: 'kana_id = ?',
-          whereArgs: [kanaId],
+          where: 'user_id = ? AND kana_id = ?',
+          whereArgs: [userId, kanaId],
         );
         logger.dbUpdate(table: 'kana_learning_state', affectedRows: 1);
       } else {
         await db.insert('kana_learning_state', {
+          'user_id': userId,
           'kana_id': kanaId,
           'learning_status': KanaLearningStatus.mastered.index,
           'last_reviewed_at': now,
@@ -399,7 +407,7 @@ class KanaRepository {
         logger.dbInsert(table: 'kana_learning_state', id: kanaId);
       }
 
-      logger.info('假名标记为已学习: kanaId=$kanaId');
+      logger.info('假名标记为已学习: userId=$userId, kanaId=$kanaId');
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPSERT',
@@ -543,7 +551,7 @@ class KanaRepository {
   // ==================== 组合查询 ====================
 
   /// 获取假名的完整详情
-  Future<KanaDetail?> getKanaDetail(int kanaId) async {
+  Future<KanaDetail?> getKanaDetail(int userId, int kanaId) async {
     try {
       // 1. 获取假名基本信息
       final letter = await getKanaLetterById(kanaId);
@@ -559,7 +567,7 @@ class KanaRepository {
       final examples = await getKanaExamples(kanaId);
 
       // 4. 获取学习状态
-      final learningState = await getKanaLearningState(kanaId);
+      final learningState = await getKanaLearningState(userId, kanaId);
 
       // 5. 获取笔顺数据
       final strokeOrder = await getKanaStrokeOrder(kanaId);
@@ -587,13 +595,17 @@ class KanaRepository {
   }
 
   /// 获取所有假名及其学习状态（用于五十音表展示）
-  Future<List<KanaLetterWithState>> getAllKanaLettersWithState() async {
+  Future<List<KanaLetterWithState>> getAllKanaLettersWithState(
+    int userId,
+  ) async {
     try {
       final db = await _db;
-      final results = await db.rawQuery('''
+      final results = await db.rawQuery(
+        '''
         SELECT 
           kl.*,
           kls.id as state_id,
+          kls.user_id as state_user_id,
           kls.learning_status,
           kls.next_review_at,
           kls.last_reviewed_at,
@@ -607,13 +619,15 @@ class KanaRepository {
           kls.created_at as state_created_at,
           kls.updated_at as state_updated_at
         FROM kana_letters kl
-        LEFT JOIN kana_learning_state kls ON kl.id = kls.kana_id
+        LEFT JOIN kana_learning_state kls ON kl.id = kls.kana_id AND kls.user_id = ?
         ORDER BY kl.sort_index ASC
-      ''');
+      ''',
+        [userId],
+      );
 
       logger.dbQuery(
         table: 'kana_letters + kana_learning_state',
-        where: null,
+        where: 'user_id = $userId',
         resultCount: results.length,
       );
 
@@ -624,6 +638,7 @@ class KanaRepository {
         if (map['state_id'] != null) {
           state = KanaLearningState(
             id: map['state_id'] as int,
+            userId: map['state_user_id'] as int,
             kanaId: letter.id,
             learningStatus:
                 KanaLearningStatus.values[(map['learning_status'] as int? ?? 0)
@@ -658,7 +673,7 @@ class KanaRepository {
   // ==================== 统计查询 ====================
 
   /// 获取学习进度统计
-  Future<Map<String, int>> getKanaLearningStats() async {
+  Future<Map<String, int>> getKanaLearningStats(int userId) async {
     try {
       final db = await _db;
 
@@ -673,15 +688,15 @@ class KanaRepository {
         '''
         SELECT COUNT(*) as count 
         FROM kana_learning_state 
-        WHERE learning_status = ?
+        WHERE user_id = ? AND learning_status = ?
         ''',
-        [KanaLearningStatus.mastered.index],
+        [userId, KanaLearningStatus.mastered.index],
       );
       final learned = learnedResult.first['count'] as int;
 
       logger.dbQuery(
         table: 'kana_letters + kana_learning_state',
-        where: 'stats',
+        where: 'user_id = $userId, stats',
         resultCount: 2,
       );
 
@@ -698,7 +713,7 @@ class KanaRepository {
   }
 
   /// 获取待复习的假名
-  Future<List<KanaLetter>> getKanaDueForReview() async {
+  Future<List<KanaLetter>> getKanaDueForReview(int userId) async {
     try {
       final db = await _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -708,16 +723,17 @@ class KanaRepository {
         SELECT kl.*
         FROM kana_letters kl
         INNER JOIN kana_learning_state kls ON kl.id = kls.kana_id
-        WHERE kls.learning_status = ?
+        WHERE kls.user_id = ?
+          AND kls.learning_status = ?
           AND (kls.next_review_at IS NULL OR kls.next_review_at <= ?)
         ORDER BY kls.next_review_at ASC
       ''',
-        [KanaLearningStatus.mastered.index, now],
+        [userId, KanaLearningStatus.mastered.index, now],
       );
 
       logger.dbQuery(
         table: 'kana_letters + kana_learning_state',
-        where: 'due for review',
+        where: 'user_id = $userId, due for review',
         resultCount: results.length,
       );
 
@@ -735,6 +751,7 @@ class KanaRepository {
 
   /// 更新假名复习结果（SRS 算法）
   Future<void> updateKanaReviewResult({
+    required int userId,
     required int kanaId,
     required int rating,
     required double newInterval,
@@ -745,9 +762,9 @@ class KanaRepository {
       final db = await _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-      final existing = await getKanaLearningState(kanaId);
+      final existing = await getKanaLearningState(userId, kanaId);
       if (existing == null) {
-        logger.warning('假名学习状态不存在: kanaId=$kanaId');
+        logger.warning('假名学习状态不存在: userId=$userId, kanaId=$kanaId');
         return;
       }
 
@@ -769,13 +786,13 @@ class KanaRepository {
           'ease_factor': newEaseFactor,
           'updated_at': now,
         },
-        where: 'kana_id = ?',
-        whereArgs: [kanaId],
+        where: 'user_id = ? AND kana_id = ?',
+        whereArgs: [userId, kanaId],
       );
 
       logger.dbUpdate(table: 'kana_learning_state', affectedRows: 1);
       logger.info(
-        '假名复习结果更新: kanaId=$kanaId, rating=$rating, interval=$newInterval',
+        '假名复习结果更新: userId=$userId, kanaId=$kanaId, rating=$rating, interval=$newInterval',
       );
     } catch (e, stackTrace) {
       logger.dbError(
