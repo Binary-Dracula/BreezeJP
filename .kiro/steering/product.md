@@ -189,6 +189,7 @@ UI 层根据 `jlpt_level` 渲染难度标签（N5=绿, N1=红）
 - **手势**：学习模式左右滑动切换单词
 - **震动反馈**：页面切换时触发 `HapticFeedback.lightImpact()`
 - **进度反馈**：右上角显示本次 Session 计数器（本次已学 +5）
+- **国际化**：所有用户可见文本必须使用 `AppLocalizations`，禁止硬编码字符串
 
 ## MVP 范围外
 

@@ -63,7 +63,7 @@ View (UI) ←→ ViewModel (Controller/State) ←→ Repository ←→ Database
 ## 代码规范
 
 - 注意常量的定义和使用
-- 不要在代码内硬编码,要使用国际化
+- **⚠️ 禁止硬编码：所有用户可见文本必须使用国际化（`AppLocalizations`）**
 
 ### 命名约定
 
@@ -152,3 +152,18 @@ flutter clean
 - 翻译语言：中文（简体）
 - 代码注释：中文
 - UI 文本：目前仅支持中文
+
+### 国际化规范
+
+**⚠️ 重要：所有用户可见的文本必须使用国际化，禁止硬编码字符串**
+
+```dart
+// ✅ 正确
+final l10n = AppLocalizations.of(context)!;
+Text(l10n.startLearning);
+
+// ❌ 错误
+Text('开始学习');
+```
+
+添加新文本：在 `lib/l10n/app_zh.arb` 添加键值对，保存后自动生成代码

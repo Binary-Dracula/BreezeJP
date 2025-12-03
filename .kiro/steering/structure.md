@@ -23,17 +23,23 @@ lib/
 │   │   └── network_info.dart
 │   ├── utils/               # 工具函数
 │   │   ├── app_logger.dart
-│   │   └── l10n_utils.dart
+│   │   ├── l10n_utils.dart
+│   │   ├── log_category.dart
+│   │   └── log_formatter.dart
 │   └── widgets/             # 可复用 UI 组件
-│       └── custom_ruby_text.dart
+│       ├── custom_ruby_text.dart
+│       └── stroke_order_animator.dart
 ├── data/                    # 数据层
 │   ├── db/
 │   │   └── app_database.dart
 │   ├── models/
+│   │   ├── app_state.dart             # 应用状态
 │   │   ├── word.dart
 │   │   ├── word_meaning.dart
 │   │   ├── word_audio.dart
 │   │   ├── word_detail.dart
+│   │   ├── word_choice.dart           # 单词选择
+│   │   ├── word_with_relation.dart    # 带关联的单词
 │   │   ├── example_sentence.dart
 │   │   ├── example_audio.dart
 │   │   ├── study_word.dart
@@ -44,28 +50,48 @@ lib/
 │   │   ├── kana_audio.dart            # 五十音音频
 │   │   ├── kana_example.dart          # 五十音示例
 │   │   ├── kana_learning_state.dart   # 五十音学习状态
-│   │   ├── kana_quiz_record.dart      # 五十音测验记录
+│   │   ├── kana_log.dart              # 五十音学习日志
+│   │   ├── kana_detail.dart           # 五十音详情
 │   │   └── kana_stroke_order.dart     # 五十音笔顺
 │   └── repositories/
 │       ├── word_repository.dart
+│       ├── word_repository_provider.dart
 │       ├── study_word_repository.dart
+│       ├── study_word_repository_provider.dart
 │       ├── study_log_repository.dart
+│       ├── study_log_repository_provider.dart
 │       ├── daily_stat_repository.dart
+│       ├── daily_stat_repository_provider.dart
 │       ├── user_repository.dart
+│       ├── user_repository_provider.dart
+│       ├── app_state_repository.dart
+│       ├── app_state_repository_provider.dart
+│       ├── active_user_provider.dart  # 当前活跃用户 Provider
 │       ├── example_api_repository.dart
-│       └── kana_repository.dart       # 五十音数据仓库
+│       ├── kana_repository.dart
+│       └── kana_repository_provider.dart
 ├── features/                # 功能模块
 │   ├── splash/              # 启动页面 ✅
+│   │   ├── controller/
+│   │   ├── pages/
+│   │   └── state/
 │   ├── home/                # 首页 ✅
-│   ├── learn/               # 学习功能 🚧
+│   │   ├── controller/
+│   │   ├── pages/
+│   │   └── state/
+│   ├── learn/               # 学习功能 ✅
+│   │   ├── controller/
+│   │   ├── pages/
+│   │   ├── state/
+│   │   └── widgets/
+│   ├── kana/                # 五十音图学习 🚧
+│   │   ├── controller/
+│   │   ├── pages/
+│   │   ├── state/
+│   │   └── widgets/
 │   ├── review/              # 复习功能 📋
-│   ├── word_detail/         # 单词详情 🚧
-│   ├── word_list/           # 单词列表 🚧
-│   ├── kana/                # 五十音图学习 📋
-│   │   ├── controller/      # 控制器
-│   │   ├── pages/           # 页面 (五十音表、学习、测验)
-│   │   ├── state/           # 状态
-│   │   └── widgets/         # 组件 (假名卡片、笔顺动画等)
+│   ├── word_detail/         # 单词详情 📋
+│   ├── word_list/           # 单词列表 📋
 │   └── settings/            # 设置 📋
 ├── l10n/                    # 国际化
 │   ├── app_zh.arb
@@ -75,7 +101,10 @@ lib/
 │   └── app_router.dart
 ├── services/
 │   ├── audio_service.dart
-│   └── audio_service_provider.dart
+│   ├── audio_service_provider.dart
+│   ├── audio_play_controller.dart
+│   ├── audio_play_controller_provider.dart
+│   └── audio_play_state.dart
 └── main.dart
 ```
 
@@ -181,12 +210,34 @@ context.pop();                 // 返回
 
 ## 国际化
 
+**⚠️ 重要：所有用户可见的文本必须使用国际化，禁止硬编码字符串**
+
 ```dart
+// ✅ 正确：使用国际化
 final l10n = AppLocalizations.of(context)!;
 Text(l10n.appName);
+Text(l10n.startLearning);
+
+// ❌ 错误：硬编码字符串
+Text('开始学习');
+Text('BreezeJP');
 ```
 
-添加翻译：在 `app_zh.arb` 添加键值对，保存后自动生成代码
+### 添加新文本
+
+1. 在 `lib/l10n/app_zh.arb` 添加键值对
+2. 保存后自动生成代码
+3. 使用 `l10n.keyName` 引用
+
+### 命名规范
+
+| 类型 | 命名格式 | 示例 |
+|------|----------|------|
+| 按钮文本 | `{action}Button` | `startButton`, `cancelButton` |
+| 标题 | `{page}Title` | `homeTitle`, `settingsTitle` |
+| 提示信息 | `{context}Hint` | `searchHint`, `emptyHint` |
+| 错误信息 | `{context}Error` | `networkError`, `loadError` |
+| 标签 | `{context}Label` | `levelLabel`, `countLabel` |
 
 ## Log 日志规则
 
