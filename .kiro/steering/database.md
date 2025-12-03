@@ -240,29 +240,32 @@ CREATE TABLE kana_examples (
 ```sql
 CREATE TABLE kana_learning_state (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id          INTEGER NOT NULL REFERENCES users(id),
     kana_id          INTEGER NOT NULL REFERENCES kana_letters(id),
-    -- 学习生命周期：与 study_words 完全一致
+
     learning_status  INTEGER DEFAULT 0 NOT NULL,    -- 0=未学, 1=学习中, 2=已掌握, 3=忽略
-    -- SRS 时间调度
+
     next_review_at   INTEGER,                       -- 下次复习时间 (Unix)
     last_reviewed_at INTEGER,                       -- 上次复习时间 (Unix)
-    -- 复习统计
+
     streak           INTEGER DEFAULT 0,             -- 连续答对次数
     total_reviews    INTEGER DEFAULT 0,             -- 累计复习次数
     fail_count       INTEGER DEFAULT 0,             -- 累计失败次数
-    -- SM-2 算法（与 study_words 保持一致）
-    interval         REAL DEFAULT 0,                -- 复习间隔 (天)
+
+    interval         REAL DEFAULT 0,                -- SM-2-- 复习间隔 (天)
     ease_factor      REAL DEFAULT 2.5,              -- 难度系数
-    -- FSRS 算法（Pro 模式预留）
-    stability        REAL DEFAULT 0,                -- 记忆稳定性 (S)
+
+    stability        REAL DEFAULT 0,                -- FSRS-- 记忆稳定性 (S)
     difficulty       REAL DEFAULT 0,                -- 记忆难度 (D)
-    -- 创建 & 更新
+
     created_at       INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
     updated_at       INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
-    UNIQUE (kana_id)
+
+    UNIQUE (user_id, kana_id)
 );
 
-CREATE INDEX idx_kana_review_schedule ON kana_learning_state (learning_status, next_review_at);
+CREATE INDEX idx_kana_review_schedule
+ON kana_learning_state (user_id, learning_status, next_review_at);
 ```
 
 ### kana_quiz_records
