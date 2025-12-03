@@ -35,21 +35,21 @@ class HomeController extends Notifier<HomeState> {
       // TODO: 实现真正的用户管理
       final users = await _userRepository.getAllUsers();
       int userId;
-      String userName;
+      String userName = 'Breeze 用户';
 
       if (users.isEmpty) {
         // 创建默认用户
         logger.info('未找到用户，创建默认用户');
         userId = await _userRepository.createUser(
           User(
-            id: 0, // 数据库自增，这里填 0
-            username: 'BreezeJP User',
-            passwordHash: '', // 默认无密码
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            id: 0, // 数据库自增
+            username: userName,
+            passwordHash: 'placeholder', // MVP 无登录，使用占位密码
+            nickname: 'Breeze 用户',
+            locale: 'zh',
+            onboardingCompleted: 0,
           ),
         );
-        userName = 'BreezeJP User';
       } else {
         userId = users.first.id;
         userName = users.first.username;

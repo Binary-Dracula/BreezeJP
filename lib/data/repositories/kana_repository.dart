@@ -5,7 +5,7 @@ import '../models/kana_letter.dart';
 import '../models/kana_audio.dart';
 import '../models/kana_example.dart';
 import '../models/kana_learning_state.dart';
-import '../models/kana_quiz_record.dart';
+import '../models/kana_log.dart';
 import '../models/kana_stroke_order.dart';
 import '../models/kana_detail.dart';
 
@@ -419,30 +419,30 @@ class KanaRepository {
     }
   }
 
-  // ==================== 测验记录 ====================
+  // ==================== 学习日志 ====================
 
-  /// 获取假名的测验记录
-  Future<List<KanaQuizRecord>> getKanaQuizRecords(int kanaId) async {
+  /// 获取假名的学习日志
+  Future<List<KanaLog>> getKanaLogs(int userId, int kanaId) async {
     try {
       final db = await _db;
       final results = await db.query(
-        'kana_quiz_records',
-        where: 'kana_id = ?',
-        whereArgs: [kanaId],
+        'kana_logs',
+        where: 'user_id = ? AND kana_id = ?',
+        whereArgs: [userId, kanaId],
         orderBy: 'created_at DESC',
       );
 
       logger.dbQuery(
-        table: 'kana_quiz_records',
-        where: 'kana_id = $kanaId',
+        table: 'kana_logs',
+        where: 'user_id = $userId, kana_id = $kanaId',
         resultCount: results.length,
       );
 
-      return results.map((map) => KanaQuizRecord.fromMap(map)).toList();
+      return results.map((map) => KanaLog.fromMap(map)).toList();
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
-        table: 'kana_quiz_records',
+        table: 'kana_logs',
         dbError: e,
         stackTrace: stackTrace,
       );
@@ -450,28 +450,49 @@ class KanaRepository {
     }
   }
 
-  /// 添加测验记录
-  Future<int> addKanaQuizRecord({
-    required int kanaId,
-    required bool correct,
-  }) async {
+  /// 获取用户所有学习日志
+  Future<List<KanaLog>> getAllKanaLogs(int userId, {int? limit}) async {
     try {
       final db = await _db;
-      final now = DateTime.now().toIso8601String();
+      final results = await db.query(
+        'kana_logs',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'created_at DESC',
+        limit: limit,
+      );
 
-      final result = await db.insert('kana_quiz_records', {
-        'kana_id': kanaId,
-        'correct': correct ? 1 : 0,
-        'created_at': now,
-      });
+      logger.dbQuery(
+        table: 'kana_logs',
+        where: 'user_id = $userId',
+        resultCount: results.length,
+      );
 
-      logger.dbInsert(table: 'kana_quiz_records', id: result);
+      return results.map((map) => KanaLog.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 添加学习日志
+  Future<int> addKanaLog(KanaLog log) async {
+    try {
+      final db = await _db;
+      final result = await db.insert('kana_logs', log.toInsertMap());
+
+      logger.dbInsert(table: 'kana_logs', id: result);
 
       return result;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'INSERT',
-        table: 'kana_quiz_records',
+        table: 'kana_logs',
         dbError: e,
         stackTrace: stackTrace,
       );
@@ -479,24 +500,51 @@ class KanaRepository {
     }
   }
 
-  /// 获取假名的正确率
-  Future<double> getKanaAccuracy(int kanaId) async {
+  /// 快速添加学习日志
+  Future<int> addKanaLogQuick({
+    required int userId,
+    required int kanaId,
+    required KanaLogType logType,
+    int? rating,
+    int algorithm = 1,
+    double? intervalAfter,
+    int? nextReviewAtAfter,
+    double? easeFactorAfter,
+    int durationMs = 0,
+  }) async {
+    final log = KanaLog(
+      id: 0,
+      userId: userId,
+      kanaId: kanaId,
+      logType: logType,
+      rating: rating,
+      algorithm: algorithm,
+      intervalAfter: intervalAfter,
+      nextReviewAtAfter: nextReviewAtAfter,
+      easeFactorAfter: easeFactorAfter,
+      durationMs: durationMs,
+    );
+    return addKanaLog(log);
+  }
+
+  /// 获取假名的正确率（基于日志中的测验和复习记录）
+  Future<double> getKanaAccuracy(int userId, int kanaId) async {
     try {
       final db = await _db;
       final result = await db.rawQuery(
         '''
         SELECT 
           COUNT(*) as total,
-          SUM(CASE WHEN correct = 1 THEN 1 ELSE 0 END) as correct_count
-        FROM kana_quiz_records
-        WHERE kana_id = ?
+          SUM(CASE WHEN rating >= 2 THEN 1 ELSE 0 END) as correct_count
+        FROM kana_logs
+        WHERE user_id = ? AND kana_id = ? AND rating IS NOT NULL
       ''',
-        [kanaId],
+        [userId, kanaId],
       );
 
       logger.dbQuery(
-        table: 'kana_quiz_records',
-        where: 'kana_id = $kanaId (accuracy)',
+        table: 'kana_logs',
+        where: 'user_id = $userId, kana_id = $kanaId (accuracy)',
         resultCount: 1,
       );
 
@@ -508,7 +556,51 @@ class KanaRepository {
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
-        table: 'kana_quiz_records',
+        table: 'kana_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 获取用户学习日志统计
+  Future<Map<String, int>> getKanaLogStats(int userId) async {
+    try {
+      final db = await _db;
+      final result = await db.rawQuery(
+        '''
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN log_type = 1 THEN 1 ELSE 0 END) as first_learn_count,
+          SUM(CASE WHEN log_type = 2 THEN 1 ELSE 0 END) as review_count,
+          SUM(CASE WHEN log_type = 3 THEN 1 ELSE 0 END) as mastered_count,
+          SUM(CASE WHEN log_type = 4 THEN 1 ELSE 0 END) as quiz_count,
+          SUM(CASE WHEN log_type = 5 THEN 1 ELSE 0 END) as forgot_count
+        FROM kana_logs
+        WHERE user_id = ?
+      ''',
+        [userId],
+      );
+
+      logger.dbQuery(
+        table: 'kana_logs',
+        where: 'user_id = $userId (stats)',
+        resultCount: 1,
+      );
+
+      return {
+        'total': result.first['total'] as int? ?? 0,
+        'firstLearnCount': result.first['first_learn_count'] as int? ?? 0,
+        'reviewCount': result.first['review_count'] as int? ?? 0,
+        'masteredCount': result.first['mastered_count'] as int? ?? 0,
+        'quizCount': result.first['quiz_count'] as int? ?? 0,
+        'forgotCount': result.first['forgot_count'] as int? ?? 0,
+      };
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_logs',
         dbError: e,
         stackTrace: stackTrace,
       );

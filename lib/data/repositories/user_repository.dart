@@ -15,7 +15,7 @@ class UserRepository {
   Future<int> createUser(User user) async {
     try {
       final db = await _db;
-      final id = await db.insert('users', user.toMap());
+      final id = await db.insert('users', user.toInsertMap());
 
       logger.dbInsert(
         table: 'users',
