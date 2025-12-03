@@ -150,15 +150,24 @@ CREATE TABLE daily_stats (
 
 ```sql
 CREATE TABLE users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    username      TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    email         TEXT UNIQUE,
-    nickname      TEXT,
-    avatar_url    TEXT,
-    status        INTEGER DEFAULT 1,
-    created_at    INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
-    updated_at    INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    username        TEXT UNIQUE NOT NULL,
+    password_hash   TEXT NOT NULL,
+    email           TEXT UNIQUE,
+    nickname        TEXT,
+    avatar_url      TEXT,
+
+    status          INTEGER DEFAULT 1,    -- 1=active, 0=inactive
+
+    settings        TEXT,                 -- JSON 用户偏好设置
+    locale          TEXT DEFAULT 'zh',    -- 语言偏好 zh/en/ja
+    timezone        TEXT,                 -- Asia/Shanghai 等
+    last_active_at  INTEGER,              -- 上次活跃时间戳
+    onboarding_completed INTEGER DEFAULT 0,
+    pro_status      INTEGER DEFAULT 0,    -- 0=Free, 1=Pro
+
+    created_at      INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
+    updated_at      INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 ```
 
@@ -268,17 +277,33 @@ CREATE INDEX idx_kana_review_schedule
 ON kana_learning_state (user_id, learning_status, next_review_at);
 ```
 
-### kana_quiz_records
+### kana_logs
 
 五十音测验记录。
 
 ```sql
-CREATE TABLE kana_quiz_records (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    kana_id    INTEGER REFERENCES kana_letters(id),  -- 关联假名
-    correct    INTEGER,                               -- 是否正确 (0=错误, 1=正确)
-    created_at TEXT                                   -- 测验时间
+CREATE TABLE kana_logs (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id               INTEGER NOT NULL REFERENCES users(id),
+    kana_id               INTEGER NOT NULL REFERENCES kana_letters(id),
+
+    log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败
+    rating                INTEGER,                      -- 1=Again, 2=Good, 3=Easy（测验正确/错误也可写入）
+    algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS
+
+    interval_after        REAL,                         -- 操作后：SM-2 复习间隔
+    next_review_at_after  INTEGER,                      -- 操作后：下次复习时间戳
+    ease_factor_after     REAL,                         -- 操作后 EF（SM-2）
+
+    fsrs_stability_after  REAL,                         -- 操作后 S（FSRS）
+    fsrs_difficulty_after REAL,                         -- 操作后 D（FSRS）
+
+    duration_ms           INTEGER DEFAULT 0,            -- 单次学习耗时
+    created_at            INTEGER DEFAULT (strftime('%s','now')) NOT NULL
 );
+
+CREATE INDEX idx_kana_logs
+ON kana_logs (user_id, kana_id, created_at);
 ```
 
 ### kana_stroke_order
