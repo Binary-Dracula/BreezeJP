@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/repositories/kana_repository.dart';
 import '../../../data/repositories/kana_repository_provider.dart';
 import '../state/kana_chart_state.dart';
@@ -12,17 +13,23 @@ final kanaChartControllerProvider =
 
 /// 五十音表控制器
 class KanaChartController extends Notifier<KanaChartState> {
-  /// 当前用户 ID（暂时硬编码为 1）
-  static const int _userId = 1;
+  /// 当前用户 ID（从 app_state 表获取）
+  int? _userId;
 
   @override
   KanaChartState build() => const KanaChartState();
 
   KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
 
+  Future<int> _ensureUserId() async {
+    _userId ??= (await ref.read(activeUserProvider.future)).id;
+    return _userId!;
+  }
+
   /// 加载五十音表数据
   Future<void> loadKanaChart() async {
     try {
+      final userId = await _ensureUserId();
       logger.info('开始加载五十音表数据');
       state = state.copyWith(isLoading: true, error: null);
 
@@ -31,11 +38,11 @@ class KanaChartController extends Notifier<KanaChartState> {
 
       // 2. 获取所有假名及学习状态
       final kanaLetters = await _kanaRepository.getAllKanaLettersWithState(
-        _userId,
+        userId,
       );
 
       // 3. 获取学习统计
-      final stats = await _kanaRepository.getKanaLearningStats(_userId);
+      final stats = await _kanaRepository.getKanaLearningStats(userId);
 
       state = state.copyWith(
         isLoading: false,

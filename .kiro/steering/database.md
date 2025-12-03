@@ -171,6 +171,13 @@ CREATE TABLE users (
 );
 ```
 
+```sql
+CREATE TABLE app_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    current_user_id INTEGER REFERENCES users(id)    --- 当前活跃用户的ID
+);
+```
+
 ### word_relations
 
 ```sql

@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/repositories/word_repository_provider.dart';
 import '../../../data/repositories/study_word_repository_provider.dart';
 import '../../../data/repositories/study_log_repository_provider.dart';
@@ -13,16 +14,22 @@ class LearnController extends Notifier<LearnState> {
   /// 学习会话开始时间
   DateTime? _sessionStartTime;
 
-  /// 当前用户 ID（暂时硬编码为 1）
-  static const int _userId = 1;
+  /// 当前用户 ID（从 app_state 表获取）
+  int? _userId;
 
   @override
   LearnState build() {
     return const LearnState();
   }
 
+  Future<int> _ensureUserId() async {
+    _userId ??= (await ref.read(activeUserProvider.future)).id;
+    return _userId!;
+  }
+
   /// 初始化学习（传入选中的单词 ID）
   Future<void> initWithWord(int wordId) async {
+    final userId = await _ensureUserId();
     _sessionStartTime = DateTime.now();
     state = state.copyWith(isLoading: true, error: null);
 
@@ -55,7 +62,7 @@ class LearnController extends Notifier<LearnState> {
         pathEnded: relatedWords.isEmpty,
       );
 
-      logger.learnSessionStart(userId: _userId);
+      logger.learnSessionStart(userId: userId);
       logger.info(
         '学习初始化完成: 起始单词=${selectedWord.word.word}, 关联词=${relatedDetails.length}个',
       );
@@ -143,6 +150,7 @@ class LearnController extends Notifier<LearnState> {
     }
 
     try {
+      final userId = await _ensureUserId();
       final studyWordRepository = ref.read(studyWordRepositoryProvider);
       final studyLogRepository = ref.read(studyLogRepositoryProvider);
 
@@ -151,11 +159,11 @@ class LearnController extends Notifier<LearnState> {
       state = state.copyWith(learnedWordIds: newLearnedWordIds);
 
       // 更新数据库
-      await studyWordRepository.markAsLearned(userId: _userId, wordId: wordId);
+      await studyWordRepository.markAsLearned(userId: userId, wordId: wordId);
 
       // 插入学习日志
       await studyLogRepository.logFirstLearn(
-        userId: _userId,
+        userId: userId,
         wordId: wordId,
         durationMs: 0,
       );
@@ -171,13 +179,14 @@ class LearnController extends Notifier<LearnState> {
     if (_sessionStartTime == null) return;
 
     try {
+      final userId = await _ensureUserId();
       final dailyStatRepository = ref.read(dailyStatRepositoryProvider);
       final durationMs = DateTime.now()
           .difference(_sessionStartTime!)
           .inMilliseconds;
 
       await dailyStatRepository.updateDailyStats(
-        userId: _userId,
+        userId: userId,
         learnedCount: state.learnedCount,
         durationMs: durationMs,
       );
@@ -195,6 +204,7 @@ class LearnController extends Notifier<LearnState> {
   /// 重置状态
   void reset() {
     _sessionStartTime = null;
+    _userId = null;
     state = const LearnState();
   }
 }

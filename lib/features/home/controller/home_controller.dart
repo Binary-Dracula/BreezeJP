@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../../data/models/user.dart';
+import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/repositories/daily_stat_repository.dart';
 import '../../../data/repositories/daily_stat_repository_provider.dart';
 import '../../../data/repositories/study_word_repository.dart';
 import '../../../data/repositories/study_word_repository_provider.dart';
-import '../../../data/repositories/user_repository.dart';
-import '../../../data/repositories/user_repository_provider.dart';
 import '../state/home_state.dart';
 
 /// HomeController Provider
@@ -19,7 +17,6 @@ class HomeController extends Notifier<HomeState> {
   @override
   HomeState build() => const HomeState();
 
-  UserRepository get _userRepository => ref.read(userRepositoryProvider);
   StudyWordRepository get _studyWordRepository =>
       ref.read(studyWordRepositoryProvider);
   DailyStatRepository get _dailyStatRepository =>
@@ -31,29 +28,10 @@ class HomeController extends Notifier<HomeState> {
       logger.info('开始加载主页数据');
       state = state.copyWith(isLoading: true, error: null);
 
-      // 1. 获取当前用户 (暂时默认取第一个，如果没有则创建一个默认用户)
-      // TODO: 实现真正的用户管理
-      final users = await _userRepository.getAllUsers();
-      int userId;
-      String userName = 'Breeze 用户';
-
-      if (users.isEmpty) {
-        // 创建默认用户
-        logger.info('未找到用户，创建默认用户');
-        userId = await _userRepository.createUser(
-          User(
-            id: 0, // 数据库自增
-            username: userName,
-            passwordHash: 'placeholder', // MVP 无登录，使用占位密码
-            nickname: 'Breeze 用户',
-            locale: 'zh',
-            onboardingCompleted: 0,
-          ),
-        );
-      } else {
-        userId = users.first.id;
-        userName = users.first.username;
-      }
+      // 1. 获取当前活跃用户
+      final user = await ref.read(activeUserProvider.future);
+      final userId = user.id;
+      final userName = user.username;
 
       // 2. 获取学习统计
       final reviewCount = await _studyWordRepository.getDueReviewCount(userId);
