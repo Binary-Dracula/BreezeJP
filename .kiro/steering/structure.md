@@ -81,14 +81,33 @@ lib/
 │   │   └── state/
 │   ├── learn/               # 学习功能 ✅
 │   │   ├── controller/
+│   │   │   ├── initial_choice_controller.dart  # 初始选择页控制器
+│   │   │   └── learn_controller.dart           # 学习页控制器
 │   │   ├── pages/
+│   │   │   ├── initial_choice_page.dart        # 初始选择页
+│   │   │   └── learn_page.dart                 # 学习页
 │   │   ├── state/
+│   │   │   ├── initial_choice_state.dart       # 初始选择页状态
+│   │   │   └── learn_state.dart                # 学习页状态
 │   │   └── widgets/
+│   │       ├── audio_play_button.dart          # 音频播放按钮
+│   │       ├── example_item.dart               # 例句项
+│   │       ├── word_choice_card.dart           # 单词选择卡片
+│   │       ├── word_examples_section.dart      # 例句区域
+│   │       ├── word_header.dart                # 单词头部
+│   │       └── word_meanings_section.dart      # 释义区域
 │   ├── kana/                # 五十音图学习 🚧
 │   │   ├── controller/
+│   │   │   ├── kana_chart_controller.dart      # 五十音图表控制器
+│   │   │   └── kana_stroke_controller.dart     # 笔顺练习控制器
 │   │   ├── pages/
+│   │   │   ├── kana_chart_page.dart            # 五十音图表页
+│   │   │   └── kana_stroke_practice_page.dart  # 笔顺练习页
 │   │   ├── state/
+│   │   │   ├── kana_chart_state.dart           # 五十音图表状态
+│   │   │   └── kana_stroke_state.dart          # 笔顺练习状态
 │   │   └── widgets/
+│   │       └── kana_grid.dart                  # 假名网格组件
 │   ├── review/              # 复习功能 📋
 │   ├── word_detail/         # 单词详情 📋
 │   ├── word_list/           # 单词列表 📋
