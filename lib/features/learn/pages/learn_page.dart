@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../controller/learn_controller.dart';
 import '../state/learn_state.dart';
-import '../widgets/word_card.dart';
-import '../widgets/example_card.dart';
+import '../widgets/word_examples_section.dart';
+import '../widgets/word_header.dart';
+import '../widgets/word_meanings_section.dart';
 
 /// 学习页面
 /// 全屏展示单词详情，支持左右滑动切换单词
@@ -148,44 +149,17 @@ class _LearnPageState extends ConsumerState<LearnPage> {
       itemBuilder: (context, index) {
         final wordDetail = state.studyQueue[index];
         return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 单词卡片
-              WordCard(wordDetail: wordDetail),
-              const SizedBox(height: 8),
-              // 例句列表
-              if (wordDetail.examples.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.format_quote,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '例句',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-                ...wordDetail.examples.map(
-                  (example) => ExampleCard(example: example),
-                ),
-              ],
-              const SizedBox(height: 32),
-              // 加载更多指示器
+              WordHeader(wordDetail: wordDetail),
+              WordMeaningsSection(meanings: wordDetail.meanings),
+              WordExamplesSection(examples: wordDetail.examples),
               if (state.isLoadingMore && index == state.studyQueue.length - 1)
                 const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: CircularProgressIndicator(),
+                  padding: EdgeInsets.only(top: 8, bottom: 16),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
             ],
           ),

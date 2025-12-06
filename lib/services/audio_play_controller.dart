@@ -24,15 +24,27 @@ class AudioPlayController extends Notifier<AudioPlayStatus> {
       playerState,
     ) {
       if (playerState.processingState == ProcessingState.completed) {
-        // 播放完成 → 回到 idle
-        state = const AudioPlayStatus(state: AudioPlayState.idle);
+        // 播放完成 → 回到 idle，保留 currentSource，避免与新 loading 竞态
+        if (state.state != AudioPlayState.loading) {
+          state = AudioPlayStatus(
+            state: AudioPlayState.idle,
+            currentSource: state.currentSource,
+          );
+        }
         logger.debug('音频播放完成，状态回到 idle');
       } else if (playerState.playing) {
         // 正在播放
-        if (state.state != AudioPlayState.playing) {
+        final resolvedSource = state.currentSource?.isNotEmpty == true
+            ? state.currentSource
+            : (audioService.currentAudioSource.isNotEmpty
+                  ? audioService.currentAudioSource
+                  : null);
+
+        if (state.state != AudioPlayState.playing ||
+            state.currentSource != resolvedSource) {
           state = AudioPlayStatus(
             state: AudioPlayState.playing,
-            currentSource: state.currentSource,
+            currentSource: resolvedSource,
           );
         }
       }
