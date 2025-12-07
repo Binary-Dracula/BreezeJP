@@ -253,6 +253,72 @@ class KanaRepository {
 
   // ==================== 学习状态 ====================
 
+  /// 获取或创建假名学习状态（UNIQUE: user_id + kana_id）
+  /// 用于首次学习/复习前保证存在基础记录
+  Future<KanaLearningState> getOrCreateLearningState(
+    int userId,
+    int kanaId,
+  ) async {
+    try {
+      final db = await _db;
+      final now = DateTime.now();
+      final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
+      final nextReviewAt =
+          now.add(const Duration(hours: 4)).millisecondsSinceEpoch ~/ 1000;
+
+      return await db.transaction((txn) async {
+        // 1) 查询是否已存在
+        final existing = await txn.query(
+          'kana_learning_state',
+          where: 'user_id = ? AND kana_id = ?',
+          whereArgs: [userId, kanaId],
+          limit: 1,
+        );
+
+        logger.dbQuery(
+          table: 'kana_learning_state',
+          where: 'user_id = $userId, kana_id = $kanaId',
+          resultCount: existing.length,
+        );
+
+        if (existing.isNotEmpty) {
+          return KanaLearningState.fromMap(existing.first);
+        }
+
+        // 2) 不存在则创建初始状态
+        final insertMap = {
+          'user_id': userId,
+          'kana_id': kanaId,
+          'learning_status': KanaLearningStatus.learning.index, // 1
+          'next_review_at': nextReviewAt,
+          'streak': 0,
+          'total_reviews': 0,
+          'fail_count': 0,
+          'interval': 0,
+          'ease_factor': 2.5,
+          'stability': 0,
+          'difficulty': 0,
+          'created_at': nowSeconds,
+          'updated_at': nowSeconds,
+        };
+
+        final id = await txn.insert('kana_learning_state', insertMap);
+        logger.dbInsert(table: 'kana_learning_state', id: id);
+
+        // 3) 返回最终模型
+        return KanaLearningState.fromMap({...insertMap, 'id': id});
+      });
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 获取假名的学习状态
   Future<KanaLearningState?> getKanaLearningState(
     int userId,
@@ -525,6 +591,68 @@ class KanaRepository {
       durationMs: durationMs,
     );
     return addKanaLog(log);
+  }
+
+  /// 仅更新学习状态的更新时间
+  Future<void> updateLearningTimestamp(int userId, int kanaId) async {
+    try {
+      final db = await _db;
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      final affected = await db.update(
+        'kana_learning_state',
+        {'updated_at': nowSeconds},
+        where: 'user_id = ? AND kana_id = ?',
+        whereArgs: [userId, kanaId],
+      );
+
+      logger.dbUpdate(table: 'kana_learning_state', affectedRows: affected);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 插入学习日志（学习行为）
+  Future<void> insertLearningLog({
+    required int userId,
+    required int kanaId,
+    int durationMs = 0,
+  }) async {
+    try {
+      final db = await _db;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      final id = await db.insert('kana_logs', {
+        'user_id': userId,
+        'kana_id': kanaId,
+        'log_type': 1, // 学习
+        'rating': null,
+        'algorithm': 1,
+        'interval_after': null,
+        'next_review_at_after': null,
+        'ease_factor_after': null,
+        'fsrs_stability_after': null,
+        'fsrs_difficulty_after': null,
+        'duration_ms': durationMs,
+        'created_at': now,
+      });
+
+      logger.dbInsert(table: 'kana_logs', id: id);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'INSERT',
+        table: 'kana_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   /// 获取假名的正确率（基于日志中的测验和复习记录）

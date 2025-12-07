@@ -257,7 +257,12 @@ class _KanaStrokePracticePageState
         FilledButton.icon(
           onPressed: (audioFilename == null || audioFilename.isEmpty)
               ? null
-              : () => _playAudio(audioFilename),
+              : () {
+                  ref
+                      .read(kanaStrokeControllerProvider.notifier)
+                      .recordLearningAction();
+                  _playAudio(audioFilename);
+                },
           icon: const Icon(Icons.volume_up),
           label: Text(l10n.kanaStrokePlayAudio),
         ),
@@ -320,6 +325,9 @@ class _KanaStrokePracticePageState
                         _showFinalGlyph = true;
                         _canPractice = true;
                       });
+                      ref
+                          .read(kanaStrokeControllerProvider.notifier)
+                          .recordLearningAction();
                     },
                   ),
                   if (guide != null)
@@ -379,7 +387,7 @@ class _KanaStrokePracticePageState
         ];
       },
       onAllCompleted: () {
-        // 可以在此处添加其他完成后的反馈（如动画或音效）
+        ref.read(kanaStrokeControllerProvider.notifier).recordLearningAction();
       },
     );
   }
