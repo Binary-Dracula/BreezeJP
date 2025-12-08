@@ -4,298 +4,285 @@ inclusion: always
 
 # 项目架构与文件组织
 
+## 架构模式：MVVM + Repository + Riverpod
+
+**数据流：**
+```
+View（UI） ↔ Controller（业务逻辑） ↔ Repository（CRUD） ↔ Database
+                  ↕
+                State（不可变数据）
+```
+
+**各层职责：**
+
+| Layer | 职责 | 禁止 |
+|-------|------|------|
+| **View** | UI 渲染、用户交互 | 直接访问数据库、业务逻辑、修改 state |
+| **Controller** | 业务逻辑、状态管理 | 数据加工、直接 DB 查询 |
+| **State** | 不可变数据容器 | 可变字段、逻辑 |
+| **Repository** | CRUD、DB 查询 | 业务逻辑、UI 相关 |
+| **Model** | 数据结构，含 `fromMap()`/`toMap()` | 业务逻辑 |
+
+**硬性规则：**
+- 数据访问仅限：Repository → Controller → View
+- Repository 只返回模型对象，绝不返回 Map
+- 所有 State 必须不可变并提供 `copyWith()`
+- 所有 DB 访问必须用 `AppDatabase.instance` 单例
+
 ## 目录结构
 
 ```
 lib/
-├── core/                    # 共享层
-│   ├── algorithm/           # SRS 算法实现
-│   │   ├── algorithm_service.dart
-│   │   ├── algorithm_service_provider.dart
-│   │   ├── sm2_algorithm.dart
-│   │   ├── fsrs_algorithm.dart
-│   │   └── srs_types.dart
-│   ├── constants/           # 应用级常量
-│   │   └── app_constants.dart
-│   ├── network/             # 网络层
-│   │   ├── dio_client.dart
-│   │   ├── api_endpoints.dart
-│   │   └── network_info.dart
-│   ├── utils/               # 工具函数
-│   │   ├── app_logger.dart
-│   │   ├── l10n_utils.dart
-│   │   ├── log_category.dart
-│   │   └── log_formatter.dart
+├── core/                    # 共享基础能力
+│   ├── algorithm/           # SRS 算法 (SM-2, FSRS)
+│   ├── constants/           # 全局常量
+│   ├── network/             # HTTP 客户端、接口定义
+│   ├── utils/               # 工具（logger、l10n 等）
 │   └── widgets/             # 可复用 UI 组件
-│       ├── custom_ruby_text.dart
-│       └── stroke_order_animator.dart
 ├── data/                    # 数据层
-│   ├── db/
-│   │   └── app_database.dart
-│   ├── models/
-│   │   ├── app_state.dart             # 应用状态
-│   │   ├── word.dart
-│   │   ├── word_meaning.dart
-│   │   ├── word_audio.dart
-│   │   ├── word_detail.dart
-│   │   ├── word_choice.dart           # 单词选择
-│   │   ├── word_with_relation.dart    # 带关联的单词
-│   │   ├── example_sentence.dart
-│   │   ├── example_audio.dart
-│   │   ├── study_word.dart
-│   │   ├── study_log.dart
-│   │   ├── daily_stat.dart
-│   │   ├── user.dart
-│   │   ├── kana_letter.dart           # 五十音字母
-│   │   ├── kana_audio.dart            # 五十音音频
-│   │   ├── kana_example.dart          # 五十音示例
-│   │   ├── kana_learning_state.dart   # 五十音学习状态
-│   │   ├── kana_log.dart              # 五十音学习日志
-│   │   ├── kana_detail.dart           # 五十音详情
-│   │   └── kana_stroke_order.dart     # 五十音笔顺
-│   └── repositories/
-│       ├── word_repository.dart
-│       ├── word_repository_provider.dart
-│       ├── study_word_repository.dart
-│       ├── study_word_repository_provider.dart
-│       ├── study_log_repository.dart
-│       ├── study_log_repository_provider.dart
-│       ├── daily_stat_repository.dart
-│       ├── daily_stat_repository_provider.dart
-│       ├── user_repository.dart
-│       ├── user_repository_provider.dart
-│       ├── app_state_repository.dart
-│       ├── app_state_repository_provider.dart
-│       ├── active_user_provider.dart  # 当前活跃用户 Provider
-│       ├── example_api_repository.dart
-│       ├── kana_repository.dart
-│       └── kana_repository_provider.dart
-├── features/                # 功能模块
-│   ├── splash/              # 启动页面 ✅
-│   │   ├── controller/
-│   │   ├── pages/
-│   │   └── state/
-│   ├── home/                # 首页 ✅
-│   │   ├── controller/
-│   │   ├── pages/
-│   │   └── state/
-│   ├── learn/               # 学习功能 ✅
-│   │   ├── controller/
-│   │   │   ├── initial_choice_controller.dart  # 初始选择页控制器
-│   │   │   └── learn_controller.dart           # 学习页控制器
-│   │   ├── pages/
-│   │   │   ├── initial_choice_page.dart        # 初始选择页
-│   │   │   └── learn_page.dart                 # 学习页
-│   │   ├── state/
-│   │   │   ├── initial_choice_state.dart       # 初始选择页状态
-│   │   │   └── learn_state.dart                # 学习页状态
-│   │   └── widgets/
-│   │       ├── audio_play_button.dart          # 音频播放按钮
-│   │       ├── example_item.dart               # 例句项
-│   │       ├── word_choice_card.dart           # 单词选择卡片
-│   │       ├── word_examples_section.dart      # 例句区域
-│   │       ├── word_header.dart                # 单词头部
-│   │       └── word_meanings_section.dart      # 释义区域
-│   ├── kana/                # 五十音图学习 🚧
-│   │   ├── controller/
-│   │   │   ├── kana_chart_controller.dart      # 五十音图表控制器
-│   │   │   └── kana_stroke_controller.dart     # 笔顺练习控制器
-│   │   ├── pages/
-│   │   │   ├── kana_chart_page.dart            # 五十音图表页
-│   │   │   └── kana_stroke_practice_page.dart  # 笔顺练习页
-│   │   ├── state/
-│   │   │   ├── kana_chart_state.dart           # 五十音图表状态
-│   │   │   └── kana_stroke_state.dart          # 笔顺练习状态
-│   │   └── widgets/
-│   │       └── kana_grid.dart                  # 假名网格组件
-│   ├── review/              # 复习功能 📋
-│   ├── word_detail/         # 单词详情 📋
-│   ├── word_list/           # 单词列表 📋
-│   └── settings/            # 设置 📋
+│   ├── db/                  # 数据库单例 (AppDatabase)
+│   ├── models/              # 数据模型 (fromMap/toMap)
+│   └── repositories/        # CRUD + providers
+├── features/                # 功能模块（MVVM）
+│   ├── splash/              # ✅ Splash
+│   ├── home/                # ✅ 首页 Dashboard
+│   ├── learn/               # ✅ 单词学习流
+│   ├── kana/                # 🚧 假名学习
+│   ├── review/              # 📋 复习模式
+│   ├── word_detail/         # 📋 单词详情
+│   ├── word_list/           # 📋 单词列表
+│   └── settings/            # 📋 设置
 ├── l10n/                    # 国际化
-│   ├── app_zh.arb
-│   ├── app_localizations.dart
-│   └── app_localizations_zh.dart
-├── router/
-│   └── app_router.dart
-├── services/
-│   ├── audio_service.dart
-│   ├── audio_service_provider.dart
-│   ├── audio_play_controller.dart
-│   ├── audio_play_controller_provider.dart
-│   └── audio_play_state.dart
+├── router/                  # go_router 路由
+├── services/                # 横切服务（音频等）
 └── main.dart
 ```
 
-## 功能模块结构
-
-```
-features/[功能名]/
-├── controller/    # Riverpod 控制器
-├── pages/         # 页面组件
-├── state/         # 状态类
-└── widgets/       # 功能内组件（可选）
-```
-
-## 文件放置规则
-
-### 数据模型
-- 路径：`lib/data/models/`
-- 命名：`[实体名].dart`
-- 必须实现 `fromMap()` 和 `toMap()`
-
-### Repository
-- 路径：`lib/data/repositories/`
-- 命名：`[实体名]_repository.dart`
-- Provider：`[实体名]_repository_provider.dart`
-
-### 功能模块
-- 路径：`lib/features/[功能名]/`
-- Controller：`[功能名]_controller.dart`
-- State：`[功能名]_state.dart`
-- Page：`[功能名]_page.dart`
-
-### 共享组件
-- 路径：`lib/core/widgets/`
-- 命名：`[组件名].dart`
-
-### 工具函数
-- 路径：`lib/core/utils/`
-- 命名：`[功能名]_utils.dart`
-
-### 服务
-- 路径：`lib/services/`
-- 命名：`[服务名]_service.dart`
-- Provider：`[服务名]_service_provider.dart`
-
-## 资源文件
-
+**Assets：**
 ```
 assets/
 ├── audio/
-│   ├── words/      # 单词音频
-│   ├── examples/   # 例句音频
-│   └── kana/       # 五十音音频
+│   ├── words/               # 单词发音
+│   ├── examples/            # 例句音频
+│   └── kana/                # 假名发音
 ├── database/
-│   └── breeze_jp.sqlite
+│   └── breeze_jp.sqlite     # 预置 SQLite
 └── images/
 ```
 
-## 状态管理模式
+## 文件命名与放置
 
+### Feature 模块 (`lib/features/[feature_name]/`)
+
+**标准结构：**
+```
+features/[feature_name]/
+├── controller/              # 业务逻辑 (Riverpod Notifier)
+│   └── [feature]_controller.dart
+├── pages/                   # UI 入口 (ConsumerWidget/Stateful)
+│   └── [feature]_page.dart
+├── state/                   # 不可变状态
+│   └── [feature]_state.dart
+└── widgets/                 # 该 feature 专属组件（可选）
+    └── [component]_widget.dart
+```
+
+### 数据层
+
+**Models** (`lib/data/models/`):
+- 文件：`[entity].dart`（如 `word.dart`、`study_word.dart`）
+- 必须实现：`fromMap(Map<String, dynamic>)` 与 `toMap()`
+- 命名：DB snake_case → Dart camelCase
+
+**Repositories** (`lib/data/repositories/`):
+- 文件：`[entity]_repository.dart`
+- Provider：`[entity]_repository_provider.dart`
+- 返回模型对象，使用 `AppDatabase.instance`
+- 只做 CRUD，不写业务逻辑
+
+### 共享代码
+
+**Widgets** (`lib/core/widgets/`):
+- 文件：`[widget_name].dart`
+- 尽量无状态，跨 Feature 复用
+
+**Utils** (`lib/core/utils/`):
+- 文件：`[function]_utils.dart`
+- 纯函数，无状态
+
+**Services** (`lib/services/`):
+- 文件：`[service]_service.dart`
+- Provider：`[service]_service_provider.dart`
+- 横切能力（音频、网络等）
+
+## Riverpod 状态管理
+
+**Provider 定义：**
 ```dart
-// Provider 定义
-final myControllerProvider = 
+final myControllerProvider =
     NotifierProvider<MyController, MyState>(MyController.new);
+```
 
-// Controller
+**Controller（业务逻辑）：**
+```dart
 class MyController extends Notifier<MyState> {
   @override
   MyState build() => const MyState();
-  
-  Future<void> loadData() async { ... }
-}
 
-// UI 使用
+  Future<void> loadData() async {
+    final repo = ref.read(myRepositoryProvider);
+    final data = await repo.getData();
+    state = state.copyWith(data: data); // 不可变更新
+  }
+}
+```
+
+**State（不可变数据）：**
+```dart
+@immutable
+class MyState {
+  final bool isLoading;
+  final List<Word> words;
+
+  const MyState({this.isLoading = false, this.words = const []});
+
+  MyState copyWith({bool? isLoading, List<Word>? words}) {
+    return MyState(
+      isLoading: isLoading ?? this.isLoading,
+      words: words ?? this.words,
+    );
+  }
+}
+```
+
+**View（UI）：**
+```dart
 class MyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(myControllerProvider);
-    return Scaffold(...);
+    final state = ref.watch(myControllerProvider);      // 订阅状态
+    final controller = ref.read(myControllerProvider.notifier); // 调用方法
+
+    return Scaffold(
+      body: state.isLoading ? const CircularProgressIndicator() : ListView(...),
+    );
   }
 }
 ```
+
+**使用规则：**
+- `ref.watch()`：订阅并重建
+- `ref.read()`：一次性读取/调用方法
+- State 必须不可变，提供 `copyWith()`
+- 每个 Feature 拥有独立 Provider
 
 ## 数据库访问
 
+**Repository 模式（必选）：**
+
 ```dart
-// 通过 Repository（推荐）
 class WordRepository {
   Future<List<Word>> getWordsByLevel(String level) async {
     final db = await AppDatabase.instance.database;
-    final results = await db.query('words', where: 'jlpt_level = ?', whereArgs: [level]);
-    return results.map((map) => Word.fromMap(map)).toList();
+    final results = await db.query(
+      'words',
+      where: 'jlpt_level = ?',
+      whereArgs: [level],
+    );
+    return results.map((m) => Word.fromMap(m)).toList(); // Map → Model
+  }
+
+  Future<void> updateWord(Word word) async {
+    final db = await AppDatabase.instance.database;
+    await db.update(
+      'words',
+      word.toMap(),
+      where: 'id = ?',
+      whereArgs: [word.id],
+    );
   }
 }
 ```
 
-## 路由导航
+**规则：**
+- ✅ 访问路径：Repository → Controller → View
+- ❌ 禁止 Controller/View 直接查 DB
+- ✅ 只返回模型对象
+- ✅ 统一使用 `AppDatabase.instance`
+- ✅ 异常在 Repository 层处理
+
+## 路由（go_router）
 
 ```dart
-context.go('/home');           // 跳转
-context.go('/word-detail', extra: wordId);  // 带参数
-context.pop();                 // 返回
+context.go('/home');                          // 跳转
+context.go('/word-detail', extra: wordId);    // 传参
+context.pop();                                // 返回
+context.replace('/login');                    // 替换当前路由
 ```
 
-## 国际化
+## 国际化（i18n）
 
-**⚠️ 重要：所有用户可见的文本必须使用国际化，禁止硬编码字符串**
+**⚠️ 所有用户可见文本必须通过 AppLocalizations，禁止硬编码。**
 
+**正确：**
 ```dart
-// ✅ 正确：使用国际化
 final l10n = AppLocalizations.of(context)!;
-Text(l10n.appName);
 Text(l10n.startLearning);
-
-// ❌ 错误：硬编码字符串
-Text('开始学习');
-Text('BreezeJP');
 ```
 
-### 添加新文本
+**错误：**
+```dart
+Text('开始学习');  // ❌ 硬编码
+```
 
-1. 在 `lib/l10n/app_zh.arb` 添加键值对
-2. 保存后自动生成代码
-3. 使用 `l10n.keyName` 引用
+**新增文案流程：**
+1. 添加到 `lib/l10n/app_zh.arb`，如 `"startButton": "开始学习"`
+2. 保存生成代码
+3. 使用 `l10n.startButton`
 
-### 命名规范
+**命名规范：**
 
-| 类型 | 命名格式 | 示例 |
-|------|----------|------|
-| 按钮文本 | `{action}Button` | `startButton`, `cancelButton` |
-| 标题 | `{page}Title` | `homeTitle`, `settingsTitle` |
-| 提示信息 | `{context}Hint` | `searchHint`, `emptyHint` |
-| 错误信息 | `{context}Error` | `networkError`, `loadError` |
-| 标签 | `{context}Label` | `levelLabel`, `countLabel` |
+| 类型 | 格式 | 示例 |
+|------|------|------|
+| 按钮 | `{action}Button` | `startButton`、`cancelButton` |
+| 标题 | `{page}Title` | `homeTitle`、`settingsTitle` |
+| 提示 | `{context}Hint` | `searchHint`、`emptyHint` |
+| 错误 | `{context}Error` | `networkError`、`loadError` |
+| 标签 | `{context}Label` | `levelLabel`、`countLabel` |
 
-## Log 日志规则
+## 日志规范
 
 ### 日志工具
-
-使用 `logger` 包进行日志输出，统一通过 `lib/core/utils/app_logger.dart` 管理。
+统一使用 `lib/core/utils/app_logger.dart` 封装的 `logger`。
 
 ### 日志级别
 
-| 级别 | 使用场景 | 方法 |
-|------|----------|------|
-| Trace | 详细的调试信息（开发阶段） | `logger.t()` |
-| Debug | 调试信息（开发阶段） | `logger.d()` |
-| Info | 一般信息（关键流程节点） | `logger.i()` |
-| Warning | 警告信息（可恢复的异常） | `logger.w()` |
-| Error | 错误信息（需要关注的异常） | `logger.e()` |
-| Fatal | 致命错误（应用崩溃级别） | `logger.f()` |
+| 级别 | 场景 | 方法 |
+|------|------|------|
+| Trace | 细粒度调试 | `logger.t()` |
+| Debug | 调试信息 | `logger.d()` |
+| Info | 关键流程节点 | `logger.i()` |
+| Warning | 可恢复异常 | `logger.w()` |
+| Error | 需关注的错误 | `logger.e()` |
+| Fatal | 崩溃级错误 | `logger.f()` |
 
-### 日志规范
+### 书写示例
 
 ```dart
-// ✅ 推荐：使用 logger
-import 'package:breeze_jp/core/utils/app_logger.dart';
-
+// ✅ 推荐
 logger.i('用户开始学习 Session');
 logger.d('加载单词详情: wordId=$wordId');
 logger.w('音频文件不存在: $audioPath');
 logger.e('数据库查询失败', error: e, stackTrace: stackTrace);
 
-// ❌ 禁止：使用 print()
-print('这是不规范的日志');
+// ❌ 禁止
+print('调试日志');
 ```
 
-### 日志内容要求
-
-- 使用中文描述业务逻辑
-- 关键变量使用英文命名并附带值
-- 异常日志必须包含 `error` 和 `stackTrace`
-- 避免在循环中输出大量日志
+### 内容要求
+- 业务描述用中文，变量英文
+- 异常必须包含 `error` 和 `stackTrace`
+- 避免循环打印大量日志
 
 ### 关键日志点
 
@@ -311,15 +298,12 @@ print('这是不规范的日志');
 | 异常捕获 | Error | `logger.e('Repository 操作失败', error: e)` |
 | 崩溃级错误 | Fatal | `logger.f('数据库损坏无法恢复', error: e)` |
 
-### 生产环境配置
-
-在 `main.dart` 中根据编译模式调整日志级别：
+### 生产环境
 
 ```dart
 void main() {
-  // Release 模式下仅输出 Warning 及以上级别
   if (kReleaseMode) {
-    Logger.level = Level.warning;
+    Logger.level = Level.warning; // Release 仅 Warning+
   }
   runApp(const MyApp());
 }

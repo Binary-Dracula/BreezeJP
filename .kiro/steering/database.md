@@ -2,15 +2,52 @@
 inclusion: always
 ---
 
-# 数据库架构
+# 数据库模式参考
 
-BreezeJP 使用 SQLite 本地数据库（`assets/database/breeze_jp.sqlite`），包含 16 个核心表。
+## 概览
 
-- **单词学习相关**：words, word_meanings, word_audio, example_sentences, example_audio, word_relations
-- **学习进度相关**：study_words, study_logs, daily_stats, users
-- **五十音图学习相关**：kana_letters, kana_audio, kana_examples, kana_learning_state, kana_quiz_records, kana_stroke_order
+**数据库**：位于 `assets/database/breeze_jp.sqlite` 的本地 SQLite  
+**访问方式**：必须通过 `AppDatabase.instance` 单例（定义在 `lib/data/db/app_database.dart`）  
+**16 张核心表**：
 
-## 表结构
+- **单词学习**：words、word_meanings、word_audio、example_sentences、example_audio、word_relations
+- **用户进度**：study_words、study_logs、daily_stats、users、app_state
+- **假名学习**：kana_letters、kana_audio、kana_examples、kana_learning_state、kana_logs、kana_stroke_order
+
+## AI 助手必须遵守的规则
+
+1. **绝不要在 Controller 或 View 中直接访问数据库**，只能走 Repository 层。
+2. **Repository 必须返回模型对象**，不要返回 `Map`。
+3. **所有模型类必须实现**：`fromMap(Map<String, dynamic>)` 构造和 `toMap()` 方法。
+4. **命名规则**：数据库使用 snake_case，Dart 使用 camelCase。
+5. **时间字段**：所有 `*_at` 为 Unix 秒级时间戳，读取时用 `DateTime.fromMillisecondsSinceEpoch(value * 1000)`。
+6. **用户上下文**：当前用户来自 `app_state` 表的 `current_user_id`。
+
+## 表结构速查
+
+| 表名                | 主键        | 作用                                  | 关键索引                                                         |
+| ------------------- | ----------- | ------------------------------------- | ---------------------------------------------------------------- |
+| words               | id          | 单词词典                              | -                                                                |
+| word_meanings       | id          | 单词释义（1:N）                       | idx_meanings_word_id                                             |
+| word_audio          | id          | 单词发音文件（1:N）                   | -                                                                |
+| example_sentences   | id          | 例句（1:N）                           | idx_examples_word_id                                             |
+| example_audio       | id          | 例句音频（1:N）                       | -                                                                |
+| word_relations      | id          | 语义关联词                            | idx_word_relations_word_id，idx_word_relations_related_word_id   |
+| study_words         | id          | 每个单词的学习进度                    | idx_study_schedule (user_id, user_state, next_review_at)         |
+| study_logs          | id          | 学习日志                              | idx_logs_word (user_id, word_id, created_at)                     |
+| daily_stats         | id          | 每日汇总统计                          | UNIQUE(user_id, date)                                            |
+| users               | id          | 用户表                                | UNIQUE(username), UNIQUE(email)                                  |
+| app_state           | id=1        | 当前活跃用户（单例）                  | -                                                                |
+| kana_letters        | id          | 假名母表                              | -                                                                |
+| kana_audio          | id          | 假名发音文件                          | -                                                                |
+| kana_examples       | id          | 假名示例词                            | -                                                                |
+| kana_learning_state | id          | 假名学习进度                          | idx_kana_review_schedule (user_id, learning_status, next_review_at) |
+| kana_logs           | id          | 假名学习日志                          | idx_kana_logs (user_id, kana_id, created_at)                     |
+| kana_stroke_order   | id          | 假名笔顺 SVG                          | -                                                                |
+
+---
+
+## 详细表定义
 
 ### words
 
@@ -83,6 +120,28 @@ CREATE TABLE example_audio (
 
 ### study_words
 
+**作用**：记录每个单词的 SRS 学习状态  
+**关键字段**：
+
+- `user_state`: 0=未学, 1=学习中, 2=已掌握, 3=忽略
+- `next_review_at`: 下一次复习时间戳（NULL 表示未排期）
+- `interval`: SM-2 间隔（天）
+- `ease_factor`: SM-2 难度系数（默认 2.5）
+- `stability`、`difficulty`: FSRS 参数（默认 0）
+
+**常用查询**：
+
+```sql
+-- 获取待复习单词
+SELECT * FROM study_words
+WHERE user_id = ? AND user_state = 1 AND next_review_at <= ?
+
+-- 语义分支学习：获取可学单词
+SELECT w.* FROM words w
+LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
+WHERE sw.user_state IS NULL OR sw.user_state IN (0, 1)
+```
+
 ```sql
 CREATE TABLE study_words (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,6 +166,16 @@ CREATE INDEX idx_study_schedule ON study_words (user_id, user_state, next_review
 ```
 
 ### study_logs
+
+**作用**：不可变的学习行为日志  
+**关键字段**：
+
+- `log_type`: 1=初学, 2=复习, 3=掌握, 4=忽略, 5=重置
+- `rating`: 1=Again/Hard, 2=Good, 3=Easy（非复习操作可为 NULL）
+- `algorithm`: 1=SM-2, 2=FSRS
+- `*_after`: 记录操作后的 SRS 状态快照
+
+**使用原则**：只插入，不更新/删除，用于分析与调试。
 
 ```sql
 CREATE TABLE study_logs (
@@ -137,9 +206,9 @@ CREATE TABLE daily_stats (
     date                 TEXT NOT NULL,                     -- 日期 (YYYY-MM-DD)
     total_study_time_ms  INTEGER DEFAULT 0,                 -- 总学习时长 (毫秒)
     learned_words_count  INTEGER DEFAULT 0,                 -- 新学单词数
-    reviewed_words_count INTEGER DEFAULT 0,                 -- 手动掌握数
-    mastered_words_count INTEGER DEFAULT 0,                 -- 失败/忘记次数
-    failed_count         INTEGER DEFAULT 0,
+    reviewed_words_count INTEGER DEFAULT 0,                 -- 复习单词数
+    mastered_words_count INTEGER DEFAULT 0,                 -- 掌握数
+    failed_count         INTEGER DEFAULT 0,                 -- 失败/忘记次数
     created_at           INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
     updated_at           INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
     UNIQUE (user_id, date)
@@ -174,11 +243,32 @@ CREATE TABLE users (
 ```sql
 CREATE TABLE app_state (
     id INTEGER PRIMARY KEY CHECK (id = 1),
-    current_user_id INTEGER REFERENCES users(id)    --- 当前活跃用户的ID
+    current_user_id INTEGER REFERENCES users(id)    --- 当前活跃用户 ID
 );
 ```
 
 ### word_relations
+
+**作用**：用于语义分支学习的关联词
+
+**关键字段**：
+
+- `word_id`: 源词
+- `related_word_id`: 关联词
+- `score`: 关联强度（越大越相关）
+- `relation_type`: 如 semantic / synonym / antonym
+
+**常用查询**：获取全部关联词
+
+```sql
+SELECT w.*, wr.score, wr.relation_type
+FROM word_relations wr
+JOIN words w ON wr.related_word_id = w.id
+LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
+WHERE wr.word_id = ?
+  AND (sw.user_state IS NULL OR sw.user_state IN (0, 1))
+ORDER BY wr.score DESC;
+```
 
 ```sql
 CREATE TABLE word_relations (
@@ -197,11 +287,9 @@ CREATE INDEX idx_word_relations_related_word_id ON word_relations (related_word_
 
 ---
 
-## 五十音图学习表
+## 假名学习相关表
 
-### kana_letters
-
-五十音字母主表，存储平假名、片假名及其属性。
+### kana_letters（母表）
 
 ```sql
 CREATE TABLE kana_letters (
@@ -222,8 +310,6 @@ CREATE TABLE kana_letters (
 
 ### kana_audio
 
-五十音发音音频。
-
 ```sql
 CREATE TABLE kana_audio (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,8 +321,6 @@ CREATE TABLE kana_audio (
 ```
 
 ### kana_examples
-
-五十音示例词汇，用于辅助记忆。
 
 ```sql
 CREATE TABLE kana_examples (
@@ -251,7 +335,17 @@ CREATE TABLE kana_examples (
 
 ### kana_learning_state
 
-用户五十音学习状态，与 `study_words` 表结构保持一致，支持 SM-2 和 FSRS 双算法。
+**作用**：假名学习进度（结构与 `study_words` 基本一致）
+
+- `learning_status`: 0=未学习, 1=学习中, 2=已掌握, 3=忽略
+- 兼容 SM-2 与 FSRS
+
+**常用查询**：获取待复习假名
+
+```sql
+SELECT * FROM kana_learning_state
+WHERE user_id = ? AND learning_status = 1 AND next_review_at <= ?
+```
 
 ```sql
 CREATE TABLE kana_learning_state (
@@ -268,10 +362,10 @@ CREATE TABLE kana_learning_state (
     total_reviews    INTEGER DEFAULT 0,             -- 累计复习次数
     fail_count       INTEGER DEFAULT 0,             -- 累计失败次数
 
-    interval         REAL DEFAULT 0,                -- SM-2-- 复习间隔 (天)
+    interval         REAL DEFAULT 0,                -- SM-2 复习间隔 (天)
     ease_factor      REAL DEFAULT 2.5,              -- 难度系数
 
-    stability        REAL DEFAULT 0,                -- FSRS-- 记忆稳定性 (S)
+    stability        REAL DEFAULT 0,                -- FSRS 记忆稳定性 (S)
     difficulty       REAL DEFAULT 0,                -- 记忆难度 (D)
 
     created_at       INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
@@ -286,7 +380,11 @@ ON kana_learning_state (user_id, learning_status, next_review_at);
 
 ### kana_logs
 
-五十音测验记录。
+**作用**：假名学习行为日志（与 `study_logs` 对齐）  
+**关键字段**：
+
+- `log_type`: 1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败
+- 插入式日志，便于分析
 
 ```sql
 CREATE TABLE kana_logs (
@@ -295,7 +393,7 @@ CREATE TABLE kana_logs (
     kana_id               INTEGER NOT NULL REFERENCES kana_letters(id),
 
     log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败
-    rating                INTEGER,                      -- 1=Again, 2=Good, 3=Easy（测验正确/错误也可写入）
+    rating                INTEGER,                      -- 1=Again, 2=Good, 3=Easy
     algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS
 
     interval_after        REAL,                         -- 操作后：SM-2 复习间隔
@@ -315,8 +413,6 @@ ON kana_logs (user_id, kana_id, created_at);
 
 ### kana_stroke_order
 
-五十音笔顺数据。
-
 ```sql
 CREATE TABLE kana_stroke_order (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -326,7 +422,7 @@ CREATE TABLE kana_stroke_order (
 );
 ```
 
-## 数据关系
+## 实体关系
 
 ### 单词学习模块
 
@@ -336,16 +432,96 @@ words (1) ──< (N) word_meanings
       (1) ──< (N) example_sentences (1) ──< (N) example_audio
       (1) ──< (N) study_words (N) >── (1) users
       (1) ──< (N) study_logs  (N) >── (1) users
-      (1) ──< (N) word_relations (N) >── (1) words (关联单词)
-                                     (1) ──< (N) daily_stats
+      (1) ──< (N) word_relations (N) >── (1) words (related words)
+
+users (1) ──< (N) daily_stats
+      (1) ──< (1) app_state (singleton, current_user_id)
 ```
 
-### 五十音图学习模块
+### 假名学习模块
 
 ```
-kana_letters (1) ──< (N) kana_audio           -- 发音音频
-             (1) ──< (N) kana_examples        -- 示例词汇
-             (1) ──< (1) kana_learning_state  -- 学习状态
-             (1) ──< (N) kana_quiz_records    -- 测验记录
-             (1) ──< (1) kana_stroke_order    -- 笔顺数据
+kana_letters (1) ──< (N) kana_audio
+             (1) ──< (N) kana_examples
+             (1) ──< (1) kana_learning_state (per user)
+             (1) ──< (N) kana_logs
+             (1) ──< (1) kana_stroke_order
+```
+
+## Repository 实现规范
+
+### 模型类要求
+
+每张表必须在 `lib/data/models/` 下有对应模型：
+
+```dart
+class Word {
+  final int id;
+  final String word;
+  final String? furigana;
+  final String? romaji;
+  final String? jlptLevel;  // 数据库为 jlpt_level
+
+  Word({required this.id, required this.word, ...});
+
+  // 从数据库行构造
+  factory Word.fromMap(Map<String, dynamic> map) {
+    return Word(
+      id: map['id'] as int,
+      word: map['word'] as String,
+      furigana: map['furigana'] as String?,
+      jlptLevel: map['jlpt_level'] as String?, // snake_case → camelCase
+    );
+  }
+
+  // 写回数据库行
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'word': word,
+      'furigana': furigana,
+      'jlpt_level': jlptLevel, // camelCase → snake_case
+    };
+  }
+}
+```
+
+### Repository 模式示例
+
+```dart
+class WordRepository {
+  // ✅ 正确：返回模型对象
+  Future<List<Word>> getWordsByLevel(String level) async {
+    final db = await AppDatabase.instance.database;
+    final results =
+        await db.query('words', where: 'jlpt_level = ?', whereArgs: [level]);
+    return results.map((map) => Word.fromMap(map)).toList();
+  }
+
+  // ❌ 错误：不要返回 Map
+  Future<List<Map<String, dynamic>>> getWords() async { ... }
+}
+```
+
+### 时间戳读写
+
+```dart
+// 数据库存秒，Dart 用毫秒
+
+// 读取
+final ts = map['created_at'] as int;
+final dt = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+
+// 写入
+final nowSeconds = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+```
+
+### 获取当前用户
+
+```dart
+Future<int> getCurrentUserId() async {
+  final db = await AppDatabase.instance.database;
+  final result = await db.query('app_state', where: 'id = 1');
+  return result.first['current_user_id'] as int;
+}
 ```
