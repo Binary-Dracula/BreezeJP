@@ -25,25 +25,25 @@ inclusion: always
 
 ## 表结构速查
 
-| 表名                | 主键        | 作用                                  | 关键索引                                                         |
-| ------------------- | ----------- | ------------------------------------- | ---------------------------------------------------------------- |
-| words               | id          | 单词词典                              | -                                                                |
-| word_meanings       | id          | 单词释义（1:N）                       | idx_meanings_word_id                                             |
-| word_audio          | id          | 单词发音文件（1:N）                   | -                                                                |
-| example_sentences   | id          | 例句（1:N）                           | idx_examples_word_id                                             |
-| example_audio       | id          | 例句音频（1:N）                       | -                                                                |
-| word_relations      | id          | 语义关联词                            | idx_word_relations_word_id，idx_word_relations_related_word_id   |
-| study_words         | id          | 每个单词的学习进度                    | idx_study_schedule (user_id, user_state, next_review_at)         |
-| study_logs          | id          | 学习日志                              | idx_logs_word (user_id, word_id, created_at)                     |
-| daily_stats         | id          | 每日汇总统计                          | UNIQUE(user_id, date)                                            |
-| users               | id          | 用户表                                | UNIQUE(username), UNIQUE(email)                                  |
-| app_state           | id=1        | 当前活跃用户（单例）                  | -                                                                |
-| kana_letters        | id          | 假名母表                              | -                                                                |
-| kana_audio          | id          | 假名发音文件                          | -                                                                |
-| kana_examples       | id          | 假名示例词                            | -                                                                |
-| kana_learning_state | id          | 假名学习进度                          | idx_kana_review_schedule (user_id, learning_status, next_review_at) |
-| kana_logs           | id          | 假名学习日志                          | idx_kana_logs (user_id, kana_id, created_at)                     |
-| kana_stroke_order   | id          | 假名笔顺 SVG                          | -                                                                |
+| 表名                | 主键 | 作用                 | 关键索引                                                            |
+| ------------------- | ---- | -------------------- | ------------------------------------------------------------------- |
+| words               | id   | 单词词典             | -                                                                   |
+| word_meanings       | id   | 单词释义（1:N）      | idx_meanings_word_id                                                |
+| word_audio          | id   | 单词发音文件（1:N）  | -                                                                   |
+| example_sentences   | id   | 例句（1:N）          | idx_examples_word_id                                                |
+| example_audio       | id   | 例句音频（1:N）      | -                                                                   |
+| word_relations      | id   | 语义关联词           | idx_word_relations_word_id，idx_word_relations_related_word_id      |
+| study_words         | id   | 每个单词的学习进度   | idx_study_schedule (user_id, user_state, next_review_at)            |
+| study_logs          | id   | 学习日志             | idx_logs_word (user_id, word_id, created_at)                        |
+| daily_stats         | id   | 每日汇总统计         | UNIQUE(user_id, date)                                               |
+| users               | id   | 用户表               | UNIQUE(username), UNIQUE(email)                                     |
+| app_state           | id=1 | 当前活跃用户（单例） | -                                                                   |
+| kana_letters        | id   | 假名母表             | -                                                                   |
+| kana_audio          | id   | 假名发音文件         | -                                                                   |
+| kana_examples       | id   | 假名示例词           | -                                                                   |
+| kana_learning_state | id   | 假名学习进度         | idx_kana_review_schedule (user_id, learning_status, next_review_at) |
+| kana_logs           | id   | 假名学习日志         | idx_kana_logs (user_id, kana_id, created_at)                        |
+| kana_stroke_order   | id   | 假名笔顺 SVG         | -                                                                   |
 
 ---
 
@@ -391,6 +391,8 @@ CREATE TABLE kana_logs (
     id                    INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id               INTEGER NOT NULL REFERENCES users(id),
     kana_id               INTEGER NOT NULL REFERENCES kana_letters(id),
+
+    question_type         TEXT,                         -- recall / audio / switchMode
 
     log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败
     rating                INTEGER,                      -- 1=Again, 2=Good, 3=Easy

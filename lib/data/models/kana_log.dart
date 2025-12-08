@@ -44,6 +44,9 @@ class KanaLog {
   /// 创建时间 (Unix 时间戳)
   final int createdAt;
 
+  /// 题型标记（recall/audio/switchMode），可选
+  final String? questionType;
+
   KanaLog({
     required this.id,
     required this.userId,
@@ -57,6 +60,7 @@ class KanaLog {
     this.fsrsStabilityAfter,
     this.fsrsDifficultyAfter,
     this.durationMs = 0,
+    this.questionType,
     int? createdAt,
   }) : createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
@@ -86,6 +90,7 @@ class KanaLog {
       fsrsStabilityAfter: (map['fsrs_stability_after'] as num?)?.toDouble(),
       fsrsDifficultyAfter: (map['fsrs_difficulty_after'] as num?)?.toDouble(),
       durationMs: map['duration_ms'] as int? ?? 0,
+      questionType: map['question_type'] as String?,
       createdAt: map['created_at'] as int?,
     );
   }
@@ -104,6 +109,7 @@ class KanaLog {
       'fsrs_stability_after': fsrsStabilityAfter,
       'fsrs_difficulty_after': fsrsDifficultyAfter,
       'duration_ms': durationMs,
+      'question_type': questionType,
       'created_at': createdAt,
     };
   }
@@ -129,6 +135,7 @@ class KanaLog {
     double? fsrsDifficultyAfter,
     int? durationMs,
     int? createdAt,
+    String? questionType,
   }) {
     return KanaLog(
       id: id ?? this.id,
@@ -143,6 +150,7 @@ class KanaLog {
       fsrsStabilityAfter: fsrsStabilityAfter ?? this.fsrsStabilityAfter,
       fsrsDifficultyAfter: fsrsDifficultyAfter ?? this.fsrsDifficultyAfter,
       durationMs: durationMs ?? this.durationMs,
+      questionType: questionType ?? this.questionType,
       createdAt: createdAt ?? this.createdAt,
     );
   }

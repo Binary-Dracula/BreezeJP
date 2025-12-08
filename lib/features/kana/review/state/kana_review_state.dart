@@ -9,6 +9,7 @@ class KanaReviewState {
   final int currentIndex;
   final bool isFinished;
   final String? error;
+  final KanaReviewPhase phase;
 
   const KanaReviewState({
     this.isLoading = false,
@@ -16,6 +17,7 @@ class KanaReviewState {
     this.currentIndex = 0,
     this.isFinished = false,
     this.error,
+    this.phase = KanaReviewPhase.question,
   });
 
   ReviewKanaItem? get current =>
@@ -31,6 +33,7 @@ class KanaReviewState {
     int? currentIndex,
     bool? isFinished,
     String? error,
+    KanaReviewPhase? phase,
   }) {
     return KanaReviewState(
       isLoading: isLoading ?? this.isLoading,
@@ -38,19 +41,26 @@ class KanaReviewState {
       currentIndex: currentIndex ?? this.currentIndex,
       isFinished: isFinished ?? this.isFinished,
       error: error,
+      phase: phase ?? this.phase,
     );
   }
 }
+
+enum KanaReviewPhase { question, answer }
 
 /// 读音回忆模式的复习条目
 class ReviewKanaItem {
   final KanaLetter kanaLetter;
   final KanaLearningState learningState;
   final String? audioFilename;
+  final ReviewQuestionType questionType;
 
   ReviewKanaItem({
     required this.kanaLetter,
     required this.learningState,
     this.audioFilename,
+    required this.questionType,
   });
 }
+
+enum ReviewQuestionType { recall, audio, switchMode }

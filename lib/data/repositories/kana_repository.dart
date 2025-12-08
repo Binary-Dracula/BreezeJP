@@ -611,6 +611,7 @@ class KanaRepository {
     double? intervalAfter,
     int? nextReviewAtAfter,
     double? easeFactorAfter,
+    String? questionType,
     int durationMs = 0,
   }) async {
     final log = KanaLog(
@@ -623,9 +624,42 @@ class KanaRepository {
       intervalAfter: intervalAfter,
       nextReviewAtAfter: nextReviewAtAfter,
       easeFactorAfter: easeFactorAfter,
+      questionType: questionType,
       durationMs: durationMs,
     );
     return addKanaLog(log);
+  }
+
+  /// 获取最近一次复习使用的题型（question_type/sub_type，兼容旧表）
+  Future<String?> getLastKanaReviewQuestionType(int userId, int kanaId) async {
+    try {
+      final db = await _db;
+      final result = await db.rawQuery(
+        '''
+        SELECT question_type 
+        FROM kana_logs 
+        WHERE user_id = ? 
+          AND kana_id = ? 
+          AND log_type = ? 
+          AND question_type IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+        ''',
+        [userId, kanaId, KanaLogType.review.index + 1],
+      );
+
+      if (result.isEmpty) return null;
+      return result.first['question_type'] as String?;
+    } catch (e, stackTrace) {
+      // 兼容旧表没有 question_type 列时忽略错误
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_logs.question_type',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   /// 仅更新学习状态的更新时间
