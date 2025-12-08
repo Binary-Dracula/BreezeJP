@@ -1,4 +1,4 @@
-import '../../../data/models/kana_detail.dart';
+import '../../../../data/models/kana_detail.dart';
 
 /// 五十音表页面状态
 /// 负责承载五十音网格展示、过滤、显示模式等数据

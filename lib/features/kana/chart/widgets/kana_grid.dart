@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/models/kana_detail.dart';
-import '../pages/kana_stroke_practice_page.dart';
+import '../../../../data/models/kana_detail.dart';
+import '../../stroke/pages/kana_stroke_practice_page.dart';
 import '../state/kana_chart_state.dart';
 
 /// 五十音网格组件

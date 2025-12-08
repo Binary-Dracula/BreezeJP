@@ -5,12 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xml/xml.dart';
 
-import '../../../core/widgets/stroke_order_animator.dart';
-import '../../../data/models/kana_detail.dart';
-import '../../../services/audio_service_provider.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../../core/widgets/stroke_order_animator.dart';
+import '../../../../data/models/kana_detail.dart';
+import '../../../../services/audio_service_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../controller/kana_stroke_controller.dart';
-import '../state/kana_chart_state.dart';
+import '../../chart/state/kana_chart_state.dart';
 import '../state/kana_stroke_state.dart';
 
 const double _progressInfoHeight = 36;

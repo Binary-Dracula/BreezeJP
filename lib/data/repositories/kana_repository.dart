@@ -253,6 +253,41 @@ class KanaRepository {
 
   // ==================== 学习状态 ====================
 
+  /// 获取待复习的假名学习状态列表（学习中且到期）
+  Future<List<KanaLearningState>> getDueReviewKana(int userId) async {
+    try {
+      final db = await _db;
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      final results = await db.query(
+        'kana_learning_state',
+        where: '''
+          user_id = ? 
+          AND learning_status = ? 
+          AND next_review_at <= ?
+        ''',
+        whereArgs: [userId, KanaLearningStatus.learning.index, nowSeconds],
+        orderBy: 'next_review_at ASC',
+      );
+
+      logger.dbQuery(
+        table: 'kana_learning_state',
+        where: 'user_id = $userId, due review kana',
+        resultCount: results.length,
+      );
+
+      return results.map((map) => KanaLearningState.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 获取或创建假名学习状态（UNIQUE: user_id + kana_id）
   /// 用于首次学习/复习前保证存在基础记录
   Future<KanaLearningState> getOrCreateLearningState(

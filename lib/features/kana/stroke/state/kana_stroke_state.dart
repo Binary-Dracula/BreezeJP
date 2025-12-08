@@ -1,6 +1,6 @@
-import '../../../data/models/kana_detail.dart';
-import '../../../data/models/kana_learning_state.dart';
-import 'kana_chart_state.dart';
+import '../../../../data/models/kana_detail.dart';
+import '../../../../data/models/kana_learning_state.dart';
+import '../../chart/state/kana_chart_state.dart';
 
 const _unset = Object();
 

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/utils/app_logger.dart';
-import '../../../data/repositories/active_user_provider.dart';
-import '../../../data/repositories/kana_repository.dart';
-import '../../../data/repositories/kana_repository_provider.dart';
+import '../../../../core/utils/app_logger.dart';
+import '../../../../data/repositories/active_user_provider.dart';
+import '../../../../data/repositories/kana_repository.dart';
+import '../../../../data/repositories/kana_repository_provider.dart';
 import '../state/kana_chart_state.dart';
 
 /// KanaChartController Provider

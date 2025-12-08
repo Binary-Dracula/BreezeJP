@@ -3,7 +3,7 @@ import '../features/splash/pages/splash_page.dart';
 import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
 import '../features/learn/pages/learn_page.dart';
-import '../features/kana/pages/kana_chart_page.dart';
+import '../features/kana/chart/pages/kana_chart_page.dart';
 
 /// 应用路由配置
 final appRouter = GoRouter(
