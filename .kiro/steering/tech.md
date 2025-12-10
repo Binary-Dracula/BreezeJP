@@ -3,8 +3,8 @@ inclusion: always
 ---
 
 ---
-inclusion: always
----
+
+## inclusion: always
 
 # 技术栈与开发规范
 
@@ -14,19 +14,19 @@ inclusion: always
 
 ### 核心依赖
 
-| 类别 | 包名 | 用途 |
-|------|------|------|
-| 状态管理 | flutter_riverpod ^3.0.3 | MVVM 状态管理（使用 `NotifierProvider`） |
-| 数据库 | sqflite ^2.3.3 | SQLite 本地数据库（通过 `AppDatabase.instance` 访问） |
-| 路由 | go_router ^17.0.0 | 声明式路由（`context.go()`, `context.pop()`） |
-| 音频 | just_audio ^0.10.5 | 音频播放（通过 `AudioService` 封装） |
-| UI | ruby_text ^3.0.3 | 日文假名注音渲染 |
-| 动画 | flutter_animate ^4.5.0 | 声明式动画 |
-| 手势 | gesture_x_detector ^1.1.1 | 高级手势识别 |
-| 工具 | kana_kit ^2.1.1 | 假名/罗马音转换 |
-| 网络 | dio ^5.7.0 | HTTP 客户端 |
-| 日志 | logger ^2.5.0 | 日志输出（通过 `lib/core/utils/app_logger.dart`） |
-| 国际化 | intl ^0.20.2 | 多语言支持（`AppLocalizations`） |
+| 类别     | 包名                      | 用途                                                  |
+| -------- | ------------------------- | ----------------------------------------------------- |
+| 状态管理 | flutter_riverpod ^3.0.3   | MVVM 状态管理（使用 `NotifierProvider`）              |
+| 数据库   | sqflite ^2.3.3            | SQLite 本地数据库（通过 `AppDatabase.instance` 访问） |
+| 路由     | go_router ^17.0.0         | 声明式路由（`context.go()`, `context.pop()`）         |
+| 音频     | just_audio ^0.10.5        | 音频播放（通过 `AudioService` 封装）                  |
+| UI       | ruby_text ^3.0.3          | 日文假名注音渲染                                      |
+| 动画     | flutter_animate ^4.5.0    | 声明式动画                                            |
+| 手势     | gesture_x_detector ^1.1.1 | 高级手势识别                                          |
+| 工具     | kana_kit ^2.1.1           | 假名/罗马音转换                                       |
+| 网络     | dio ^5.7.0                | HTTP 客户端                                           |
+| 日志     | logger ^2.5.0             | 日志输出（通过 `lib/core/utils/app_logger.dart`）     |
+| 国际化   | intl ^0.20.2              | 多语言支持（`AppLocalizations`）                      |
 
 ## 架构模式：MVVM + Repository + Riverpod
 
@@ -38,15 +38,16 @@ View (ConsumerWidget) ←→ Controller (Notifier) ←→ Repository ←→ Data
 
 ### 层级职责与约束
 
-| 层级 | 职责 | 禁止事项 |
-|------|------|----------|
-| **View** | UI 渲染、用户交互、使用 `ref.watch()` 订阅状态 | ❌ 数据库访问、业务逻辑、状态直接修改 |
-| **Controller** | 业务逻辑、状态管理、调用 Repository | ❌ 数据处理逻辑、直接数据库查询 |
-| **State** | 不可变数据容器、必须有 `copyWith()` | ❌ 可变字段、包含逻辑 |
-| **Repository** | CRUD 操作、返回 Model 对象 | ❌ 业务逻辑、返回 Map 对象 |
-| **Model** | 数据结构、必须实现 `fromMap()`/`toMap()` | ❌ 业务逻辑 |
+| 层级           | 职责                                           | 禁止事项                              |
+| -------------- | ---------------------------------------------- | ------------------------------------- |
+| **View**       | UI 渲染、用户交互、使用 `ref.watch()` 订阅状态 | ❌ 数据库访问、业务逻辑、状态直接修改 |
+| **Controller** | 业务逻辑、状态管理、调用 Repository            | ❌ 数据处理逻辑、直接数据库查询       |
+| **State**      | 不可变数据容器、必须有 `copyWith()`            | ❌ 可变字段、包含逻辑                 |
+| **Repository** | CRUD 操作、返回 Model 对象                     | ❌ 业务逻辑、返回 Map 对象            |
+| **Model**      | 数据结构、必须实现 `fromMap()`/`toMap()`       | ❌ 业务逻辑                           |
 
 **关键规则**：
+
 - ✅ 数据库访问唯一路径：Repository → Controller → View
 - ✅ Repository 必须返回 Model 对象，禁止返回 `Map<String, dynamic>`
 - ✅ 所有 State 类必须不可变（`@immutable`）并提供 `copyWith()` 方法
@@ -56,13 +57,13 @@ View (ConsumerWidget) ←→ Controller (Notifier) ←→ Repository ←→ Data
 
 ### 文件命名
 
-| 类型 | 格式 | 示例 |
-|------|------|------|
-| 文件名 | snake_case | `app_database.dart`, `word_repository.dart` |
-| 类名 | PascalCase | `AppDatabase`, `WordRepository` |
-| 变量/函数 | camelCase | `wordId`, `getUserById()` |
-| 数据库列名 | snake_case | `word_id`, `jlpt_level`, `created_at` |
-| 常量 | lowerCamelCase | `defaultEaseFactor`, `maxRetryCount` |
+| 类型       | 格式           | 示例                                        |
+| ---------- | -------------- | ------------------------------------------- |
+| 文件名     | snake_case     | `app_database.dart`, `word_repository.dart` |
+| 类名       | PascalCase     | `AppDatabase`, `WordRepository`             |
+| 变量/函数  | camelCase      | `wordId`, `getUserById()`                   |
+| 数据库列名 | snake_case     | `word_id`, `jlpt_level`, `created_at`       |
+| 常量       | lowerCamelCase | `defaultEaseFactor`, `maxRetryCount`        |
 
 ### Feature 模块文件结构
 
@@ -98,11 +99,13 @@ Button(onPressed: () {}, child: Text('取消'));
 ```
 
 **添加新文本**：
+
 1. 在 `lib/l10n/app_zh.arb` 添加键值对：`"startButton": "开始学习"`
 2. 保存后自动生成代码
 3. 使用：`l10n.startButton`
 
 **命名约定**：
+
 - 按钮：`{action}Button` (如 `startButton`, `cancelButton`)
 - 标题：`{page}Title` (如 `homeTitle`, `settingsTitle`)
 - 提示：`{context}Hint` (如 `searchHint`, `emptyHint`)
@@ -127,6 +130,7 @@ print('这是不规范的日志');
 ```
 
 **日志级别**：
+
 - `logger.t()` - Trace：详细调试信息（开发阶段）
 - `logger.d()` - Debug：调试信息（开发阶段）
 - `logger.i()` - Info：关键流程节点（应用启动、用户操作）
@@ -135,6 +139,7 @@ print('这是不规范的日志');
 - `logger.f()` - Fatal：致命错误（应用崩溃级别）
 
 **日志内容要求**：
+
 - 使用中文描述业务逻辑
 - 关键变量使用英文命名并附带值
 - 异常日志必须包含 `error` 和 `stackTrace`
@@ -150,9 +155,9 @@ class Word {
   final String word;
   final String? furigana;
   final String? jlptLevel;  // 注意：snake_case → camelCase
-  
+
   Word({required this.id, required this.word, this.furigana, this.jlptLevel});
-  
+
   // 必须实现：从数据库 Map 转换为 Dart 对象
   factory Word.fromMap(Map<String, dynamic> map) {
     return Word(
@@ -162,7 +167,7 @@ class Word {
       jlptLevel: map['jlpt_level'] as String?,  // snake_case in DB
     );
   }
-  
+
   // 必须实现：从 Dart 对象转换为数据库 Map
   Map<String, dynamic> toMap() {
     return {
@@ -176,6 +181,7 @@ class Word {
 ```
 
 **时间戳处理**：
+
 ```dart
 // 数据库存储 Unix 时间戳（秒），Dart 使用毫秒
 // 读取
@@ -189,6 +195,7 @@ final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
 ### 4. Riverpod 状态管理
 
 **Provider 定义**：
+
 ```dart
 final myControllerProvider = NotifierProvider<MyController, MyState>(
   MyController.new,
@@ -196,11 +203,12 @@ final myControllerProvider = NotifierProvider<MyController, MyState>(
 ```
 
 **Controller（业务逻辑）**：
+
 ```dart
 class MyController extends Notifier<MyState> {
   @override
   MyState build() => const MyState();
-  
+
   Future<void> loadData() async {
     final repository = ref.read(myRepositoryProvider);
     final data = await repository.getData();
@@ -210,14 +218,15 @@ class MyController extends Notifier<MyState> {
 ```
 
 **State（不可变数据）**：
+
 ```dart
 @immutable
 class MyState {
   final bool isLoading;
   final List<Word> words;
-  
+
   const MyState({this.isLoading = false, this.words = const []});
-  
+
   MyState copyWith({bool? isLoading, List<Word>? words}) {
     return MyState(
       isLoading: isLoading ?? this.isLoading,
@@ -228,16 +237,17 @@ class MyState {
 ```
 
 **View（UI）**：
+
 ```dart
 class MyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(myControllerProvider);  // 订阅状态变化
     final controller = ref.read(myControllerProvider.notifier);  // 调用方法
-    
+
     return Scaffold(
-      body: state.isLoading 
-        ? CircularProgressIndicator() 
+      body: state.isLoading
+        ? CircularProgressIndicator()
         : ListView(...),
     );
   }
@@ -245,6 +255,7 @@ class MyPage extends ConsumerWidget {
 ```
 
 **规则**：
+
 - `ref.watch()` - 订阅状态变化（触发重建）
 - `ref.read()` - 一次性读取或调用方法（不触发重建）
 - State 类必须不可变并提供 `copyWith()`
@@ -263,7 +274,7 @@ class WordRepository {
     );
     return results.map((map) => Word.fromMap(map)).toList();
   }
-  
+
   // ❌ 错误：禁止返回 Map
   Future<List<Map<String, dynamic>>> getWords() async { ... }
 }

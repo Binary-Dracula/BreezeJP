@@ -47,5 +47,6 @@ final appRouter = GoRouter(
       name: 'kana-chart',
       builder: (context, state) => const KanaChartPage(),
     ),
+    // 复习五十音图页面
   ],
 );
