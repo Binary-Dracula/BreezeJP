@@ -611,6 +611,8 @@ class KanaRepository {
     double? intervalAfter,
     int? nextReviewAtAfter,
     double? easeFactorAfter,
+    double? fsrsStabilityAfter,
+    double? fsrsDifficultyAfter,
     String? questionType,
     int durationMs = 0,
   }) async {
@@ -624,6 +626,8 @@ class KanaRepository {
       intervalAfter: intervalAfter,
       nextReviewAtAfter: nextReviewAtAfter,
       easeFactorAfter: easeFactorAfter,
+      fsrsStabilityAfter: fsrsStabilityAfter,
+      fsrsDifficultyAfter: fsrsDifficultyAfter,
       questionType: questionType,
       durationMs: durationMs,
     );
@@ -709,6 +713,51 @@ class KanaRepository {
         'fsrs_stability_after': null,
         'fsrs_difficulty_after': null,
         'duration_ms': durationMs,
+        'created_at': now,
+      });
+
+      logger.dbInsert(table: 'kana_logs', id: id);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'INSERT',
+        table: 'kana_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 插入复习日志
+  Future<void> insertReviewLog({
+    required int userId,
+    required int kanaId,
+    required int rating,
+    required int algorithm,
+    required double intervalAfter,
+    required int nextReviewAtAfter,
+    required double easeFactorAfter,
+    double? fsrsStabilityAfter,
+    double? fsrsDifficultyAfter,
+    String? questionType,
+  }) async {
+    try {
+      final db = await _db;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      final id = await db.insert('kana_logs', {
+        'user_id': userId,
+        'kana_id': kanaId,
+        'log_type': KanaLogType.review.index + 1,
+        'rating': rating,
+        'algorithm': algorithm,
+        'interval_after': intervalAfter,
+        'next_review_at_after': nextReviewAtAfter,
+        'ease_factor_after': easeFactorAfter,
+        'fsrs_stability_after': fsrsStabilityAfter,
+        'fsrs_difficulty_after': fsrsDifficultyAfter,
+        'duration_ms': 0,
+        'question_type': questionType,
         'created_at': now,
       });
 

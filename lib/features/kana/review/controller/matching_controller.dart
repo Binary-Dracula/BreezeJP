@@ -1,10 +1,17 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/matching_pair.dart';
 import '../state/matching_state.dart';
 import '../state/kana_review_state.dart';
 import '../../../../data/models/kana_letter.dart';
+import '../../../../data/models/kana_learning_state.dart';
+import '../../../../data/models/kana_log.dart';
+import '../../../../data/models/user.dart';
 import '../../../../data/repositories/kana_repository.dart';
 import '../../../../data/repositories/kana_repository_provider.dart';
+import '../../../../data/repositories/active_user_provider.dart';
 
 final matchingControllerProvider =
     NotifierProvider<MatchingController, MatchingState>(MatchingController.new);
@@ -176,10 +183,12 @@ class MatchingController extends Notifier<MatchingState> {
     final pair = state.activePairs[leftIndex];
     if (index < 0 || index >= pair.rightOptions.length) return;
 
+    pair.attemptCount += 1;
     final isCorrect = pair.rightOptions[index] == pair.rightCorrect;
     if (isCorrect) {
       await handleMatchSuccess(leftIndex, index);
     } else {
+      pair.wrongCount += 1;
       await handleMatchFailure(leftIndex, index);
     }
   }
@@ -188,6 +197,9 @@ class MatchingController extends Notifier<MatchingState> {
   Future<void> handleMatchSuccess(int leftIndex, int rightIndex) async {
     final active = List<MatchingPair>.from(state.activePairs);
     if (leftIndex < 0 || leftIndex >= active.length) return;
+    final pair = active[leftIndex];
+    final rating = _calculateRating(pair.wrongCount, pair.attemptCount);
+    await _onPairRated(pair, rating);
     active.removeAt(leftIndex);
 
     state = state.copyWith(
@@ -413,4 +425,131 @@ class MatchingController extends Notifier<MatchingState> {
     }
     return result.take(3).toList();
   }
+
+  int _calculateRating(int wrongCount, int attemptCount) {
+    if (attemptCount == 0) return 2;
+    if (wrongCount == 0) return 3;
+    if (wrongCount == 1) return 2;
+    return 1;
+  }
+
+  Future<void> _onPairRated(MatchingPair pair, int rating) async {
+    final user = await ref.read(activeUserProvider.future);
+    final algorithm = _extractAlgorithm(user);
+    final learningState = await repo.getKanaLearningState(
+      user.id,
+      pair.item.kanaLetter.id,
+    );
+    if (learningState == null) return;
+    final srs = _computeSrsResult(learningState, rating, algorithm);
+
+    await repo.updateKanaReviewResult(
+      userId: user.id,
+      kanaId: pair.item.kanaLetter.id,
+      rating: rating,
+      newInterval: srs.newInterval,
+      newEaseFactor: srs.newEaseFactor,
+      nextReviewAt: srs.nextReviewAt,
+    );
+
+    await repo.addKanaLogQuick(
+      userId: user.id,
+      kanaId: pair.item.kanaLetter.id,
+      logType: KanaLogType.review,
+      rating: rating,
+      algorithm: algorithm,
+      intervalAfter: srs.newInterval,
+      nextReviewAtAfter: srs.nextReviewAt,
+      easeFactorAfter: srs.newEaseFactor,
+      fsrsStabilityAfter: srs.newStability,
+      fsrsDifficultyAfter: srs.newDifficulty,
+      questionType: pair.item.questionType.name,
+    );
+  }
+
+  SrsResult _computeSrsResult(
+    KanaLearningState state,
+    int rating,
+    int algorithm,
+  ) {
+    if (algorithm == 2) {
+      return SrsResult(
+        newInterval: max(1, state.interval),
+        newEaseFactor: state.easeFactor,
+        nextReviewAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 86400,
+        newStability: state.stability,
+        newDifficulty: state.difficulty,
+      );
+    }
+
+    return _sm2(state, rating);
+  }
+
+  SrsResult _sm2(KanaLearningState state, int rating) {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    double interval = state.interval;
+    double ef = state.easeFactor;
+
+    if (rating == 1) {
+      ef = max(1.3, ef - 0.20);
+      interval = 0;
+      return SrsResult(
+        newInterval: interval,
+        newEaseFactor: ef,
+        nextReviewAt: now + 600,
+      );
+    }
+
+    if (rating == 2) {
+      if (interval == 0) {
+        interval = 1;
+      } else {
+        interval = interval * ef;
+      }
+      return SrsResult(
+        newInterval: interval,
+        newEaseFactor: ef,
+        nextReviewAt: now + (interval * 86400).toInt(),
+      );
+    }
+
+    ef = ef + 0.05;
+    interval = max(1, interval * ef * 1.3);
+    return SrsResult(
+      newInterval: interval,
+      newEaseFactor: ef,
+      nextReviewAt: now + (interval * 86400).toInt(),
+    );
+  }
+
+  int _extractAlgorithm(User user) {
+    if (user.settings == null) return 1;
+    try {
+      final map = jsonDecode(user.settings!) as Map<String, dynamic>;
+      final raw = map['srsAlgorithm'] ?? map['srs_algorithm'];
+      if (raw is num) {
+        final value = raw.toInt();
+        if (value == 2) return 2;
+      }
+    } catch (_) {
+      // ignore parse errors, fallback to default
+    }
+    return 1;
+  }
+}
+
+class SrsResult {
+  final double newInterval;
+  final double newEaseFactor;
+  final int nextReviewAt;
+  final double? newStability;
+  final double? newDifficulty;
+
+  SrsResult({
+    required this.newInterval,
+    required this.newEaseFactor,
+    required this.nextReviewAt,
+    this.newStability,
+    this.newDifficulty,
+  });
 }
