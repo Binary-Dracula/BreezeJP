@@ -13,10 +13,10 @@ class MatchingPair {
   final List<String> rightOptions;
 
   /// 本次复习的错误次数
-  int wrongCount;
+  final int wrongCount;
 
   /// 本次复习的尝试次数
-  int attemptCount;
+  final int attemptCount;
 
   MatchingPair({
     required this.item,
@@ -26,4 +26,18 @@ class MatchingPair {
     this.wrongCount = 0,
     this.attemptCount = 0,
   });
+
+  MatchingPair copyWith({
+    int? wrongCount,
+    int? attemptCount,
+  }) {
+    return MatchingPair(
+      item: item,
+      left: left,
+      rightCorrect: rightCorrect,
+      rightOptions: rightOptions,
+      wrongCount: wrongCount ?? this.wrongCount,
+      attemptCount: attemptCount ?? this.attemptCount,
+    );
+  }
 }

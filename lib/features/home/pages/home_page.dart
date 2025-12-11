@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:breeze_jp/l10n/app_localizations.dart';
 
 import '../controller/home_controller.dart';
 import '../state/home_state.dart';
+import '../../../debug/debug_srs_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -129,6 +131,15 @@ class _HomePageState extends ConsumerState<HomePage> {
           icon: const Icon(Icons.settings_outlined),
           color: Colors.grey.shade800,
         ),
+        if (kDebugMode)
+          TextButton(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const DebugSrsPage()));
+            },
+            child: const Text('Debug'),
+          ),
       ],
     );
   }

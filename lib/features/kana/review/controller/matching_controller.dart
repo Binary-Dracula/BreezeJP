@@ -180,15 +180,26 @@ class MatchingController extends Notifier<MatchingState> {
     final leftIndex = state.selectedLeftIndex;
     if (leftIndex == null || leftIndex < 0) return;
     if (leftIndex >= state.activePairs.length) return;
-    final pair = state.activePairs[leftIndex];
+    final active = List<MatchingPair>.from(state.activePairs);
+    final pair = active[leftIndex];
     if (index < 0 || index >= pair.rightOptions.length) return;
 
-    pair.attemptCount += 1;
-    final isCorrect = pair.rightOptions[index] == pair.rightCorrect;
+    final updatedPair = pair.copyWith(attemptCount: pair.attemptCount + 1);
+    active[leftIndex] = updatedPair;
+    state = state.copyWith(activePairs: active);
+
+    final isCorrect =
+        updatedPair.rightOptions[index] == updatedPair.rightCorrect;
     if (isCorrect) {
       await handleMatchSuccess(leftIndex, index);
     } else {
-      pair.wrongCount += 1;
+      final wrongUpdated =
+          updatedPair.copyWith(wrongCount: updatedPair.wrongCount + 1);
+      final nextActive = List<MatchingPair>.from(state.activePairs);
+      if (leftIndex < nextActive.length) {
+        nextActive[leftIndex] = wrongUpdated;
+        state = state.copyWith(activePairs: nextActive);
+      }
       await handleMatchFailure(leftIndex, index);
     }
   }
@@ -520,6 +531,56 @@ class MatchingController extends Notifier<MatchingState> {
       newEaseFactor: ef,
       nextReviewAt: now + (interval * 86400).toInt(),
     );
+  }
+
+  /// Debug/test helper: simulate a sequence of ratings and return final state + logs.
+  Future<Map<String, dynamic>> simulateReviewSequence(
+    int userId,
+    int kanaId,
+    List<int> ratings,
+    {String questionType = 'debug', int? forceAlgorithm}
+  ) async {
+    final activeUser = await ref.read(activeUserProvider.future);
+    final baseAlgorithm =
+        activeUser.id == userId ? _extractAlgorithm(activeUser) : 1;
+    final algorithm = forceAlgorithm ?? baseAlgorithm;
+
+    for (final rating in ratings) {
+      final learningState = await repo.getKanaLearningState(userId, kanaId);
+      if (learningState == null) {
+        throw StateError(
+          'simulateReviewSequence: learningState not found for userId=$userId kanaId=$kanaId',
+        );
+      }
+      final srs = _computeSrsResult(learningState, rating, algorithm);
+
+      await repo.updateKanaReviewResult(
+        userId: userId,
+        kanaId: kanaId,
+        rating: rating,
+        newInterval: srs.newInterval,
+        newEaseFactor: srs.newEaseFactor,
+        nextReviewAt: srs.nextReviewAt,
+      );
+
+      await repo.addKanaLogQuick(
+        userId: userId,
+        kanaId: kanaId,
+        logType: KanaLogType.review,
+        rating: rating,
+        algorithm: algorithm,
+        intervalAfter: srs.newInterval,
+        nextReviewAtAfter: srs.nextReviewAt,
+        easeFactorAfter: srs.newEaseFactor,
+        fsrsStabilityAfter: srs.newStability,
+        fsrsDifficultyAfter: srs.newDifficulty,
+        questionType: questionType,
+      );
+    }
+
+    final finalState = await repo.getKanaLearningState(userId, kanaId);
+    final logs = await repo.getKanaLogs(userId, kanaId);
+    return {'finalState': finalState, 'logs': logs};
   }
 
   int _extractAlgorithm(User user) {
