@@ -64,7 +64,11 @@ class HomeController extends Notifier<HomeState> {
       logger.info('主页数据加载成功');
     } catch (e, stackTrace) {
       logger.error('加载主页数据失败', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: '加载失败: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: '加载失败: $e',
+        isInitialized: true,
+      );
     }
   }
 
