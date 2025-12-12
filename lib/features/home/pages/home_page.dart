@@ -250,15 +250,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '今日概览',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade800,
-            ),
-          ),
-          const SizedBox(height: 12),
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -276,6 +267,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                 color: const Color(0xFF14B8A6),
               ),
               _StatTile(
+                label: '今日时长',
+                value: '${state.todayStudyDurationMinutes} 分钟',
+                icon: Icons.timer_outlined,
+                color: const Color(0xFF0EA5E9),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _StatTile(
                 label: '累计掌握',
                 value: '${state.masteredWordCount}',
                 icon: Icons.workspace_premium_outlined,
@@ -286,12 +290,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 value: '${state.streakDays} 天',
                 icon: Icons.local_fire_department_rounded,
                 color: const Color(0xFFEF4444),
-              ),
-              _StatTile(
-                label: '今日时长',
-                value: '${state.todayStudyDurationMinutes} 分钟',
-                icon: Icons.timer_outlined,
-                color: const Color(0xFF0EA5E9),
               ),
             ],
           ),

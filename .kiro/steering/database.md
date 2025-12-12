@@ -201,17 +201,27 @@ CREATE INDEX idx_logs_word ON study_logs (user_id, word_id, created_at);
 
 ```sql
 CREATE TABLE daily_stats (
-    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id              INTEGER NOT NULL,
-    date                 TEXT NOT NULL,                     -- 日期 (YYYY-MM-DD)
-    total_study_time_ms  INTEGER DEFAULT 0,                 -- 总学习时长 (毫秒)
-    learned_words_count  INTEGER DEFAULT 0,                 -- 新学单词数
-    reviewed_words_count INTEGER DEFAULT 0,                 -- 复习单词数
-    mastered_words_count INTEGER DEFAULT 0,                 -- 掌握数
-    failed_count         INTEGER DEFAULT 0,                 -- 失败/忘记次数
-    created_at           INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
-    updated_at           INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
-    UNIQUE (user_id, date)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  date TEXT NOT NULL,         -- YYYY-MM-DD
+
+  review_count INTEGER DEFAULT 0,            -- 总复习次数
+  unique_kana_reviewed_count INTEGER DEFAULT 0,   -- 当天复习的不同假名数
+  new_learned_count INTEGER DEFAULT 0,       -- 新学习数量
+
+  rating_avg REAL DEFAULT 0,                 -- 平均评分
+  wrong_ratio REAL DEFAULT 0,                -- 错误率
+  new_interval_avg REAL DEFAULT 0,           -- 平均间隔增长
+
+  total_time_ms INTEGER DEFAULT 0,           -- 总复习时长
+  first_review_at INTEGER,                   -- 当天首次复习时间戳
+  last_review_at INTEGER,                    -- 当天最近复习时间戳
+
+  algorithm INTEGER DEFAULT 1,               -- 当天使用 SRS 算法（1/2）
+
+  learning_quality_score REAL,               -- 预留字段：学习质量评分（未来用）
+
+  UNIQUE(user_id, date)
 );
 ```
 
