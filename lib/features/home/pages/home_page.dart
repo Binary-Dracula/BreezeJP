@@ -189,7 +189,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildReviewSection(BuildContext context, HomeState state) {
     final wordReviewCount = state.reviewCount;
-    const kanaReviewCount = 0; // 逻辑待接入
+    final kanaReviewCount = state.kanaReviewCount;
 
     return Column(
       children: [
@@ -221,7 +221,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     : '还没有需要复习的假名',
                 icon: Icons.translate_rounded,
                 color: const Color(0xFF22C55E),
-                onTap: () {},
+                onTap: () => context.pushNamed('matching_page'),
               ),
             ),
           ],

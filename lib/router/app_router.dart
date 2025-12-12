@@ -1,3 +1,4 @@
+import 'package:breeze_jp/features/kana/review/pages/matching_page.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/pages/splash_page.dart';
 import '../features/home/pages/home_page.dart';
@@ -48,5 +49,10 @@ final appRouter = GoRouter(
       builder: (context, state) => const KanaChartPage(),
     ),
     // 复习五十音图页面
+    GoRoute(
+      path: '/matching_page',
+      name: 'matching_page',
+      builder: (context, state) => const MatchingPage(),
+    ),
   ],
 );

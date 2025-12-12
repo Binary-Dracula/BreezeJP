@@ -288,6 +288,42 @@ class KanaRepository {
     }
   }
 
+  /// 获取待复习的假名数量
+  Future<int> countDueKanaReviews(int userId) async {
+    try {
+      final db = await _db;
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final result = await db.rawQuery(
+        '''
+        SELECT COUNT(*) AS cnt
+        FROM kana_learning_state
+        WHERE user_id = ?
+          AND learning_status = ?
+          AND next_review_at <= ?
+      ''',
+        [userId, KanaLearningStatus.learning.index, nowSeconds],
+      );
+
+      final count = (result.first['cnt'] as int?) ?? 0;
+
+      logger.dbQuery(
+        table: 'kana_learning_state',
+        where: 'user_id = $userId, due review count',
+        resultCount: 1,
+      );
+
+      return count;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 获取或创建假名学习状态（UNIQUE: user_id + kana_id）
   /// 用于首次学习/复习前保证存在基础记录
   Future<KanaLearningState> getOrCreateLearningState(

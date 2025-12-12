@@ -10,6 +10,9 @@ class HomeState {
   final int reviewCount;
   final int newWordCount;
 
+  // 待复习五十音数量
+  final int kanaReviewCount;
+
   // 每日统计数据
   final int streakDays;
   final int masteredWordCount;
@@ -23,6 +26,7 @@ class HomeState {
     this.userName = 'BreezeJP User',
     this.reviewCount = 0,
     this.newWordCount = 0,
+    this.kanaReviewCount = 0,
     this.streakDays = 0,
     this.masteredWordCount = 0,
     this.todayStudyDurationMinutes = 0,
@@ -35,6 +39,7 @@ class HomeState {
     String? userName,
     int? reviewCount,
     int? newWordCount,
+    int? kanaReviewCount,
     int? streakDays,
     int? masteredWordCount,
     int? todayStudyDurationMinutes,
@@ -46,6 +51,7 @@ class HomeState {
       userName: userName ?? this.userName,
       reviewCount: reviewCount ?? this.reviewCount,
       newWordCount: newWordCount ?? this.newWordCount,
+      kanaReviewCount: kanaReviewCount ?? this.kanaReviewCount,
       streakDays: streakDays ?? this.streakDays,
       masteredWordCount: masteredWordCount ?? this.masteredWordCount,
       todayStudyDurationMinutes:

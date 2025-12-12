@@ -54,6 +54,24 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final isEmpty =
+        state.activePairs.isEmpty && (state.remaining.isEmpty);
+    if (isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(_titleForType(state.currentQuestionType!))),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
+              SizedBox(height: 12),
+              Text('今日没有需要复习的假名', style: TextStyle(fontSize: 16)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(_titleForType(state.currentQuestionType!))),
 

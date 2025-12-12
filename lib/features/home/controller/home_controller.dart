@@ -5,6 +5,8 @@ import '../../../data/repositories/daily_stat_repository.dart';
 import '../../../data/repositories/daily_stat_repository_provider.dart';
 import '../../../data/repositories/study_word_repository.dart';
 import '../../../data/repositories/study_word_repository_provider.dart';
+import '../../../data/repositories/kana_repository.dart';
+import '../../../data/repositories/kana_repository_provider.dart';
 import '../state/home_state.dart';
 
 /// HomeController Provider
@@ -21,6 +23,7 @@ class HomeController extends Notifier<HomeState> {
       ref.read(studyWordRepositoryProvider);
   DailyStatRepository get _dailyStatRepository =>
       ref.read(dailyStatRepositoryProvider);
+  KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
 
   /// 加载主页数据
   Future<void> loadHomeData() async {
@@ -35,6 +38,7 @@ class HomeController extends Notifier<HomeState> {
 
       // 2. 获取学习统计
       final reviewCount = await _studyWordRepository.getDueReviewCount(userId);
+      final kanaReviewCount = await _kanaRepository.countDueKanaReviews(userId);
       final userStats = await _studyWordRepository.getUserStatistics(userId);
       final newWordCount = (userStats['new_words'] as int?) ?? 0;
       final masteredWordCount = (userStats['mastered_words'] as int?) ?? 0;
@@ -50,6 +54,7 @@ class HomeController extends Notifier<HomeState> {
         userName: userName,
         reviewCount: reviewCount,
         newWordCount: newWordCount,
+        kanaReviewCount: kanaReviewCount,
         streakDays: streakDays,
         masteredWordCount: masteredWordCount,
         todayStudyDurationMinutes: todayDurationMinutes,
