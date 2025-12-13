@@ -46,8 +46,7 @@ class HomeController extends Notifier<HomeState> {
       // 3. 获取每日统计 (Streak & Duration)
       final streakDays = await _dailyStatRepository.calculateStreak(userId);
       final todayStat = await _dailyStatRepository.getOrCreateTodayStat(userId);
-      final todayDurationMinutes = (todayStat.totalStudyTimeMs / 1000 / 60)
-          .round();
+      final todayDurationMinutes = (todayStat.totalTimeMs / 1000 / 60).round();
 
       state = state.copyWith(
         isLoading: false,
@@ -66,8 +65,8 @@ class HomeController extends Notifier<HomeState> {
       logger.error('加载主页数据失败', e, stackTrace);
       state = state.copyWith(
         isLoading: false,
-        error: '加载失败: $e',
         isInitialized: true,
+        error: '加载失败: $e',
       );
     }
   }

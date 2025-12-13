@@ -80,11 +80,7 @@ class DailyStatRepository {
       logger.dbUpdate(
         table: 'daily_stats',
         affectedRows: affectedRows,
-        updatedFields: [
-          'total_study_time_ms',
-          'learned_words_count',
-          'reviewed_words_count',
-        ],
+        updatedFields: ['total_time_ms', 'new_learned_count', 'review_count'],
       );
     } catch (e, stackTrace) {
       logger.dbError(
@@ -251,20 +247,14 @@ class DailyStatRepository {
         whereArgs: [userId, dateStr],
       );
 
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
       if (existing.isEmpty) {
         // 创建新记录
         final id = await db.insert('daily_stats', {
           'user_id': userId,
           'date': dateStr,
-          'total_study_time_ms': durationMs,
-          'learned_words_count': learnedCount,
-          'reviewed_words_count': 0,
-          'mastered_words_count': 0,
-          'failed_count': 0,
-          'created_at': now,
-          'updated_at': now,
+          'total_time_ms': durationMs,
+          'new_learned_count': learnedCount,
+          'review_count': 0,
         });
 
         logger.dbInsert(
@@ -278,10 +268,9 @@ class DailyStatRepository {
         final affectedRows = await db.update(
           'daily_stats',
           {
-            'total_study_time_ms': existingStat.totalStudyTimeMs + durationMs,
-            'learned_words_count':
-                existingStat.learnedWordsCount + learnedCount,
-            'updated_at': now,
+            'total_time_ms': existingStat.totalTimeMs + durationMs,
+            'new_learned_count':
+                existingStat.newLearnedCount + learnedCount,
           },
           where: 'user_id = ? AND date = ?',
           whereArgs: [userId, dateStr],
@@ -290,7 +279,7 @@ class DailyStatRepository {
         logger.dbUpdate(
           table: 'daily_stats',
           affectedRows: affectedRows,
-          updatedFields: ['total_study_time_ms', 'learned_words_count'],
+          updatedFields: ['total_time_ms', 'new_learned_count'],
         );
       }
     } catch (e, stackTrace) {
@@ -318,13 +307,12 @@ class DailyStatRepository {
         final newStat = DailyStat.createForDate(
           userId,
           date,
-        ).copyWith(totalStudyTimeMs: milliseconds, updatedAt: DateTime.now());
+        ).copyWith(totalTimeMs: milliseconds);
         await createDailyStat(newStat);
       } else {
         // 更新现有记录
         final updated = stat.copyWith(
-          totalStudyTimeMs: stat.totalStudyTimeMs + milliseconds,
-          updatedAt: DateTime.now(),
+          totalTimeMs: stat.totalTimeMs + milliseconds,
         );
         await updateDailyStat(updated);
       }
@@ -345,7 +333,7 @@ class DailyStatRepository {
     DateTime date, {
     int count = 1,
   }) async {
-    await _incrementField(userId, date, 'learned_words_count', count);
+    await _incrementField(userId, date, 'new_learned_count', count);
   }
 
   /// 增加复习单词数
@@ -354,7 +342,7 @@ class DailyStatRepository {
     DateTime date, {
     int count = 1,
   }) async {
-    await _incrementField(userId, date, 'reviewed_words_count', count);
+    await _incrementField(userId, date, 'review_count', count);
   }
 
   /// 增加掌握单词数
@@ -363,7 +351,7 @@ class DailyStatRepository {
     DateTime date, {
     int count = 1,
   }) async {
-    await _incrementField(userId, date, 'mastered_words_count', count);
+    await _incrementField(userId, date, 'unique_kana_reviewed_count', count);
   }
 
   /// 增加错误次数
@@ -372,7 +360,7 @@ class DailyStatRepository {
     DateTime date, {
     int count = 1,
   }) async {
-    await _incrementField(userId, date, 'failed_count', count);
+    await _incrementField(userId, date, 'review_count', count);
   }
 
   /// 通用字段增加方法
@@ -383,19 +371,29 @@ class DailyStatRepository {
     int increment,
   ) async {
     try {
+      const allowedFields = {
+        'new_learned_count',
+        'review_count',
+        'total_time_ms',
+        'unique_kana_reviewed_count',
+      };
+      if (!allowedFields.contains(fieldName)) {
+        logger.warning(
+          'daily_stats increment ignored for unsupported field: $fieldName',
+        );
+        return;
+      }
       final dateStr = _formatDate(date);
       final db = await _db;
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       await db.rawInsert(
         '''
-        INSERT INTO daily_stats (user_id, date, $fieldName, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO daily_stats (user_id, date, $fieldName)
+        VALUES (?, ?, ?)
         ON CONFLICT(user_id, date) DO UPDATE SET
-          $fieldName = $fieldName + ?,
-          updated_at = ?
+          $fieldName = $fieldName + ?
       ''',
-        [userId, dateStr, increment, now, now, increment, now],
+        [userId, dateStr, increment, increment],
       );
 
       logger.dbUpdate(
@@ -423,12 +421,11 @@ class DailyStatRepository {
       final result = await db.rawQuery(
         '''
         SELECT 
-          SUM(total_study_time_ms) as total_time,
-          SUM(learned_words_count) as total_learned,
-          SUM(reviewed_words_count) as total_reviewed,
-          SUM(mastered_words_count) as total_mastered,
-          SUM(failed_count) as total_failed,
-          AVG(total_study_time_ms) as avg_time_per_day,
+          SUM(total_time_ms) as total_time,
+          SUM(new_learned_count) as total_learned,
+          SUM(review_count) as total_reviewed,
+          SUM(unique_kana_reviewed_count) as total_mastered,
+          AVG(total_time_ms) as avg_time_per_day,
           COUNT(*) as active_days
         FROM daily_stats
         WHERE user_id = ?
@@ -463,12 +460,11 @@ class DailyStatRepository {
       final result = await db.rawQuery(
         '''
         SELECT 
-          SUM(total_study_time_ms) as total_time,
-          SUM(learned_words_count) as total_learned,
-          SUM(reviewed_words_count) as total_reviewed,
-          SUM(mastered_words_count) as total_mastered,
-          SUM(failed_count) as total_failed,
-          AVG(total_study_time_ms) as avg_time_per_day,
+          SUM(total_time_ms) as total_time,
+          SUM(new_learned_count) as total_learned,
+          SUM(review_count) as total_reviewed,
+          SUM(unique_kana_reviewed_count) as total_mastered,
+          AVG(total_time_ms) as avg_time_per_day,
           COUNT(*) as active_days
         FROM daily_stats
         WHERE user_id = ?
@@ -506,7 +502,7 @@ class DailyStatRepository {
         SELECT date
         FROM daily_stats
         WHERE user_id = ?
-          AND (learned_words_count > 0 OR reviewed_words_count > 0)
+          AND (new_learned_count > 0 OR review_count > 0 OR total_time_ms > 0)
         ORDER BY date DESC
         LIMIT 365
       ''',
@@ -526,22 +522,21 @@ class DailyStatRepository {
       final todayStr = _formatDate(today);
       final yesterdayStr = _formatDate(yesterday);
 
-      final latestDate = recentDays.first['date'] as String;
-      if (latestDate != todayStr && latestDate != yesterdayStr) {
+      final latestDateStr = recentDays.first['date'] as String;
+      if (latestDateStr != todayStr && latestDateStr != yesterdayStr) {
         return 0;
       }
 
       int streak = 0;
-      DateTime currentDate = DateTime.parse(latestDate);
+      DateTime expectedDate = DateTime.parse(latestDateStr);
 
       for (final row in recentDays) {
         final dateStr = row['date'] as String;
         final date = DateTime.parse(dateStr);
 
-        if (_isSameDay(date, currentDate) ||
-            _isSameDay(date, currentDate.subtract(Duration(days: streak)))) {
+        if (_isSameDay(date, expectedDate)) {
           streak++;
-          currentDate = date;
+          expectedDate = expectedDate.subtract(const Duration(days: 1));
         } else {
           break;
         }
@@ -549,13 +544,12 @@ class DailyStatRepository {
 
       return streak;
     } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'daily_stats',
-        dbError: e,
-        stackTrace: stackTrace,
+      logger.error(
+        'calculateStreak failed (streak query on daily_stats)',
+        e,
+        stackTrace,
       );
-      rethrow;
+      return 0;
     }
   }
 

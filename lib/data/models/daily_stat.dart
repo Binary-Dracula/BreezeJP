@@ -4,44 +4,52 @@ class DailyStat {
   final int id;
   final int userId;
   final DateTime date;
-  final int totalStudyTimeMs; // 毫秒
-  final int learnedWordsCount;
-  final int reviewedWordsCount;
-  final int masteredWordsCount;
-  final int failedCount;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final int reviewCount;
+  final int uniqueKanaReviewedCount;
+  final int newLearnedCount;
+  final double ratingAvg;
+  final double wrongRatio;
+  final double newIntervalAvg;
+  final int totalTimeMs;
+  final int? firstReviewAt;
+  final int? lastReviewAt;
+  final int algorithm;
+  final double? learningQualityScore;
 
   DailyStat({
     required this.id,
     required this.userId,
     required this.date,
-    this.totalStudyTimeMs = 0,
-    this.learnedWordsCount = 0,
-    this.reviewedWordsCount = 0,
-    this.masteredWordsCount = 0,
-    this.failedCount = 0,
-    required this.createdAt,
-    required this.updatedAt,
+    this.reviewCount = 0,
+    this.uniqueKanaReviewedCount = 0,
+    this.newLearnedCount = 0,
+    this.ratingAvg = 0,
+    this.wrongRatio = 0,
+    this.newIntervalAvg = 0,
+    this.totalTimeMs = 0,
+    this.firstReviewAt,
+    this.lastReviewAt,
+    this.algorithm = 1,
+    this.learningQualityScore,
   });
 
-  /// 从数据库 Map 创建实例
+  /// 从数据库 Map 创建实例（字段顺序与 daily_stats 表保持一致）
   factory DailyStat.fromMap(Map<String, dynamic> map) {
     return DailyStat(
       id: map['id'] as int,
       userId: map['user_id'] as int,
       date: DateTime.parse(map['date'] as String),
-      totalStudyTimeMs: map['total_study_time_ms'] as int? ?? 0,
-      learnedWordsCount: map['learned_words_count'] as int? ?? 0,
-      reviewedWordsCount: map['reviewed_words_count'] as int? ?? 0,
-      masteredWordsCount: map['mastered_words_count'] as int? ?? 0,
-      failedCount: map['failed_count'] as int? ?? 0,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        (map['created_at'] as int) * 1000,
-      ),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(
-        (map['updated_at'] as int) * 1000,
-      ),
+      reviewCount: map['review_count'] as int? ?? 0,
+      uniqueKanaReviewedCount: map['unique_kana_reviewed_count'] as int? ?? 0,
+      newLearnedCount: map['new_learned_count'] as int? ?? 0,
+      ratingAvg: (map['rating_avg'] as num?)?.toDouble() ?? 0,
+      wrongRatio: (map['wrong_ratio'] as num?)?.toDouble() ?? 0,
+      newIntervalAvg: (map['new_interval_avg'] as num?)?.toDouble() ?? 0,
+      totalTimeMs: map['total_time_ms'] as int? ?? 0,
+      firstReviewAt: map['first_review_at'] as int?,
+      lastReviewAt: map['last_review_at'] as int?,
+      algorithm: map['algorithm'] as int? ?? 1,
+      learningQualityScore: (map['learning_quality_score'] as num?)?.toDouble(),
     );
   }
 
@@ -50,13 +58,17 @@ class DailyStat {
     return {
       'user_id': userId,
       'date': _formatDate(date),
-      'total_study_time_ms': totalStudyTimeMs,
-      'learned_words_count': learnedWordsCount,
-      'reviewed_words_count': reviewedWordsCount,
-      'mastered_words_count': masteredWordsCount,
-      'failed_count': failedCount,
-      'created_at': createdAt.millisecondsSinceEpoch ~/ 1000,
-      'updated_at': updatedAt.millisecondsSinceEpoch ~/ 1000,
+      'review_count': reviewCount,
+      'unique_kana_reviewed_count': uniqueKanaReviewedCount,
+      'new_learned_count': newLearnedCount,
+      'rating_avg': ratingAvg,
+      'wrong_ratio': wrongRatio,
+      'new_interval_avg': newIntervalAvg,
+      'total_time_ms': totalTimeMs,
+      'first_review_at': firstReviewAt,
+      'last_review_at': lastReviewAt,
+      'algorithm': algorithm,
+      'learning_quality_score': learningQualityScore,
     };
   }
 
@@ -72,25 +84,34 @@ class DailyStat {
     int? id,
     int? userId,
     DateTime? date,
-    int? totalStudyTimeMs,
-    int? learnedWordsCount,
-    int? reviewedWordsCount,
-    int? masteredWordsCount,
-    int? failedCount,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    int? reviewCount,
+    int? uniqueKanaReviewedCount,
+    int? newLearnedCount,
+    double? ratingAvg,
+    double? wrongRatio,
+    double? newIntervalAvg,
+    int? totalTimeMs,
+    int? firstReviewAt,
+    int? lastReviewAt,
+    int? algorithm,
+    double? learningQualityScore,
   }) {
     return DailyStat(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       date: date ?? this.date,
-      totalStudyTimeMs: totalStudyTimeMs ?? this.totalStudyTimeMs,
-      learnedWordsCount: learnedWordsCount ?? this.learnedWordsCount,
-      reviewedWordsCount: reviewedWordsCount ?? this.reviewedWordsCount,
-      masteredWordsCount: masteredWordsCount ?? this.masteredWordsCount,
-      failedCount: failedCount ?? this.failedCount,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      reviewCount: reviewCount ?? this.reviewCount,
+      uniqueKanaReviewedCount:
+          uniqueKanaReviewedCount ?? this.uniqueKanaReviewedCount,
+      newLearnedCount: newLearnedCount ?? this.newLearnedCount,
+      ratingAvg: ratingAvg ?? this.ratingAvg,
+      wrongRatio: wrongRatio ?? this.wrongRatio,
+      newIntervalAvg: newIntervalAvg ?? this.newIntervalAvg,
+      totalTimeMs: totalTimeMs ?? this.totalTimeMs,
+      firstReviewAt: firstReviewAt ?? this.firstReviewAt,
+      lastReviewAt: lastReviewAt ?? this.lastReviewAt,
+      algorithm: algorithm ?? this.algorithm,
+      learningQualityScore: learningQualityScore ?? this.learningQualityScore,
     );
   }
 
@@ -105,22 +126,22 @@ class DailyStat {
   String get dateString => _formatDate(date);
 
   /// 学习时长（分钟）
-  double get totalStudyMinutes => totalStudyTimeMs / 1000.0 / 60.0;
+  double get totalStudyMinutes => totalTimeMs / 1000.0 / 60.0;
 
   /// 学习时长（小时）
-  double get totalStudyHours => totalStudyTimeMs / 1000.0 / 3600.0;
+  double get totalStudyHours => totalTimeMs / 1000.0 / 3600.0;
 
   /// 总学习单词数（新学 + 复习）
-  int get totalWordsCount => learnedWordsCount + reviewedWordsCount;
+  int get totalWordsCount => newLearnedCount + reviewCount;
 
   /// 是否有学习活动
-  bool get hasActivity => totalWordsCount > 0 || totalStudyTimeMs > 0;
+  bool get hasActivity => totalWordsCount > 0 || totalTimeMs > 0;
 
   /// 正确率（如果有复习的话）
   double? get accuracy {
-    if (reviewedWordsCount == 0) return null;
-    final correctCount = reviewedWordsCount - failedCount;
-    return correctCount / reviewedWordsCount;
+    if (reviewCount == 0) return null;
+    final correctCount = reviewCount * (1 - wrongRatio);
+    return correctCount / reviewCount;
   }
 
   /// 正确率百分比
@@ -133,7 +154,7 @@ class DailyStat {
   /// 平均每个单词的学习时间（秒）
   double? get avgTimePerWord {
     if (totalWordsCount == 0) return null;
-    return totalStudyTimeMs / 1000.0 / totalWordsCount;
+    return totalTimeMs / 1000.0 / totalWordsCount;
   }
 
   /// 学习效率评级（基于时间和数量）
@@ -160,24 +181,39 @@ class DailyStat {
       id: 0,
       userId: userId,
       date: today,
-      totalStudyTimeMs: 0,
-      createdAt: now,
-      updatedAt: now,
+      totalTimeMs: 0,
+      newLearnedCount: 0,
+      reviewCount: 0,
+      uniqueKanaReviewedCount: 0,
+      ratingAvg: 0,
+      wrongRatio: 0,
+      newIntervalAvg: 0,
+      learningQualityScore: null,
+      firstReviewAt: null,
+      lastReviewAt: null,
+      algorithm: 1,
     );
   }
 
   /// 从日期创建统计
   static DailyStat createForDate(int userId, DateTime date) {
     final dateOnly = DateTime(date.year, date.month, date.day);
-    final now = DateTime.now();
 
     return DailyStat(
       id: 0,
       userId: userId,
       date: dateOnly,
-      totalStudyTimeMs: 0,
-      createdAt: now,
-      updatedAt: now,
+      totalTimeMs: 0,
+      newLearnedCount: 0,
+      reviewCount: 0,
+      uniqueKanaReviewedCount: 0,
+      ratingAvg: 0,
+      wrongRatio: 0,
+      newIntervalAvg: 0,
+      learningQualityScore: null,
+      firstReviewAt: null,
+      lastReviewAt: null,
+      algorithm: 1,
     );
   }
 }
