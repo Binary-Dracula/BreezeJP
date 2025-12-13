@@ -283,42 +283,32 @@ class _LeftColumn extends StatelessWidget {
               return Transform.translate(offset: Offset(dx, 0), child: child);
             },
             child: pair.item.questionType == ReviewQuestionType.audio
-                ? AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: selected
-                            ? Colors.blueAccent
-                            : Colors.transparent,
-                        width: 2,
+                ? GestureDetector(
+                    onTap: () {
+                      onTap(index);
+                      if (pair.left.isNotEmpty) {
+                        ref
+                            .read(audioServiceProvider)
+                            .playAudio(_normalizeKanaAudioPath(pair.left));
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selected
+                              ? Colors.blueAccent
+                              : Colors.transparent,
+                          width: 2,
+                        ),
                       ),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => onTap(index),
-                          ),
-                        ),
-                        Center(
-                          child: IconButton.filled(
-                            iconSize: 28,
-                            onPressed: pair.left.isEmpty
-                                ? null
-                                : () => ref
-                                      .read(audioServiceProvider)
-                                      .playAudio(
-                                        _normalizeKanaAudioPath(pair.left),
-                                      ),
-                            icon: const Icon(Icons.volume_up),
-                          ),
-                        ),
-                      ],
+                      child: const Center(
+                        child: Icon(Icons.volume_up, size: 28),
+                      ),
                     ),
                   )
                 : GestureDetector(
