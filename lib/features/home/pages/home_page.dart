@@ -7,7 +7,6 @@ import 'package:breeze_jp/router/app_route_observer.dart';
 
 import '../controller/home_controller.dart';
 import '../state/home_state.dart';
-import '../../../debug/debug_srs_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -162,11 +161,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         ),
         if (kDebugMode)
           TextButton(
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const DebugSrsPage()));
-            },
+            onPressed: () => context.push('/debug'),
             child: const Text('Debug'),
           ),
       ],

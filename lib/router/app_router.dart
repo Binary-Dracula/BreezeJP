@@ -6,6 +6,8 @@ import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
 import '../features/learn/pages/learn_page.dart';
 import '../features/kana/chart/pages/kana_chart_page.dart';
+import '../debug/pages/debug_page.dart';
+import '../debug/pages/tests/debug_srs_test_page.dart';
 import 'app_route_observer.dart';
 
 /// 应用路由配置
@@ -56,6 +58,18 @@ final appRouter = GoRouter(
       path: '/matching_page',
       name: 'matching_page',
       builder: (context, state) => const MatchingPage(),
+    ),
+
+    // Debug 工具（仅开发用途）
+    GoRoute(
+      path: '/debug',
+      name: 'debug',
+      builder: (context, state) => const DebugPage(),
+    ),
+    GoRoute(
+      path: '/debug/srs',
+      name: 'debug-srs',
+      builder: (context, state) => const DebugSrsTestPage(),
     ),
   ],
 );
