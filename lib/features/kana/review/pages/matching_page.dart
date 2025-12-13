@@ -282,35 +282,69 @@ class _LeftColumn extends StatelessWidget {
               final dx = isFailure ? math.sin(value * math.pi * 6) * 6 : 0.0;
               return Transform.translate(offset: Offset(dx, 0), child: child);
             },
-            child: GestureDetector(
-              onTap: () => onTap(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: selected ? Colors.blueAccent : Colors.transparent,
-                    width: 2,
+            child: pair.item.questionType == ReviewQuestionType.audio
+                ? AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected
+                            ? Colors.blueAccent
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => onTap(index),
+                          ),
+                        ),
+                        Center(
+                          child: IconButton.filled(
+                            iconSize: 28,
+                            onPressed: pair.left.isEmpty
+                                ? null
+                                : () => ref
+                                      .read(audioServiceProvider)
+                                      .playAudio(
+                                        _normalizeKanaAudioPath(pair.left),
+                                      ),
+                            icon: const Icon(Icons.volume_up),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () => onTap(index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selected
+                              ? Colors.blueAccent
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          pair.left,
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: pair.item.questionType == ReviewQuestionType.audio
-                      ? IconButton.filled(
-                          iconSize: 28,
-                          onPressed: pair.left.isEmpty
-                              ? null
-                              : () => ref
-                                    .read(audioServiceProvider)
-                                    .playAudio(pair.left),
-                          icon: const Icon(Icons.volume_up),
-                        )
-                      : Text(pair.left, style: const TextStyle(fontSize: 24)),
-                ),
-              ),
-            ),
           ),
         );
       },
@@ -448,6 +482,19 @@ String _subtitleForType(ReviewQuestionType type) {
     ReviewQuestionType.audio => '点击音频 → 点击对应假名',
     ReviewQuestionType.switchMode => '将平假名与对应片假名配对',
   };
+}
+
+String _normalizeKanaAudioPath(String raw) {
+  final v = raw.trim();
+  if (v.isEmpty) return v;
+
+  if (v.startsWith('assets/')) return v;
+
+  if (v.endsWith('.mp3') || v.endsWith('.wav') || v.endsWith('.m4a')) {
+    return 'assets/audio/kana/$v';
+  }
+
+  return 'assets/audio/kana/$v.mp3';
 }
 
 List<String> _buildUniqueOptions(List<MatchingPair> pairs) {
