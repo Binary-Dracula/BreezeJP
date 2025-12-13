@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:breeze_jp/features/kana/review/pages/matching_page.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/pages/splash_page.dart';
@@ -5,10 +6,12 @@ import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
 import '../features/learn/pages/learn_page.dart';
 import '../features/kana/chart/pages/kana_chart_page.dart';
+import 'app_route_observer.dart';
 
 /// 应用路由配置
 final appRouter = GoRouter(
   initialLocation: '/splash',
+  observers: <NavigatorObserver>[appRouteObserver],
   routes: [
     // Splash 页面
     GoRoute(

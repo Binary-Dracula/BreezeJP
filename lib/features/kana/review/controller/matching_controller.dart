@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../state/matching_pair.dart';
 import '../state/matching_state.dart';
 import '../state/kana_review_state.dart';
@@ -25,6 +26,57 @@ class MatchingController extends Notifier<MatchingState> {
 
   @override
   MatchingState build() => const MatchingState();
+
+  /// 加载待复习假名并启动 Matching 流程
+  ///
+  /// - 有待复习数据：进入 Matching 复习
+  /// - 无待复习数据：进入空复习态（isEmpty=true）
+  Future<void> loadReview() async {
+    try {
+      state = state.copyWith(
+        isLoading: true,
+        isEmpty: false,
+        resetCurrentQuestionType: true,
+        remaining: const [],
+        activePairs: const [],
+        selectedLeftIndex: null,
+        selectedRightIndex: null,
+        isGroupFinished: false,
+        isAllFinished: false,
+        error: null,
+      );
+
+      final user = await ref.read(activeUserProvider.future);
+      final learningStates = await repo.getDueReviewKana(user.id);
+      final items = await _composeReviewItems(user.id, learningStates);
+
+      if (items.isEmpty) {
+        _audioGroup = [];
+        _switchModeGroup = [];
+        _recallGroup = [];
+        state = state.copyWith(
+          isLoading: false,
+          isEmpty: true,
+          resetCurrentQuestionType: true,
+          remaining: const [],
+          activePairs: const [],
+          selectedLeftIndex: null,
+          selectedRightIndex: null,
+          isGroupFinished: false,
+          isAllFinished: false,
+          error: null,
+        );
+        logger.info('暂无待复习假名，进入空复习态');
+        return;
+      }
+
+      logger.info('启动假名 Matching 复习: ${items.length} 个待复习');
+      await startReview(items);
+    } catch (e, stackTrace) {
+      logger.error('启动假名 Matching 复习失败', e, stackTrace);
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
 
   /// 初始化所有题型组的队列
   Future<void> startReview(List<ReviewKanaItem> reviewList) async {
@@ -52,7 +104,8 @@ class MatchingController extends Notifier<MatchingState> {
 
     state = state.copyWith(
       isLoading: true,
-      currentQuestionType: null,
+      isEmpty: false,
+      resetCurrentQuestionType: true,
       remaining: const [],
       activePairs: const [],
       selectedLeftIndex: null,
@@ -62,8 +115,13 @@ class MatchingController extends Notifier<MatchingState> {
       error: null,
     );
 
-    await startNextGroup();
-    state = state.copyWith(isLoading: false);
+    try {
+      await startNextGroup();
+      state = state.copyWith(isLoading: false);
+    } catch (e, stackTrace) {
+      logger.error('启动 Matching 下一组失败', e, stackTrace);
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
   /// 开始一个题型组（例如 recallGroup）
@@ -79,6 +137,7 @@ class MatchingController extends Notifier<MatchingState> {
     final items = List<ReviewKanaItem>.from(groupItems);
     state = state.copyWith(
       isLoading: true,
+      isEmpty: false,
       currentQuestionType: type,
       remaining: items,
       activePairs: const [],
@@ -88,8 +147,13 @@ class MatchingController extends Notifier<MatchingState> {
       error: null,
     );
 
-    await generateInitialPairs();
-    state = state.copyWith(isLoading: false);
+    try {
+      await generateInitialPairs();
+      state = state.copyWith(isLoading: false);
+    } catch (e, stackTrace) {
+      logger.error('生成 Matching 题目失败', e, stackTrace);
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
   /// 生成初始 activePool（4 对）
@@ -176,36 +240,37 @@ class MatchingController extends Notifier<MatchingState> {
   }
 
   /// 用户点击右侧
-  void selectRight(int index) async {
+  Future<void> selectRight(int rightIndex, String selectedValue) async {
     final leftIndex = state.selectedLeftIndex;
     if (leftIndex == null || leftIndex < 0) return;
     if (leftIndex >= state.activePairs.length) return;
     final active = List<MatchingPair>.from(state.activePairs);
     final pair = active[leftIndex];
-    if (index < 0 || index >= pair.rightOptions.length) return;
+    if (rightIndex < 0) return;
+    if (selectedValue.isEmpty) return;
 
     final updatedPair = pair.copyWith(attemptCount: pair.attemptCount + 1);
     active[leftIndex] = updatedPair;
     state = state.copyWith(activePairs: active);
 
-    final isCorrect =
-        updatedPair.rightOptions[index] == updatedPair.rightCorrect;
+    final isCorrect = selectedValue == updatedPair.rightCorrect;
     if (isCorrect) {
-      await handleMatchSuccess(leftIndex, index);
+      await handleMatchSuccess(leftIndex);
     } else {
-      final wrongUpdated =
-          updatedPair.copyWith(wrongCount: updatedPair.wrongCount + 1);
+      final wrongUpdated = updatedPair.copyWith(
+        wrongCount: updatedPair.wrongCount + 1,
+      );
       final nextActive = List<MatchingPair>.from(state.activePairs);
       if (leftIndex < nextActive.length) {
         nextActive[leftIndex] = wrongUpdated;
         state = state.copyWith(activePairs: nextActive);
       }
-      await handleMatchFailure(leftIndex, index);
+      await handleMatchFailure(leftIndex, rightIndex);
     }
   }
 
   /// 处理配对成功逻辑
-  Future<void> handleMatchSuccess(int leftIndex, int rightIndex) async {
+  Future<void> handleMatchSuccess(int leftIndex) async {
     final active = List<MatchingPair>.from(state.activePairs);
     if (leftIndex < 0 || leftIndex >= active.length) return;
     final pair = active[leftIndex];
@@ -314,11 +379,12 @@ class MatchingController extends Notifier<MatchingState> {
   /// 所有复习结束
   Future<void> finishAll() async {
     state = state.copyWith(
+      isLoading: false,
       isAllFinished: true,
       isGroupFinished: true,
       activePairs: const [],
       remaining: const [],
-      currentQuestionType: null,
+      resetCurrentQuestionType: true,
       selectedLeftIndex: null,
       selectedRightIndex: null,
     );
@@ -327,6 +393,95 @@ class MatchingController extends Notifier<MatchingState> {
   Future<List<KanaLetter>> _getAllKanaLetters() async {
     _allKanaCache ??= await repo.getAllKanaLetters();
     return _allKanaCache!;
+  }
+
+  Future<List<ReviewKanaItem>> _composeReviewItems(
+    int userId,
+    List<KanaLearningState> learningStates,
+  ) async {
+    final List<ReviewKanaItem> items = [];
+
+    for (final learningState in learningStates) {
+      final KanaLetter? letter = await repo.getKanaLetterById(
+        learningState.kanaId,
+      );
+      if (letter == null) {
+        logger.warning('假名不存在，跳过复习项: kanaId=${learningState.kanaId}');
+        continue;
+      }
+
+      final audio = await repo.getKanaAudio(learningState.kanaId);
+      final lastType = await repo.getLastKanaReviewQuestionType(
+        userId,
+        learningState.kanaId,
+      );
+      final questionType = _chooseQuestionType(learningState, lastType);
+
+      items.add(
+        ReviewKanaItem(
+          kanaLetter: letter,
+          learningState: learningState,
+          audioFilename: audio?.audioFilename,
+          questionType: questionType,
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  ReviewQuestionType _chooseQuestionType(
+    KanaLearningState learningState,
+    String? lastType,
+  ) {
+    final level = _judgeLevel(learningState);
+    final priorities = switch (level) {
+      _SkillLevel.weak => [
+        ReviewQuestionType.audio,
+        ReviewQuestionType.switchMode,
+        ReviewQuestionType.recall,
+      ],
+      _SkillLevel.newbie => [
+        ReviewQuestionType.switchMode,
+        ReviewQuestionType.audio,
+      ],
+      _SkillLevel.strong => [
+        ReviewQuestionType.recall,
+        ReviewQuestionType.switchMode,
+        ReviewQuestionType.audio,
+      ],
+    };
+
+    final primary = priorities.first;
+    final secondary = priorities.length > 1 ? priorities[1] : primary;
+
+    if (lastType != null) {
+      final normalizedLast = _mapStringToQuestionType(lastType);
+      if (normalizedLast != null && normalizedLast == primary) {
+        return secondary;
+      }
+    }
+
+    return primary;
+  }
+
+  _SkillLevel _judgeLevel(KanaLearningState state) {
+    if (state.failCount >= 3) return _SkillLevel.weak;
+    if (state.streak <= 1) return _SkillLevel.newbie;
+    return _SkillLevel.strong;
+  }
+
+  ReviewQuestionType? _mapStringToQuestionType(String value) {
+    switch (value) {
+      case 'recall':
+        return ReviewQuestionType.recall;
+      case 'audio':
+        return ReviewQuestionType.audio;
+      case 'switchMode':
+        return ReviewQuestionType.switchMode;
+      default:
+        return null;
+    }
   }
 
   String _kanaDisplay(KanaLetter letter, {bool preferKatakana = false}) {
@@ -537,12 +692,14 @@ class MatchingController extends Notifier<MatchingState> {
   Future<Map<String, dynamic>> simulateReviewSequence(
     int userId,
     int kanaId,
-    List<int> ratings,
-    {String questionType = 'debug', int? forceAlgorithm}
-  ) async {
+    List<int> ratings, {
+    String questionType = 'debug',
+    int? forceAlgorithm,
+  }) async {
     final activeUser = await ref.read(activeUserProvider.future);
-    final baseAlgorithm =
-        activeUser.id == userId ? _extractAlgorithm(activeUser) : 1;
+    final baseAlgorithm = activeUser.id == userId
+        ? _extractAlgorithm(activeUser)
+        : 1;
     final algorithm = forceAlgorithm ?? baseAlgorithm;
 
     for (final rating in ratings) {
@@ -614,3 +771,5 @@ class SrsResult {
     this.newDifficulty,
   });
 }
+
+enum _SkillLevel { weak, newbie, strong }

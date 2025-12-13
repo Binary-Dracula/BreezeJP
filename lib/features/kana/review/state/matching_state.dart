@@ -6,6 +6,9 @@ import 'matching_pair.dart'; // 若需要 ReviewKanaItem
 class MatchingState {
   final bool isLoading;
 
+  /// 是否为空复习态（无待复习数据）
+  final bool isEmpty;
+
   /// 当前题型类型：recall / audio / switchMode
   final ReviewQuestionType? currentQuestionType;
 
@@ -31,6 +34,7 @@ class MatchingState {
 
   const MatchingState({
     this.isLoading = false,
+    this.isEmpty = false,
     this.currentQuestionType,
     this.remaining = const [],
     this.activePairs = const [],
@@ -44,23 +48,28 @@ class MatchingState {
   MatchingState copyWith({
     bool? isLoading,
     ReviewQuestionType? currentQuestionType,
+    bool resetCurrentQuestionType = false,
     List<ReviewKanaItem>? remaining,
     List<MatchingPair>? activePairs,
     int? selectedLeftIndex,
     int? selectedRightIndex,
     bool? isGroupFinished,
     bool? isAllFinished,
+    bool? isEmpty,
     String? error,
   }) {
     return MatchingState(
       isLoading: isLoading ?? this.isLoading,
-      currentQuestionType: currentQuestionType ?? this.currentQuestionType,
+      currentQuestionType: resetCurrentQuestionType
+          ? null
+          : (currentQuestionType ?? this.currentQuestionType),
       remaining: remaining ?? this.remaining,
       activePairs: activePairs ?? this.activePairs,
       selectedLeftIndex: selectedLeftIndex,
       selectedRightIndex: selectedRightIndex,
       isGroupFinished: isGroupFinished ?? this.isGroupFinished,
       isAllFinished: isAllFinished ?? this.isAllFinished,
+      isEmpty: isEmpty ?? this.isEmpty,
       error: error,
     );
   }

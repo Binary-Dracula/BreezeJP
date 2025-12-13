@@ -1267,8 +1267,6 @@ class KanaRepository {
         'first_review_at': now,
         'last_review_at': now,
         'learning_quality_score': rating.toDouble(),
-        'created_at': now,
-        'updated_at': now,
       });
       logger.dbInsert(
         table: 'daily_stats',
@@ -1307,17 +1305,13 @@ class KanaRepository {
       columns: ['id'],
       where:
           'user_id = ? AND kana_id = ? AND date(created_at, \'unixepoch\') = ? AND log_type = ?',
-      whereArgs: [
-        userId,
-        kanaId,
-        dateStr,
-        KanaLogType.review.index + 1,
-      ],
+      whereArgs: [userId, kanaId, dateStr, KanaLogType.review.index + 1],
       limit: 1,
     );
     final isNewKanaToday = kanaReviewedToday.isEmpty;
-    final updatedUniqueKana =
-        isNewKanaToday ? currentUniqueKana + 1 : currentUniqueKana;
+    final updatedUniqueKana = isNewKanaToday
+        ? currentUniqueKana + 1
+        : currentUniqueKana;
 
     final affectedRows = await db.update(
       'daily_stats',
@@ -1332,7 +1326,6 @@ class KanaRepository {
         'first_review_at': currentFirstReviewAt ?? now,
         'last_review_at': now,
         'learning_quality_score': newLearningQuality,
-        'updated_at': now,
       },
       where: 'user_id = ? AND date = ?',
       whereArgs: [userId, dateStr],

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../services/audio_service_provider.dart';
 import '../controller/matching_controller.dart';
 import '../state/kana_review_state.dart';
@@ -19,7 +20,16 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
   int? _pendingRightIndex;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(matchingControllerProvider.notifier).loadReview();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(matchingControllerProvider);
     final options = _buildUniqueOptions(state.activePairs);
     final pendingRightIndex =
@@ -28,6 +38,58 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
             _pendingRightIndex! < options.length)
         ? _pendingRightIndex
         : null;
+
+    if (state.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (state.error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('五十音复习')),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.loadFailed(state.error!),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => ref
+                          .read(matchingControllerProvider.notifier)
+                          .loadReview(),
+                      child: Text(l10n.retryButton),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (state.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('五十音复习')),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
+              SizedBox(height: 12),
+              Text('暂无待复习五十音', style: TextStyle(fontSize: 16)),
+            ],
+          ),
+        ),
+      );
+    }
 
     /// 全部复习完成
     if (state.isAllFinished) {
@@ -49,23 +111,19 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
       );
     }
 
-    /// 当前组加载中
-    if (state.isLoading || state.currentQuestionType == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final isEmpty =
-        state.activePairs.isEmpty && (state.remaining.isEmpty);
-    if (isEmpty) {
+    final questionType = state.currentQuestionType;
+    if (questionType == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(_titleForType(state.currentQuestionType!))),
-        body: const Center(
+        appBar: AppBar(title: const Text('五十音复习')),
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
-              SizedBox(height: 12),
-              Text('今日没有需要复习的假名', style: TextStyle(fontSize: 16)),
+              ElevatedButton(
+                onPressed: () =>
+                    ref.read(matchingControllerProvider.notifier).loadReview(),
+                child: Text(l10n.retryButton),
+              ),
             ],
           ),
         ),
@@ -73,7 +131,7 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_titleForType(state.currentQuestionType!))),
+      appBar: AppBar(title: Text(_titleForType(questionType))),
 
       body: Column(
         children: [
@@ -81,7 +139,7 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
 
           /// 题型指示
           Text(
-            _subtitleForType(state.currentQuestionType!),
+            _subtitleForType(questionType),
             style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
 
@@ -139,7 +197,9 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
       setState(() {
         _pendingRightIndex = null;
       });
-      ref.read(matchingControllerProvider.notifier).selectRight(pending);
+      ref
+          .read(matchingControllerProvider.notifier)
+          .selectRight(pending, options[pending]);
     }
   }
 
@@ -149,7 +209,9 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
       setState(() {
         _pendingRightIndex = null;
       });
-      ref.read(matchingControllerProvider.notifier).selectRight(index);
+      ref
+          .read(matchingControllerProvider.notifier)
+          .selectRight(index, options[index]);
     } else {
       setState(() {
         _pendingRightIndex = index;
