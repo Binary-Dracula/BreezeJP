@@ -7,6 +7,7 @@ import '../features/learn/pages/initial_choice_page.dart';
 import '../features/learn/pages/learn_page.dart';
 import '../features/kana/chart/pages/kana_chart_page.dart';
 import '../debug/pages/debug_page.dart';
+import '../debug/pages/tests/debug_kana_review_data_generator_page.dart';
 import '../debug/pages/tests/debug_srs_test_page.dart';
 import 'app_route_observer.dart';
 
@@ -70,6 +71,11 @@ final appRouter = GoRouter(
       path: '/debug/srs',
       name: 'debug-srs',
       builder: (context, state) => const DebugSrsTestPage(),
+    ),
+    GoRoute(
+      path: '/debug/kana-review-data',
+      name: 'debug-kana-review-data',
+      builder: (context, state) => const DebugKanaReviewDataGeneratorPage(),
     ),
   ],
 );
