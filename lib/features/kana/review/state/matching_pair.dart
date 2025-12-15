@@ -1,4 +1,4 @@
-import 'kana_review_state.dart';
+import 'review_kana_item.dart';
 
 class MatchingPair {
   final ReviewKanaItem item;
@@ -27,10 +27,7 @@ class MatchingPair {
     this.attemptCount = 0,
   });
 
-  MatchingPair copyWith({
-    int? wrongCount,
-    int? attemptCount,
-  }) {
+  MatchingPair copyWith({int? wrongCount, int? attemptCount}) {
     return MatchingPair(
       item: item,
       left: left,

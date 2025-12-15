@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'kana_review_state.dart';
+import 'review_kana_item.dart';
 import 'matching_pair.dart'; // 若需要 ReviewKanaItem
 
 @immutable

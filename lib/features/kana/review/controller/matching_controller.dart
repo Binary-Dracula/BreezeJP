@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../state/matching_pair.dart';
 import '../state/matching_state.dart';
-import '../state/kana_review_state.dart';
+import '../state/review_kana_item.dart';
 import '../../../../data/models/kana_letter.dart';
 import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/kana_log.dart';

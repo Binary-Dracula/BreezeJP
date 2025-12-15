@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/audio_service_provider.dart';
 import '../controller/matching_controller.dart';
-import '../state/kana_review_state.dart';
+import '../state/review_kana_item.dart';
 import '../state/matching_pair.dart';
 import '../state/matching_state.dart';
 
