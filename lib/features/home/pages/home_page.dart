@@ -192,7 +192,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
             subtitle: isNewUser ? '开始学习你的第一个单词' : '继续探索新词，构建语义链条',
             colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
             icon: Icons.bolt_rounded,
-            onTap: () => context.go('/initial-choice'),
+            onTap: () => context.push('/initial-choice'),
             accentText: l10n.startLearning,
           ),
         ),

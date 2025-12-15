@@ -57,7 +57,7 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
         foregroundColor: Colors.black87,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [

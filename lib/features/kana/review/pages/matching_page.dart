@@ -131,7 +131,10 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_titleForType(questionType))),
+      appBar: AppBar(
+        title: Text(_titleForType(questionType)),
+        centerTitle: true,
+      ),
 
       body: Column(
         children: [
