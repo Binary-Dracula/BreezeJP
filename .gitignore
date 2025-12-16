@@ -135,3 +135,4 @@ firebase_options.dart
 
 # 忽略files文件夹下的资源文件
 .files/
+.tool_home/

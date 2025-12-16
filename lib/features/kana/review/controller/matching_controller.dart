@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_logger.dart';
-import '../state/matching_pair.dart';
 import '../state/matching_state.dart';
 import '../state/review_kana_item.dart';
 import '../../../../data/models/kana_letter.dart';
@@ -19,31 +18,28 @@ final matchingControllerProvider =
 
 /// 五十音复习（Matching）控制器
 ///
-/// 该 Controller 负责把「待复习假名队列」组织成 Matching 题目并驱动 UI：
+/// 该 Controller 负责把「待复习假名队列」组织成 Matching 题目并驱动 UI。
 ///
 /// - 数据来源：`KanaRepository`（通过 `kanaRepositoryProvider` 获取）
 /// - 复习入口：UI 应调用 [loadReview] 来启动一次复习 Session
 /// - 题型分组：把 [ReviewKanaItem] 按 [ReviewQuestionType] 分为 3 组并按顺序执行
 ///   - `audio` → `switchMode` → `recall`
-/// - 题目结构：每个 [ReviewKanaItem] 会被组装成 1 个 [MatchingPair]
-///   - 左侧：`left`（文字或音频 key/文件名）
-///   - 右侧：`rightOptions`（包含正确项 + 干扰项）
-/// - 屏幕容量：同一时间最多展示 [_maxActivePairs] 对题目（activePairs）
+/// - 出题模型：4×4 一一对应 Pair Window
+///   - 左右两侧始终各 4 个选项
+///   - 系统内部维护 4 个 [MatchingPair]（一一对应）
+///   - 右侧仅做乱序显示，但仍一一对应（通过 [RightOption.pairIndex] 指向 activePairs）
 ///
 /// 状态字段约定（详见 [MatchingState]）：
 /// - `isLoading`：表示正在进行异步加载/组装（DB 查询、生成题目等）
 /// - `isEmpty`：表示没有任何待复习数据（空复习态），UI 应展示空状态而非 loading
 /// - `currentQuestionType`：当前正在复习的题型组；为 null 表示尚未开始或已 reset
-/// - `remaining`：当前组尚未进入屏幕的待出题 items
-/// - `activePairs`：当前屏幕上展示的题目（最多 4 对）
-/// - `selectedLeftIndex/selectedRightIndex`：用户选中状态（以及错误高亮用）
+/// - `activePairs/remainingItems`：当前组的 Pair Window（activePairs 固定 4）
+/// - `rightOptions`：右侧 4 选项（乱序展示，但仍指向 activePairs）
+/// - `selectedLeftIndex/selectedRightIndex`：用户当前选中项（允许先选左或先选右）
 /// - `isGroupFinished/isAllFinished`：本组完成/全部完成标记
 class MatchingController extends Notifier<MatchingState> {
-  /// 当前屏幕最多展示的 Pair 数量（4 对配对题）。
-  static const int _maxActivePairs = 4;
-
-  /// 每个题目的干扰项数量（正确项 + 3 个干扰项）。
-  static const int _maxDistractors = 3;
+  /// 4×4 Pair Window 的固定尺寸。
+  static const int _windowSize = 4;
 
   /// Controller 访问数据库的唯一入口：Repository（禁止 View 直接查 DB）。
   KanaRepository get repo => ref.read(kanaRepositoryProvider);
@@ -55,8 +51,14 @@ class MatchingController extends Notifier<MatchingState> {
   List<ReviewKanaItem> _switchModeGroup = [];
   List<ReviewKanaItem> _recallGroup = [];
 
-  /// 干扰项生成需要全量假名集合，缓存以避免重复 DB 查询。
-  List<KanaLetter>? _allKanaCache;
+  /// 防止「选中左右 → 判定 → 落库/补位」流程重入（例如连点导致多次触发）。
+  bool _isResolvingSelection = false;
+
+  /// 记录每个 kana 在本次出题中的尝试次数/错误次数（用于计算 rating）。
+  ///
+  /// key：kana_id
+  final Map<int, int> _attemptCountByKanaId = {};
+  final Map<int, int> _wrongCountByKanaId = {};
 
   @override
   /// Riverpod Notifier 的 build 仅返回初始 State。
@@ -83,8 +85,9 @@ class MatchingController extends Notifier<MatchingState> {
       isLoading: isLoading,
       isEmpty: isEmpty,
       resetCurrentQuestionType: true,
-      remaining: const [],
       activePairs: const [],
+      remainingItems: const [],
+      rightOptions: const [],
       selectedLeftIndex: null,
       selectedRightIndex: null,
       isGroupFinished: false,
@@ -100,6 +103,8 @@ class MatchingController extends Notifier<MatchingState> {
   Future<void> loadReview() async {
     try {
       _setSessionBootstrapState(isLoading: true, isEmpty: false);
+      _attemptCountByKanaId.clear();
+      _wrongCountByKanaId.clear();
 
       // 1) 获取当前用户
       final user = await ref.read(activeUserProvider.future);
@@ -131,7 +136,7 @@ class MatchingController extends Notifier<MatchingState> {
   ///
   /// 说明：
   /// - 此方法只做「分组」与「启动下一组」
-  /// - 实际出题发生在 startGroup → generateInitialPairs
+  /// - 实际出题发生在 startGroup → _buildInitialPairs
   Future<void> startReview(List<ReviewKanaItem> reviewList) async {
     final audioGroup = <ReviewKanaItem>[];
     final switchModeGroup = <ReviewKanaItem>[];
@@ -169,8 +174,8 @@ class MatchingController extends Notifier<MatchingState> {
   /// 开始一个题型组（例如 recallGroup）
   ///
   /// - 写入当前题型到 state.currentQuestionType
-  /// - 将本组 items 填到 state.remaining
-  /// - 通过 [generateInitialPairs] 拉取 4 对题目到 state.activePairs
+  /// - 生成 4 对 activePairs（4×4 Pair Window）
+  /// - 右侧仅乱序展示（RightOption.pairIndex 指向 activePairs）
   Future<void> startGroup(
     ReviewQuestionType type,
     List<ReviewKanaItem> groupItems,
@@ -180,13 +185,13 @@ class MatchingController extends Notifier<MatchingState> {
       return;
     }
 
-    final items = List<ReviewKanaItem>.from(groupItems);
     state = state.copyWith(
       isLoading: true,
       isEmpty: false,
       currentQuestionType: type,
-      remaining: items,
       activePairs: const [],
+      remainingItems: const [],
+      rightOptions: const [],
       selectedLeftIndex: null,
       selectedRightIndex: null,
       isGroupFinished: false,
@@ -194,205 +199,250 @@ class MatchingController extends Notifier<MatchingState> {
     );
 
     try {
-      await generateInitialPairs();
-      state = state.copyWith(isLoading: false);
+      _attemptCountByKanaId.clear();
+      _wrongCountByKanaId.clear();
+
+      final split = _buildInitialPairs(groupItems);
+      final activePairs = split.activePairs;
+      final remaining = split.remainingItems;
+
+      if (activePairs.isEmpty && remaining.isEmpty) {
+        await startNextGroup();
+        return;
+      }
+
+      final rightOptions = _buildShuffledRightOptions(activePairs);
+
+      state = state.copyWith(
+        isLoading: false,
+        activePairs: activePairs,
+        remainingItems: remaining,
+        rightOptions: rightOptions,
+        selectedLeftIndex: null,
+        selectedRightIndex: null,
+        isGroupFinished: false,
+        error: null,
+      );
     } catch (e, stackTrace) {
       logger.error('生成 Matching 题目失败', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// 生成初始 activePool（4 对）
-  Future<void> generateInitialPairs() async {
-    final remaining = List<ReviewKanaItem>.from(state.remaining);
-    final active = <MatchingPair>[];
-
-    while (active.length < _maxActivePairs && remaining.isNotEmpty) {
-      final item = remaining.removeAt(0);
-      final pair = await generatePairForItem(item);
-      active.add(pair);
-    }
-
-    state = state.copyWith(activePairs: active, remaining: remaining);
-  }
-
-  /// 为某个 item 生成 MatchingPair（含正确项与干扰项）
-  ///
-  /// 题型定义：
-  /// - recall：左侧显示假名，右侧选罗马音
-  /// - audio：左侧存放音频文件名/Key（UI 会负责拼接为 assets 路径并播放），右侧选假名
-  /// - switchMode：左侧平假名，右侧选对应片假名
-  Future<MatchingPair> generatePairForItem(ReviewKanaItem item) async {
-    final allKana = await _getAllKanaLetters();
-    switch (item.questionType) {
-      case ReviewQuestionType.recall:
-        final left = _kanaDisplay(item.kanaLetter);
-        final correct = item.kanaLetter.romaji ?? '';
-        final distractors = _pickRecallDistractors(
-          item.kanaLetter,
-          allKana,
-          correct,
-        );
-        final options = _shuffleOptions(correct, distractors);
-        return MatchingPair(
-          item: item,
-          left: left,
-          rightCorrect: correct,
-          rightOptions: options,
-        );
-      case ReviewQuestionType.audio:
-        final left = item.audioFilename ?? '';
-        final preferKatakana =
-            item.kanaLetter.hiragana == null &&
-            item.kanaLetter.katakana != null;
-        final correct = _kanaDisplay(
-          item.kanaLetter,
-          preferKatakana: preferKatakana,
-        );
-        final distractors = _pickAudioDistractors(
-          item.kanaLetter,
-          allKana,
-          correct,
-          preferKatakana: preferKatakana,
-        );
-        final options = _shuffleOptions(correct, distractors);
-        return MatchingPair(
-          item: item,
-          left: left,
-          rightCorrect: correct,
-          rightOptions: options,
-        );
-      case ReviewQuestionType.switchMode:
-        final left = item.kanaLetter.hiragana ?? '';
-        final correct = item.kanaLetter.katakana ?? '';
-        final distractors = _pickSwitchModeDistractors(
-          item.kanaLetter,
-          allKana,
-          correct,
-        );
-        final options = _shuffleOptions(correct, distractors);
-        return MatchingPair(
-          item: item,
-          left: left,
-          rightCorrect: correct,
-          rightOptions: options,
-        );
-    }
-  }
-
-  /// 用户点击左侧
-  ///
-  /// 只记录「当前选中的左侧 index」，并清空右侧选择（等待用户重新选择右侧项）。
-  void selectLeft(int index) {
+  /// 选择左侧配对项（允许先选左或先选右）。
+  Future<void> selectLeft(int index) async {
+    if (_isResolvingSelection) return;
     if (index < 0 || index >= state.activePairs.length) return;
-    state = state.copyWith(
-      selectedLeftIndex: index,
-      selectedRightIndex: null,
-      error: null,
-    );
+    if (state.activePairs[index].isMatched) return;
+
+    final next = state.selectedLeftIndex == index ? null : index;
+    state = state.copyWith(selectedLeftIndex: next, error: null);
+    await _tryResolveSelection();
   }
 
-  /// 用户点击右侧
-  ///
-  /// 流程：
-  /// 1) 必须先选中左侧（selectedLeftIndex != null）
-  /// 2) 为该 Pair 增加 attemptCount
-  /// 3) 若匹配正确：进入 [handleMatchSuccess]
-  /// 4) 若匹配错误：增加 wrongCount + 记录右侧选中 index（用于 UI 高亮）
-  Future<void> selectRight(int rightIndex, String selectedValue) async {
-    final leftIndex = state.selectedLeftIndex;
-    if (leftIndex == null || leftIndex < 0) return;
-    if (leftIndex >= state.activePairs.length) return;
-    final active = List<MatchingPair>.from(state.activePairs);
-    final pair = active[leftIndex];
-    if (rightIndex < 0) return;
-    if (selectedValue.isEmpty) return;
+  /// 选择右侧选项（允许先选左或先选右）。
+  Future<void> selectRight(int rightIndex) async {
+    if (_isResolvingSelection) return;
+    if (rightIndex < 0 || rightIndex >= state.rightOptions.length) return;
 
-    final updatedPair = pair.copyWith(attemptCount: pair.attemptCount + 1);
-    active[leftIndex] = updatedPair;
-    state = state.copyWith(activePairs: active);
+    final option = state.rightOptions[rightIndex];
+    if (option.pairIndex < 0 || option.pairIndex >= state.activePairs.length) {
+      return;
+    }
+    if (state.activePairs[option.pairIndex].isMatched) return;
 
-    final isCorrect = selectedValue == updatedPair.rightCorrect;
-    if (isCorrect) {
-      await handleMatchSuccess(leftIndex);
-    } else {
-      final wrongUpdated = updatedPair.copyWith(
-        wrongCount: updatedPair.wrongCount + 1,
-      );
-      final nextActive = List<MatchingPair>.from(state.activePairs);
-      if (leftIndex < nextActive.length) {
-        nextActive[leftIndex] = wrongUpdated;
-        state = state.copyWith(activePairs: nextActive);
+    final next = state.selectedRightIndex == rightIndex ? null : rightIndex;
+    state = state.copyWith(selectedRightIndex: next, error: null);
+    await _tryResolveSelection();
+  }
+
+  Future<void> _tryResolveSelection() async {
+    if (_isResolvingSelection) return;
+
+    final selectedLeftIndex = state.selectedLeftIndex;
+    final selectedRightIndex = state.selectedRightIndex;
+    if (selectedLeftIndex == null || selectedRightIndex == null) return;
+
+    if (selectedLeftIndex < 0 ||
+        selectedLeftIndex >= state.activePairs.length) {
+      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
+      return;
+    }
+    if (selectedRightIndex < 0 ||
+        selectedRightIndex >= state.rightOptions.length) {
+      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
+      return;
+    }
+
+    final rightPairIndex = state.rightOptions[selectedRightIndex].pairIndex;
+    if (rightPairIndex < 0 || rightPairIndex >= state.activePairs.length) {
+      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
+      return;
+    }
+
+    final pair = state.activePairs[selectedLeftIndex];
+    if (pair.isMatched) {
+      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
+      return;
+    }
+
+    final kanaId = pair.item.kanaLetter.id;
+    final attemptCount = (_attemptCountByKanaId[kanaId] ?? 0) + 1;
+    _attemptCountByKanaId[kanaId] = attemptCount;
+
+    // 关键判定逻辑：左侧 index 必须等于右侧选项的 pairIndex。
+    final isCorrect = selectedLeftIndex == rightPairIndex;
+    if (!isCorrect) {
+      _wrongCountByKanaId[kanaId] = (_wrongCountByKanaId[kanaId] ?? 0) + 1;
+      _isResolvingSelection = true;
+      try {
+        await Future.delayed(const Duration(milliseconds: 420));
+        state = state.copyWith(
+          selectedLeftIndex: null,
+          selectedRightIndex: null,
+          error: null,
+        );
+      } finally {
+        _isResolvingSelection = false;
       }
-      await handleMatchFailure(leftIndex, rightIndex);
+      return;
+    }
+
+    _isResolvingSelection = true;
+    try {
+      await _handleCorrectMatch(
+        pairIndex: selectedLeftIndex,
+        pair: pair,
+        attemptCount: attemptCount,
+      );
+    } catch (e, stackTrace) {
+      logger.error('处理配对成功失败', e, stackTrace);
+      state = state.copyWith(error: e.toString());
+    } finally {
+      _isResolvingSelection = false;
     }
   }
 
-  /// 处理配对成功逻辑
-  ///
-  /// - 将错误次数/尝试次数映射为 rating（1/2/3）
-  /// - 写入复习结果到学习进度（kana_learning_state）
-  /// - 写入复习日志（kana_logs）
-  /// - 从 activePairs 移除已完成的 Pair，并触发补位/组完成检查
-  Future<void> handleMatchSuccess(int leftIndex) async {
-    final active = List<MatchingPair>.from(state.activePairs);
-    if (leftIndex < 0 || leftIndex >= active.length) return;
-    final pair = active[leftIndex];
-    final rating = _calculateRating(pair.wrongCount, pair.attemptCount);
-    await _onPairRated(pair, rating);
-    active.removeAt(leftIndex);
+  Future<void> _handleCorrectMatch({
+    required int pairIndex,
+    required MatchingPair pair,
+    required int attemptCount,
+  }) async {
+    final kanaId = pair.item.kanaLetter.id;
+    final wrongCount = _wrongCountByKanaId[kanaId] ?? 0;
+    final rating = _calculateRating(wrongCount, attemptCount);
+
+    await _onItemRated(pair.item, rating);
+
+    _attemptCountByKanaId.remove(kanaId);
+    _wrongCountByKanaId.remove(kanaId);
+
+    final activePairs = List<MatchingPair>.from(state.activePairs);
+    if (pairIndex < 0 || pairIndex >= activePairs.length) return;
+
+    final remaining = List<ReviewKanaItem>.from(state.remainingItems);
+
+    // remaining 非空：移除该 pair，并从 remaining 补 1 对，右侧整体重新 shuffle。
+    if (remaining.isNotEmpty) {
+      activePairs.removeAt(pairIndex);
+      final nextItem = remaining.removeAt(0);
+      activePairs.insert(pairIndex, _pairForItem(nextItem));
+
+      state = state.copyWith(
+        activePairs: activePairs,
+        remainingItems: remaining,
+        rightOptions: _buildShuffledRightOptions(activePairs),
+        selectedLeftIndex: null,
+        selectedRightIndex: null,
+        error: null,
+      );
+      return;
+    }
+
+    // remaining 为空：标记该 pair 为 isMatched，不移除，不补充。
+    final current = activePairs[pairIndex];
+    activePairs[pairIndex] = MatchingPair(
+      item: current.item,
+      left: current.left,
+      right: current.right,
+      isMatched: true,
+    );
 
     state = state.copyWith(
-      activePairs: active,
+      activePairs: activePairs,
       selectedLeftIndex: null,
       selectedRightIndex: null,
       error: null,
     );
 
-    await refillActivePairs();
-    await checkGroupFinished();
-  }
-
-  /// 处理配对失败逻辑
-  ///
-  /// 仅写入选择状态，UI 可据此展示错误高亮/震动等反馈。
-  Future<void> handleMatchFailure(int leftIndex, int rightIndex) async {
-    state = state.copyWith(
-      selectedLeftIndex: leftIndex,
-      selectedRightIndex: rightIndex,
-    );
-  }
-
-  /// 补位逻辑：加入新的 pair
-  ///
-  /// 当 activePairs 少于 [_maxActivePairs] 时，从 remaining 取出新的 item 生成 pair 补齐。
-  Future<void> refillActivePairs() async {
-    final active = List<MatchingPair>.from(state.activePairs);
-    final remaining = List<ReviewKanaItem>.from(state.remaining);
-
-    while (active.length < _maxActivePairs && remaining.isNotEmpty) {
-      final item = remaining.removeAt(0);
-      final pair = await generatePairForItem(item);
-      active.add(pair);
-    }
-
-    state = state.copyWith(
-      activePairs: active,
-      remaining: remaining,
-      selectedLeftIndex: null,
-      selectedRightIndex: null,
-    );
-  }
-
-  /// 检查该组是否完成
-  ///
-  /// 组完成条件：remaining 与 activePairs 均为空。
-  /// 达成后会标记 isGroupFinished 并自动进入下一题型组。
-  Future<void> checkGroupFinished() async {
-    if (state.remaining.isEmpty && state.activePairs.isEmpty) {
+    // remaining 为空且全部 isMatched：本组结束。
+    if (remaining.isEmpty && activePairs.every((p) => p.isMatched)) {
       state = state.copyWith(isGroupFinished: true);
       await startNextGroup();
     }
+  }
+
+  ({List<MatchingPair> activePairs, List<ReviewKanaItem> remainingItems})
+  _buildInitialPairs(List<ReviewKanaItem> groupItems) {
+    final activePairs = <MatchingPair>[];
+    final remaining = <ReviewKanaItem>[];
+
+    for (final item in groupItems) {
+      final pair = _pairForItem(item);
+      final left = pair.left.trim();
+      final right = pair.right.trim();
+      final leftOk =
+          item.questionType == ReviewQuestionType.audio || left.isNotEmpty;
+
+      if (!leftOk || right.isEmpty) {
+        logger.warning(
+          '复习条目缺少配对内容，跳过: kanaId=${item.kanaLetter.id} type=${item.questionType.name}',
+        );
+        continue;
+      }
+
+      if (activePairs.length < _windowSize) {
+        activePairs.add(pair);
+      } else {
+        remaining.add(item);
+      }
+    }
+
+    if (activePairs.isEmpty) {
+      return (activePairs: const [], remainingItems: const []);
+    }
+
+    // 不足 4 对时补齐占位（标记为已完成，避免影响实际复习逻辑）。
+    while (activePairs.length < _windowSize) {
+      activePairs.add(
+        MatchingPair(
+          item: activePairs.first.item,
+          left: '',
+          right: '',
+          isMatched: true,
+        ),
+      );
+    }
+
+    return (activePairs: activePairs, remainingItems: remaining);
+  }
+
+  MatchingPair _pairForItem(ReviewKanaItem item) {
+    return MatchingPair(
+      item: item,
+      left: _leftValueForItem(item),
+      right: _rightValueForItem(item),
+      isMatched: false,
+    );
+  }
+
+  List<RightOption> _buildShuffledRightOptions(List<MatchingPair> activePairs) {
+    final options = <RightOption>[
+      for (var i = 0; i < activePairs.length; i++)
+        RightOption(pairIndex: i, value: activePairs[i].right),
+    ];
+    options.shuffle();
+    return options;
   }
 
   /// 进入下一题型组
@@ -462,22 +512,19 @@ class MatchingController extends Notifier<MatchingState> {
   /// - 清空题目与剩余队列
   /// - resetCurrentQuestionType=true（避免 UI 因 null/旧值判断异常）
   Future<void> finishAll() async {
+    _attemptCountByKanaId.clear();
+    _wrongCountByKanaId.clear();
     state = state.copyWith(
       isLoading: false,
       isAllFinished: true,
       isGroupFinished: true,
       activePairs: const [],
-      remaining: const [],
+      remainingItems: const [],
+      rightOptions: const [],
       resetCurrentQuestionType: true,
       selectedLeftIndex: null,
       selectedRightIndex: null,
     );
-  }
-
-  /// 获取全量假名集合（用于干扰项生成），并做内存缓存。
-  Future<List<KanaLetter>> _getAllKanaLetters() async {
-    _allKanaCache ??= await repo.getAllKanaLetters();
-    return _allKanaCache!;
   }
 
   /// 将「待复习学习进度记录」组装为 UI 出题所需的 [ReviewKanaItem] 列表。
@@ -593,109 +640,40 @@ class MatchingController extends Notifier<MatchingState> {
     return letter.hiragana ?? letter.katakana ?? '';
   }
 
-  /// 将正确项与干扰项组装成右侧选项列表并随机打乱。
-  List<String> _shuffleOptions(String correct, List<String> distractors) {
-    final options = <String>[
-      ...distractors.where((d) => d.isNotEmpty).take(_maxDistractors),
-      correct,
-    ];
-    options.removeWhere((option) => option.isEmpty);
-    options.shuffle();
-    return options;
+  String _leftValueForItem(ReviewKanaItem item) {
+    switch (item.questionType) {
+      case ReviewQuestionType.audio:
+        return '';
+      case ReviewQuestionType.recall:
+        return _kanaDisplay(item.kanaLetter);
+      case ReviewQuestionType.switchMode:
+        return _kanaDisplay(item.kanaLetter);
+    }
   }
 
-  List<String> _pickRecallDistractors(
-    KanaLetter target,
-    List<KanaLetter> allKana,
-    String correct,
-  ) {
-    final result = <String>[];
-    void addCandidates(Iterable<KanaLetter> candidates) {
-      for (final letter in candidates) {
-        final option = letter.romaji ?? '';
-        if (letter.id == target.id) continue;
-        if (option.isEmpty || option == correct) continue;
-        if (result.contains(option)) continue;
-        result.add(option);
-        if (result.length >= _maxDistractors) return;
-      }
+  String _rightValueForItem(ReviewKanaItem item) {
+    switch (item.questionType) {
+      case ReviewQuestionType.recall:
+        return item.kanaLetter.romaji ?? '';
+      case ReviewQuestionType.audio:
+        final preferKatakana =
+            item.kanaLetter.hiragana == null &&
+            item.kanaLetter.katakana != null;
+        return _kanaDisplay(item.kanaLetter, preferKatakana: preferKatakana);
+      case ReviewQuestionType.switchMode:
+        final hiragana = item.kanaLetter.hiragana;
+        final katakana = item.kanaLetter.katakana;
+        if (hiragana != null &&
+            hiragana.isNotEmpty &&
+            katakana != null &&
+            katakana.isNotEmpty) {
+          return katakana;
+        }
+        return katakana ?? hiragana ?? '';
     }
-
-    if (target.kanaGroup != null) {
-      addCandidates(
-        allKana.where((letter) => letter.kanaGroup == target.kanaGroup),
-      );
-    }
-    if (result.length < _maxDistractors && target.type != null) {
-      addCandidates(allKana.where((letter) => letter.type == target.type));
-    }
-    if (result.length < _maxDistractors) {
-      addCandidates(allKana);
-    }
-    return result.take(_maxDistractors).toList();
   }
 
-  List<String> _pickAudioDistractors(
-    KanaLetter target,
-    List<KanaLetter> allKana,
-    String correct, {
-    bool preferKatakana = false,
-  }) {
-    final result = <String>[];
-    void addCandidates(Iterable<KanaLetter> candidates) {
-      for (final letter in candidates) {
-        if (letter.id == target.id) continue;
-        final option = _kanaDisplay(letter, preferKatakana: preferKatakana);
-        if (option.isEmpty || option == correct) continue;
-        if (result.contains(option)) continue;
-        result.add(option);
-        if (result.length >= _maxDistractors) return;
-      }
-    }
-
-    if (target.kanaGroup != null) {
-      addCandidates(
-        allKana.where((letter) => letter.kanaGroup == target.kanaGroup),
-      );
-    }
-    if (result.length < _maxDistractors && target.type != null) {
-      addCandidates(allKana.where((letter) => letter.type == target.type));
-    }
-    if (result.length < _maxDistractors) {
-      addCandidates(allKana);
-    }
-    return result.take(_maxDistractors).toList();
-  }
-
-  List<String> _pickSwitchModeDistractors(
-    KanaLetter target,
-    List<KanaLetter> allKana,
-    String correct,
-  ) {
-    final result = <String>[];
-    void addCandidates(Iterable<KanaLetter> candidates) {
-      for (final letter in candidates) {
-        if (letter.id == target.id) continue;
-        final option = letter.katakana ?? '';
-        if (option.isEmpty || option == correct) continue;
-        if (result.contains(option)) continue;
-        result.add(option);
-        if (result.length >= _maxDistractors) return;
-      }
-    }
-
-    if (target.kanaGroup != null) {
-      addCandidates(
-        allKana.where((letter) => letter.kanaGroup == target.kanaGroup),
-      );
-    }
-    if (result.length < _maxDistractors) {
-      addCandidates(allKana);
-    }
-    return result.take(_maxDistractors).toList();
-  }
-
-  /// 将一次 Pair 的表现映射为 SRS rating（1/2/3）。
+  /// 将一次题目的表现映射为 SRS rating（1/2/3）。
   ///
   /// 规则：
   /// - 0 次尝试（理论上不会发生）：按中等（2）处理
@@ -709,20 +687,20 @@ class MatchingController extends Notifier<MatchingState> {
     return 1;
   }
 
-  /// 在用户完成一个 Pair 后，将结果落库（更新学习进度 + 追加日志）。
-  Future<void> _onPairRated(MatchingPair pair, int rating) async {
+  /// 在用户完成一个题目后，将结果落库（更新学习进度 + 追加日志）。
+  Future<void> _onItemRated(ReviewKanaItem item, int rating) async {
     final user = await ref.read(activeUserProvider.future);
     final algorithm = _extractAlgorithm(user);
     final learningState = await repo.getKanaLearningState(
       user.id,
-      pair.item.kanaLetter.id,
+      item.kanaLetter.id,
     );
     if (learningState == null) return;
     final srs = _computeSrsResult(learningState, rating, algorithm);
 
     await repo.updateKanaReviewResult(
       userId: user.id,
-      kanaId: pair.item.kanaLetter.id,
+      kanaId: item.kanaLetter.id,
       rating: rating,
       newInterval: srs.newInterval,
       newEaseFactor: srs.newEaseFactor,
@@ -731,7 +709,7 @@ class MatchingController extends Notifier<MatchingState> {
 
     await repo.addKanaLogQuick(
       userId: user.id,
-      kanaId: pair.item.kanaLetter.id,
+      kanaId: item.kanaLetter.id,
       logType: KanaLogType.review,
       rating: rating,
       algorithm: algorithm,
@@ -740,7 +718,7 @@ class MatchingController extends Notifier<MatchingState> {
       easeFactorAfter: srs.newEaseFactor,
       fsrsStabilityAfter: srs.newStability,
       fsrsDifficultyAfter: srs.newDifficulty,
-      questionType: pair.item.questionType.name,
+      questionType: item.questionType.name,
     );
   }
 

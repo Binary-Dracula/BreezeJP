@@ -1,9 +1,31 @@
 import 'package:flutter/foundation.dart';
 import 'review_kana_item.dart';
-import 'matching_pair.dart'; // 若需要 ReviewKanaItem
+
+class MatchingPair {
+  ReviewKanaItem item;
+  String left;
+  String right;
+  bool isMatched;
+
+  MatchingPair({
+    required this.item,
+    required this.left,
+    required this.right,
+    this.isMatched = false,
+  });
+}
+
+class RightOption {
+  int pairIndex;
+  String value;
+
+  RightOption({required this.pairIndex, required this.value});
+}
 
 @immutable
 class MatchingState {
+  static const Object _unset = Object();
+
   final bool isLoading;
 
   /// 是否为空复习态（无待复习数据）
@@ -12,16 +34,25 @@ class MatchingState {
   /// 当前题型类型：recall / audio / switchMode
   final ReviewQuestionType? currentQuestionType;
 
-  /// 当前组（remaining items）
-  final List<ReviewKanaItem> remaining;
-
-  /// 当前屏幕显示的 4 对题目
+  /// 当前屏幕展示的 4 个一一对应配对（4×4 Pair Window）
+  ///
+  /// - activePairs.length 始终为 4
+  /// - 当 remainingItems 为空时，通过 isMatched 标记完成情况
   final List<MatchingPair> activePairs;
 
-  /// 用户选中的左侧项 index（null 表示未选）
+  /// 当前组剩余未上屏的条目
+  final List<ReviewKanaItem> remainingItems;
+
+  /// 右侧固定 4 个选项（乱序展示，但仍一一对应 activePairs）
+  ///
+  /// - rightOptions.length 始终为 4
+  /// - 通过 RightOption.pairIndex 指向 activePairs
+  final List<RightOption> rightOptions;
+
+  /// 用户选中的左侧 index（null 表示未选/已重置）
   final int? selectedLeftIndex;
 
-  /// 用户选中的右侧项 index（null 表示未选）
+  /// 用户选中的右侧项 index（null 表示未选/已重置）
   final int? selectedRightIndex;
 
   /// 本组是否完成
@@ -36,8 +67,9 @@ class MatchingState {
     this.isLoading = false,
     this.isEmpty = false,
     this.currentQuestionType,
-    this.remaining = const [],
     this.activePairs = const [],
+    this.remainingItems = const [],
+    this.rightOptions = const [],
     this.selectedLeftIndex,
     this.selectedRightIndex,
     this.isGroupFinished = false,
@@ -49,10 +81,11 @@ class MatchingState {
     bool? isLoading,
     ReviewQuestionType? currentQuestionType,
     bool resetCurrentQuestionType = false,
-    List<ReviewKanaItem>? remaining,
     List<MatchingPair>? activePairs,
-    int? selectedLeftIndex,
-    int? selectedRightIndex,
+    List<ReviewKanaItem>? remainingItems,
+    List<RightOption>? rightOptions,
+    Object? selectedLeftIndex = _unset,
+    Object? selectedRightIndex = _unset,
     bool? isGroupFinished,
     bool? isAllFinished,
     bool? isEmpty,
@@ -63,10 +96,15 @@ class MatchingState {
       currentQuestionType: resetCurrentQuestionType
           ? null
           : (currentQuestionType ?? this.currentQuestionType),
-      remaining: remaining ?? this.remaining,
       activePairs: activePairs ?? this.activePairs,
-      selectedLeftIndex: selectedLeftIndex,
-      selectedRightIndex: selectedRightIndex,
+      remainingItems: remainingItems ?? this.remainingItems,
+      rightOptions: rightOptions ?? this.rightOptions,
+      selectedLeftIndex: selectedLeftIndex == _unset
+          ? this.selectedLeftIndex
+          : selectedLeftIndex as int?,
+      selectedRightIndex: selectedRightIndex == _unset
+          ? this.selectedRightIndex
+          : selectedRightIndex as int?,
       isGroupFinished: isGroupFinished ?? this.isGroupFinished,
       isAllFinished: isAllFinished ?? this.isAllFinished,
       isEmpty: isEmpty ?? this.isEmpty,

@@ -6,7 +6,6 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../services/audio_service_provider.dart';
 import '../controller/matching_controller.dart';
 import '../state/review_kana_item.dart';
-import '../state/matching_pair.dart';
 import '../state/matching_state.dart';
 
 class MatchingPage extends ConsumerStatefulWidget {
@@ -17,8 +16,6 @@ class MatchingPage extends ConsumerStatefulWidget {
 }
 
 class _MatchingPageState extends ConsumerState<MatchingPage> {
-  int? _pendingRightIndex;
-
   @override
   void initState() {
     super.initState();
@@ -31,13 +28,7 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(matchingControllerProvider);
-    final options = _buildUniqueOptions(state.activePairs);
-    final pendingRightIndex =
-        (_pendingRightIndex != null &&
-            _pendingRightIndex! >= 0 &&
-            _pendingRightIndex! < options.length)
-        ? _pendingRightIndex
-        : null;
+    final options = state.rightOptions;
 
     if (state.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -156,10 +147,10 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
                   child: _LeftColumn(
                     state: state,
                     ref: ref,
-                    options: options,
-                    pendingRightIndex: pendingRightIndex,
                     onTap: (index) {
-                      _handleLeftTap(index, options);
+                      ref
+                          .read(matchingControllerProvider.notifier)
+                          .selectLeft(index);
                     },
                   ),
                 ),
@@ -168,10 +159,11 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
                 Expanded(
                   child: _RightColumn(
                     state: state,
-                    pendingRightIndex: pendingRightIndex,
                     options: options,
                     onTap: (index) {
-                      _handleRightTap(index, state, options);
+                      ref
+                          .read(matchingControllerProvider.notifier)
+                          .selectRight(index);
                     },
                   ),
                 ),
@@ -187,252 +179,234 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
       ),
     );
   }
-
-  void _handleLeftTap(int index, List<String> options) {
-    ref.read(matchingControllerProvider.notifier).selectLeft(index);
-    final pending =
-        (_pendingRightIndex != null &&
-            _pendingRightIndex! >= 0 &&
-            _pendingRightIndex! < options.length)
-        ? _pendingRightIndex
-        : null;
-    if (pending != null) {
-      setState(() {
-        _pendingRightIndex = null;
-      });
-      ref
-          .read(matchingControllerProvider.notifier)
-          .selectRight(pending, options[pending]);
-    }
-  }
-
-  void _handleRightTap(int index, MatchingState state, List<String> options) {
-    final hasLeftSelected = state.selectedLeftIndex != null;
-    if (hasLeftSelected) {
-      setState(() {
-        _pendingRightIndex = null;
-      });
-      ref
-          .read(matchingControllerProvider.notifier)
-          .selectRight(index, options[index]);
-    } else {
-      setState(() {
-        _pendingRightIndex = index;
-      });
-    }
-  }
 }
 
 class _LeftColumn extends StatelessWidget {
   final MatchingState state;
   final WidgetRef ref;
-  final List<String> options;
-  final int? pendingRightIndex;
   final void Function(int index) onTap;
 
   const _LeftColumn({
     required this.state,
     required this.ref,
-    required this.options,
-    required this.pendingRightIndex,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final pairs = state.activePairs;
-    final selectedRight = state.selectedRightIndex ?? pendingRightIndex;
-    final selectedOption =
-        (selectedRight != null &&
-            selectedRight >= 0 &&
-            selectedRight < options.length)
-        ? options[selectedRight]
-        : null;
+    if (pairs.isEmpty) return const SizedBox.shrink();
 
-    return ListView.builder(
-      itemCount: pairs.length,
-      itemBuilder: (context, index) {
+    final selectedLeftIndex = state.selectedLeftIndex;
+    final selectedRightIndex = state.selectedRightIndex;
+    final hasBothSelected =
+        selectedLeftIndex != null && selectedRightIndex != null;
+    final isCorrect =
+        selectedLeftIndex != null &&
+        selectedRightIndex != null &&
+        selectedRightIndex >= 0 &&
+        selectedRightIndex < state.rightOptions.length &&
+        selectedLeftIndex == state.rightOptions[selectedRightIndex].pairIndex;
+
+    return Column(
+      children: List.generate(pairs.length, (index) {
         final pair = pairs[index];
-        final selected = state.selectedLeftIndex == index;
-        final isFailure =
-            selected &&
-            selectedOption != null &&
-            selectedOption != pair.rightCorrect;
-        final bgColor = isFailure
-            ? Colors.red.shade100
-            : selected
+        final item = pair.item;
+        final isMatched = pair.isMatched;
+        final isSelected = selectedLeftIndex == index;
+        final isFailure = hasBothSelected && !isCorrect && isSelected;
+        final isCorrectSelected = hasBothSelected && isCorrect && isSelected;
+
+        final bgColor = isMatched
+            ? Colors.green.shade200
+            : isCorrectSelected
+            ? Colors.green.shade200
+            : isFailure
+            ? Colors.red.shade200
+            : isSelected
             ? Colors.blue.shade100
             : Colors.grey.shade200;
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.95, end: 1).animate(animation),
-              child: child,
-            ),
-          ),
-          child: TweenAnimationBuilder<double>(
-            key: ValueKey(
-              'left-${pair.item.kanaLetter.id}'
-              '-${pair.item.questionType.name}',
-            ),
-            tween: Tween<double>(begin: 0, end: isFailure ? 1 : 0),
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeInOut,
-            builder: (context, value, child) {
-              final dx = isFailure ? math.sin(value * math.pi * 6) * 6 : 0.0;
-              return Transform.translate(offset: Offset(dx, 0), child: child);
-            },
-            child: pair.item.questionType == ReviewQuestionType.audio
-                ? GestureDetector(
-                    onTap: () {
-                      onTap(index);
-                      if (pair.left.isNotEmpty) {
-                        ref
-                            .read(audioServiceProvider)
-                            .playAudio(_normalizeKanaAudioPath(pair.left));
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.all(8),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: selected
-                              ? Colors.blueAccent
-                              : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.volume_up, size: 28),
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.95, end: 1).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey(
+                  'left-${item.kanaLetter.id}'
+                  '-${item.questionType.name}',
+                ),
+                tween: Tween<double>(begin: 0, end: isFailure ? 1 : 0),
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeInOut,
+                builder: (context, value, child) {
+                  final dx = isFailure
+                      ? math.sin(value * math.pi * 6) * 6
+                      : 0.0;
+                  return Transform.translate(
+                    offset: Offset(dx, 0),
+                    child: child,
+                  );
+                },
+                child: GestureDetector(
+                  onTap: isMatched
+                      ? null
+                      : () {
+                          onTap(index);
+                          if (item.questionType == ReviewQuestionType.audio) {
+                            final raw = item.audioFilename ?? '';
+                            if (raw.trim().isNotEmpty) {
+                              ref
+                                  .read(audioServiceProvider)
+                                  .playAudio(_normalizeKanaAudioPath(raw));
+                            }
+                          }
+                        },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isMatched
+                            ? Colors.green
+                            : isSelected
+                            ? Colors.blueAccent
+                            : Colors.transparent,
+                        width: 2,
                       ),
                     ),
-                  )
-                : GestureDetector(
-                    onTap: () => onTap(index),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.all(8),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: selected
-                              ? Colors.blueAccent
-                              : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          pair.left,
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                      ),
+                    child: Center(
+                      child: item.questionType == ReviewQuestionType.audio
+                          ? const Icon(Icons.volume_up, size: 28)
+                          : Text(
+                              pair.left,
+                              style: const TextStyle(fontSize: 24),
+                            ),
                     ),
                   ),
+                ),
+              ),
+            ),
           ),
         );
-      },
+      }),
     );
   }
 }
 
 class _RightColumn extends StatelessWidget {
   final MatchingState state;
-  final int? pendingRightIndex;
-  final List<String> options;
+  final List<RightOption> options;
   final void Function(int index) onTap;
 
   const _RightColumn({
     required this.state,
-    required this.pendingRightIndex,
     required this.options,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final selectedLeft = state.selectedLeftIndex;
-    final selectedPair =
-        (selectedLeft != null &&
-            selectedLeft >= 0 &&
-            selectedLeft < state.activePairs.length)
-        ? state.activePairs[selectedLeft]
-        : null;
-    final selectedRight = state.selectedRightIndex ?? pendingRightIndex;
+    if (options.isEmpty) return const SizedBox.shrink();
 
-    return ListView.builder(
-      itemCount: options.length,
-      itemBuilder: (context, index) {
-        final value = options[index];
-        final selected = selectedRight == index;
-        final isFailure =
-            selected &&
-            selectedPair != null &&
-            selectedPair.rightCorrect != value;
-        final isCorrect =
-            selected &&
-            selectedPair != null &&
-            selectedPair.rightCorrect == value;
-        final bgColor = isCorrect
+    final selectedLeftIndex = state.selectedLeftIndex;
+    final selectedRightIndex = state.selectedRightIndex;
+    final hasBothSelected =
+        selectedLeftIndex != null && selectedRightIndex != null;
+    final isCorrect =
+        selectedLeftIndex != null &&
+        selectedRightIndex != null &&
+        selectedRightIndex >= 0 &&
+        selectedRightIndex < state.rightOptions.length &&
+        selectedLeftIndex == state.rightOptions[selectedRightIndex].pairIndex;
+
+    return Column(
+      children: List.generate(options.length, (index) {
+        final option = options[index];
+        final pairIndex = option.pairIndex;
+        final isMatched =
+            pairIndex >= 0 &&
+            pairIndex < state.activePairs.length &&
+            state.activePairs[pairIndex].isMatched;
+        final isSelected = selectedRightIndex == index;
+        final isFailure = hasBothSelected && !isCorrect && isSelected;
+        final isCorrectSelected = hasBothSelected && isCorrect && isSelected;
+
+        final bgColor = isMatched
+            ? Colors.green.shade200
+            : isCorrectSelected
             ? Colors.green.shade200
             : isFailure
             ? Colors.red.shade200
-            : selected
-            ? Colors.green.shade100
+            : isSelected
+            ? Colors.blue.shade100
             : Colors.grey.shade200;
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
-              child: child,
-            ),
-          ),
-          child: TweenAnimationBuilder<double>(
-            key: ValueKey('right-$value'),
-            tween: Tween<double>(begin: 0, end: isFailure ? 1 : 0),
-            duration: const Duration(milliseconds: 260),
-            builder: (context, val, child) {
-              final dx = isFailure ? math.sin(val * math.pi * 6) * 5 : 0.0;
-              return Transform.translate(offset: Offset(dx, 0), child: child);
-            },
-            child: GestureDetector(
-              onTap: () => onTap(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isCorrect
-                        ? Colors.green
-                        : isFailure
-                        ? Colors.red
-                        : Colors.transparent,
-                    width: 2,
-                  ),
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
+                  child: child,
                 ),
-                child: Center(
-                  child: Text(value, style: const TextStyle(fontSize: 20)),
+              ),
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey('right-${option.value}-$pairIndex'),
+                tween: Tween<double>(begin: 0, end: isFailure ? 1 : 0),
+                duration: const Duration(milliseconds: 260),
+                builder: (context, val, child) {
+                  final dx = isFailure ? math.sin(val * math.pi * 6) * 5 : 0.0;
+                  return Transform.translate(
+                    offset: Offset(dx, 0),
+                    child: child,
+                  );
+                },
+                child: GestureDetector(
+                  onTap: isMatched ? null : () => onTap(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isMatched
+                            ? Colors.green
+                            : isCorrectSelected
+                            ? Colors.green
+                            : isFailure
+                            ? Colors.red
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        option.value,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         );
-      },
+      }),
     );
   }
 }
@@ -488,17 +462,4 @@ String _normalizeKanaAudioPath(String raw) {
   }
 
   return 'assets/audio/kana/$v.mp3';
-}
-
-List<String> _buildUniqueOptions(List<MatchingPair> pairs) {
-  final options = <String>[];
-  final seen = <String>{};
-  for (final pair in pairs) {
-    for (final option in pair.rightOptions) {
-      if (seen.add(option)) {
-        options.add(option);
-      }
-    }
-  }
-  return options;
 }
