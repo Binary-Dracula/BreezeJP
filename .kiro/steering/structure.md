@@ -34,28 +34,117 @@ View（UI） ↔ Controller（业务逻辑） ↔ Repository（CRUD） ↔ Datab
 ```
 lib/
 ├── core/                    # 共享基础能力
-│   ├── algorithm/           # SRS 算法 (SM-2, FSRS)
+│   ├── algorithm/           # SRS 算法实现
+│   │   ├── algorithm_service.dart          # 算法服务接口
+│   │   ├── algorithm_service_provider.dart # Riverpod Provider
+│   │   ├── sm2_algorithm.dart              # SM-2 算法实现
+│   │   ├── fsrs_algorithm.dart             # FSRS 算法实现
+│   │   └── srs_types.dart                  # SRS 类型定义
 │   ├── constants/           # 全局常量
-│   ├── network/             # HTTP 客户端、接口定义
-│   ├── utils/               # 工具（logger、l10n 等）
+│   │   └── app_constants.dart              # 应用常量定义
+│   ├── network/             # 网络层
+│   │   ├── dio_client.dart                 # HTTP 客户端封装
+│   │   ├── api_endpoints.dart              # API 端点定义
+│   │   └── network_info.dart               # 网络状态检查
+│   ├── utils/               # 工具类
+│   │   ├── app_logger.dart                 # 日志工具主入口
+│   │   ├── log_category.dart               # 日志分类定义
+│   │   ├── log_formatter.dart              # 日志格式化器
+│   │   ├── l10n_utils.dart                 # 国际化工具
+│   │   ├── LOGGER_QUICK_REF.md            # 日志使用快速参考
+│   │   └── README.md                       # 工具类说明文档
 │   └── widgets/             # 可复用 UI 组件
+│       ├── custom_ruby_text.dart          # 自定义假名注音组件
+│       └── stroke_order_animator.dart     # 笔顺动画组件
 ├── data/                    # 数据层
-│   ├── db/                  # 数据库单例 (AppDatabase)
+│   ├── db/                  # 数据库层
+│   │   └── app_database.dart               # 数据库单例管理
 │   ├── models/              # 数据模型 (fromMap/toMap)
-│   └── repositories/        # CRUD + providers
-├── features/                # 功能模块（MVVM）
-│   ├── splash/              # ✅ Splash
+│   │   ├── app_state.dart                  # 应用状态模型
+│   │   ├── user.dart                       # 用户模型
+│   │   ├── daily_stat.dart                 # 每日统计模型
+│   │   ├── word.dart                       # 单词基础模型
+│   │   ├── word_detail.dart                # 单词详情模型
+│   │   ├── word_meaning.dart               # 单词释义模型
+│   │   ├── word_audio.dart                 # 单词音频模型
+│   │   ├── word_choice.dart                # 单词选择模型
+│   │   ├── word_with_relation.dart         # 带关联的单词模型
+│   │   ├── example_sentence.dart           # 例句模型
+│   │   ├── example_audio.dart              # 例句音频模型
+│   │   ├── study_word.dart                 # 学习进度模型
+│   │   ├── study_log.dart                  # 学习日志模型
+│   │   ├── kana_letter.dart                # 假名字母模型
+│   │   ├── kana_detail.dart                # 假名详情模型
+│   │   ├── kana_audio.dart                 # 假名音频模型
+│   │   ├── kana_example.dart               # 假名示例模型
+│   │   ├── kana_learning_state.dart        # 假名学习状态模型
+│   │   ├── kana_log.dart                   # 假名学习日志模型
+│   │   └── kana_stroke_order.dart          # 假名笔顺模型
+│   └── repositories/        # 数据仓库层 (CRUD + Providers)
+│       ├── active_user_provider.dart       # 当前用户 Provider
+│       ├── app_state_repository.dart       # 应用状态仓库
+│       ├── app_state_repository_provider.dart
+│       ├── user_repository.dart            # 用户数据仓库
+│       ├── user_repository_provider.dart
+│       ├── daily_stat_repository.dart      # 每日统计仓库
+│       ├── daily_stat_repository_provider.dart
+│       ├── word_repository.dart            # 单词数据仓库
+│       ├── word_repository_provider.dart
+│       ├── study_word_repository.dart      # 学习进度仓库
+│       ├── study_word_repository_provider.dart
+│       ├── study_log_repository.dart       # 学习日志仓库
+│       ├── study_log_repository_provider.dart
+│       ├── kana_repository.dart            # 假名数据仓库
+│       ├── kana_repository_provider.dart
+│       └── example_api_repository.dart     # 例句 API 仓库
+├── debug/                   # 调试工具 (仅开发环境)
+│   ├── controller/          # 调试控制器
+│   │   └── debug_controller.dart
+│   ├── pages/               # 调试页面
+│   │   ├── debug_page.dart                 # 调试主页面
+│   │   └── tests/                          # 调试测试页面
+│   ├── state/               # 调试状态
+│   │   └── debug_state.dart
+│   ├── tools/               # 调试工具
+│   │   └── debug_kana_review_data_generator.dart
+│   └── widgets/             # 调试组件
+│       └── debug_test_tile.dart
+├── features/                # 功能模块 (MVVM 架构)
+│   ├── splash/              # ✅ 启动页面
+│   │   ├── controller/      # 启动逻辑控制器
+│   │   ├── pages/           # 启动页面 UI
+│   │   └── state/           # 启动状态管理
 │   ├── home/                # ✅ 首页 Dashboard
+│   │   ├── controller/      # 主页业务逻辑
+│   │   │   └── home_controller.dart
+│   │   ├── pages/           # 主页 UI 实现
+│   │   │   └── home_page.dart
+│   │   └── state/           # 主页状态定义
+│   │       └── home_state.dart
 │   ├── learn/               # ✅ 单词学习流
-│   ├── kana/                # 🚧 假名学习
-│   ├── review/              # 📋 复习模式
-│   ├── word_detail/         # 📋 单词详情
-│   ├── word_list/           # 📋 单词列表
-│   └── settings/            # 📋 设置
-├── l10n/                    # 国际化
-├── router/                  # go_router 路由
-├── services/                # 横切服务（音频等）
-└── main.dart
+│   │   ├── controller/      # 学习逻辑控制器
+│   │   ├── pages/           # 学习页面 UI
+│   │   ├── state/           # 学习状态管理
+│   │   └── widgets/         # 学习专用组件
+│   └── kana/                # 🚧 假名学习模块
+│       ├── chart/           # 五十音图功能
+│       ├── review/          # 假名复习功能
+│       └── stroke/          # 笔顺练习功能
+├── l10n/                    # 国际化支持
+│   ├── app_localizations.dart              # 国际化主文件
+│   ├── app_localizations_zh.dart           # 中文本地化
+│   └── app_zh.arb                          # 中文资源文件
+├── router/                  # 路由管理
+│   ├── app_router.dart                     # 路由配置
+│   └── app_route_observer.dart             # 路由观察器
+├── services/                # 横切服务
+│   ├── audio_service.dart                  # 音频服务接口
+│   ├── audio_service_provider.dart         # 音频服务 Provider
+│   ├── audio_play_controller.dart          # 音频播放控制器
+│   ├── audio_play_controller_provider.dart # 播放控制器 Provider
+│   ├── audio_play_state.dart               # 音频播放状态
+│   └── README.md                           # 服务层说明文档
+└── main.dart                # 应用入口文件
 ```
 
 **Assets：**
