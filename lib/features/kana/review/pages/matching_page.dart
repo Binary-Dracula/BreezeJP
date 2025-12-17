@@ -171,10 +171,7 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
             ),
           ),
 
-          const SizedBox(height: 12),
-
-          /// 底部按钮区域（用于显示组完成 / 下一组）
-          _BottomArea(state: state, ref: ref),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -408,30 +405,6 @@ class _RightColumn extends StatelessWidget {
         );
       }),
     );
-  }
-}
-
-class _BottomArea extends StatelessWidget {
-  final MatchingState state;
-  final WidgetRef ref;
-
-  const _BottomArea({required this.state, required this.ref});
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.isGroupFinished && !state.isAllFinished) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton(
-          onPressed: () {
-            ref.read(matchingControllerProvider.notifier).startNextGroup();
-          },
-          child: const Text('进入下一组'),
-        ),
-      );
-    }
-
-    return const SizedBox(height: 24);
   }
 }
 
