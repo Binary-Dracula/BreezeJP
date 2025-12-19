@@ -24,21 +24,21 @@ final matchingControllerProvider =
 /// - 复习入口：UI 应调用 [loadReview] 来启动一次复习 Session
 /// - 题型分组：把 [ReviewKanaItem] 按 [ReviewQuestionType] 分为 3 组并按顺序执行
 ///   - `audio` → `switchMode` → `recall`
-/// - 出题模型：4×4 一一对应 Pair Window
-///   - 左右两侧始终各 4 个选项
-///   - 系统内部维护 4 个 [MatchingPair]（一一对应）
+/// - 出题模型：最多 4×4 一一对应 Pair Window
+///   - 左右两侧数量与当前组可出题数量一致（最多 4 个）
+///   - 系统内部维护最多 4 个 [MatchingPair]（一一对应）
 ///   - 右侧仅做乱序显示，但仍一一对应（通过 [RightOption.pairIndex] 指向 activePairs）
 ///
 /// 状态字段约定（详见 [MatchingState]）：
 /// - `isLoading`：表示正在进行异步加载/组装（DB 查询、生成题目等）
 /// - `isEmpty`：表示没有任何待复习数据（空复习态），UI 应展示空状态而非 loading
 /// - `currentQuestionType`：当前正在复习的题型组；为 null 表示尚未开始或已 reset
-/// - `activePairs/remainingItems`：当前组的 Pair Window（activePairs 固定 4）
-/// - `rightOptions`：右侧 4 选项（乱序展示，但仍指向 activePairs）
+/// - `activePairs/remainingItems`：当前组的 Pair Window（activePairs 最多 4）
+/// - `rightOptions`：右侧选项（乱序展示，但仍指向 activePairs）
 /// - `selectedLeftIndex/selectedRightIndex`：用户当前选中项（允许先选左或先选右）
 /// - `isGroupFinished/isAllFinished`：本组完成/全部完成标记
 class MatchingController extends Notifier<MatchingState> {
-  /// 4×4 Pair Window 的固定尺寸。
+  /// 4×4 Pair Window 的最大尺寸。
   static const int _windowSize = 4;
 
   /// Controller 访问数据库的唯一入口：Repository（禁止 View 直接查 DB）。
@@ -174,7 +174,7 @@ class MatchingController extends Notifier<MatchingState> {
   /// 开始一个题型组（例如 recallGroup）
   ///
   /// - 写入当前题型到 state.currentQuestionType
-  /// - 生成 4 对 activePairs（4×4 Pair Window）
+  /// - 生成最多 4 对 activePairs（4×4 Pair Window）
   /// - 右侧仅乱序展示（RightOption.pairIndex 指向 activePairs）
   Future<void> startGroup(
     ReviewQuestionType type,
@@ -410,18 +410,6 @@ class MatchingController extends Notifier<MatchingState> {
 
     if (activePairs.isEmpty) {
       return (activePairs: const [], remainingItems: const []);
-    }
-
-    // 不足 4 对时补齐占位（标记为已完成，避免影响实际复习逻辑）。
-    while (activePairs.length < _windowSize) {
-      activePairs.add(
-        MatchingPair(
-          item: activePairs.first.item,
-          left: '',
-          right: '',
-          isMatched: true,
-        ),
-      );
     }
 
     return (activePairs: activePairs, remainingItems: remaining);

@@ -34,18 +34,18 @@ class MatchingState {
   /// 当前题型类型：recall / audio / switchMode
   final ReviewQuestionType? currentQuestionType;
 
-  /// 当前屏幕展示的 4 个一一对应配对（4×4 Pair Window）
+  /// 当前屏幕展示的一一对应配对（最多 4×4 Pair Window）
   ///
-  /// - activePairs.length 始终为 4
+  /// - activePairs.length <= 4
   /// - 当 remainingItems 为空时，通过 isMatched 标记完成情况
   final List<MatchingPair> activePairs;
 
   /// 当前组剩余未上屏的条目
   final List<ReviewKanaItem> remainingItems;
 
-  /// 右侧固定 4 个选项（乱序展示，但仍一一对应 activePairs）
+  /// 右侧选项（乱序展示，但仍一一对应 activePairs）
   ///
-  /// - rightOptions.length 始终为 4
+  /// - rightOptions.length 与 activePairs.length 一致
   /// - 通过 RightOption.pairIndex 指向 activePairs
   final List<RightOption> rightOptions;
 
