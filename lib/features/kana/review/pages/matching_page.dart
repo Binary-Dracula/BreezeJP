@@ -8,6 +8,9 @@ import '../controller/matching_controller.dart';
 import '../state/review_kana_item.dart';
 import '../state/matching_state.dart';
 
+const double _kOptionHeight = 80;
+const double _kOptionGap = 16;
+
 class MatchingPage extends ConsumerStatefulWidget {
   const MatchingPage({super.key});
 
@@ -205,28 +208,33 @@ class _LeftColumn extends StatelessWidget {
         selectedRightIndex < state.rightOptions.length &&
         selectedLeftIndex == state.rightOptions[selectedRightIndex].pairIndex;
 
-    return Column(
-      children: List.generate(pairs.length, (index) {
-        final pair = pairs[index];
-        final item = pair.item;
-        final isMatched = pair.isMatched;
-        final isSelected = selectedLeftIndex == index;
-        final isFailure = hasBothSelected && !isCorrect && isSelected;
-        final isCorrectSelected = hasBothSelected && isCorrect && isSelected;
+    final children = <Widget>[];
+    for (var index = 0; index < pairs.length; index++) {
+      if (index > 0) {
+        children.add(const SizedBox(height: _kOptionGap));
+      }
+      final pair = pairs[index];
+      final item = pair.item;
+      final isMatched = pair.isMatched;
+      final isSelected = selectedLeftIndex == index;
+      final isFailure = hasBothSelected && !isCorrect && isSelected;
+      final isCorrectSelected = hasBothSelected && isCorrect && isSelected;
 
-        final bgColor = isMatched
-            ? Colors.green.shade200
-            : isCorrectSelected
-            ? Colors.green.shade200
-            : isFailure
-            ? Colors.red.shade200
-            : isSelected
-            ? Colors.blue.shade100
-            : Colors.grey.shade200;
+      final bgColor = isMatched
+          ? Colors.green.shade200
+          : isCorrectSelected
+          ? Colors.green.shade200
+          : isFailure
+          ? Colors.red.shade200
+          : isSelected
+          ? Colors.blue.shade100
+          : Colors.grey.shade200;
 
-        return Expanded(
+      children.add(
+        SizedBox(
+          height: _kOptionHeight,
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               transitionBuilder: (child, animation) => FadeTransition(
@@ -295,8 +303,30 @@ class _LeftColumn extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final contentHeight =
+            pairs.length * _kOptionHeight +
+            (pairs.length > 1 ? (pairs.length - 1) * _kOptionGap : 0);
+        final shouldCenter = contentHeight <= constraints.maxHeight;
+
+        return SingleChildScrollView(
+          physics: shouldCenter ? const NeverScrollableScrollPhysics() : null,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: shouldCenter
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
+              children: children,
+            ),
+          ),
         );
-      }),
+      },
     );
   }
 }
@@ -327,31 +357,36 @@ class _RightColumn extends StatelessWidget {
         selectedRightIndex < state.rightOptions.length &&
         selectedLeftIndex == state.rightOptions[selectedRightIndex].pairIndex;
 
-    return Column(
-      children: List.generate(options.length, (index) {
-        final option = options[index];
-        final pairIndex = option.pairIndex;
-        final isMatched =
-            pairIndex >= 0 &&
-            pairIndex < state.activePairs.length &&
-            state.activePairs[pairIndex].isMatched;
-        final isSelected = selectedRightIndex == index;
-        final isFailure = hasBothSelected && !isCorrect && isSelected;
-        final isCorrectSelected = hasBothSelected && isCorrect && isSelected;
+    final children = <Widget>[];
+    for (var index = 0; index < options.length; index++) {
+      if (index > 0) {
+        children.add(const SizedBox(height: _kOptionGap));
+      }
+      final option = options[index];
+      final pairIndex = option.pairIndex;
+      final isMatched =
+          pairIndex >= 0 &&
+          pairIndex < state.activePairs.length &&
+          state.activePairs[pairIndex].isMatched;
+      final isSelected = selectedRightIndex == index;
+      final isFailure = hasBothSelected && !isCorrect && isSelected;
+      final isCorrectSelected = hasBothSelected && isCorrect && isSelected;
 
-        final bgColor = isMatched
-            ? Colors.green.shade200
-            : isCorrectSelected
-            ? Colors.green.shade200
-            : isFailure
-            ? Colors.red.shade200
-            : isSelected
-            ? Colors.blue.shade100
-            : Colors.grey.shade200;
+      final bgColor = isMatched
+          ? Colors.green.shade200
+          : isCorrectSelected
+          ? Colors.green.shade200
+          : isFailure
+          ? Colors.red.shade200
+          : isSelected
+          ? Colors.blue.shade100
+          : Colors.grey.shade200;
 
-        return Expanded(
+      children.add(
+        SizedBox(
+          height: _kOptionHeight,
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
               transitionBuilder: (child, animation) => FadeTransition(
@@ -402,8 +437,30 @@ class _RightColumn extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final contentHeight =
+            options.length * _kOptionHeight +
+            (options.length > 1 ? (options.length - 1) * _kOptionGap : 0);
+        final shouldCenter = contentHeight <= constraints.maxHeight;
+
+        return SingleChildScrollView(
+          physics: shouldCenter ? const NeverScrollableScrollPhysics() : null,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: shouldCenter
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
+              children: children,
+            ),
+          ),
         );
-      }),
+      },
     );
   }
 }
