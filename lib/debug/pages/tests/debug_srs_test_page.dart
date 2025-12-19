@@ -1,8 +1,7 @@
 import 'package:breeze_jp/core/utils/app_logger.dart';
+import 'package:breeze_jp/debug/tmp/debug_kana_review_tmp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../features/kana/review/controller/matching_controller.dart';
 
 class DebugSrsTestPage extends ConsumerWidget {
   const DebugSrsTestPage({super.key});
@@ -14,8 +13,8 @@ class DebugSrsTestPage extends ConsumerWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            final controller = ref.read(matchingControllerProvider.notifier);
-            final result = await controller.simulateReviewSequence(1, 1, const [
+            final debugTool = ref.read(debugKanaReviewTmpProvider);
+            final result = await debugTool.simulateReviewSequence(1, 1, const [
               2,
               2,
               2,

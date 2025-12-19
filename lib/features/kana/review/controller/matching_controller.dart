@@ -771,60 +771,6 @@ class MatchingController extends Notifier<MatchingState> {
     );
   }
 
-  /// Debug/Test：模拟一串评分序列，并返回最终 learningState 与 logs。
-  ///
-  /// 注意：该方法会直接写入数据库（通过 Repository），仅用于开发测试。
-  Future<Map<String, dynamic>> simulateReviewSequence(
-    int userId,
-    int kanaId,
-    List<int> ratings, {
-    String questionType = 'debug',
-    int? forceAlgorithm,
-  }) async {
-    final activeUser = await ref.read(activeUserProvider.future);
-    final baseAlgorithm = activeUser.id == userId
-        ? _extractAlgorithm(activeUser)
-        : 1;
-    final algorithm = forceAlgorithm ?? baseAlgorithm;
-
-    for (final rating in ratings) {
-      final learningState = await repo.getKanaLearningState(userId, kanaId);
-      if (learningState == null) {
-        throw StateError(
-          'simulateReviewSequence: learningState not found for userId=$userId kanaId=$kanaId',
-        );
-      }
-      final srs = _computeSrsResult(learningState, rating, algorithm);
-
-      await repo.updateKanaReviewResult(
-        userId: userId,
-        kanaId: kanaId,
-        rating: rating,
-        newInterval: srs.newInterval,
-        newEaseFactor: srs.newEaseFactor,
-        nextReviewAt: srs.nextReviewAt,
-      );
-
-      await repo.addKanaLogQuick(
-        userId: userId,
-        kanaId: kanaId,
-        logType: KanaLogType.review,
-        rating: rating,
-        algorithm: algorithm,
-        intervalAfter: srs.newInterval,
-        nextReviewAtAfter: srs.nextReviewAt,
-        easeFactorAfter: srs.newEaseFactor,
-        fsrsStabilityAfter: srs.newStability,
-        fsrsDifficultyAfter: srs.newDifficulty,
-        questionType: questionType,
-      );
-    }
-
-    final finalState = await repo.getKanaLearningState(userId, kanaId);
-    final logs = await repo.getKanaLogs(userId, kanaId);
-    return {'finalState': finalState, 'logs': logs};
-  }
-
   /// 从用户 settings 中提取 SRS 算法开关：
   /// - 默认 1（SM-2）
   /// - settings 支持 key：srsAlgorithm / srs_algorithm
