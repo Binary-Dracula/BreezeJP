@@ -3,8 +3,8 @@ import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/repositories/daily_stat_repository.dart';
 import '../../../data/repositories/daily_stat_repository_provider.dart';
-import '../../../data/repositories/study_word_repository.dart';
-import '../../../data/repositories/study_word_repository_provider.dart';
+import '../../../data/analytics/study_word_analytics.dart';
+import '../../../data/queries/study_word_query.dart';
 import '../../../data/repositories/kana_repository.dart';
 import '../../../data/repositories/kana_repository_provider.dart';
 import '../state/home_state.dart';
@@ -19,8 +19,9 @@ class HomeController extends Notifier<HomeState> {
   @override
   HomeState build() => const HomeState();
 
-  StudyWordRepository get _studyWordRepository =>
-      ref.read(studyWordRepositoryProvider);
+  StudyWordQuery get _studyWordQuery => ref.read(studyWordQueryProvider);
+  StudyWordAnalytics get _studyWordAnalytics =>
+      ref.read(studyWordAnalyticsProvider);
   DailyStatRepository get _dailyStatRepository =>
       ref.read(dailyStatRepositoryProvider);
   KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
@@ -37,11 +38,11 @@ class HomeController extends Notifier<HomeState> {
       final userName = user.username;
 
       // 2. 获取学习统计
-      final reviewCount = await _studyWordRepository.getDueReviewCount(userId);
+      final reviewCount = await _studyWordQuery.getDueReviewCount(userId);
       final kanaReviewCount = await _kanaRepository.countDueKanaReviews(userId);
-      final userStats = await _studyWordRepository.getUserStatistics(userId);
-      final newWordCount = (userStats['new_words'] as int?) ?? 0;
-      final masteredWordCount = (userStats['mastered_words'] as int?) ?? 0;
+      final userStats = await _studyWordAnalytics.getUserStatistics(userId);
+      final newWordCount = userStats.newWords;
+      final masteredWordCount = userStats.masteredWords;
 
       // 3. 获取每日统计 (Streak & Duration)
       final streakDays = await _dailyStatRepository.calculateStreak(userId);
