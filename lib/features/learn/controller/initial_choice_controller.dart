@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../../data/repositories/word_repository_provider.dart';
+import '../../../data/queries/word_read_queries.dart';
+import '../../../data/repositories/active_user_provider.dart';
 import '../state/initial_choice_state.dart';
 
 /// 初始选择页控制器
@@ -16,8 +17,10 @@ class InitialChoiceController extends Notifier<InitialChoiceState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final wordRepository = ref.read(wordRepositoryProvider);
-      final choices = await wordRepository.getRandomUnmasteredWordsWithMeaning(
+      final userId = (await ref.read(activeUserProvider.future)).id;
+      final wordQueries = ref.read(wordReadQueriesProvider);
+      final choices = await wordQueries.getRandomUnmasteredWordsWithMeaning(
+        userId: userId,
         count: 5,
       );
 

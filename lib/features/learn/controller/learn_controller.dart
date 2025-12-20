@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
-import '../../../data/repositories/word_repository_provider.dart';
+import '../../../data/queries/word_read_queries.dart';
 import '../../../data/repositories/study_word_repository_provider.dart';
 import '../../../data/repositories/study_log_repository_provider.dart';
 import '../../../data/repositories/daily_stat_repository_provider.dart';
@@ -34,20 +34,23 @@ class LearnController extends Notifier<LearnState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final wordRepository = ref.read(wordRepositoryProvider);
+      final wordQueries = ref.read(wordReadQueriesProvider);
 
       // 1. 获取选中单词的详情
-      final selectedWord = await wordRepository.getWordDetail(wordId);
+      final selectedWord = await wordQueries.getWordDetail(wordId);
       if (selectedWord == null) {
         state = state.copyWith(isLoading: false, error: '单词不存在');
         return;
       }
 
       // 2. 加载关联词
-      final relatedWords = await wordRepository.getRelatedWords(wordId);
+      final relatedWords = await wordQueries.getRelatedWords(
+        userId: userId,
+        wordId: wordId,
+      );
       final relatedDetails = <dynamic>[];
       for (final related in relatedWords) {
-        final detail = await wordRepository.getWordDetail(related.word.id);
+        final detail = await wordQueries.getWordDetail(related.word.id);
         if (detail != null) {
           relatedDetails.add(detail);
         }
@@ -110,8 +113,12 @@ class LearnController extends Notifier<LearnState> {
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final wordRepository = ref.read(wordRepositoryProvider);
-      final relatedWords = await wordRepository.getRelatedWords(wordId);
+      final userId = await _ensureUserId();
+      final wordQueries = ref.read(wordReadQueriesProvider);
+      final relatedWords = await wordQueries.getRelatedWords(
+        userId: userId,
+        wordId: wordId,
+      );
 
       if (relatedWords.isEmpty) {
         // 断链：没有更多关联词
@@ -123,7 +130,7 @@ class LearnController extends Notifier<LearnState> {
       // 加载关联词详情
       final relatedDetails = <dynamic>[];
       for (final related in relatedWords) {
-        final detail = await wordRepository.getWordDetail(related.word.id);
+        final detail = await wordQueries.getWordDetail(related.word.id);
         if (detail != null) {
           relatedDetails.add(detail);
         }
