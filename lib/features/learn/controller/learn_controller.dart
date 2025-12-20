@@ -4,8 +4,6 @@ import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/queries/word_read_queries.dart';
 import '../../../data/commands/study_word_command.dart';
-import '../../../data/repositories/study_log_repository_provider.dart';
-import '../../../data/repositories/daily_stat_repository_provider.dart';
 import '../state/learn_state.dart';
 
 /// 学习页控制器
@@ -159,7 +157,6 @@ class LearnController extends Notifier<LearnState> {
     try {
       final userId = await _ensureUserId();
       final studyWordCommand = ref.read(studyWordCommandProvider);
-      final studyLogRepository = ref.read(studyLogRepositoryProvider);
 
       // 更新 learnedWordIds
       final newLearnedWordIds = {...state.learnedWordIds, wordId};
@@ -169,7 +166,7 @@ class LearnController extends Notifier<LearnState> {
       await studyWordCommand.markAsLearned(userId: userId, wordId: wordId);
 
       // 插入学习日志
-      await studyLogRepository.logFirstLearn(
+      await studyWordCommand.logFirstLearn(
         userId: userId,
         wordId: wordId,
         durationMs: 0,
@@ -187,12 +184,12 @@ class LearnController extends Notifier<LearnState> {
 
     try {
       final userId = await _ensureUserId();
-      final dailyStatRepository = ref.read(dailyStatRepositoryProvider);
+      final studyWordCommand = ref.read(studyWordCommandProvider);
       final durationMs = DateTime.now()
           .difference(_sessionStartTime!)
           .inMilliseconds;
 
-      await dailyStatRepository.updateDailyStats(
+      await studyWordCommand.updateDailyStats(
         userId: userId,
         learnedCount: state.learnedCount,
         durationMs: durationMs,

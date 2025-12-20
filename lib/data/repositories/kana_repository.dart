@@ -1,6 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
+import '../commands/daily_stat_command.dart';
 import '../models/kana_letter.dart';
 import '../models/kana_audio.dart';
 import '../models/kana_example.dart';
@@ -12,8 +14,16 @@ import '../models/kana_detail.dart';
 /// 五十音数据仓库
 /// 负责所有与五十音图相关的数据库操作
 class KanaRepository {
+  KanaRepository(this.ref, this._dbProvider);
+
+  final Ref ref;
+  final Future<Database> Function() _dbProvider;
+
+  DailyStatCommand get _dailyStatCommand =>
+      ref.read(dailyStatCommandProvider);
+
   /// 获取数据库实例
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  Future<Database> get _db async => await _dbProvider();
 
   // ==================== 假名字母查询 ====================
 
@@ -669,24 +679,33 @@ class KanaRepository {
     );
     final id = await addKanaLog(log);
 
-    // 增量更新 daily_stats，仅在复习日志且存在评分时执行
+    // 仅在复习日志且存在评分时更新每日统计
     if (logType == KanaLogType.review && rating != null) {
+      final now = DateTime.now();
       try {
-        await _updateDailyStatsWithReview(
-          userId: userId,
-          kanaId: kanaId,
-          rating: rating,
-          intervalAfter: intervalAfter ?? 0,
-          algorithm: algorithm,
-          durationMs: durationMs,
-        );
+        if (rating <= 1) {
+          await _dailyStatCommand.incrementFailedCount(
+            userId,
+            now,
+            count: 1,
+          );
+        } else {
+          await _dailyStatCommand.incrementReviewedWords(
+            userId,
+            now,
+            count: 1,
+          );
+        }
+
+        if (durationMs > 0) {
+          await _dailyStatCommand.incrementStudyTime(
+            userId,
+            now,
+            durationMs,
+          );
+        }
       } catch (e, stackTrace) {
-        logger.dbError(
-          operation: 'UPSERT',
-          table: 'daily_stats',
-          dbError: e,
-          stackTrace: stackTrace,
-        );
+        logger.error('kana daily stat update failed', e, stackTrace);
       }
     }
 
@@ -823,21 +842,22 @@ class KanaRepository {
       logger.dbInsert(table: 'kana_logs', id: id);
 
       try {
-        await _updateDailyStatsWithReview(
-          userId: userId,
-          kanaId: kanaId,
-          rating: rating,
-          intervalAfter: intervalAfter,
-          algorithm: algorithm,
-          durationMs: 0,
-        );
+        final now = DateTime.now();
+        if (rating <= 1) {
+          await _dailyStatCommand.incrementFailedCount(
+            userId,
+            now,
+            count: 1,
+          );
+        } else {
+          await _dailyStatCommand.incrementReviewedWords(
+            userId,
+            now,
+            count: 1,
+          );
+        }
       } catch (e, stackTrace) {
-        logger.dbError(
-          operation: 'UPSERT',
-          table: 'daily_stats',
-          dbError: e,
-          stackTrace: stackTrace,
-        );
+        logger.error('kana daily stat update failed', e, stackTrace);
       }
     } catch (e, stackTrace) {
       logger.dbError(
@@ -1218,136 +1238,5 @@ class KanaRepository {
       );
       rethrow;
     }
-  }
-
-  Future<void> _updateDailyStatsWithReview({
-    required int userId,
-    required int kanaId,
-    required int rating,
-    required double intervalAfter,
-    required int algorithm,
-    int durationMs = 0,
-  }) async {
-    final db = await _db;
-    final dateStr = _formatDate(DateTime.now());
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final wrongFlag = rating == 1 ? 1 : 0;
-
-    final existing = await db.query(
-      'daily_stats',
-      columns: [
-        'id',
-        'review_count',
-        'rating_avg',
-        'new_interval_avg',
-        'wrong_ratio',
-        'total_time_ms',
-        'algorithm',
-        'unique_kana_reviewed_count',
-        'first_review_at',
-        'last_review_at',
-        'learning_quality_score',
-      ],
-      where: 'user_id = ? AND date = ?',
-      whereArgs: [userId, dateStr],
-      limit: 1,
-    );
-
-    if (existing.isEmpty) {
-      final id = await db.insert('daily_stats', {
-        'user_id': userId,
-        'date': dateStr,
-        'review_count': 1,
-        'rating_avg': rating.toDouble(),
-        'new_interval_avg': intervalAfter,
-        'wrong_ratio': wrongFlag.toDouble(),
-        'total_time_ms': durationMs,
-        'algorithm': algorithm,
-        'unique_kana_reviewed_count': 1,
-        'first_review_at': now,
-        'last_review_at': now,
-        'learning_quality_score': rating.toDouble(),
-      });
-      logger.dbInsert(
-        table: 'daily_stats',
-        id: id,
-        keyFields: {'user_id': userId, 'date': dateStr},
-      );
-      return;
-    }
-
-    final row = existing.first;
-    final currentCount = (row['review_count'] as int?) ?? 0;
-    final currentRatingAvg = (row['rating_avg'] as num?)?.toDouble() ?? 0;
-    final currentIntervalAvg =
-        (row['new_interval_avg'] as num?)?.toDouble() ?? 0;
-    final currentWrongRatio = (row['wrong_ratio'] as num?)?.toDouble() ?? 0;
-    final currentTotalTime = row['total_time_ms'] as int? ?? 0;
-    final currentUniqueKana = row['unique_kana_reviewed_count'] as int? ?? 0;
-    final currentFirstReviewAt = row['first_review_at'] as int?;
-    final currentLearningQuality =
-        (row['learning_quality_score'] as num?)?.toDouble() ?? currentRatingAvg;
-
-    final newCount = currentCount + 1;
-    final newRatingAvg =
-        ((currentRatingAvg * currentCount) + rating) / newCount;
-    final newIntervalAvg =
-        ((currentIntervalAvg * currentCount) + intervalAfter) / newCount;
-    final newWrongRatio =
-        ((currentWrongRatio * currentCount) + wrongFlag) / newCount;
-    final newTotalTime = currentTotalTime + durationMs;
-    final newLearningQuality =
-        ((currentLearningQuality * currentCount) + rating) / newCount;
-
-    // 判断今日是否首次复习该假名
-    final kanaReviewedToday = await db.query(
-      'kana_logs',
-      columns: ['id'],
-      where:
-          'user_id = ? AND kana_id = ? AND date(created_at, \'unixepoch\') = ? AND log_type = ?',
-      whereArgs: [userId, kanaId, dateStr, KanaLogType.review.index + 1],
-      limit: 1,
-    );
-    final isNewKanaToday = kanaReviewedToday.isEmpty;
-    final updatedUniqueKana = isNewKanaToday
-        ? currentUniqueKana + 1
-        : currentUniqueKana;
-
-    final affectedRows = await db.update(
-      'daily_stats',
-      {
-        'review_count': newCount,
-        'rating_avg': newRatingAvg,
-        'new_interval_avg': newIntervalAvg,
-        'wrong_ratio': newWrongRatio,
-        'total_time_ms': newTotalTime,
-        'algorithm': algorithm,
-        'unique_kana_reviewed_count': updatedUniqueKana,
-        'first_review_at': currentFirstReviewAt ?? now,
-        'last_review_at': now,
-        'learning_quality_score': newLearningQuality,
-      },
-      where: 'user_id = ? AND date = ?',
-      whereArgs: [userId, dateStr],
-    );
-
-    logger.dbUpdate(
-      table: 'daily_stats',
-      affectedRows: affectedRows,
-      updatedFields: [
-        'review_count',
-        'rating_avg',
-        'new_interval_avg',
-        'wrong_ratio',
-        'total_time_ms',
-        'algorithm',
-      ],
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
   }
 }

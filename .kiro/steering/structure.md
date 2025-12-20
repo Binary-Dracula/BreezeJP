@@ -7,6 +7,7 @@ inclusion: always
 ## 架构模式：MVVM + Command/Query/Analytics/Repository + Riverpod
 
 **数据流：**
+
 ```
 View → Controller
            ├─→ Query (Read)
@@ -20,15 +21,16 @@ View → Controller
 
 **各层职责：**
 
-| Layer | 职责 | 禁止 |
-|-------|------|------|
-| **View** | UI 渲染、用户交互 | 直接访问数据库、业务逻辑、修改 state |
-| **Controller** | 业务流程编排（Use Case Orchestration）、调用 Command / Query / Analytics、状态管理 | 核心业务规则、直接 DB 查询 |
-| **State** | 不可变数据容器 | 可变字段、逻辑 |
-| **Repository** | Entity CRUD（单表或强一致实体） | 复杂查询、统计聚合、业务行为 |
-| **Model** | 数据结构，含 `fromMap()`/`toMap()` | 业务逻辑 |
+| Layer          | 职责                                                                               | 禁止                                 |
+| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------ |
+| **View**       | UI 渲染、用户交互                                                                  | 直接访问数据库、业务逻辑、修改 state |
+| **Controller** | 业务流程编排（Use Case Orchestration）、调用 Command / Query / Analytics、状态管理 | 核心业务规则、直接 DB 查询           |
+| **State**      | 不可变数据容器                                                                     | 可变字段、逻辑                       |
+| **Repository** | Entity CRUD（单表或强一致实体）                                                    | 复杂查询、统计聚合、业务行为         |
+| **Model**      | 数据结构，含 `fromMap()`/`toMap()`                                                 | 业务逻辑                             |
 
 **硬性规则：**
+
 - 数据访问路径：Repository 仅被 Command/Query/Analytics 调用，Controller 仅调用 Command/Query/Analytics
 - Repository 只返回模型对象，绝不返回 Map
 - 所有 State 必须不可变并提供 `copyWith()`
@@ -202,6 +204,7 @@ lib/
 ```
 
 **Assets 资源结构：**
+
 ```
 assets/
 ├── audio/                   # 音频资源
@@ -221,6 +224,7 @@ assets/
 ### 1. Core 层（共享基础设施）
 
 **职责边界：**
+
 - ✅ 提供跨模块复用的基础能力
 - ✅ 定义全局常量和配置
 - ✅ 封装第三方库的使用
@@ -228,6 +232,7 @@ assets/
 - ❌ 不依赖 Features 层
 
 **子模块规则：**
+
 - **algorithm/**: 纯算法实现，无 UI 依赖，支持多种 SRS 算法
 - **network/**: 网络层抽象，统一 HTTP 客户端配置
 - **utils/**: 纯函数工具，无状态，高度可测试
@@ -236,6 +241,7 @@ assets/
 ### 2. Data 层（数据访问抽象）
 
 **职责边界：**
+
 - ✅ 封装所有数据访问逻辑
 - ✅ 提供统一的数据接口
 - ✅ 处理数据转换和缓存
@@ -243,6 +249,7 @@ assets/
 - ❌ 不包含业务流程逻辑
 
 **子模块规则：**
+
 - **models/**: 必须实现 `fromMap()` 和 `toMap()`，支持 JSON 序列化
 - **repositories/**: Entity CRUD（单表或强一致实体），只返回 Model 对象
 - **queries/**: 只读查询，支持 join / filter / paging，不写数据
@@ -252,6 +259,7 @@ assets/
 ### 3. Features 层（功能模块）
 
 **MVVM 架构强制规则：**
+
 - **每个 Feature 必须包含**: controller/, pages/, state/ 三个目录
 - **Controller**: 继承 `Notifier<State>`，业务流程编排，调用 Command / Query / Analytics
 - **State**: 不可变类，必须提供 `copyWith()` 方法
@@ -259,6 +267,7 @@ assets/
 - **Widgets**: 可选，Feature 专用的 UI 组件
 
 **模块间通信规则：**
+
 - ✅ 通过 Riverpod Provider 共享状态
 - ✅ 通过路由参数传递数据
 - ❌ 禁止直接引用其他 Feature 的 Controller
@@ -267,6 +276,7 @@ assets/
 ### 4. Services 层（横切关注点）
 
 **职责边界：**
+
 - ✅ 提供跨功能的服务能力
 - ✅ 对外部系统 / 设备能力 / 第三方 SDK 的抽象
 - ✅ 封装复杂的第三方库集成
@@ -277,6 +287,7 @@ assets/
 - ❌ 不直接操作数据库
 
 **服务设计规则：**
+
 - **接口抽象**: 每个服务定义抽象接口
 - **Provider 注入**: 通过 Riverpod Provider 提供实例
 - **状态管理**: 服务内部状态通过专用 State 类管理
@@ -285,6 +296,7 @@ assets/
 ### 5. Debug 层（开发工具）
 
 **使用规则：**
+
 - ✅ 仅在 Debug 模式下编译
 - ✅ 提供开发和测试辅助功能
 - ✅ 遵循与 Features 相同的 MVVM 架构
@@ -298,20 +310,21 @@ assets/
 
 ### 命名约定
 
-| 文件类型 | 命名格式 | 示例 |
-|----------|----------|------|
-| 页面文件 | `[feature]_page.dart` | `home_page.dart` |
-| 控制器文件 | `[feature]_controller.dart` | `learn_controller.dart` |
-| 状态文件 | `[feature]_state.dart` | `splash_state.dart` |
-| 模型文件 | `[entity].dart` | `word.dart`, `user.dart` |
-| 仓库文件 | `[entity]_repository.dart` | `word_repository.dart` |
+| 文件类型      | 命名格式                            | 示例                            |
+| ------------- | ----------------------------------- | ------------------------------- |
+| 页面文件      | `[feature]_page.dart`               | `home_page.dart`                |
+| 控制器文件    | `[feature]_controller.dart`         | `learn_controller.dart`         |
+| 状态文件      | `[feature]_state.dart`              | `splash_state.dart`             |
+| 模型文件      | `[entity].dart`                     | `word.dart`, `user.dart`        |
+| 仓库文件      | `[entity]_repository.dart`          | `word_repository.dart`          |
 | Provider 文件 | `[entity]_repository_provider.dart` | `word_repository_provider.dart` |
-| 服务文件 | `[service]_service.dart` | `audio_service.dart` |
-| 组件文件 | `[component]_widget.dart` | `word_card_widget.dart` |
+| 服务文件      | `[service]_service.dart`            | `audio_service.dart`            |
+| 组件文件      | `[component]_widget.dart`           | `word_card_widget.dart`         |
 
 ### 目录组织原则
 
 **Feature 内部结构标准化：**
+
 ```
 features/[feature_name]/
 ├── controller/              # 必需：流程编排控制器
@@ -321,6 +334,7 @@ features/[feature_name]/
 ```
 
 **Repository 配套文件：**
+
 ```
 repositories/
 ├── [entity]_repository.dart         # 仓库实现
@@ -328,6 +342,7 @@ repositories/
 ```
 
 **Model 分类组织：**
+
 ```
 models/
 ├── read/                    # 只读查询结果模型
@@ -338,6 +353,7 @@ models/
 ## 依赖关系规则
 
 ### 层级依赖方向
+
 ```
 Features → Services → Data → Core
     ↓         ↓        ↓      ↓
@@ -345,12 +361,14 @@ Features → Services → Data → Core
 ```
 
 ### 禁止的依赖关系
+
 - ❌ Core 层不得依赖任何上层
 - ❌ Data 层不得依赖 Features 层
 - ❌ Services 层不得依赖 Features 层
 - ❌ Features 间不得直接相互依赖
 
 ### 允许的依赖关系
+
 - ✅ Features 可以依赖 Services、Data、Core
 - ✅ Services 可以依赖 Data、Core
 - ✅ Data 可以依赖 Core
@@ -360,14 +378,15 @@ Features → Services → Data → Core
 
 ### Riverpod Provider 类型使用规则
 
-| Provider 类型 | 使用场景 | 示例 |
-|---------------|----------|------|
+| Provider 类型      | 使用场景         | 示例                     |
+| ------------------ | ---------------- | ------------------------ |
 | `NotifierProvider` | Feature 状态管理 | `homeControllerProvider` |
-| `Provider` | 无状态服务实例 | `wordRepositoryProvider` |
-| `FutureProvider` | 异步数据加载 | `activeUserProvider` |
-| `StreamProvider` | 实时数据流 | `audioPlayStateProvider` |
+| `Provider`         | 无状态服务实例   | `wordRepositoryProvider` |
+| `FutureProvider`   | 异步数据加载     | `activeUserProvider`     |
+| `StreamProvider`   | 实时数据流       | `audioPlayStateProvider` |
 
 ### 状态更新模式
+
 - **不可变更新**: 所有状态更新必须通过 `copyWith()` 方法
 - **单一数据源**: 每个状态只有一个权威来源
 - **响应式更新**: UI 通过 `ref.watch()` 自动响应状态变化
@@ -376,6 +395,7 @@ Features → Services → Data → Core
 ## 数据流架构
 
 ### 标准数据流
+
 ```
 User Interaction → Controller
                       ├─→ Query / Analytics (Read)
@@ -387,6 +407,7 @@ User Interaction → Controller
 ```
 
 ### 异步操作处理
+
 - **加载状态**: 使用 `isLoading` 字段管理加载状态
 - **错误处理**: 使用 `error` 字段存储错误信息
 - **重试机制**: Controller 提供重试方法
@@ -395,12 +416,14 @@ User Interaction → Controller
 ## 测试架构支持
 
 ### 可测试性设计
+
 - **依赖注入**: 所有依赖通过 Provider 注入
 - **接口抽象**: 核心服务定义抽象接口
 - **纯函数**: Utils 层提供纯函数工具
 - **状态隔离**: 每个 Feature 状态独立可测
 
 ### 测试文件组织
+
 ```
 test/
 ├── unit/                    # 单元测试
@@ -416,16 +439,19 @@ test/
 ## 性能优化架构
 
 ### 内存管理
+
 - **Provider 生命周期**: 合理使用 `autoDispose` 修饰符
 - **状态缓存**: 避免不必要的状态重建
 - **资源释放**: 及时释放音频、图片等资源
 
 ### 渲染优化
+
 - **Widget 拆分**: 保持 Widget 粒度适中
 - **状态局部化**: 避免全局状态的过度使用
 - **懒加载**: 大列表使用懒加载策略
 
 ### 数据库优化
+
 - **查询优化**: 使用索引和合理的查询条件
 - **批量操作**: 避免频繁的单条数据操作
 - **连接池管理**: 合理管理数据库连接

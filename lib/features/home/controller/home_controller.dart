@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
-import '../../../data/repositories/daily_stat_repository.dart';
-import '../../../data/repositories/daily_stat_repository_provider.dart';
+import '../../../data/commands/daily_stat_command.dart';
+import '../../../data/queries/daily_stat_query.dart';
 import '../../../data/analytics/study_word_analytics.dart';
 import '../../../data/queries/study_word_query.dart';
 import '../../../data/repositories/kana_repository.dart';
@@ -22,8 +22,8 @@ class HomeController extends Notifier<HomeState> {
   StudyWordQuery get _studyWordQuery => ref.read(studyWordQueryProvider);
   StudyWordAnalytics get _studyWordAnalytics =>
       ref.read(studyWordAnalyticsProvider);
-  DailyStatRepository get _dailyStatRepository =>
-      ref.read(dailyStatRepositoryProvider);
+  DailyStatQuery get _dailyStatQuery => ref.read(dailyStatQueryProvider);
+  DailyStatCommand get _dailyStatCommand => ref.read(dailyStatCommandProvider);
   KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
 
   /// 加载主页数据
@@ -45,8 +45,8 @@ class HomeController extends Notifier<HomeState> {
       final masteredWordCount = userStats.masteredWords;
 
       // 3. 获取每日统计 (Streak & Duration)
-      final streakDays = await _dailyStatRepository.calculateStreak(userId);
-      final todayStat = await _dailyStatRepository.getOrCreateTodayStat(userId);
+      final streakDays = await _dailyStatQuery.calculateStreak(userId);
+      final todayStat = await _dailyStatCommand.ensureTodayStat(userId);
       final todayDurationMinutes = (todayStat.totalTimeMs / 1000 / 60).round();
 
       state = state.copyWith(
