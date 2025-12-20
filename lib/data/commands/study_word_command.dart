@@ -4,10 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../core/utils/app_logger.dart';
 import '../commands/daily_stat_command.dart';
 import '../db/app_database.dart';
-import '../models/study_log.dart';
 import '../models/study_word.dart';
-import '../repositories/study_log_repository.dart';
-import '../repositories/study_log_repository_provider.dart';
 import '../repositories/study_word_repository.dart';
 import '../repositories/study_word_repository_provider.dart';
 
@@ -22,8 +19,6 @@ class StudyWordCommand {
   final Ref ref;
 
   StudyWordRepository get _repo => ref.read(studyWordRepositoryProvider);
-  StudyLogRepository get _studyLogRepository =>
-      ref.read(studyLogRepositoryProvider);
   DailyStatCommand get _dailyStatCommand =>
       ref.read(dailyStatCommandProvider);
   Future<Database> get _db async => await AppDatabase.instance.database;
@@ -239,113 +234,6 @@ class StudyWordCommand {
       );
       rethrow;
     }
-  }
-
-  /// 记录初次学习日志
-  Future<int> logFirstLearn({
-    required int userId,
-    required int wordId,
-    required int durationMs,
-    double? intervalAfter,
-    double? easeFactorAfter,
-    DateTime? nextReviewAtAfter,
-    int algorithm = 1,
-    double? fsrsStabilityAfter,
-    double? fsrsDifficultyAfter,
-  }) async {
-    final log = StudyLog(
-      id: 0,
-      userId: userId,
-      wordId: wordId,
-      logType: LogType.firstLearn,
-      durationMs: durationMs,
-      intervalAfter: intervalAfter,
-      easeFactorAfter: easeFactorAfter,
-      nextReviewAtAfter: nextReviewAtAfter,
-      algorithm: algorithm,
-      fsrsStabilityAfter: fsrsStabilityAfter,
-      fsrsDifficultyAfter: fsrsDifficultyAfter,
-      createdAt: DateTime.now(),
-    );
-
-    return _studyLogRepository.createLog(log);
-  }
-
-  /// 记录复习日志
-  Future<int> logReview({
-    required int userId,
-    required int wordId,
-    required ReviewRating rating,
-    required int durationMs,
-    required double intervalAfter,
-    required double easeFactorAfter,
-    required DateTime nextReviewAtAfter,
-    int algorithm = 1,
-    double? fsrsStabilityAfter,
-    double? fsrsDifficultyAfter,
-  }) async {
-    final log = StudyLog(
-      id: 0,
-      userId: userId,
-      wordId: wordId,
-      logType: LogType.review,
-      rating: rating,
-      durationMs: durationMs,
-      intervalAfter: intervalAfter,
-      easeFactorAfter: easeFactorAfter,
-      nextReviewAtAfter: nextReviewAtAfter,
-      algorithm: algorithm,
-      fsrsStabilityAfter: fsrsStabilityAfter,
-      fsrsDifficultyAfter: fsrsDifficultyAfter,
-      createdAt: DateTime.now(),
-    );
-
-    return _studyLogRepository.createLog(log);
-  }
-
-  /// 记录标记已掌握日志
-  Future<int> logMarkMastered({
-    required int userId,
-    required int wordId,
-  }) async {
-    final log = StudyLog(
-      id: 0,
-      userId: userId,
-      wordId: wordId,
-      logType: LogType.markMastered,
-      createdAt: DateTime.now(),
-    );
-
-    return _studyLogRepository.createLog(log);
-  }
-
-  /// 记录标记忽略日志
-  Future<int> logMarkIgnored({
-    required int userId,
-    required int wordId,
-  }) async {
-    final log = StudyLog(
-      id: 0,
-      userId: userId,
-      wordId: wordId,
-      logType: LogType.markIgnored,
-      createdAt: DateTime.now(),
-    );
-
-    return _studyLogRepository.createLog(log);
-  }
-
-  /// 记录重置进度日志
-  Future<int> logReset({required int userId, required int wordId}) async {
-    final log = StudyLog(
-      id: 0,
-      userId: userId,
-      wordId: wordId,
-      logType: LogType.reset,
-      createdAt: DateTime.now(),
-    );
-
-    return _studyLogRepository.createLog(log);
   }
 
   /// 更新每日统计（学习会话结束）

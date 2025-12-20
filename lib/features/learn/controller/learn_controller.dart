@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/queries/word_read_queries.dart';
+import '../../../data/commands/study_log_command.dart';
 import '../../../data/commands/study_word_command.dart';
 import '../state/learn_state.dart';
 
@@ -157,6 +158,7 @@ class LearnController extends Notifier<LearnState> {
     try {
       final userId = await _ensureUserId();
       final studyWordCommand = ref.read(studyWordCommandProvider);
+      final studyLogCommand = ref.read(studyLogCommandProvider);
 
       // 更新 learnedWordIds
       final newLearnedWordIds = {...state.learnedWordIds, wordId};
@@ -166,7 +168,7 @@ class LearnController extends Notifier<LearnState> {
       await studyWordCommand.markAsLearned(userId: userId, wordId: wordId);
 
       // 插入学习日志
-      await studyWordCommand.logFirstLearn(
+      await studyLogCommand.logFirstLearn(
         userId: userId,
         wordId: wordId,
         durationMs: 0,
