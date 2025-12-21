@@ -9,6 +9,7 @@ import '../../../../data/models/kana_letter.dart';
 import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/kana_log.dart';
 import '../../../../data/models/user.dart';
+import '../../../../data/commands/session/session_scope.dart';
 import '../../../../data/commands/session/study_session_handle.dart';
 import '../../../../data/commands/study_session_command_provider.dart';
 import '../../../../data/repositories/kana_repository.dart';
@@ -114,7 +115,10 @@ class MatchingController extends Notifier<MatchingState> {
       final user = await ref.read(activeUserProvider.future);
       await _session?.flush();
       _session =
-          ref.read(studySessionCommandProvider).createSession(user.id);
+          ref.read(studySessionCommandProvider).createSession(
+                userId: user.id,
+                scope: SessionScope.kanaReview,
+              );
 
       // 2) 获取「已到期需复习」的 kana_learning_state
       final learningStates = await repo.getDueReviewKana(user.id);
@@ -718,7 +722,10 @@ class MatchingController extends Notifier<MatchingState> {
     );
     final session =
         _session ??
-        ref.read(studySessionCommandProvider).createSession(user.id);
+        ref.read(studySessionCommandProvider).createSession(
+              userId: user.id,
+              scope: SessionScope.kanaReview,
+            );
     _session ??= session;
     await session.submitKanaReview(
       rating: rating,

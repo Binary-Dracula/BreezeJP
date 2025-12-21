@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'session/study_session_context.dart';
+import 'session/session_scope.dart';
 import 'session/study_session_handle.dart';
 
 /// Study session command (flow orchestration).
@@ -9,10 +9,14 @@ class StudySessionCommand {
 
   final Ref ref;
 
-  StudySessionHandle createSession(int userId) {
+  StudySessionHandle createSession({
+    required int userId,
+    required SessionScope scope,
+  }) {
     return StudySessionHandle(
-      ref,
-      StudySessionContext(userId: userId),
+      userId: userId,
+      scope: scope,
+      ref: ref,
     );
   }
 }

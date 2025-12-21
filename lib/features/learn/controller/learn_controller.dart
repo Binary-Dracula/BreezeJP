@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/queries/word_read_queries.dart';
+import '../../../data/commands/session/session_scope.dart';
 import '../../../data/commands/session/study_session_handle.dart';
 import '../../../data/commands/study_session_command_provider.dart';
 import '../state/learn_state.dart';
@@ -32,7 +33,10 @@ class LearnController extends Notifier<LearnState> {
     final userId = await _ensureUserId();
     await _session?.flush();
     _session =
-        ref.read(studySessionCommandProvider).createSession(userId);
+        ref.read(studySessionCommandProvider).createSession(
+              userId: userId,
+              scope: SessionScope.learn,
+            );
     _sessionStartTime = DateTime.now();
     state = state.copyWith(isLoading: true, error: null);
 
@@ -162,9 +166,11 @@ class LearnController extends Notifier<LearnState> {
     try {
       final userId = await _ensureUserId();
       final session =
-          _session ?? ref.read(studySessionCommandProvider).createSession(
-            userId,
-          );
+          _session ??
+          ref.read(studySessionCommandProvider).createSession(
+                userId: userId,
+                scope: SessionScope.learn,
+              );
       _session ??= session;
       final now = DateTime.now();
       final durationMs = _sessionStartTime == null

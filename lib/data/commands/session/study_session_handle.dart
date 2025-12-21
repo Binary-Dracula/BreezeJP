@@ -5,38 +5,74 @@ import '../daily_stat_command.dart';
 import '../study_log_command.dart';
 import '../study_word_command.dart';
 import 'review_result.dart';
-import 'study_session_context.dart';
+import 'session_lifecycle_guard.dart';
+import 'session_scope.dart';
+import 'session_stat_policy.dart';
 
 class StudySessionHandle {
-  final StudySessionContext ctx;
-  final Ref ref;
-  bool _flushed = false;
+  StudySessionHandle({
+    required this.userId,
+    required this.scope,
+    required Ref ref,
+  })  : _ref = ref,
+        _guard = SessionLifecycleGuard(),
+        _accumulator = SessionStatAccumulator();
 
-  StudySessionHandle(this.ref, this.ctx);
+  final int userId;
+  final SessionScope scope;
+
+  final Ref _ref;
+  final SessionLifecycleGuard _guard;
+  final SessionStatAccumulator _accumulator;
 
   StudyWordCommand get _studyWordCommand =>
-      ref.read(studyWordCommandProvider);
+      _ref.read(studyWordCommandProvider);
   StudyLogCommand get _studyLogCommand =>
-      ref.read(studyLogCommandProvider);
+      _ref.read(studyLogCommandProvider);
   DailyStatCommand get _dailyStatCommand =>
-      ref.read(dailyStatCommandProvider);
+      _ref.read(dailyStatCommandProvider);
+
+  void onFirstLearn({required int durationMs}) {
+    _recordEvent(
+      SessionEventType.firstLearn,
+      durationMs: durationMs,
+    );
+  }
+
+  void onReviewCorrect({required int durationMs}) {
+    _recordEvent(
+      SessionEventType.review,
+      durationMs: durationMs,
+    );
+  }
+
+  void onReviewFailed({required int durationMs}) {
+    _recordEvent(
+      SessionEventType.reviewFailed,
+      durationMs: durationMs,
+    );
+  }
+
+  void onKanaReview({required int durationMs}) {
+    _recordEvent(
+      SessionEventType.kanaReview,
+      durationMs: durationMs,
+    );
+  }
 
   Future<void> submitFirstLearn({
     required int wordId,
     required int durationMs,
   }) async {
-    if (durationMs > 0) {
-      ctx.addDuration(durationMs);
-    }
-    ctx.markLearned();
+    onFirstLearn(durationMs: durationMs);
 
     await _studyWordCommand.markAsLearned(
-      userId: ctx.userId,
+      userId: userId,
       wordId: wordId,
     );
 
     await _studyLogCommand.logFirstLearn(
-      userId: ctx.userId,
+      userId: userId,
       wordId: wordId,
       durationMs: durationMs,
     );
@@ -49,25 +85,21 @@ class StudySessionHandle {
     required ReviewResult reviewResult,
     int algorithm = 1,
   }) async {
-    if (durationMs > 0) {
-      ctx.addDuration(durationMs);
-    }
-
-    final isCorrect = rating != ReviewRating.again;
-    ctx.markReviewed();
-    if (!isCorrect) {
-      ctx.markFailed();
+    if (rating == ReviewRating.again) {
+      onReviewFailed(durationMs: durationMs);
+    } else {
+      onReviewCorrect(durationMs: durationMs);
     }
 
     await _studyWordCommand.applyReviewResult(
-      userId: ctx.userId,
+      userId: userId,
       wordId: wordId,
-      isCorrect: isCorrect,
+      isCorrect: rating != ReviewRating.again,
       reviewResult: reviewResult,
     );
 
     await _studyLogCommand.logReview(
-      userId: ctx.userId,
+      userId: userId,
       wordId: wordId,
       rating: rating,
       durationMs: durationMs,
@@ -84,27 +116,30 @@ class StudySessionHandle {
     required int rating,
     required int durationMs,
   }) async {
-    if (durationMs > 0) {
-      ctx.addDuration(durationMs);
-    }
-
-    ctx.markReviewed();
-    if (rating <= 1) {
-      ctx.markFailed();
-    }
+    onKanaReview(durationMs: durationMs);
   }
 
   Future<void> flush() async {
-    if (_flushed) return;
-    _flushed = true;
+    await _guard.flushOnce(() async {
+      await _dailyStatCommand.applySession(
+        userId: userId,
+        learned: _accumulator.learnedCount,
+        reviewed: _accumulator.reviewCount,
+        failed: _accumulator.failedCount,
+        mastered: _accumulator.masteredCount,
+        durationMs: _accumulator.totalDurationMs,
+      );
+    });
+  }
 
-    await _dailyStatCommand.applySession(
-      userId: ctx.userId,
-      learned: ctx.learned,
-      reviewed: ctx.reviewed,
-      failed: ctx.failed,
-      mastered: ctx.mastered,
-      durationMs: ctx.durationMs,
+  void _recordEvent(
+    SessionEventType type, {
+    int durationMs = 0,
+  }) {
+    final delta = SessionStatPolicy.deltaFor(
+      type,
+      durationMs: durationMs,
     );
+    _accumulator.applyDelta(delta);
   }
 }
