@@ -22,6 +22,14 @@ class AppDatabase {
     return _database!;
   }
 
+  Database get databaseSync {
+    final db = _database;
+    if (db == null) {
+      throw StateError('Database not initialized');
+    }
+    return db;
+  }
+
   /// 初始化数据库：如果不存在则从 assets 复制
   Future<Database> _initDatabase() async {
     logger.info('[DB] init_start: initializing database');

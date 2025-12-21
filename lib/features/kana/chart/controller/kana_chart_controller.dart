@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../data/repositories/active_user_provider.dart';
-import '../../../../data/repositories/kana_repository.dart';
-import '../../../../data/repositories/kana_repository_provider.dart';
+import '../../../../data/queries/kana_query.dart';
+import '../../../../data/queries/kana_query_provider.dart';
 import '../state/kana_chart_state.dart';
 
 /// KanaChartController Provider
@@ -19,7 +19,7 @@ class KanaChartController extends Notifier<KanaChartState> {
   @override
   KanaChartState build() => const KanaChartState();
 
-  KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
+  KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
 
   Future<int> _ensureUserId() async {
     _userId ??= (await ref.read(activeUserProvider.future)).id;
@@ -34,22 +34,22 @@ class KanaChartController extends Notifier<KanaChartState> {
       state = state.copyWith(isLoading: true, error: null);
 
       // 1. 获取所有假名类型
-      final kanaTypes = await _kanaRepository.getAllKanaTypes();
+      final kanaTypes = await _kanaQuery.getAllKanaTypes();
 
       // 2. 获取所有假名及学习状态
-      final kanaLetters = await _kanaRepository.getAllKanaLettersWithState(
+      final kanaLetters = await _kanaQuery.getAllKanaLettersWithState(
         userId,
       );
 
       // 3. 获取学习统计
-      final stats = await _kanaRepository.getKanaLearningStats(userId);
+      final stats = await _kanaQuery.getKanaLearningStats(userId);
 
       state = state.copyWith(
         isLoading: false,
-        kanaTypes: kanaTypes,
+        kanaTypes: kanaTypes.map((item) => item.type).toList(),
         kanaLetters: kanaLetters,
-        totalCount: stats['total'] ?? 0,
-        learnedCount: stats['learned'] ?? 0,
+        totalCount: stats.total,
+        learnedCount: stats.learned,
       );
 
       logger.info('五十音表加载成功: ${kanaLetters.length}个假名, ${kanaTypes.length}个类型');

@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/app_logger.dart';
 import '../../../../data/models/kana_detail.dart';
+import '../../../../data/commands/kana_command.dart';
+import '../../../../data/commands/kana_command_provider.dart';
 import '../../../../data/repositories/active_user_provider.dart';
-import '../../../../data/repositories/kana_repository.dart';
-import '../../../../data/repositories/kana_repository_provider.dart';
+import '../../../../data/queries/kana_query.dart';
+import '../../../../data/queries/kana_query_provider.dart';
 import '../../chart/state/kana_chart_state.dart';
 import '../state/kana_stroke_state.dart';
 
@@ -16,7 +18,8 @@ final kanaStrokeControllerProvider =
 
 /// 假名笔顺练习控制器
 class KanaStrokeController extends Notifier<KanaStrokeState> {
-  KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
+  KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
+  KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
 
   @override
   KanaStrokeState build() => const KanaStrokeState();
@@ -87,7 +90,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
       // --------------------------------------------------
       final user = await ref.read(activeUserProvider.future);
 
-      final learningState = await _kanaRepository.getOrCreateLearningState(
+      final learningState = await _kanaCommand.getOrCreateLearningState(
         user.id,
         current.letter.id,
       );
@@ -101,10 +104,10 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
       );
       // --------------------------------------------------
 
-      final strokeOrder = await _kanaRepository.getKanaStrokeOrder(
+      final strokeOrder = await _kanaQuery.getKanaStrokeOrder(
         current.letter.id,
       );
-      final audio = await _kanaRepository.getKanaAudio(current.letter.id);
+      final audio = await _kanaQuery.getKanaAudio(current.letter.id);
 
       final svg = state.displayMode == KanaDisplayMode.hiragana
           ? strokeOrder?.hiraganaSvg
@@ -131,9 +134,9 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
 
     final user = await ref.read(activeUserProvider.future);
 
-    await _kanaRepository.updateLearningTimestamp(user.id, current.letter.id);
+    await _kanaCommand.updateLearningTimestamp(user.id, current.letter.id);
 
-    await _kanaRepository.insertLearningLog(
+    await _kanaCommand.insertLearningLog(
       userId: user.id,
       kanaId: current.letter.id,
       durationMs: 0,

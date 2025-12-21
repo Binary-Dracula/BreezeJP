@@ -9,11 +9,13 @@ import '../../../../data/models/kana_letter.dart';
 import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/kana_log.dart';
 import '../../../../data/models/user.dart';
+import '../../../../data/commands/kana_command.dart';
+import '../../../../data/commands/kana_command_provider.dart';
 import '../../../../data/commands/session/session_scope.dart';
 import '../../../../data/commands/session/study_session_handle.dart';
 import '../../../../data/commands/study_session_command_provider.dart';
-import '../../../../data/repositories/kana_repository.dart';
-import '../../../../data/repositories/kana_repository_provider.dart';
+import '../../../../data/queries/kana_query.dart';
+import '../../../../data/queries/kana_query_provider.dart';
 import '../../../../data/repositories/active_user_provider.dart';
 
 final matchingControllerProvider =
@@ -23,7 +25,7 @@ final matchingControllerProvider =
 ///
 /// 该 Controller 负责把「待复习假名队列」组织成 Matching 题目并驱动 UI。
 ///
-/// - 数据来源：`KanaRepository`（通过 `kanaRepositoryProvider` 获取）
+/// - 数据来源：`KanaQuery`（通过 `kanaQueryProvider` 获取）
 /// - 复习入口：UI 应调用 [loadReview] 来启动一次复习 Session
 /// - 题型分组：把 [ReviewKanaItem] 按 [ReviewQuestionType] 分为 3 组并按顺序执行
 ///   - `audio` → `switchMode` → `recall`
@@ -44,8 +46,9 @@ class MatchingController extends Notifier<MatchingState> {
   /// 4×4 Pair Window 的最大尺寸。
   static const int _windowSize = 4;
 
-  /// Controller 访问数据库的唯一入口：Repository（禁止 View 直接查 DB）。
-  KanaRepository get repo => ref.read(kanaRepositoryProvider);
+  /// Controller 访问查询的入口：KanaQuery（禁止 View 直接查 DB）。
+  KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
+  KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
 
   StudySessionHandle? _session;
 
@@ -121,7 +124,7 @@ class MatchingController extends Notifier<MatchingState> {
               );
 
       // 2) 获取「已到期需复习」的 kana_learning_state
-      final learningStates = await repo.getDueReviewKana(user.id);
+      final learningStates = await _kanaQuery.getDueReviewKana(user.id);
 
       // 3) 将 learning_state + kana_letters + kana_audio + 历史题型，组装成 ReviewKanaItem
       final items = await _composeReviewItems(user.id, learningStates);
@@ -540,7 +543,7 @@ class MatchingController extends Notifier<MatchingState> {
     final List<ReviewKanaItem> items = [];
 
     for (final learningState in learningStates) {
-      final KanaLetter? letter = await repo.getKanaLetterById(
+      final KanaLetter? letter = await _kanaQuery.getKanaLetterById(
         learningState.kanaId,
       );
       if (letter == null) {
@@ -548,8 +551,8 @@ class MatchingController extends Notifier<MatchingState> {
         continue;
       }
 
-      final audio = await repo.getKanaAudio(learningState.kanaId);
-      final lastType = await repo.getLastKanaReviewQuestionType(
+      final audio = await _kanaQuery.getKanaAudio(learningState.kanaId);
+      final lastType = await _kanaQuery.getLastKanaReviewQuestionType(
         userId,
         learningState.kanaId,
       );
@@ -691,14 +694,14 @@ class MatchingController extends Notifier<MatchingState> {
   Future<void> _onItemRated(ReviewKanaItem item, int rating) async {
     final user = await ref.read(activeUserProvider.future);
     final algorithm = _extractAlgorithm(user);
-    final learningState = await repo.getKanaLearningState(
+    final learningState = await _kanaQuery.getKanaLearningState(
       user.id,
       item.kanaLetter.id,
     );
     if (learningState == null) return;
     final srs = _computeSrsResult(learningState, rating, algorithm);
 
-    await repo.updateKanaReviewResult(
+    await _kanaCommand.updateKanaReviewResult(
       userId: user.id,
       kanaId: item.kanaLetter.id,
       rating: rating,
@@ -707,7 +710,15 @@ class MatchingController extends Notifier<MatchingState> {
       nextReviewAt: srs.nextReviewAt,
     );
 
-    await repo.addKanaLogQuick(
+    final session =
+        _session ??
+        ref.read(studySessionCommandProvider).createSession(
+              userId: user.id,
+              scope: SessionScope.kanaReview,
+            );
+    _session ??= session;
+
+    await _kanaCommand.addKanaLogQuick(
       userId: user.id,
       kanaId: item.kanaLetter.id,
       logType: KanaLogType.review,
@@ -719,17 +730,7 @@ class MatchingController extends Notifier<MatchingState> {
       fsrsStabilityAfter: srs.newStability,
       fsrsDifficultyAfter: srs.newDifficulty,
       questionType: item.questionType.name,
-    );
-    final session =
-        _session ??
-        ref.read(studySessionCommandProvider).createSession(
-              userId: user.id,
-              scope: SessionScope.kanaReview,
-            );
-    _session ??= session;
-    await session.submitKanaReview(
-      rating: rating,
-      durationMs: 0,
+      session: session,
     );
   }
 

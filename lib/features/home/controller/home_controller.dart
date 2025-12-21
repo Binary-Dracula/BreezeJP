@@ -4,8 +4,8 @@ import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/queries/daily_stat_query.dart';
 import '../../../data/analytics/study_word_analytics.dart';
 import '../../../data/queries/study_word_query.dart';
-import '../../../data/repositories/kana_repository.dart';
-import '../../../data/repositories/kana_repository_provider.dart';
+import '../../../data/queries/kana_query.dart';
+import '../../../data/queries/kana_query_provider.dart';
 import '../state/home_state.dart';
 
 /// HomeController Provider
@@ -22,7 +22,7 @@ class HomeController extends Notifier<HomeState> {
   StudyWordAnalytics get _studyWordAnalytics =>
       ref.read(studyWordAnalyticsProvider);
   DailyStatQuery get _dailyStatQuery => ref.read(dailyStatQueryProvider);
-  KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
+  KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
 
   /// 加载主页数据
   Future<void> loadHomeData() async {
@@ -37,7 +37,7 @@ class HomeController extends Notifier<HomeState> {
 
       // 2. 获取学习统计
       final reviewCount = await _studyWordQuery.getDueReviewCount(userId);
-      final kanaReviewCount = await _kanaRepository.countDueKanaReviews(userId);
+      final kanaReviewCount = await _kanaQuery.countDueKanaReviews(userId);
       final userStats = await _studyWordAnalytics.getUserStatistics(userId);
       final newWordCount = userStats.newWords;
       final masteredWordCount = userStats.masteredWords;

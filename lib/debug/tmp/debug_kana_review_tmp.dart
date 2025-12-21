@@ -3,12 +3,14 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/commands/kana_command.dart';
+import '../../data/commands/kana_command_provider.dart';
 import '../../data/models/kana_learning_state.dart';
 import '../../data/models/kana_log.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/active_user_provider.dart';
-import '../../data/repositories/kana_repository.dart';
-import '../../data/repositories/kana_repository_provider.dart';
+import '../../data/queries/kana_query.dart';
+import '../../data/queries/kana_query_provider.dart';
 
 final debugKanaReviewTmpProvider = Provider<DebugKanaReviewTmp>((ref) {
   return DebugKanaReviewTmp(ref);
@@ -19,7 +21,8 @@ class DebugKanaReviewTmp {
 
   final Ref ref;
 
-  KanaRepository get repo => ref.read(kanaRepositoryProvider);
+  KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
+  KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
 
   Future<Map<String, dynamic>> simulateReviewSequence(
     int userId,
@@ -35,7 +38,10 @@ class DebugKanaReviewTmp {
     final algorithm = forceAlgorithm ?? baseAlgorithm;
 
     for (final rating in ratings) {
-      final learningState = await repo.getKanaLearningState(userId, kanaId);
+      final learningState = await _kanaQuery.getKanaLearningState(
+        userId,
+        kanaId,
+      );
       if (learningState == null) {
         throw StateError(
           'simulateReviewSequence: learningState not found for userId=$userId kanaId=$kanaId',
@@ -43,7 +49,7 @@ class DebugKanaReviewTmp {
       }
       final srs = _computeSrsResult(learningState, rating, algorithm);
 
-      await repo.updateKanaReviewResult(
+      await _kanaCommand.updateKanaReviewResult(
         userId: userId,
         kanaId: kanaId,
         rating: rating,
@@ -52,7 +58,7 @@ class DebugKanaReviewTmp {
         nextReviewAt: srs.nextReviewAt,
       );
 
-      await repo.addKanaLogQuick(
+      await _kanaCommand.addKanaLogQuick(
         userId: userId,
         kanaId: kanaId,
         logType: KanaLogType.review,
@@ -67,9 +73,12 @@ class DebugKanaReviewTmp {
       );
     }
 
-    final finalState = await repo.getKanaLearningState(userId, kanaId);
-    final logs = await repo.getKanaLogs(userId, kanaId);
-    return {'finalState': finalState, 'logs': logs};
+    final finalState = await _kanaQuery.getKanaLearningState(userId, kanaId);
+    final logs = await _kanaQuery.getKanaLogs(userId, kanaId);
+    return {
+      'finalState': finalState,
+      'logs': logs.map((item) => item.log).toList(),
+    };
   }
 
   _DebugSrsResult _computeSrsResult(
