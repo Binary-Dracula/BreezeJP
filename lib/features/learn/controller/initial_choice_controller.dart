@@ -1,7 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../data/commands/active_user_command.dart';
+import '../../../data/commands/active_user_command_provider.dart';
+import '../../../data/queries/active_user_query.dart';
+import '../../../data/queries/active_user_query_provider.dart';
+import '../../../data/models/user.dart';
 import '../../../data/queries/word_read_queries.dart';
-import '../../../data/repositories/active_user_provider.dart';
 import '../state/initial_choice_state.dart';
 
 /// 初始选择页控制器
@@ -12,12 +16,22 @@ class InitialChoiceController extends Notifier<InitialChoiceState> {
     return const InitialChoiceState();
   }
 
+  ActiveUserCommand get _activeUserCommand =>
+      ref.read(activeUserCommandProvider);
+  ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
+
+  Future<User> _getActiveUser() async {
+    final ensured = await _activeUserCommand.ensureActiveUser();
+    final user = await _activeUserQuery.getActiveUser();
+    return user ?? ensured;
+  }
+
   /// 加载 5 个随机未掌握单词
   Future<void> loadChoices() async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final userId = (await ref.read(activeUserProvider.future)).id;
+      final userId = (await _getActiveUser()).id;
       final wordQueries = ref.read(wordReadQueriesProvider);
       final choices = await wordQueries.getRandomUnmasteredWordsWithMeaning(
         userId: userId,

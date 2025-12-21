@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
+import '../db/app_database_provider.dart';
 import '../models/read/word_list_item.dart';
 import '../models/example_audio.dart';
 import '../models/word.dart';
@@ -17,16 +17,16 @@ import '../repositories/word_meaning_repository_provider.dart';
 import '../repositories/word_repository_provider.dart';
 
 final wordReadQueriesProvider = Provider<WordReadQueries>((ref) {
-  return WordReadQueries(ref);
+  final db = ref.read(databaseProvider);
+  return WordReadQueries(ref, db);
 });
 
 /// 单词 Read 查询层（组合查询/场景查询）
 class WordReadQueries {
-  WordReadQueries(this.ref);
+  WordReadQueries(this.ref, this._db);
 
   final Ref ref;
-
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  final Database _db;
 
   /// 获取单词的完整详情（包含释义、音频、例句）
   Future<WordDetail?> getWordDetail(int wordId) async {
@@ -97,7 +97,7 @@ class WordReadQueries {
     int? offset,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final sql =
           '''
         SELECT 
@@ -146,7 +146,7 @@ class WordReadQueries {
     List<int> excludeIds = const [],
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final whereArgs = <Object>[userId];
       var whereClause =
           'id NOT IN (SELECT word_id FROM study_words WHERE user_id = ? AND user_state > 0)';
@@ -190,7 +190,7 @@ class WordReadQueries {
     int count = 5,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
 
       final wordIdRows = await db.rawQuery(
         '''
@@ -263,7 +263,7 @@ class WordReadQueries {
     required int wordId,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final results = await db.rawQuery(
         '''
         SELECT w.*, wr.score, wr.relation_type

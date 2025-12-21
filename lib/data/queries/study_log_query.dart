@@ -2,17 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
+import '../db/app_database_provider.dart';
 import '../models/read/study_log_stats.dart';
 import '../models/study_log.dart';
 
 final studyLogQueryProvider = Provider<StudyLogQuery>((ref) {
-  return StudyLogQuery();
+  final db = ref.read(databaseProvider);
+  return StudyLogQuery(db);
 });
 
 /// 学习日志查询层（统计 / 报表）
 class StudyLogQuery {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  StudyLogQuery(this._db);
+
+  final Database _db;
 
   /// 获取每日学习统计
   Future<List<StudyLogDailyStatistics>> getDailyStatistics(
@@ -20,7 +23,7 @@ class StudyLogQuery {
     int days = 30,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final startDate = DateTime.now().subtract(Duration(days: days));
       final startTimestamp = startDate.millisecondsSinceEpoch ~/ 1000;
 
@@ -64,7 +67,7 @@ class StudyLogQuery {
   /// 获取复习评分分布
   Future<List<StudyLogRatingCount>> getRatingDistribution(int userId) async {
     try {
-      final db = await _db;
+      final db = _db;
       final results = await db.rawQuery(
         '''
         SELECT rating, COUNT(*) as count
@@ -103,7 +106,7 @@ class StudyLogQuery {
     int days = 7,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final startDate = DateTime.now().subtract(Duration(days: days));
       final startTimestamp = startDate.millisecondsSinceEpoch ~/ 1000;
 
@@ -145,7 +148,7 @@ class StudyLogQuery {
     int days = 365,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final startDate = DateTime.now().subtract(Duration(days: days));
       final startTimestamp = startDate.millisecondsSinceEpoch ~/ 1000;
 
@@ -186,7 +189,7 @@ class StudyLogQuery {
   /// 获取总体学习统计
   Future<StudyLogOverallStatistics> getOverallStatistics(int userId) async {
     try {
-      final db = await _db;
+      final db = _db;
       final result = await db.rawQuery(
         '''
         SELECT 

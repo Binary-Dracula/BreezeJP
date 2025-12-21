@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../../data/repositories/active_user_provider.dart';
+import '../../../data/commands/active_user_command.dart';
+import '../../../data/commands/active_user_command_provider.dart';
+import '../../../data/queries/active_user_query.dart';
+import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/queries/daily_stat_query.dart';
 import '../../../data/analytics/study_word_analytics.dart';
 import '../../../data/queries/study_word_query.dart';
 import '../../../data/queries/kana_query.dart';
 import '../../../data/queries/kana_query_provider.dart';
+import '../../../data/models/user.dart';
 import '../state/home_state.dart';
 
 /// HomeController Provider
@@ -23,6 +27,15 @@ class HomeController extends Notifier<HomeState> {
       ref.read(studyWordAnalyticsProvider);
   DailyStatQuery get _dailyStatQuery => ref.read(dailyStatQueryProvider);
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
+  ActiveUserCommand get _activeUserCommand =>
+      ref.read(activeUserCommandProvider);
+  ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
+
+  Future<User> _getActiveUser() async {
+    final ensured = await _activeUserCommand.ensureActiveUser();
+    final user = await _activeUserQuery.getActiveUser();
+    return user ?? ensured;
+  }
 
   /// 加载主页数据
   Future<void> loadHomeData() async {
@@ -31,7 +44,7 @@ class HomeController extends Notifier<HomeState> {
       state = state.copyWith(isLoading: true, error: null);
 
       // 1. 获取当前活跃用户
-      final user = await ref.read(activeUserProvider.future);
+      final user = await _getActiveUser();
       final userId = user.id;
       final userName = user.username;
 

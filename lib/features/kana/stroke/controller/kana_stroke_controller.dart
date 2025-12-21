@@ -4,7 +4,11 @@ import '../../../../core/utils/app_logger.dart';
 import '../../../../data/models/kana_detail.dart';
 import '../../../../data/commands/kana_command.dart';
 import '../../../../data/commands/kana_command_provider.dart';
-import '../../../../data/repositories/active_user_provider.dart';
+import '../../../../data/commands/active_user_command.dart';
+import '../../../../data/commands/active_user_command_provider.dart';
+import '../../../../data/queries/active_user_query.dart';
+import '../../../../data/queries/active_user_query_provider.dart';
+import '../../../../data/models/user.dart';
 import '../../../../data/queries/kana_query.dart';
 import '../../../../data/queries/kana_query_provider.dart';
 import '../../chart/state/kana_chart_state.dart';
@@ -20,9 +24,18 @@ final kanaStrokeControllerProvider =
 class KanaStrokeController extends Notifier<KanaStrokeState> {
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
   KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
+  ActiveUserCommand get _activeUserCommand =>
+      ref.read(activeUserCommandProvider);
+  ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
 
   @override
   KanaStrokeState build() => const KanaStrokeState();
+
+  Future<User> _getActiveUser() async {
+    final ensured = await _activeUserCommand.ensureActiveUser();
+    final user = await _activeUserQuery.getActiveUser();
+    return user ?? ensured;
+  }
 
   /// 初始化练习数据
   Future<void> init({
@@ -88,7 +101,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
       // --------------------------------------------------
       // ⭐ STEP 2：在这里加载或创建 kana_learning_state
       // --------------------------------------------------
-      final user = await ref.read(activeUserProvider.future);
+      final user = await _getActiveUser();
 
       final learningState = await _kanaCommand.getOrCreateLearningState(
         user.id,
@@ -132,7 +145,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
     final learningState = state.learningState;
     if (current == null || learningState == null) return;
 
-    final user = await ref.read(activeUserProvider.future);
+    final user = await _getActiveUser();
 
     await _kanaCommand.updateLearningTimestamp(user.id, current.letter.id);
 

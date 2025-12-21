@@ -2,17 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
+import '../db/app_database_provider.dart';
 import '../models/daily_stat.dart';
 import '../models/read/daily_stat_stats.dart';
 
 final dailyStatQueryProvider = Provider<DailyStatQuery>((ref) {
-  return DailyStatQuery();
+  final db = ref.read(databaseProvider);
+  return DailyStatQuery(db);
 });
 
 /// DailyStat 查询层（统计 / 报表）
 class DailyStatQuery {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  DailyStatQuery(this._db);
+
+  final Database _db;
 
   /// 获取用户的所有每日统计
   Future<List<DailyStat>> getUserDailyStats(
@@ -21,7 +24,7 @@ class DailyStatQuery {
     int? offset,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final results = await db.query(
         'daily_stats',
         where: 'user_id = ?',
@@ -56,7 +59,7 @@ class DailyStatQuery {
     required DateTime endDate,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final startStr = _formatDate(startDate);
       final endStr = _formatDate(endDate);
 
@@ -113,7 +116,7 @@ class DailyStatQuery {
   /// 计算学习连续天数（streak）
   Future<int> calculateStreak(int userId) async {
     try {
-      final db = await _db;
+      final db = _db;
 
       final recentDays = await db.rawQuery(
         '''
@@ -208,7 +211,7 @@ class DailyStatQuery {
   /// 获取本周统计汇总
   Future<DailyStatSummary> getWeeklySummary(int userId) async {
     try {
-      final db = await _db;
+      final db = _db;
       final result = await db.rawQuery(
         '''
         SELECT 
@@ -247,7 +250,7 @@ class DailyStatQuery {
   /// 获取本月统计汇总
   Future<DailyStatSummary> getMonthlySummary(int userId) async {
     try {
-      final db = await _db;
+      final db = _db;
       final result = await db.rawQuery(
         '''
         SELECT 

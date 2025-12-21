@@ -2,16 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
+import '../db/app_database_provider.dart';
 import '../models/study_word.dart';
 
 final studyWordQueryProvider = Provider<StudyWordQuery>((ref) {
-  return StudyWordQuery();
+  final db = ref.read(databaseProvider);
+  return StudyWordQuery(db);
 });
 
 /// StudyWord 查询层（只读）
 class StudyWordQuery {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  StudyWordQuery(this._db);
+
+  final Database _db;
 
   /// 获取用户的所有学习记录
   Future<List<StudyWord>> getUserStudyWords(
@@ -21,7 +24,7 @@ class StudyWordQuery {
     int? offset,
   }) async {
     try {
-      final db = await _db;
+      final db = _db;
       final whereClause = state != null
           ? 'user_id = $userId AND user_state = ${state.value}'
           : 'user_id = $userId';
@@ -55,7 +58,7 @@ class StudyWordQuery {
   /// 获取需要复习的单词
   Future<List<StudyWord>> getDueReviews(int userId, {int? limit}) async {
     try {
-      final db = await _db;
+      final db = _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final whereClause =
           'user_id = $userId AND user_state = 1 AND next_review_at <= $now';
@@ -89,7 +92,7 @@ class StudyWordQuery {
   /// 获取新单词（未学习的）
   Future<List<StudyWord>> getNewWords(int userId, {int? limit}) async {
     try {
-      final db = await _db;
+      final db = _db;
       final whereClause = 'user_id = $userId AND user_state = 0';
       final results = await db.query(
         'study_words',
@@ -120,7 +123,7 @@ class StudyWordQuery {
   /// 获取待复习单词数量
   Future<int> getDueReviewCount(int userId) async {
     try {
-      final db = await _db;
+      final db = _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       final result = await db.rawQuery(

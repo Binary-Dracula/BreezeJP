@@ -2,21 +2,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
+import '../db/app_database_provider.dart';
 import '../models/read/user_word_statistics.dart';
 
 final studyWordAnalyticsProvider = Provider<StudyWordAnalytics>((ref) {
-  return StudyWordAnalytics();
+  final db = ref.read(databaseProvider);
+  return StudyWordAnalytics(db);
 });
 
 /// StudyWord 统计分析
 class StudyWordAnalytics {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  StudyWordAnalytics(this._db);
+
+  final Database _db;
 
   /// 获取用户的学习统计
   Future<UserWordStatistics> getUserStatistics(int userId) async {
     try {
-      final db = await _db;
+      final db = _db;
       final result = await db.rawQuery(
         '''
         SELECT 

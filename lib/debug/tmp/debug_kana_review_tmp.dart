@@ -3,12 +3,15 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/commands/active_user_command.dart';
+import '../../data/commands/active_user_command_provider.dart';
 import '../../data/commands/kana_command.dart';
 import '../../data/commands/kana_command_provider.dart';
 import '../../data/models/kana_learning_state.dart';
 import '../../data/models/kana_log.dart';
 import '../../data/models/user.dart';
-import '../../data/repositories/active_user_provider.dart';
+import '../../data/queries/active_user_query.dart';
+import '../../data/queries/active_user_query_provider.dart';
 import '../../data/queries/kana_query.dart';
 import '../../data/queries/kana_query_provider.dart';
 
@@ -23,6 +26,15 @@ class DebugKanaReviewTmp {
 
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
   KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
+  ActiveUserCommand get _activeUserCommand =>
+      ref.read(activeUserCommandProvider);
+  ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
+
+  Future<User> _getActiveUser() async {
+    final ensured = await _activeUserCommand.ensureActiveUser();
+    final user = await _activeUserQuery.getActiveUser();
+    return user ?? ensured;
+  }
 
   Future<Map<String, dynamic>> simulateReviewSequence(
     int userId,
@@ -31,7 +43,7 @@ class DebugKanaReviewTmp {
     String questionType = 'debug',
     int? forceAlgorithm,
   }) async {
-    final activeUser = await ref.read(activeUserProvider.future);
+    final activeUser = await _getActiveUser();
     final baseAlgorithm = activeUser.id == userId
         ? _extractAlgorithm(activeUser)
         : 1;

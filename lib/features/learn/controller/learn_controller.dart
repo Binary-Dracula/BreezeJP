@@ -1,7 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../../data/repositories/active_user_provider.dart';
+import '../../../data/commands/active_user_command.dart';
+import '../../../data/commands/active_user_command_provider.dart';
+import '../../../data/queries/active_user_query.dart';
+import '../../../data/queries/active_user_query_provider.dart';
+import '../../../data/models/user.dart';
 import '../../../data/queries/word_read_queries.dart';
 import '../../../data/commands/session/session_scope.dart';
 import '../../../data/commands/session/study_session_handle.dart';
@@ -23,8 +27,18 @@ class LearnController extends Notifier<LearnState> {
     return const LearnState();
   }
 
+  ActiveUserCommand get _activeUserCommand =>
+      ref.read(activeUserCommandProvider);
+  ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
+
+  Future<User> _getActiveUser() async {
+    final ensured = await _activeUserCommand.ensureActiveUser();
+    final user = await _activeUserQuery.getActiveUser();
+    return user ?? ensured;
+  }
+
   Future<int> _ensureUserId() async {
-    _userId ??= (await ref.read(activeUserProvider.future)).id;
+    _userId ??= (await _getActiveUser()).id;
     return _userId!;
   }
 

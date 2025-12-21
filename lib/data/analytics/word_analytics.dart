@@ -2,21 +2,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
+import '../db/app_database_provider.dart';
 import '../models/read/jlpt_level_count.dart';
 
 final wordAnalyticsProvider = Provider<WordAnalytics>((ref) {
-  return WordAnalytics();
+  final db = ref.read(databaseProvider);
+  return WordAnalytics(db);
 });
 
 /// 单词统计分析
 class WordAnalytics {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  WordAnalytics(this._db);
+
+  final Database _db;
 
   /// 获取各 JLPT 等级的单词数量
   Future<List<JlptLevelCount>> getWordCountByLevel() async {
     try {
-      final db = await _db;
+      final db = _db;
       final results = await db.rawQuery('''
         SELECT jlpt_level, COUNT(*) as count
         FROM words

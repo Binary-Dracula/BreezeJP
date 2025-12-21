@@ -9,14 +9,17 @@ import '../../../../data/models/kana_letter.dart';
 import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/kana_log.dart';
 import '../../../../data/models/user.dart';
+import '../../../../data/commands/active_user_command.dart';
+import '../../../../data/commands/active_user_command_provider.dart';
 import '../../../../data/commands/kana_command.dart';
 import '../../../../data/commands/kana_command_provider.dart';
 import '../../../../data/commands/session/session_scope.dart';
 import '../../../../data/commands/session/study_session_handle.dart';
 import '../../../../data/commands/study_session_command_provider.dart';
+import '../../../../data/queries/active_user_query.dart';
+import '../../../../data/queries/active_user_query_provider.dart';
 import '../../../../data/queries/kana_query.dart';
 import '../../../../data/queries/kana_query_provider.dart';
-import '../../../../data/repositories/active_user_provider.dart';
 
 final matchingControllerProvider =
     NotifierProvider<MatchingController, MatchingState>(MatchingController.new);
@@ -49,6 +52,9 @@ class MatchingController extends Notifier<MatchingState> {
   /// Controller 访问查询的入口：KanaQuery（禁止 View 直接查 DB）。
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
   KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
+  ActiveUserCommand get _activeUserCommand =>
+      ref.read(activeUserCommandProvider);
+  ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
 
   StudySessionHandle? _session;
 
@@ -73,6 +79,12 @@ class MatchingController extends Notifier<MatchingState> {
   ///
   /// 注意：这里不会自动触发 [loadReview]，启动入口应由 UI（页面生命周期）明确触发。
   MatchingState build() => const MatchingState();
+
+  Future<User> _getActiveUser() async {
+    final ensured = await _activeUserCommand.ensureActiveUser();
+    final user = await _activeUserQuery.getActiveUser();
+    return user ?? ensured;
+  }
 
   void _clearTypeGroups() {
     _audioGroup = [];
@@ -115,7 +127,7 @@ class MatchingController extends Notifier<MatchingState> {
       _wrongCountByKanaId.clear();
 
       // 1) 获取当前用户
-      final user = await ref.read(activeUserProvider.future);
+      final user = await _getActiveUser();
       await _session?.flush();
       _session =
           ref.read(studySessionCommandProvider).createSession(
@@ -692,7 +704,7 @@ class MatchingController extends Notifier<MatchingState> {
 
   /// 在用户完成一个题目后，将结果落库（更新学习进度 + 追加日志）。
   Future<void> _onItemRated(ReviewKanaItem item, int rating) async {
-    final user = await ref.read(activeUserProvider.future);
+    final user = await _getActiveUser();
     final algorithm = _extractAlgorithm(user);
     final learningState = await _kanaQuery.getKanaLearningState(
       user.id,
