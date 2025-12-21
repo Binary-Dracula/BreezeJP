@@ -66,6 +66,57 @@ class StudyWordRepository {
     }
   }
 
+  /// upsert 学习记录（学习中）
+  Future<void> upsertLearned({
+    required int userId,
+    required int wordId,
+    required int userState,
+    required int nowEpochSeconds,
+  }) async {
+    try {
+      final db = await _db;
+      await db.rawInsert(
+        '''
+        INSERT INTO study_words (user_id, word_id, user_state, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(user_id, word_id) DO UPDATE SET
+          user_state = CASE 
+            WHEN user_state = 2 THEN 2
+            ELSE ?
+          END,
+          updated_at = ?
+      ''',
+        [
+          userId,
+          wordId,
+          userState,
+          nowEpochSeconds,
+          nowEpochSeconds,
+          userState,
+          nowEpochSeconds,
+        ],
+      );
+
+      logger.dbInsert(
+        table: 'study_words',
+        id: 0,
+        keyFields: {
+          'userId': userId,
+          'wordId': wordId,
+          'action': 'upsertLearned',
+        },
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 更新学习记录
   Future<void> updateStudyWord(StudyWord studyWord) async {
     try {
