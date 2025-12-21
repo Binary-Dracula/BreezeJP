@@ -23,12 +23,14 @@ class DailyStatCommand {
     required int failed,
     required int mastered,
     required int durationMs,
+    required int kanaReviewCount,
   }) async {
     if (learned == 0 &&
         reviewed == 0 &&
         failed == 0 &&
         mastered == 0 &&
-        durationMs == 0) {
+        durationMs == 0 &&
+        kanaReviewCount == 0) {
       return;
     }
 
@@ -41,7 +43,8 @@ class DailyStatCommand {
       totalTimeMs: stat.totalTimeMs + durationMs,
       newLearnedCount: stat.newLearnedCount + learned,
       reviewCount: stat.reviewCount + reviewed,
-      uniqueKanaReviewedCount: stat.uniqueKanaReviewedCount + mastered,
+      uniqueKanaReviewedCount:
+          stat.uniqueKanaReviewedCount + kanaReviewCount + mastered,
     );
     await _repo.updateDailyStat(updated);
   }

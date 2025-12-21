@@ -128,6 +128,7 @@ class StudySessionHandle {
         failed: _accumulator.failedCount,
         mastered: _accumulator.masteredCount,
         durationMs: _accumulator.totalDurationMs,
+        kanaReviewCount: _accumulator.kanaReviewCount,
       );
     });
   }
