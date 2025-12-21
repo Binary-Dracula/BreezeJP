@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
-import '../../../data/commands/daily_stat_command.dart';
 import '../../../data/queries/daily_stat_query.dart';
 import '../../../data/analytics/study_word_analytics.dart';
 import '../../../data/queries/study_word_query.dart';
@@ -23,7 +22,6 @@ class HomeController extends Notifier<HomeState> {
   StudyWordAnalytics get _studyWordAnalytics =>
       ref.read(studyWordAnalyticsProvider);
   DailyStatQuery get _dailyStatQuery => ref.read(dailyStatQueryProvider);
-  DailyStatCommand get _dailyStatCommand => ref.read(dailyStatCommandProvider);
   KanaRepository get _kanaRepository => ref.read(kanaRepositoryProvider);
 
   /// 加载主页数据
@@ -46,8 +44,16 @@ class HomeController extends Notifier<HomeState> {
 
       // 3. 获取每日统计 (Streak & Duration)
       final streakDays = await _dailyStatQuery.calculateStreak(userId);
-      final todayStat = await _dailyStatCommand.ensureTodayStat(userId);
-      final todayDurationMinutes = (todayStat.totalTimeMs / 1000 / 60).round();
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day);
+      final todayStats = await _dailyStatQuery.getDailyStatsByDateRange(
+        userId,
+        startDate: todayStart,
+        endDate: todayStart,
+      );
+      final todayStat = todayStats.isNotEmpty ? todayStats.first : null;
+      final todayDurationMinutes =
+          ((todayStat?.totalTimeMs ?? 0) / 1000 / 60).round();
 
       state = state.copyWith(
         isLoading: false,

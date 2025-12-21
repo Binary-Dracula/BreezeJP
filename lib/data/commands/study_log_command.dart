@@ -7,7 +7,7 @@ final studyLogCommandProvider = Provider<StudyLogCommand>((ref) {
   return StudyLogCommand(ref);
 });
 
-/// 学习日志写入命令（含统计副作用）
+/// 学习日志写入命令
 class StudyLogCommand {
   StudyLogCommand(this.ref);
 

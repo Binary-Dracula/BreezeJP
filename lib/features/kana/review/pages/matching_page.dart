@@ -34,33 +34,41 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
     final options = state.rightOptions;
 
     if (state.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return WillPopScope(
+        onWillPop: _handlePop,
+        child: const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
     }
 
     if (state.error != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('五十音复习')),
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.loadFailed(state.error!),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => ref
-                          .read(matchingControllerProvider.notifier)
-                          .loadReview(),
-                      child: Text(l10n.retryButton),
-                    ),
-                  ],
+      return WillPopScope(
+        onWillPop: _handlePop,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('五十音复习')),
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.loadFailed(state.error!),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref
+                            .read(matchingControllerProvider.notifier)
+                            .loadReview(),
+                        child: Text(l10n.retryButton),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -70,16 +78,19 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
     }
 
     if (state.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('五十音复习')),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
-              SizedBox(height: 12),
-              Text('暂无待复习五十音', style: TextStyle(fontSize: 16)),
-            ],
+      return WillPopScope(
+        onWillPop: _handlePop,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('五十音复习')),
+          body: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
+                SizedBox(height: 12),
+                Text('暂无待复习五十音', style: TextStyle(fontSize: 16)),
+              ],
+            ),
           ),
         ),
       );
@@ -87,19 +98,29 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
 
     /// 全部复习完成
     if (state.isAllFinished) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('五十音复习')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('今日五十音复习已完成', style: TextStyle(fontSize: 20)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('返回'),
-              ),
-            ],
+      return WillPopScope(
+        onWillPop: _handlePop,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('五十音复习')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('今日五十音复习已完成', style: TextStyle(fontSize: 20)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    await ref
+                        .read(matchingControllerProvider.notifier)
+                        .endSession();
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('返回'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -107,77 +128,88 @@ class _MatchingPageState extends ConsumerState<MatchingPage> {
 
     final questionType = state.currentQuestionType;
     if (questionType == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('五十音复习')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: () =>
-                    ref.read(matchingControllerProvider.notifier).loadReview(),
-                child: Text(l10n.retryButton),
-              ),
-            ],
+      return WillPopScope(
+        onWillPop: _handlePop,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('五十音复习')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => ref
+                      .read(matchingControllerProvider.notifier)
+                      .loadReview(),
+                  child: Text(l10n.retryButton),
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_titleForType(questionType)),
-        centerTitle: true,
-      ),
+    return WillPopScope(
+      onWillPop: _handlePop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_titleForType(questionType)),
+          centerTitle: true,
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 12),
 
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-
-          /// 题型指示
-          Text(
-            _subtitleForType(questionType),
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-
-          const SizedBox(height: 16),
-
-          Expanded(
-            child: Row(
-              children: [
-                /// 左侧题目列
-                Expanded(
-                  child: _LeftColumn(
-                    state: state,
-                    ref: ref,
-                    onTap: (index) {
-                      ref
-                          .read(matchingControllerProvider.notifier)
-                          .selectLeft(index);
-                    },
-                  ),
-                ),
-
-                /// 右侧答案列
-                Expanded(
-                  child: _RightColumn(
-                    state: state,
-                    options: options,
-                    onTap: (index) {
-                      ref
-                          .read(matchingControllerProvider.notifier)
-                          .selectRight(index);
-                    },
-                  ),
-                ),
-              ],
+            /// 题型指示
+            Text(
+              _subtitleForType(questionType),
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
-          ),
 
-          const SizedBox(height: 16),
-        ],
+            const SizedBox(height: 16),
+
+            Expanded(
+              child: Row(
+                children: [
+                  /// 左侧题目列
+                  Expanded(
+                    child: _LeftColumn(
+                      state: state,
+                      ref: ref,
+                      onTap: (index) {
+                        ref
+                            .read(matchingControllerProvider.notifier)
+                            .selectLeft(index);
+                      },
+                    ),
+                  ),
+
+                  /// 右侧答案列
+                  Expanded(
+                    child: _RightColumn(
+                      state: state,
+                      options: options,
+                      onTap: (index) {
+                        ref
+                            .read(matchingControllerProvider.notifier)
+                            .selectRight(index);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<bool> _handlePop() async {
+    await ref.read(matchingControllerProvider.notifier).endSession();
+    return true;
   }
 }
 

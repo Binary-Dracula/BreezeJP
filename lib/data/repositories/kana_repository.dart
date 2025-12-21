@@ -1,8 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../commands/daily_stat_command.dart';
 import '../models/kana_letter.dart';
 import '../models/kana_audio.dart';
 import '../models/kana_example.dart';
@@ -14,13 +12,9 @@ import '../models/kana_detail.dart';
 /// 五十音数据仓库
 /// 负责所有与五十音图相关的数据库操作
 class KanaRepository {
-  KanaRepository(this.ref, this._dbProvider);
+  KanaRepository(this._dbProvider);
 
-  final Ref ref;
   final Future<Database> Function() _dbProvider;
-
-  DailyStatCommand get _dailyStatCommand =>
-      ref.read(dailyStatCommandProvider);
 
   /// 获取数据库实例
   Future<Database> get _db async => await _dbProvider();
@@ -679,36 +673,6 @@ class KanaRepository {
     );
     final id = await addKanaLog(log);
 
-    // 仅在复习日志且存在评分时更新每日统计
-    if (logType == KanaLogType.review && rating != null) {
-      final now = DateTime.now();
-      try {
-        if (rating <= 1) {
-          await _dailyStatCommand.incrementFailedCount(
-            userId,
-            now,
-            count: 1,
-          );
-        } else {
-          await _dailyStatCommand.incrementReviewedWords(
-            userId,
-            now,
-            count: 1,
-          );
-        }
-
-        if (durationMs > 0) {
-          await _dailyStatCommand.incrementStudyTime(
-            userId,
-            now,
-            durationMs,
-          );
-        }
-      } catch (e, stackTrace) {
-        logger.error('kana daily stat update failed', e, stackTrace);
-      }
-    }
-
     return id;
   }
 
@@ -840,25 +804,6 @@ class KanaRepository {
       });
 
       logger.dbInsert(table: 'kana_logs', id: id);
-
-      try {
-        final now = DateTime.now();
-        if (rating <= 1) {
-          await _dailyStatCommand.incrementFailedCount(
-            userId,
-            now,
-            count: 1,
-          );
-        } else {
-          await _dailyStatCommand.incrementReviewedWords(
-            userId,
-            now,
-            count: 1,
-          );
-        }
-      } catch (e, stackTrace) {
-        logger.error('kana daily stat update failed', e, stackTrace);
-      }
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'INSERT',

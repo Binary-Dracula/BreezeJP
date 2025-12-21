@@ -28,6 +28,7 @@ class LearnController extends Notifier<LearnState> {
   /// 初始化学习（传入选中的单词 ID）
   Future<void> initWithWord(int wordId) async {
     final userId = await _ensureUserId();
+    ref.read(studySessionCommandProvider).startSession(userId);
     _sessionStartTime = DateTime.now();
     state = state.copyWith(isLoading: true, error: null);
 
@@ -155,7 +156,6 @@ class LearnController extends Notifier<LearnState> {
     }
 
     try {
-      final userId = await _ensureUserId();
       final sessionCommand = ref.read(studySessionCommandProvider);
       final now = DateTime.now();
       final durationMs = _sessionStartTime == null
@@ -168,7 +168,6 @@ class LearnController extends Notifier<LearnState> {
       state = state.copyWith(learnedWordIds: newLearnedWordIds);
 
       await sessionCommand.submitFirstLearn(
-        userId: userId,
         wordId: wordId,
         durationMs: durationMs,
       );
@@ -176,6 +175,14 @@ class LearnController extends Notifier<LearnState> {
       logger.info('标记单词为已学习: wordId=$wordId');
     } catch (e, stackTrace) {
       logger.error('标记单词失败', e, stackTrace);
+    }
+  }
+
+  Future<void> endSession() async {
+    try {
+      await ref.read(studySessionCommandProvider).flush();
+    } catch (e, stackTrace) {
+      logger.error('学习 Session flush 失败', e, stackTrace);
     }
   }
 

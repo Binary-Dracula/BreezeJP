@@ -16,84 +16,32 @@ class DailyStatCommand {
 
   DailyStatRepository get _repo => ref.read(dailyStatRepositoryProvider);
 
-  /// 更新每日统计（用于学习会话结束时）
-  Future<void> updateDailyStats({
+  Future<void> applySession({
     required int userId,
-    required int learnedCount,
+    required int learned,
+    required int reviewed,
+    required int failed,
+    required int mastered,
     required int durationMs,
   }) async {
+    if (learned == 0 &&
+        reviewed == 0 &&
+        failed == 0 &&
+        mastered == 0 &&
+        durationMs == 0) {
+      return;
+    }
+
     final stat = await _ensureDailyStat(
       userId: userId,
       date: DateTime.now(),
     );
+
     final updated = stat.copyWith(
       totalTimeMs: stat.totalTimeMs + durationMs,
-      newLearnedCount: stat.newLearnedCount + learnedCount,
-    );
-    await _repo.updateDailyStat(updated);
-  }
-
-  /// 增加学习时长
-  Future<void> incrementStudyTime(
-    int userId,
-    DateTime date,
-    int milliseconds,
-  ) async {
-    final stat = await _ensureDailyStat(userId: userId, date: date);
-    final updated = stat.copyWith(
-      totalTimeMs: stat.totalTimeMs + milliseconds,
-    );
-    await _repo.updateDailyStat(updated);
-  }
-
-  /// 增加新学单词数
-  Future<void> incrementLearnedWords(
-    int userId,
-    DateTime date, {
-    int count = 1,
-  }) async {
-    final stat = await _ensureDailyStat(userId: userId, date: date);
-    final updated = stat.copyWith(
-      newLearnedCount: stat.newLearnedCount + count,
-    );
-    await _repo.updateDailyStat(updated);
-  }
-
-  /// 增加复习单词数
-  Future<void> incrementReviewedWords(
-    int userId,
-    DateTime date, {
-    int count = 1,
-  }) async {
-    final stat = await _ensureDailyStat(userId: userId, date: date);
-    final updated = stat.copyWith(
-      reviewCount: stat.reviewCount + count,
-    );
-    await _repo.updateDailyStat(updated);
-  }
-
-  /// 增加掌握单词数
-  Future<void> incrementMasteredWords(
-    int userId,
-    DateTime date, {
-    int count = 1,
-  }) async {
-    final stat = await _ensureDailyStat(userId: userId, date: date);
-    final updated = stat.copyWith(
-      uniqueKanaReviewedCount: stat.uniqueKanaReviewedCount + count,
-    );
-    await _repo.updateDailyStat(updated);
-  }
-
-  /// 增加错误次数
-  Future<void> incrementFailedCount(
-    int userId,
-    DateTime date, {
-    int count = 1,
-  }) async {
-    final stat = await _ensureDailyStat(userId: userId, date: date);
-    final updated = stat.copyWith(
-      reviewCount: stat.reviewCount + count,
+      newLearnedCount: stat.newLearnedCount + learned,
+      reviewCount: stat.reviewCount + reviewed,
+      uniqueKanaReviewedCount: stat.uniqueKanaReviewedCount + mastered,
     );
     await _repo.updateDailyStat(updated);
   }
@@ -111,14 +59,6 @@ class DailyStatCommand {
   /// 删除每日统计
   Future<void> deleteDailyStat(int id) async {
     await _repo.deleteDailyStat(id);
-  }
-
-  /// 确保指定日期存在统计记录
-  Future<DailyStat> ensureTodayStat(int userId) async {
-    return _ensureDailyStat(
-      userId: userId,
-      date: DateTime.now(),
-    );
   }
 
   Future<DailyStat> _ensureDailyStat({

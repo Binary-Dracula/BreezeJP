@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/study_log.dart';
 import 'daily_stat_command.dart';
+import 'session/review_result.dart';
+import 'session/study_session_context.dart';
 import 'study_log_command.dart';
 import 'study_word_command.dart';
 
@@ -10,6 +12,7 @@ class StudySessionCommand {
   StudySessionCommand(this.ref);
 
   final Ref ref;
+  StudySessionContext? _ctx;
 
   StudyWordCommand get _studyWordCommand =>
       ref.read(studyWordCommandProvider);
@@ -18,97 +21,106 @@ class StudySessionCommand {
   DailyStatCommand get _dailyStatCommand =>
       ref.read(dailyStatCommandProvider);
 
+  void startSession(int userId) {
+    _ctx = StudySessionContext(userId: userId);
+  }
+
   /// Submit a first-learn session for a word.
   Future<void> submitFirstLearn({
-    required int userId,
     required int wordId,
     required int durationMs,
   }) async {
-    await _studyWordCommand.markAsLearned(userId: userId, wordId: wordId);
+    final ctx = _requireContext();
+    if (durationMs > 0) {
+      ctx.addDuration(durationMs);
+    }
+    ctx.markLearned();
+
+    await _studyWordCommand.markAsLearned(userId: ctx.userId, wordId: wordId);
 
     await _studyLogCommand.logFirstLearn(
-      userId: userId,
+      userId: ctx.userId,
       wordId: wordId,
       durationMs: durationMs,
-    );
-
-    await _dailyStatCommand.incrementLearnedWords(
-      userId,
-      DateTime.now(),
-      count: 1,
-    );
-
-    await _dailyStatCommand.incrementStudyTime(
-      userId,
-      DateTime.now(),
-      durationMs,
     );
   }
 
   /// Submit a review result.
   Future<void> submitReview({
-    required int userId,
     required int wordId,
     required ReviewRating rating,
     required int durationMs,
-    required double intervalAfter,
-    required double easeFactorAfter,
-    required DateTime nextReviewAtAfter,
-    double? fsrsStabilityAfter,
-    double? fsrsDifficultyAfter,
+    required ReviewResult reviewResult,
     int algorithm = 1,
   }) async {
-    if (rating == ReviewRating.again) {
-      await _studyWordCommand.submitIncorrectReview(
-        userId,
-        wordId,
-        newInterval: intervalAfter,
-        newEaseFactor: easeFactorAfter,
-        newStability: fsrsStabilityAfter,
-        newDifficulty: fsrsDifficultyAfter,
-      );
-    } else {
-      await _studyWordCommand.submitCorrectReview(
-        userId,
-        wordId,
-        newInterval: intervalAfter,
-        newEaseFactor: easeFactorAfter,
-        newStability: fsrsStabilityAfter,
-        newDifficulty: fsrsDifficultyAfter,
-      );
+    final ctx = _requireContext();
+    if (durationMs > 0) {
+      ctx.addDuration(durationMs);
     }
 
+    final isCorrect = rating != ReviewRating.again;
+    ctx.markReviewed();
+    if (!isCorrect) {
+      ctx.markFailed();
+    }
+
+    await _studyWordCommand.applyReviewResult(
+      userId: ctx.userId,
+      wordId: wordId,
+      isCorrect: isCorrect,
+      reviewResult: reviewResult,
+    );
+
     await _studyLogCommand.logReview(
-      userId: userId,
+      userId: ctx.userId,
       wordId: wordId,
       rating: rating,
       durationMs: durationMs,
-      intervalAfter: intervalAfter,
-      easeFactorAfter: easeFactorAfter,
-      nextReviewAtAfter: nextReviewAtAfter,
+      intervalAfter: reviewResult.intervalAfter,
+      easeFactorAfter: reviewResult.easeFactorAfter,
+      nextReviewAtAfter: reviewResult.nextReviewAtAfter,
       algorithm: algorithm,
-      fsrsStabilityAfter: fsrsStabilityAfter,
-      fsrsDifficultyAfter: fsrsDifficultyAfter,
+      fsrsStabilityAfter: reviewResult.fsrsStabilityAfter,
+      fsrsDifficultyAfter: reviewResult.fsrsDifficultyAfter,
     );
+  }
 
-    await _dailyStatCommand.incrementReviewedWords(
-      userId,
-      DateTime.now(),
-      count: 1,
-    );
-
-    if (rating == ReviewRating.again) {
-      await _dailyStatCommand.incrementFailedCount(
-        userId,
-        DateTime.now(),
-        count: 1,
-      );
+  Future<void> submitKanaReview({
+    required int rating,
+    required int durationMs,
+  }) async {
+    final ctx = _requireContext();
+    if (durationMs > 0) {
+      ctx.addDuration(durationMs);
     }
 
-    await _dailyStatCommand.incrementStudyTime(
-      userId,
-      DateTime.now(),
-      durationMs,
+    ctx.markReviewed();
+    if (rating <= 1) {
+      ctx.markFailed();
+    }
+  }
+
+  Future<void> flush() async {
+    final ctx = _ctx;
+    if (ctx == null) return;
+
+    await _dailyStatCommand.applySession(
+      userId: ctx.userId,
+      learned: ctx.learned,
+      reviewed: ctx.reviewed,
+      failed: ctx.failed,
+      mastered: ctx.mastered,
+      durationMs: ctx.durationMs,
     );
+
+    _ctx = null;
+  }
+
+  StudySessionContext _requireContext() {
+    final ctx = _ctx;
+    if (ctx == null) {
+      throw StateError('Study session is not started.');
+    }
+    return ctx;
   }
 }

@@ -53,15 +53,18 @@ class _LearnPageState extends ConsumerState<LearnPage> {
       }
     });
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 顶部操作栏
-            _buildTopBar(context, state, l10n),
-            // 内容区域
-            Expanded(child: _buildContent(context, state)),
-          ],
+    return WillPopScope(
+      onWillPop: _handlePop,
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              // 顶部操作栏
+              _buildTopBar(context, state, l10n),
+              // 内容区域
+              Expanded(child: _buildContent(context, state)),
+            ],
+          ),
         ),
       ),
     );
@@ -83,7 +86,12 @@ class _LearnPageState extends ConsumerState<LearnPage> {
           // 关闭按钮
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => context.pop(),
+            onPressed: () async {
+              await ref.read(learnControllerProvider.notifier).endSession();
+              if (context.mounted) {
+                context.pop();
+              }
+            },
           ),
           // 已学计数
           if (state.learnedCount > 0)
@@ -178,12 +186,21 @@ class _LearnPageState extends ConsumerState<LearnPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              context.go('/initial-choice');
+              ref.read(learnControllerProvider.notifier).endSession().then((_) {
+                if (context.mounted) {
+                  context.go('/initial-choice');
+                }
+              });
             },
             child: Text(l10n.chooseNewPath),
           ),
         ],
       ),
     );
+  }
+
+  Future<bool> _handlePop() async {
+    await ref.read(learnControllerProvider.notifier).endSession();
+    return true;
   }
 }
