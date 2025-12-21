@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/queries/word_read_queries.dart';
+import '../../../data/commands/session/study_session_handle.dart';
 import '../../../data/commands/study_session_command_provider.dart';
 import '../state/learn_state.dart';
 
@@ -14,6 +15,7 @@ class LearnController extends Notifier<LearnState> {
 
   /// 当前用户 ID（从 app_state 表获取）
   int? _userId;
+  StudySessionHandle? _session;
 
   @override
   LearnState build() {
@@ -28,7 +30,9 @@ class LearnController extends Notifier<LearnState> {
   /// 初始化学习（传入选中的单词 ID）
   Future<void> initWithWord(int wordId) async {
     final userId = await _ensureUserId();
-    ref.read(studySessionCommandProvider).startSession(userId);
+    await _session?.flush();
+    _session =
+        ref.read(studySessionCommandProvider).createSession(userId);
     _sessionStartTime = DateTime.now();
     state = state.copyWith(isLoading: true, error: null);
 
@@ -156,7 +160,12 @@ class LearnController extends Notifier<LearnState> {
     }
 
     try {
-      final sessionCommand = ref.read(studySessionCommandProvider);
+      final userId = await _ensureUserId();
+      final session =
+          _session ?? ref.read(studySessionCommandProvider).createSession(
+            userId,
+          );
+      _session ??= session;
       final now = DateTime.now();
       final durationMs = _sessionStartTime == null
           ? 0
@@ -167,7 +176,7 @@ class LearnController extends Notifier<LearnState> {
       final newLearnedWordIds = {...state.learnedWordIds, wordId};
       state = state.copyWith(learnedWordIds: newLearnedWordIds);
 
-      await sessionCommand.submitFirstLearn(
+      await session.submitFirstLearn(
         wordId: wordId,
         durationMs: durationMs,
       );
@@ -180,9 +189,12 @@ class LearnController extends Notifier<LearnState> {
 
   Future<void> endSession() async {
     try {
-      await ref.read(studySessionCommandProvider).flush();
+      await _session?.flush();
     } catch (e, stackTrace) {
       logger.error('学习 Session flush 失败', e, stackTrace);
+    } finally {
+      _session = null;
+      _sessionStartTime = null;
     }
   }
 
@@ -190,6 +202,7 @@ class LearnController extends Notifier<LearnState> {
   void reset() {
     _sessionStartTime = null;
     _userId = null;
+    _session = null;
     state = const LearnState();
   }
 }

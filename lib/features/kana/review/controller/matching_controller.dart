@@ -9,6 +9,7 @@ import '../../../../data/models/kana_letter.dart';
 import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/kana_log.dart';
 import '../../../../data/models/user.dart';
+import '../../../../data/commands/session/study_session_handle.dart';
 import '../../../../data/commands/study_session_command_provider.dart';
 import '../../../../data/repositories/kana_repository.dart';
 import '../../../../data/repositories/kana_repository_provider.dart';
@@ -44,6 +45,8 @@ class MatchingController extends Notifier<MatchingState> {
 
   /// Controller 访问数据库的唯一入口：Repository（禁止 View 直接查 DB）。
   KanaRepository get repo => ref.read(kanaRepositoryProvider);
+
+  StudySessionHandle? _session;
 
   /// 待复习队列按题型拆分后的缓存：
   /// - startReview 时一次性分组
@@ -109,6 +112,9 @@ class MatchingController extends Notifier<MatchingState> {
 
       // 1) 获取当前用户
       final user = await ref.read(activeUserProvider.future);
+      await _session?.flush();
+      _session =
+          ref.read(studySessionCommandProvider).createSession(user.id);
 
       // 2) 获取「已到期需复习」的 kana_learning_state
       final learningStates = await repo.getDueReviewKana(user.id);
@@ -123,8 +129,6 @@ class MatchingController extends Notifier<MatchingState> {
         logger.info('暂无待复习假名，进入空复习态');
         return;
       }
-
-      ref.read(studySessionCommandProvider).startSession(user.id);
 
       // 5) 有数据：进入分组 + 出题流程
       logger.info('启动假名 Matching 复习: ${items.length} 个待复习');
@@ -516,12 +520,7 @@ class MatchingController extends Notifier<MatchingState> {
       selectedLeftIndex: null,
       selectedRightIndex: null,
     );
-
-    try {
-      await ref.read(studySessionCommandProvider).flush();
-    } catch (e, stackTrace) {
-      logger.error('假名复习 Session flush 失败', e, stackTrace);
-    }
+    await _flushSession();
   }
 
   /// 将「待复习学习进度记录」组装为 UI 出题所需的 [ReviewKanaItem] 列表。
@@ -717,18 +716,27 @@ class MatchingController extends Notifier<MatchingState> {
       fsrsDifficultyAfter: srs.newDifficulty,
       questionType: item.questionType.name,
     );
-
-    await ref.read(studySessionCommandProvider).submitKanaReview(
-          rating: rating,
-          durationMs: 0,
-        );
+    final session =
+        _session ??
+        ref.read(studySessionCommandProvider).createSession(user.id);
+    _session ??= session;
+    await session.submitKanaReview(
+      rating: rating,
+      durationMs: 0,
+    );
   }
 
   Future<void> endSession() async {
+    await _flushSession();
+  }
+
+  Future<void> _flushSession() async {
     try {
-      await ref.read(studySessionCommandProvider).flush();
+      await _session?.flush();
     } catch (e, stackTrace) {
       logger.error('假名复习 Session flush 失败', e, stackTrace);
+    } finally {
+      _session = null;
     }
   }
 
