@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/study_log.dart';
 import '../repositories/study_log_repository.dart';
 import '../repositories/study_log_repository_provider.dart';
-import 'daily_stat_command.dart';
-
 final studyLogCommandProvider = Provider<StudyLogCommand>((ref) {
   return StudyLogCommand(ref);
 });
@@ -16,8 +14,6 @@ class StudyLogCommand {
   final Ref ref;
 
   StudyLogRepository get _repo => ref.read(studyLogRepositoryProvider);
-  DailyStatCommand get _dailyStatCommand =>
-      ref.read(dailyStatCommandProvider);
 
   /// 记录首次学习
   Future<int> logFirstLearn({
@@ -47,12 +43,6 @@ class StudyLogCommand {
     );
 
     final id = await _repo.createLog(log);
-
-    await _dailyStatCommand.incrementLearnedWords(
-      userId,
-      DateTime.now(),
-      count: 1,
-    );
 
     return id;
   }
@@ -88,20 +78,6 @@ class StudyLogCommand {
 
     final id = await _repo.createLog(log);
 
-    await _dailyStatCommand.incrementReviewedWords(
-      userId,
-      DateTime.now(),
-      count: 1,
-    );
-
-    if (rating == ReviewRating.again) {
-      await _dailyStatCommand.incrementFailedCount(
-        userId,
-        DateTime.now(),
-        count: 1,
-      );
-    }
-
     return id;
   }
 
@@ -119,12 +95,6 @@ class StudyLogCommand {
     );
 
     final id = await _repo.createLog(log);
-
-    await _dailyStatCommand.incrementMasteredWords(
-      userId,
-      DateTime.now(),
-      count: 1,
-    );
 
     return id;
   }

@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/repositories/active_user_provider.dart';
 import '../../../data/queries/word_read_queries.dart';
-import '../../../data/commands/study_log_command.dart';
-import '../../../data/commands/study_word_command.dart';
+import '../../../data/commands/study_session_command_provider.dart';
 import '../state/learn_state.dart';
 
 /// 学习页控制器
 /// 管理学习页的状态和业务逻辑
 class LearnController extends Notifier<LearnState> {
-  /// 学习会话开始时间
+  /// 上一次学习动作时间
   DateTime? _sessionStartTime;
 
   /// 当前用户 ID（从 app_state 表获取）
@@ -157,53 +156,26 @@ class LearnController extends Notifier<LearnState> {
 
     try {
       final userId = await _ensureUserId();
-      final studyWordCommand = ref.read(studyWordCommandProvider);
-      final studyLogCommand = ref.read(studyLogCommandProvider);
+      final sessionCommand = ref.read(studySessionCommandProvider);
+      final now = DateTime.now();
+      final durationMs = _sessionStartTime == null
+          ? 0
+          : now.difference(_sessionStartTime!).inMilliseconds;
+      _sessionStartTime = now;
 
       // 更新 learnedWordIds
       final newLearnedWordIds = {...state.learnedWordIds, wordId};
       state = state.copyWith(learnedWordIds: newLearnedWordIds);
 
-      // 更新数据库
-      await studyWordCommand.markAsLearned(userId: userId, wordId: wordId);
-
-      // 插入学习日志
-      await studyLogCommand.logFirstLearn(
+      await sessionCommand.submitFirstLearn(
         userId: userId,
         wordId: wordId,
-        durationMs: 0,
+        durationMs: durationMs,
       );
 
       logger.info('标记单词为已学习: wordId=$wordId');
     } catch (e, stackTrace) {
       logger.error('标记单词失败', e, stackTrace);
-    }
-  }
-
-  /// 更新每日统计
-  Future<void> updateDailyStats() async {
-    if (_sessionStartTime == null) return;
-
-    try {
-      final userId = await _ensureUserId();
-      final studyWordCommand = ref.read(studyWordCommandProvider);
-      final durationMs = DateTime.now()
-          .difference(_sessionStartTime!)
-          .inMilliseconds;
-
-      await studyWordCommand.updateDailyStats(
-        userId: userId,
-        learnedCount: state.learnedCount,
-        durationMs: durationMs,
-      );
-
-      logger.learnSessionEnd(
-        durationMs: durationMs,
-        learnedCount: state.learnedCount,
-        reviewedCount: 0,
-      );
-    } catch (e, stackTrace) {
-      logger.error('更新每日统计失败', e, stackTrace);
     }
   }
 

@@ -37,8 +37,6 @@ class _LearnPageState extends ConsumerState<LearnPage> {
 
   @override
   void dispose() {
-    // 离开页面时更新每日统计
-    ref.read(learnControllerProvider.notifier).updateDailyStats();
     _pageController.dispose();
     super.dispose();
   }
