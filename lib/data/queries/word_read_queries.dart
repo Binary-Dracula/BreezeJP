@@ -139,6 +139,102 @@ class WordReadQueries {
     }
   }
 
+  /// 按 JLPT 等级获取单词列表
+  Future<List<Word>> getWordsByLevel({
+    required String jlptLevel,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final db = _db;
+      final results = await db.query(
+        'words',
+        where: 'jlpt_level = ?',
+        whereArgs: [jlptLevel],
+        orderBy: 'id ASC',
+        limit: limit,
+        offset: offset,
+      );
+
+      logger.dbQuery(
+        table: 'words',
+        where: 'jlpt_level = $jlptLevel',
+        resultCount: results.length,
+      );
+
+      return results.map((map) => Word.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 搜索单词（按单词文本、假名或罗马音）
+  Future<List<Word>> searchWords({
+    required String keyword,
+    int? limit,
+  }) async {
+    try {
+      final db = _db;
+      final results = await db.query(
+        'words',
+        where: 'word LIKE ? OR furigana LIKE ? OR romaji LIKE ?',
+        whereArgs: ['%$keyword%', '%$keyword%', '%$keyword%'],
+        orderBy: 'id ASC',
+        limit: limit,
+      );
+
+      logger.dbQuery(
+        table: 'words',
+        where: 'keyword = $keyword',
+        resultCount: results.length,
+      );
+
+      return results.map((map) => Word.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 随机获取单词（只读）
+  Future<List<Word>> getRandomWords({int limit = 10}) async {
+    try {
+      final db = _db;
+      final results = await db.query(
+        'words',
+        orderBy: 'RANDOM()',
+        limit: limit,
+      );
+
+      logger.dbQuery(
+        table: 'words',
+        where: 'RANDOM() limit $limit',
+        resultCount: results.length,
+      );
+
+      return results.map((map) => Word.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 获取未学习的单词（用于预加载）
   Future<List<Word>> getUnlearnedWords({
     required int userId,

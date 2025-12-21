@@ -197,13 +197,33 @@ class StudyWordCommand {
   /// 如果记录不存在则创建，存在则更新
   Future<void> markAsLearned({required int userId, required int wordId}) async {
     try {
-      final nowEpochSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      await _repo.upsertLearned(
-        userId: userId,
-        wordId: wordId,
-        userState: UserWordState.learning.value,
-        nowEpochSeconds: nowEpochSeconds,
+      final studyWord = await _repo.getStudyWord(userId, wordId);
+      final now = DateTime.now();
+
+      if (studyWord == null) {
+        final newRecord = StudyWord(
+          id: 0,
+          userId: userId,
+          wordId: wordId,
+          userState: UserWordState.learning,
+          createdAt: now,
+          updatedAt: now,
+        );
+        await _repo.createStudyWord(newRecord);
+        logger.info('标记单词为学习中: userId=$userId wordId=$wordId');
+        return;
+      }
+
+      if (studyWord.userState == UserWordState.mastered) {
+        return;
+      }
+
+      final updated = studyWord.copyWith(
+        userState: UserWordState.learning,
+        updatedAt: now,
       );
+
+      await _repo.updateStudyWord(updated);
       logger.info('标记单词为学习中: userId=$userId wordId=$wordId');
     } catch (e, stackTrace) {
       logger.dbError(

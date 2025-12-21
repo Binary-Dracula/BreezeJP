@@ -1,13 +1,17 @@
 import '../../core/network/dio_client.dart';
 import '../../core/network/api_endpoints.dart';
+import '../models/read/example_api_item.dart';
 
-/// 示例 API Repository
-/// 演示如何使用 DioClient 进行网络请求
+/// 外部例句 API Repository
+/// 职责：
+/// - 调用外部 API
+/// - 将原始响应转换为 ExampleApiItem DTO
+/// - 不包含任何业务语义或筛选逻辑
 class ExampleApiRepository {
   final _client = DioClient.instance;
 
   /// 示例：获取单词列表
-  Future<List<Map<String, dynamic>>> fetchWords({
+  Future<List<ExampleApiItem>> fetchWords({
     String? level,
     int? limit,
   }) async {
@@ -22,7 +26,8 @@ class ExampleApiRepository {
 
       // 假设返回的是 JSON 数组
       if (response.data is List) {
-        return List<Map<String, dynamic>>.from(response.data);
+        final rawList = List<Map<String, dynamic>>.from(response.data);
+        return rawList.map(ExampleApiItem.fromMap).toList();
       }
 
       throw NetworkException('数据格式错误');
@@ -34,7 +39,7 @@ class ExampleApiRepository {
   }
 
   /// 示例：获取单词详情
-  Future<Map<String, dynamic>> fetchWordDetail(int wordId) async {
+  Future<ExampleApiItem> fetchWordDetail(int wordId) async {
     try {
       final path = ApiEndpoints.replaceParams(ApiEndpoints.wordDetail, {
         'id': wordId,
@@ -43,7 +48,9 @@ class ExampleApiRepository {
       final response = await _client.get(path);
 
       if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
+        return ExampleApiItem.fromMap(
+          Map<String, dynamic>.from(response.data),
+        );
       }
 
       throw NetworkException('数据格式错误');

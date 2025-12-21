@@ -47,4 +47,33 @@ class WordAnalytics {
       rethrow;
     }
   }
+
+  /// 获取单词总数
+  Future<int> getWordCount({String? jlptLevel}) async {
+    try {
+      final db = _db;
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM words${jlptLevel != null ? ' WHERE jlpt_level = ?' : ''}',
+        jlptLevel != null ? [jlptLevel] : null,
+      );
+
+      logger.dbQuery(
+        table: 'words',
+        where: jlptLevel != null
+            ? 'jlpt_level = $jlptLevel (count)'
+            : '(count)',
+        resultCount: 1,
+      );
+
+      return result.first['count'] as int;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
 }
