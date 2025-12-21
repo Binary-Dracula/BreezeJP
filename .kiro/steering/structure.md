@@ -25,6 +25,9 @@ View → Controller
 | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------ |
 | **View**       | UI 渲染、用户交互                                                                  | 直接访问数据库、业务逻辑、修改 state |
 | **Controller** | 业务流程编排（Use Case Orchestration）、调用 Command / Query / Analytics、状态管理 | 核心业务规则、直接 DB 查询           |
+| **Command**    | 写行为 / 状态变更 / 副作用入口                                                     | 返回 Map、直接 SQL 拼接              |
+| **Query**      | 只读查询（join / filter / paging / 列表 / 详情）                                   | 写操作                               |
+| **Analytics**  | 统计聚合 / 报表 / 计数                                                             | 写操作                               |
 | **State**      | 不可变数据容器                                                                     | 可变字段、逻辑                       |
 | **Repository** | Entity CRUD（单表或强一致实体）                                                    | 复杂查询、统计聚合、业务行为         |
 | **Model**      | 数据结构，含 `fromMap()`/`toMap()`                                                 | 业务逻辑                             |
@@ -32,9 +35,9 @@ View → Controller
 **硬性规则：**
 
 - 数据访问路径：Repository 仅被 Command/Query/Analytics 调用，Controller 仅调用 Command/Query/Analytics
-- Repository 只返回模型对象，绝不返回 Map
+- Repository 只返回模型对象，绝不返回 Map，并且不得暴露 Database
 - 所有 State 必须不可变并提供 `copyWith()`
-- 所有 DB 访问必须用 `AppDatabase.instance` 单例
+- Database 仅由 data/db 提供（`AppDatabase.instance` 与 `databaseProvider`），Query 不得通过 Repository 获取 Database
 
 ## 完整目录结构
 
@@ -68,12 +71,34 @@ lib/
 │   │   ├── study_word_analytics.dart       # 学习单词数据分析
 │   │   └── word_analytics.dart             # 单词统计分析
 │   ├── commands/            # 数据操作命令（行为写入）
-│   │   └── study_word_command.dart         # 学习单词操作命令
+│   │   ├── daily_stat_command.dart         # 每日统计写入命令
+│   │   ├── kana_command.dart               # 假名学习/复习写入命令
+│   │   ├── kana_command_provider.dart
+│   │   ├── study_log_command.dart          # 学习日志写入命令
+│   │   ├── study_session_command.dart      # Session 创建入口
+│   │   ├── study_session_command_provider.dart
+│   │   ├── study_word_command.dart         # 学习单词写入命令
+│   │   └── session/                        # 会话级流程编排
+│   │       ├── review_result.dart
+│   │       ├── session_lifecycle_guard.dart
+│   │       ├── session_scope.dart
+│   │       ├── session_stat_policy.dart
+│   │       ├── study_session_context.dart
+│   │       └── study_session_handle.dart
 │   ├── db/                  # 数据库管理
-│   │   └── app_database.dart               # SQLite 数据库单例管理器
+│   │   ├── app_database.dart               # SQLite 数据库单例管理器
+│   │   └── app_database_provider.dart      # Database Provider
 │   ├── models/              # 数据模型定义
 │   │   ├── read/            # 只读数据模型（查询结果）
+│   │   │   ├── daily_stat_stats.dart       # 每日统计展示模型
 │   │   │   ├── jlpt_level_count.dart       # JLPT 等级统计模型
+│   │   │   ├── kana_accuracy.dart          # 假名准确率模型
+│   │   │   ├── kana_detail.dart            # 假名详情查询模型
+│   │   │   ├── kana_group_item.dart        # 假名分组模型
+│   │   │   ├── kana_learning_stats.dart    # 假名学习统计模型
+│   │   │   ├── kana_log_item.dart          # 假名日志查询模型
+│   │   │   ├── kana_type_item.dart         # 假名类型模型
+│   │   │   ├── study_log_stats.dart        # 学习日志统计模型
 │   │   │   ├── user_word_statistics.dart   # 用户单词学习统计模型
 │   │   │   └── word_list_item.dart         # 单词列表项模型
 │   │   ├── app_state.dart                  # 应用全局状态模型
@@ -90,13 +115,17 @@ lib/
 │   │   ├── study_word.dart                 # 单词学习进度模型
 │   │   ├── study_log.dart                  # 学习行为日志模型
 │   │   ├── kana_letter.dart                # 假名字母基础模型
-│   │   ├── kana_detail.dart                # 假名详细信息模型
+│   │   ├── kana_detail.dart                # 假名详细信息模型（read re-export）
 │   │   ├── kana_audio.dart                 # 假名发音音频模型
 │   │   ├── kana_example.dart               # 假名使用示例模型
 │   │   ├── kana_learning_state.dart        # 假名学习状态模型
 │   │   ├── kana_log.dart                   # 假名学习日志模型
 │   │   └── kana_stroke_order.dart          # 假名笔顺数据模型
 │   ├── queries/             # 只读查询封装
+│   │   ├── daily_stat_query.dart           # 每日统计查询
+│   │   ├── kana_query.dart                 # 假名查询
+│   │   ├── kana_query_provider.dart
+│   │   ├── study_log_query.dart            # 学习日志查询
 │   │   ├── study_word_query.dart           # 学习单词查询逻辑
 │   │   └── word_read_queries.dart          # 单词读取查询集合
 │   └── repositories/        # 数据仓库层（Entity CRUD + Providers）
@@ -250,13 +279,103 @@ assets/
 
 **子模块规则：**
 
-- **models/**: 必须实现 `fromMap()` 和 `toMap()`，支持 JSON 序列化
-- **repositories/**: Entity CRUD（单表或强一致实体），只返回 Model 对象
-- **queries/**: 只读查询，支持 join / filter / paging，不写数据
-- **analytics/**: 聚合统计与报表查询，只读，返回 DTO
-- **commands/**: 用户行为与状态变更的唯一入口，允许事务与多表写入
+### Data 层子模块规则
 
-### 3. Features 层（功能模块）
+- **models/**
+
+  - 基础实体模型（Entity）
+  - 必须实现 `fromMap()` / `toMap()`
+  - 可被 Repository / Command 使用
+  - ❌ 不包含业务逻辑
+
+- **models/read/**
+
+  - 只读查询 / 统计 DTO
+  - 仅由 Query / Analytics 产出
+  - 不要求可写回数据库
+  - ❌ 不被 Command 用作写入
+
+- **models/**（re-export 规则）
+
+  - 允许通过 re-export 暴露 `models/read` 中的 DTO
+  - 目的仅为提供稳定 import 路径
+  - ❗ re-export 不改变其只读语义与层级归属
+
+- **repositories/**
+
+  - Entity CRUD（单表或强一致实体）
+  - 只返回 Model（Entity）
+  - ❌ 不包含 join / 统计 / 行为
+  - ❌ 不暴露 Database
+
+- **queries/**
+
+  - 只读查询（join / filter / paging / 列表 / 详情）
+  - 直接使用 Database（通过 db provider 注入）
+  - 返回 DTO 或只读 Model
+  - ❌ 不写数据
+
+- **analytics/**
+
+  - 聚合统计 / 报表 / 计数
+  - 只读
+  - 返回 DTO
+  - ❌ 不写数据
+
+- **commands/**
+
+  - 用户行为与状态变更的唯一入口
+  - 可组合多个 Repository
+  - 可使用事务
+  - ❌ 不返回 Map / 原始 SQL 结果
+
+- **commands/session/**
+
+  - 会话级流程编排（learn / review / kana）
+  - 统一统计、副作用、日志出口
+  - 是 daily_stats / study_logs 的唯一写入口
+
+- **db/**
+  - Database 生命周期管理
+  - 提供 `AppDatabase` 与 `databaseProvider`
+  - ❌ 不承载业务语义
+
+### 3. Session 架构
+
+**会话组件：**
+
+- **StudySessionCommand**: 仅负责创建 Session
+- **StudySessionHandle**: Feature 持有的会话句柄，提供 `submitXxx` / `flush`
+- **SessionScope**: `learn` / `wordReview` / `kanaReview`
+- **SessionStatPolicy**: 事件 → 统计语义映射
+- **SessionLifecycleGuard**: flush exactly-once
+
+**硬性规则：**
+
+- ❌ Feature 不得直接写 `daily_stats`
+- ❌ Feature 不得直接写 `study_logs`
+- ✅ 所有学习 / 复习统计只能经由 Session → `DailyStatCommand.applySession`
+
+### 4. Kana 模块（最终形态）
+
+- **KanaRepository**: `kana_*` 表 CRUD
+- **KanaQuery**: kana 读 / join / 统计 / 列表
+- **KanaCommand**: kana 学习 / 复习 / 日志写入
+- **Kana Review**: 通过 Session 统一统计与日志副作用
+
+**禁止事项：**
+
+- ❌ KanaRepository 不得包含统计 / 行为
+- ❌ Controller 不得直接写 KanaRepository
+
+### 5. 架构冻结禁止事项
+
+- **Repository 禁止**: JOIN / 统计 / 行为语义 / 暴露 Database
+- **Query 禁止**: 写操作
+- **Command 禁止**: 返回 Map / 原始 SQL 结果
+- **Feature 禁止**: 直连 Repository 写、直连 Database、绕过 Session 写统计
+
+### 6. Features 层（功能模块）
 
 **MVVM 架构强制规则：**
 
@@ -273,7 +392,7 @@ assets/
 - ❌ 禁止直接引用其他 Feature 的 Controller
 - ❌ 禁止跨 Feature 的 State 直接访问
 
-### 4. Services 层（横切关注点）
+### 7. Services 层（横切关注点）
 
 **职责边界：**
 
@@ -293,7 +412,7 @@ assets/
 - **状态管理**: 服务内部状态通过专用 State 类管理
 - **错误处理**: 统一的异常处理和错误恢复机制
 
-### 5. Debug 层（开发工具）
+### 8. Debug 层（开发工具）
 
 **使用规则：**
 
