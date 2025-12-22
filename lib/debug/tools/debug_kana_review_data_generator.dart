@@ -1,8 +1,16 @@
 import 'dart:math';
 
 import 'package:breeze_jp/core/utils/app_logger.dart';
-import 'package:breeze_jp/data/db/app_database.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../data/commands/active_user_command_provider.dart';
+import '../../data/commands/debug/debug_kana_command_provider.dart';
+import '../../data/commands/kana_command_provider.dart';
+import '../../data/commands/study_session_command_provider.dart';
+import '../../data/commands/session/session_scope.dart';
+import '../../data/models/kana_log.dart';
+import '../../data/queries/active_user_query_provider.dart';
+import '../../data/queries/kana_query_provider.dart';
 
 class DebugKanaReviewDataGenerator {
   static Future<void> generateMockKanaReviewQueueData({
@@ -10,37 +18,37 @@ class DebugKanaReviewDataGenerator {
     int maxCount = 25,
     bool clearExistingForUser = false,
   }) async {
-    final db = await AppDatabase.instance.database;
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final rng = Random();
+    final container = ProviderContainer();
+    try {
+      final activeUserCommand = container.read(activeUserCommandProvider);
+      await activeUserCommand.ensureActiveUser();
 
-    final userId = await _getCurrentUserId(db);
-    await _ensureUserExists(db, userId);
-
-    logger.info(
-      'DebugKanaReviewDataGenerator: start userId=$userId minCount=$minCount maxCount=$maxCount clearExisting=$clearExistingForUser',
-    );
-
-    await db.transaction((txn) async {
-      if (clearExistingForUser) {
-        final deletedLogs = await txn.delete(
-          'kana_logs',
-          where: 'user_id = ?',
-          whereArgs: [userId],
-        );
-        final deletedStates = await txn.delete(
-          'kana_learning_state',
-          where: 'user_id = ?',
-          whereArgs: [userId],
-        );
-        logger.info(
-          'DebugKanaReviewDataGenerator: cleared user data logs=$deletedLogs states=$deletedStates',
-        );
+      final activeUserQuery = container.read(activeUserQueryProvider);
+      final userId = await activeUserQuery.getActiveUserId();
+      if (userId == null) {
+        throw StateError('DebugKanaReviewDataGenerator: active user not found');
       }
 
-      final allKanaRows = await txn.query('kana_letters', columns: ['id']);
-      final allKanaIds = allKanaRows
-          .map((row) => row['id'])
+      final kanaCommand = container.read(kanaCommandProvider);
+      final debugKanaCommand = container.read(debugKanaCommandProvider);
+      final kanaQuery = container.read(kanaQueryProvider);
+      final session = container.read(studySessionCommandProvider).createSession(
+            userId: userId,
+            scope: SessionScope.kanaReview,
+          );
+
+      logger.info(
+        'DebugKanaReviewDataGenerator: start userId=$userId minCount=$minCount maxCount=$maxCount clearExisting=$clearExistingForUser',
+      );
+
+      if (clearExistingForUser) {
+        await debugKanaCommand.clearUserReviewData(userId: userId);
+      }
+
+      final lettersWithState =
+          await kanaQuery.getAllKanaLettersWithState(userId);
+      final allKanaIds = lettersWithState
+          .map((item) => item.letter.id)
           .whereType<int>()
           .toList();
       if (allKanaIds.isEmpty) {
@@ -49,23 +57,15 @@ class DebugKanaReviewDataGenerator {
 
       final existingKanaIds = <int>{};
       if (!clearExistingForUser) {
-        final existingRows = await txn.query(
-          'kana_learning_state',
-          columns: ['kana_id'],
-          where: 'user_id = ?',
-          whereArgs: [userId],
-        );
-        for (final row in existingRows) {
-          final kanaId = row['kana_id'];
-          if (kanaId is int) existingKanaIds.add(kanaId);
+        for (final item in lettersWithState) {
+          if (item.learningState != null) {
+            existingKanaIds.add(item.letter.id);
+          }
         }
       }
 
-      allKanaIds.shuffle(rng);
-
-      final availableKanaIds = allKanaIds
-          .where((kanaId) => !existingKanaIds.contains(kanaId))
-          .toList();
+      final availableKanaIds =
+          allKanaIds.where((id) => !existingKanaIds.contains(id)).toList();
       final availableKanaCount = availableKanaIds.length;
       if (availableKanaCount <= 0) {
         throw StateError(
@@ -73,7 +73,9 @@ class DebugKanaReviewDataGenerator {
         );
       }
 
-      final effectiveMinCount = _clampInt(minCount, 1, availableKanaCount);
+      final rng = Random();
+      final effectiveMinCount =
+          _clampInt(minCount, 1, availableKanaCount);
       final effectiveMaxCount = _clampInt(
         maxCount,
         effectiveMinCount,
@@ -83,46 +85,36 @@ class DebugKanaReviewDataGenerator {
           rng.nextInt(effectiveMaxCount - effectiveMinCount + 1) +
           effectiveMinCount;
 
+      availableKanaIds.shuffle(rng);
       final selectedKanaIds = availableKanaIds.take(targetCount).toList();
-
       if (selectedKanaIds.isEmpty) {
         throw StateError(
           'DebugKanaReviewDataGenerator: selectedKanaIds is empty',
         );
       }
 
-      final stateInserts = <Map<String, Object?>>[];
-      final logInserts = <Map<String, Object?>>[];
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      var logCount = 0;
 
       for (final kanaId in selectedKanaIds) {
+        await kanaCommand.getOrCreateLearningState(userId, kanaId);
+
         final totalReviews = rng.nextInt(5) + 1; // [1..5]
-        final streak = rng.nextInt(4); // [0..3]
-        final nextReviewAt = now - _randomIntInclusive(rng, 60, 3600);
-
-        final baseTime = now - _randomIntInclusive(rng, 2 * 86400, 7 * 86400);
-        final logTimes = <int>[baseTime];
-        for (var i = 1; i < totalReviews; i++) {
-          final nextTime = logTimes.last + _randomIntInclusive(rng, 600, 7200);
-          logTimes.add(min(nextTime, now - 1));
-        }
-
         var runningInterval = _randomDouble(rng, 0.5, 5.0);
         var runningEaseFactor = _randomDouble(rng, 2.0, 2.7);
-        var failCount = 0;
+        final dueNextReviewAt =
+            nowSeconds - _randomIntInclusive(rng, 60, 3600);
 
         for (var i = 0; i < totalReviews; i++) {
           final isFirstLearn = i == 0;
-          final logType = isFirstLearn ? 1 : 2;
+          final logType =
+              isFirstLearn ? KanaLogType.firstLearn : KanaLogType.review;
           final questionType = isFirstLearn
               ? 'recall'
               : (['recall', 'audio', 'switchMode'][rng.nextInt(3)]);
           final rating = isFirstLearn
               ? (rng.nextBool() ? 2 : 3)
               : rng.nextInt(3) + 1;
-
-          if (!isFirstLearn && rating == 1) {
-            failCount += 1;
-          }
 
           runningInterval = _clampDouble(
             runningInterval + _randomDouble(rng, -0.2, 0.8),
@@ -135,117 +127,53 @@ class DebugKanaReviewDataGenerator {
             2.7,
           );
 
-          final createdAt = logTimes[i];
           final nextReviewAtAfter = i == totalReviews - 1
-              ? nextReviewAt
-              : createdAt + (runningInterval * 86400).round();
+              ? dueNextReviewAt
+              : nowSeconds + (runningInterval * 86400).round();
+          final durationMs = _randomIntInclusive(rng, 800, 8000);
 
-          logInserts.add({
-            'user_id': userId,
-            'kana_id': kanaId,
-            'log_type': logType,
-            'rating': rating,
-            'algorithm': 1,
-            'interval_after': runningInterval,
-            'next_review_at_after': nextReviewAtAfter,
-            'ease_factor_after': runningEaseFactor,
-            'fsrs_stability_after': 0,
-            'fsrs_difficulty_after': 0,
-            'duration_ms': _randomIntInclusive(rng, 800, 8000),
-            'question_type': questionType,
-            'created_at': createdAt,
-          });
+          await kanaCommand.updateKanaReviewResult(
+            userId: userId,
+            kanaId: kanaId,
+            rating: rating,
+            newInterval: runningInterval,
+            newEaseFactor: runningEaseFactor,
+            nextReviewAt: nextReviewAtAfter,
+          );
+
+          await kanaCommand.addKanaLogQuick(
+            userId: userId,
+            kanaId: kanaId,
+            logType: logType,
+            rating: rating,
+            algorithm: 1,
+            intervalAfter: runningInterval,
+            nextReviewAtAfter: nextReviewAtAfter,
+            easeFactorAfter: runningEaseFactor,
+            fsrsStabilityAfter: 0,
+            fsrsDifficultyAfter: 0,
+            questionType: questionType,
+            durationMs: durationMs,
+          );
+          logCount += 1;
+
+          if (!isFirstLearn) {
+            await session.submitKanaReview(
+              rating: rating,
+              durationMs: durationMs,
+            );
+          }
         }
-
-        final lastReviewedAt = logTimes.last;
-        final createdAt = max(
-          1,
-          baseTime - _randomIntInclusive(rng, 600, 7200),
-        );
-
-        stateInserts.add({
-          'user_id': userId,
-          'kana_id': kanaId,
-          'learning_status': 1,
-          'next_review_at': nextReviewAt,
-          'last_reviewed_at': lastReviewedAt,
-          'streak': streak,
-          'total_reviews': totalReviews,
-          'fail_count': failCount,
-          'interval': runningInterval,
-          'ease_factor': runningEaseFactor,
-          'stability': 0,
-          'difficulty': 0,
-          'created_at': createdAt,
-          'updated_at': now,
-        });
       }
 
-      final batch = txn.batch();
-      for (final state in stateInserts) {
-        batch.insert(
-          'kana_learning_state',
-          state,
-          conflictAlgorithm: ConflictAlgorithm.abort,
-        );
-      }
-      for (final log in logInserts) {
-        batch.insert(
-          'kana_logs',
-          log,
-          conflictAlgorithm: ConflictAlgorithm.abort,
-        );
-      }
-      await batch.commit(noResult: true);
+      await session.flush();
 
+      final dueCount = await kanaQuery.countDueKanaReviews(userId);
       logger.info(
-        'DebugKanaReviewDataGenerator: inserted states=${stateInserts.length} logs=${logInserts.length}',
+        'DebugKanaReviewDataGenerator: inserted logs=$logCount dueCount=$dueCount',
       );
-    });
-
-    final dueCountResult = await db.rawQuery(
-      '''
-      SELECT COUNT(*) AS cnt
-      FROM kana_learning_state
-      WHERE user_id = ?
-        AND learning_status = 1
-        AND next_review_at <= ?
-    ''',
-      [userId, now],
-    );
-    final dueCount = (dueCountResult.first['cnt'] as int?) ?? 0;
-    logger.info('DebugKanaReviewDataGenerator: done dueCount=$dueCount');
-  }
-
-  static Future<int> _getCurrentUserId(Database db) async {
-    final rows = await db.query(
-      'app_state',
-      columns: ['current_user_id'],
-      limit: 1,
-    );
-    final userId = rows.isNotEmpty
-        ? rows.first['current_user_id'] as int?
-        : null;
-    if (userId == null) {
-      throw StateError(
-        'DebugKanaReviewDataGenerator: current_user_id not found in app_state',
-      );
-    }
-    return userId;
-  }
-
-  static Future<void> _ensureUserExists(Database db, int userId) async {
-    final rows = await db.query(
-      'users',
-      columns: ['id'],
-      where: 'id = ?',
-      whereArgs: [userId],
-      limit: 1,
-    );
-    if (rows.isEmpty) {
-      throw StateError(
-        'DebugKanaReviewDataGenerator: user not found for current_user_id=$userId',
-      );
+    } finally {
+      container.dispose();
     }
   }
 

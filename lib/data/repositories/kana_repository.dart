@@ -333,6 +333,52 @@ class KanaRepository {
     }
   }
 
+  /// 删除用户的假名日志
+  Future<int> deleteKanaLogsByUser(int userId) async {
+    try {
+      final db = await _db;
+      final count = await db.delete(
+        'kana_logs',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+
+      logger.dbDelete(table: 'kana_logs', deletedRows: count);
+      return count;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'kana_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 删除用户的假名学习状态
+  Future<int> deleteKanaLearningStatesByUser(int userId) async {
+    try {
+      final db = await _db;
+      final count = await db.delete(
+        'kana_learning_state',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+
+      logger.dbDelete(table: 'kana_learning_state', deletedRows: count);
+      return count;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   // ==================== 笔顺数据 ====================
 
   /// 获取假名的笔顺数据
