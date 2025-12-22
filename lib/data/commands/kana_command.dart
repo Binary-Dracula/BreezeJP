@@ -47,7 +47,7 @@ class KanaCommand {
         updatedAt: nowSeconds,
       );
 
-      final id = await _repo.upsertKanaLearningState(state);
+      final id = await _repo.insertKanaLearningState(state);
       return state.copyWith(id: id);
     } catch (e, stackTrace) {
       logger.dbError(
@@ -90,7 +90,7 @@ class KanaCommand {
           createdAt: nowSeconds,
           updatedAt: nowSeconds,
         );
-        await _repo.upsertKanaLearningState(state);
+        await _repo.insertKanaLearningState(state);
       }
 
       logger.info('假名标记为已学习: userId=$userId, kanaId=$kanaId');

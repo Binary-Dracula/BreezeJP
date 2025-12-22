@@ -88,6 +88,9 @@ lib/
 │   ├── db/                  # 数据库管理
 │   │   ├── app_database.dart               # SQLite 数据库单例管理器
 │   │   └── app_database_provider.dart      # Database Provider
+│   ├── external/            # 外部数据源（HTTP / SDK 适配；非 Repository；不纳入 Repository 纯度规则）
+│   │   ├── example_api_client.dart         # 外部例句 API Client
+│   │   └── example_api_client_provider.dart
 │   ├── models/              # 数据模型定义
 │   │   ├── read/            # 只读数据模型（查询结果）
 │   │   │   ├── daily_stat_stats.dart       # 每日统计展示模型
@@ -151,8 +154,7 @@ lib/
 │       ├── study_log_repository.dart       # 学习日志数据仓库
 │       ├── study_log_repository_provider.dart
 │       ├── kana_repository.dart            # 假名数据仓库
-│       ├── kana_repository_provider.dart
-│       └── example_api_repository.dart     # 外部例句 API 仓库
+│       └── kana_repository_provider.dart
 ├── debug/                   # 开发调试工具（仅 Debug 模式）
 │   ├── controller/          # 调试功能控制器
 │   │   └── debug_controller.dart           # 调试面板控制器

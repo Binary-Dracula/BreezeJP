@@ -31,7 +31,7 @@ class SplashController extends Notifier<SplashState> {
       );
 
       // 1. 初始化数据库
-      state = state.copyWith(message: l10n.splashLoadingDatabase);
+      state = state.copyWith(message: l10n.loading);
       logger.info('[LEARN] init_step: step=database_init');
       final bootstrap = ref.read(appBootstrapCommandProvider);
       final result = await bootstrap.run();

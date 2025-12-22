@@ -258,19 +258,15 @@ class KanaRepository {
     }
   }
 
-  /// 创建或更新假名学习状态
-  Future<int> upsertKanaLearningState(KanaLearningState state) async {
+  /// 创建假名学习状态
+  Future<int> insertKanaLearningState(KanaLearningState state) async {
     try {
       final db = await _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final map = state.toInsertMap();
       map['updated_at'] = now;
 
-      final result = await db.insert(
-        'kana_learning_state',
-        map,
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      final result = await db.insert('kana_learning_state', map);
 
       logger.dbInsert(table: 'kana_learning_state', id: result);
 

@@ -2,12 +2,18 @@ import '../../core/network/dio_client.dart';
 import '../../core/network/api_endpoints.dart';
 import '../models/read/example_api_item.dart';
 
-/// 外部例句 API Repository
-/// 职责：
-/// - 调用外部 API
-/// - 将原始响应转换为 ExampleApiItem DTO
-/// - 不包含任何业务语义或筛选逻辑
-class ExampleApiRepository {
+/// External API Client
+///
+/// Responsibilities:
+/// - Perform HTTP requests to external example services
+/// - Parse remote responses into read-only DTOs
+///
+/// Architecture notes:
+/// - This is NOT a Repository
+/// - Does NOT represent local entities
+/// - Must NOT perform persistence or domain logic
+/// - Exempt from Repository purity rules
+class ExampleApiClient {
   final _client = DioClient.instance;
 
   /// 示例：获取单词列表

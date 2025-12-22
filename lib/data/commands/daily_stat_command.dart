@@ -46,22 +46,7 @@ class DailyStatCommand {
       uniqueKanaReviewedCount:
           stat.uniqueKanaReviewedCount + kanaReviewCount + mastered,
     );
-    await _repo.updateDailyStat(updated);
-  }
-
-  /// 删除指定日期之前的统计
-  Future<int> deleteStatsBeforeDate(DateTime date) async {
-    return _repo.deleteBeforeDate(date);
-  }
-
-  /// 删除用户的所有统计
-  Future<int> deleteUserStats(int userId) async {
-    return _repo.deleteByUser(userId);
-  }
-
-  /// 删除每日统计
-  Future<void> deleteDailyStat(int id) async {
-    await _repo.deleteDailyStat(id);
+    await _repo.update(updated);
   }
 
   Future<DailyStat> _ensureDailyStat({
@@ -72,7 +57,7 @@ class DailyStatCommand {
     if (stat != null) return stat;
 
     final newStat = DailyStat.createForDate(userId, date);
-    final id = await _repo.insertDailyStat(newStat);
+    final id = await _repo.insert(newStat);
     return newStat.copyWith(id: id);
   }
 }

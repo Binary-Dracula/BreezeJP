@@ -3,7 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
 import '../db/app_database_provider.dart';
-import '../models/read/study_log_stats.dart';
+import '../models/read/study_log_item.dart';
 import '../models/study_log.dart';
 
 final studyLogQueryProvider = Provider<StudyLogQuery>((ref) {
@@ -11,48 +11,35 @@ final studyLogQueryProvider = Provider<StudyLogQuery>((ref) {
   return StudyLogQuery(db);
 });
 
-/// 学习日志查询层（统计 / 报表）
+/// 学习日志查询层（只读）
 class StudyLogQuery {
   StudyLogQuery(this._db);
 
   final Database _db;
 
-  /// 获取每日学习统计
-  Future<List<StudyLogDailyStatistics>> getDailyStatistics(
+  /// 获取用户的学习历史
+  Future<List<StudyLogItem>> getUserLogs(
     int userId, {
-    int days = 30,
+    int? limit,
+    int? offset,
   }) async {
     try {
-      final db = _db;
-      final startDate = DateTime.now().subtract(Duration(days: days));
-      final startTimestamp = startDate.millisecondsSinceEpoch ~/ 1000;
-
-      final results = await db.rawQuery(
-        '''
-        SELECT 
-          DATE(created_at, 'unixepoch', 'localtime') as date,
-          COUNT(*) as total_reviews,
-          SUM(CASE WHEN log_type = 1 THEN 1 ELSE 0 END) as new_learned,
-          SUM(CASE WHEN log_type = 2 THEN 1 ELSE 0 END) as reviews,
-          SUM(duration_ms) as total_duration_ms,
-          AVG(duration_ms) as avg_duration_ms
-        FROM study_logs
-        WHERE user_id = ? AND created_at >= ?
-        GROUP BY date
-        ORDER BY date DESC
-      ''',
-        [userId, startTimestamp],
+      final results = await _db.query(
+        'study_logs',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'created_at DESC',
+        limit: limit,
+        offset: offset,
       );
 
       logger.dbQuery(
         table: 'study_logs',
-        where: 'user_id = $userId (daily stats)',
+        where: 'user_id = $userId',
         resultCount: results.length,
       );
 
-      return results
-          .map((row) => StudyLogDailyStatistics.fromMap(row))
-          .toList();
+      return results.map(StudyLogItem.fromMap).toList();
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
@@ -64,31 +51,28 @@ class StudyLogQuery {
     }
   }
 
-  /// 获取复习评分分布
-  Future<List<StudyLogRatingCount>> getRatingDistribution(int userId) async {
+  /// 获取特定类型的日志
+  Future<List<StudyLogItem>> getLogsByType(
+    int userId,
+    LogType logType, {
+    int? limit,
+  }) async {
     try {
-      final db = _db;
-      final results = await db.rawQuery(
-        '''
-        SELECT rating, COUNT(*) as count
-        FROM study_logs
-        WHERE user_id = ? AND log_type = 2 AND rating IS NOT NULL
-        GROUP BY rating
-      ''',
-        [userId],
+      final results = await _db.query(
+        'study_logs',
+        where: 'user_id = ? AND log_type = ?',
+        whereArgs: [userId, logType.value],
+        orderBy: 'created_at DESC',
+        limit: limit,
       );
 
       logger.dbQuery(
         table: 'study_logs',
-        where: 'user_id = $userId (rating distribution)',
+        where: 'user_id = $userId AND log_type = ${logType.value}',
         resultCount: results.length,
       );
 
-      return results.map((row) {
-        final rating = ReviewRating.fromValue(row['rating'] as int);
-        final count = row['count'] as int;
-        return StudyLogRatingCount(rating: rating, count: count);
-      }).toList();
+      return results.map(StudyLogItem.fromMap).toList();
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
@@ -100,120 +84,30 @@ class StudyLogQuery {
     }
   }
 
-  /// 获取学习时长统计
-  Future<StudyLogTimeStatistics> getTimeStatistics(
+  /// 获取指定日期范围的日志
+  Future<List<StudyLogItem>> getLogsByDateRange(
     int userId, {
-    int days = 7,
+    required DateTime startDate,
+    required DateTime endDate,
   }) async {
     try {
-      final db = _db;
-      final startDate = DateTime.now().subtract(Duration(days: days));
       final startTimestamp = startDate.millisecondsSinceEpoch ~/ 1000;
+      final endTimestamp = endDate.millisecondsSinceEpoch ~/ 1000;
 
-      final result = await db.rawQuery(
-        '''
-        SELECT 
-          SUM(duration_ms) as total_ms,
-          COUNT(*) as total_sessions,
-          AVG(duration_ms) as avg_ms,
-          MAX(duration_ms) as max_ms,
-          MIN(duration_ms) as min_ms
-        FROM study_logs
-        WHERE user_id = ? AND created_at >= ?
-      ''',
-        [userId, startTimestamp],
+      final results = await _db.query(
+        'study_logs',
+        where: 'user_id = ? AND created_at >= ? AND created_at <= ?',
+        whereArgs: [userId, startTimestamp, endTimestamp],
+        orderBy: 'created_at DESC',
       );
 
       logger.dbQuery(
         table: 'study_logs',
-        where: 'user_id = $userId (time stats)',
-        resultCount: 1,
-      );
-
-      return StudyLogTimeStatistics.fromMap(result.first);
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'study_logs',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 获取学习热力图数据（用于日历视图）
-  Future<List<StudyLogHeatmapItem>> getHeatmapData(
-    int userId, {
-    int days = 365,
-  }) async {
-    try {
-      final db = _db;
-      final startDate = DateTime.now().subtract(Duration(days: days));
-      final startTimestamp = startDate.millisecondsSinceEpoch ~/ 1000;
-
-      final results = await db.rawQuery(
-        '''
-        SELECT 
-          DATE(created_at, 'unixepoch', 'localtime') as date,
-          COUNT(*) as count
-        FROM study_logs
-        WHERE user_id = ? AND created_at >= ?
-        GROUP BY date
-      ''',
-        [userId, startTimestamp],
-      );
-
-      logger.dbQuery(
-        table: 'study_logs',
-        where: 'user_id = $userId (heatmap)',
+        where: 'user_id = $userId AND date range',
         resultCount: results.length,
       );
 
-      return results.map((row) {
-        final date = row['date'] as String;
-        final count = row['count'] as int;
-        return StudyLogHeatmapItem(date: date, count: count);
-      }).toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'study_logs',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 获取总体学习统计
-  Future<StudyLogOverallStatistics> getOverallStatistics(int userId) async {
-    try {
-      final db = _db;
-      final result = await db.rawQuery(
-        '''
-        SELECT 
-          COUNT(*) as total_logs,
-          COUNT(DISTINCT word_id) as unique_words,
-          SUM(CASE WHEN log_type = 1 THEN 1 ELSE 0 END) as first_learns,
-          SUM(CASE WHEN log_type = 2 THEN 1 ELSE 0 END) as reviews,
-          SUM(duration_ms) as total_duration_ms,
-          AVG(duration_ms) as avg_duration_ms,
-          MIN(created_at) as first_log_at,
-          MAX(created_at) as last_log_at
-        FROM study_logs
-        WHERE user_id = ?
-      ''',
-        [userId],
-      );
-
-      logger.dbQuery(
-        table: 'study_logs',
-        where: 'user_id = $userId (overall stats)',
-        resultCount: 1,
-      );
-
-      return StudyLogOverallStatistics.fromMap(result.first);
+      return results.map(StudyLogItem.fromMap).toList();
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
