@@ -4,20 +4,25 @@ import '../db/app_database.dart';
 import '../models/app_state.dart';
 
 /// 应用状态数据仓库
-/// 管理 app_state 表中的当前活跃用户信息
+/// 仅负责 app_state 表的基础 CRUD
 class AppStateRepository {
   /// 获取数据库实例
   Future<Database> get _db async => await AppDatabase.instance.database;
 
-  /// 读取应用状态（仅一行）
-  Future<AppState?> getAppState() async {
+  /// 读取指定 ID 的状态
+  Future<AppState?> getState(int id) async {
     try {
       final db = await _db;
-      final results = await db.query('app_state', limit: 1);
+      final results = await db.query(
+        'app_state',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
 
       logger.dbQuery(
         table: 'app_state',
-        where: 'singleton',
+        where: 'id = $id',
         resultCount: results.length,
       );
 
@@ -34,31 +39,22 @@ class AppStateRepository {
     }
   }
 
-  /// 获取当前活跃用户 ID
-  Future<int?> getCurrentUserId() async {
-    final state = await getAppState();
-    return state?.currentUserId;
-  }
-
-  /// 设置当前活跃用户 ID（如不存在则创建）
-  Future<AppState> setCurrentUserId(int userId) async {
+  /// 创建状态记录
+  Future<int> insertState(AppState state) async {
     try {
       final db = await _db;
-      final id = await db.insert('app_state', {
-        'id': AppState.singletonId,
-        'current_user_id': userId,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final id = await db.insert('app_state', state.toMap());
 
       logger.dbInsert(
         table: 'app_state',
         id: id,
-        keyFields: {'current_user_id': userId},
+        keyFields: {'id': state.id},
       );
 
-      return AppState(id: AppState.singletonId, currentUserId: userId);
+      return id;
     } catch (e, stackTrace) {
       logger.dbError(
-        operation: 'UPSERT',
+        operation: 'INSERT',
         table: 'app_state',
         dbError: e,
         stackTrace: stackTrace,
@@ -67,15 +63,15 @@ class AppStateRepository {
     }
   }
 
-  /// 清空当前活跃用户
-  Future<void> clearCurrentUser() async {
+  /// 更新状态记录
+  Future<int> updateState(AppState state) async {
     try {
       final db = await _db;
       final affectedRows = await db.update(
         'app_state',
-        {'current_user_id': null},
+        state.toMap(),
         where: 'id = ?',
-        whereArgs: [AppState.singletonId],
+        whereArgs: [state.id],
       );
 
       logger.dbUpdate(
@@ -83,9 +79,34 @@ class AppStateRepository {
         affectedRows: affectedRows,
         updatedFields: ['current_user_id'],
       );
+
+      return affectedRows;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',
+        table: 'app_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 删除状态记录
+  Future<int> deleteState(int id) async {
+    try {
+      final db = await _db;
+      final deletedRows = await db.delete(
+        'app_state',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      logger.dbDelete(table: 'app_state', deletedRows: deletedRows);
+      return deletedRows;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
         table: 'app_state',
         dbError: e,
         stackTrace: stackTrace,

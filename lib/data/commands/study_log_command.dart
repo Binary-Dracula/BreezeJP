@@ -42,7 +42,7 @@ class StudyLogCommand {
       createdAt: DateTime.now(),
     );
 
-    final id = await _repo.insertStudyLog(log);
+    final id = await _repo.insert(log);
 
     return id;
   }
@@ -76,7 +76,7 @@ class StudyLogCommand {
       createdAt: DateTime.now(),
     );
 
-    final id = await _repo.insertStudyLog(log);
+    final id = await _repo.insert(log);
 
     return id;
   }
@@ -94,7 +94,7 @@ class StudyLogCommand {
       createdAt: DateTime.now(),
     );
 
-    final id = await _repo.insertStudyLog(log);
+    final id = await _repo.insert(log);
 
     return id;
   }
@@ -112,7 +112,7 @@ class StudyLogCommand {
       createdAt: DateTime.now(),
     );
 
-    return _repo.insertStudyLog(log);
+    return _repo.insert(log);
   }
 
   /// 重置进度
@@ -128,6 +128,6 @@ class StudyLogCommand {
       createdAt: DateTime.now(),
     );
 
-    return _repo.insertStudyLog(log);
+    return _repo.insert(log);
   }
 }

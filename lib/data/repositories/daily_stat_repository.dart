@@ -40,21 +40,20 @@ class DailyStatRepository {
     }
   }
 
-  /// 获取指定日期的统计
-  Future<DailyStat?> getByDate(int userId, DateTime date) async {
+  /// 获取指定用户与日期的统计
+  Future<DailyStat?> getByUserAndDate(int userId, String date) async {
     try {
-      final dateStr = _formatDate(date);
       final db = await _db;
       final results = await db.query(
         'daily_stats',
         where: 'user_id = ? AND date = ?',
-        whereArgs: [userId, dateStr],
+        whereArgs: [userId, date],
         limit: 1,
       );
 
       logger.dbQuery(
         table: 'daily_stats',
-        where: 'user_id = $userId AND date = $dateStr',
+        where: 'user_id = $userId AND date = $date',
         resultCount: results.length,
       );
 
@@ -122,7 +121,7 @@ class DailyStatRepository {
   }
 
   /// 删除每日统计
-  Future<void> delete(int id) async {
+  Future<void> deleteById(int id) async {
     try {
       final db = await _db;
       final deletedRows = await db.delete(
@@ -143,9 +142,26 @@ class DailyStatRepository {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
+  /// 删除用户的所有统计
+  Future<int> deleteByUser(int userId) async {
+    try {
+      final db = await _db;
+      final count = await db.delete(
+        'daily_stats',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+
+      logger.dbDelete(table: 'daily_stats', deletedRows: count);
+      return count;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'daily_stats',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 }

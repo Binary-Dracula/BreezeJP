@@ -1,3 +1,4 @@
+import '../models/app_state.dart';
 import '../models/user.dart';
 import '../repositories/app_state_repository.dart';
 import '../repositories/user_repository.dart';
@@ -10,7 +11,8 @@ class ActiveUserQuery {
   final UserRepository _userRepository;
 
   Future<int?> getActiveUserId() async {
-    return _appStateRepository.getCurrentUserId();
+    final state = await _appStateRepository.getState(AppState.singletonId);
+    return state?.currentUserId;
   }
 
   Future<User?> getActiveUser() async {

@@ -12,7 +12,7 @@ class StudyLogRepository {
   // ==================== 基础 CRUD ====================
 
   /// 创建学习日志
-  Future<int> insertStudyLog(StudyLog log) async {
+  Future<int> insert(StudyLog log) async {
     try {
       final data = log.toMapForInsert();
       final db = await _db;
@@ -36,7 +36,7 @@ class StudyLogRepository {
   }
 
   /// 删除日志
-  Future<void> deleteStudyLog(int id) async {
+  Future<void> deleteById(int id) async {
     try {
       final db = await _db;
       final deletedRows = await db.delete(
@@ -58,7 +58,7 @@ class StudyLogRepository {
   }
 
   /// 删除用户的所有日志
-  Future<int> deleteLogsByUser(int userId) async {
+  Future<int> deleteByUser(int userId) async {
     try {
       final db = await _db;
       final count = await db.delete(

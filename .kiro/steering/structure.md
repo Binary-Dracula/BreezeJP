@@ -68,10 +68,18 @@ lib/
 │       └── stroke_order_animator.dart     # 假名笔顺动画播放组件
 ├── data/                    # 数据访问层
 │   ├── analytics/           # 数据分析查询（统计聚合）
+│   │   ├── study_log_analytics.dart        # 学习日志统计分析
 │   │   ├── study_word_analytics.dart       # 学习单词数据分析
 │   │   └── word_analytics.dart             # 单词统计分析
 │   ├── commands/            # 数据操作命令（行为写入）
+│   │   ├── active_user_command.dart        # 活跃用户写入命令
+│   │   ├── active_user_command_provider.dart
+│   │   ├── app_bootstrap_command.dart      # 启动流程命令
+│   │   ├── app_bootstrap_command_provider.dart
 │   │   ├── daily_stat_command.dart         # 每日统计写入命令
+│   │   ├── debug/                          # Debug 命令（仅调试）
+│   │   │   ├── debug_kana_command.dart
+│   │   │   └── debug_kana_command_provider.dart
 │   │   ├── kana_command.dart               # 假名学习/复习写入命令
 │   │   ├── kana_command_provider.dart
 │   │   ├── study_log_command.dart          # 学习日志写入命令
@@ -125,6 +133,8 @@ lib/
 │   │   ├── kana_log.dart                   # 假名学习日志模型
 │   │   └── kana_stroke_order.dart          # 假名笔顺数据模型
 │   ├── queries/             # 只读查询封装
+│   │   ├── active_user_query.dart          # 活跃用户查询
+│   │   ├── active_user_query_provider.dart
 │   │   ├── daily_stat_query.dart           # 每日统计查询
 │   │   ├── kana_query.dart                 # 假名查询
 │   │   ├── kana_query_provider.dart
@@ -132,7 +142,6 @@ lib/
 │   │   ├── study_word_query.dart           # 学习单词查询逻辑
 │   │   └── word_read_queries.dart          # 单词读取查询集合
 │   └── repositories/        # 数据仓库层（Entity CRUD + Providers）
-│       ├── active_user_provider.dart       # 当前活跃用户 Provider
 │       ├── app_state_repository.dart       # 应用状态数据仓库
 │       ├── app_state_repository_provider.dart
 │       ├── user_repository.dart            # 用户数据仓库

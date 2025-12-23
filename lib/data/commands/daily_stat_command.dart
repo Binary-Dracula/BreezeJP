@@ -53,11 +53,17 @@ class DailyStatCommand {
     required int userId,
     required DateTime date,
   }) async {
-    final stat = await _repo.getByDate(userId, date);
+    final stat = await _repo.getByUserAndDate(userId, _formatDate(date));
     if (stat != null) return stat;
 
     final newStat = DailyStat.createForDate(userId, date);
     final id = await _repo.insert(newStat);
     return newStat.copyWith(id: id);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
   }
 }
