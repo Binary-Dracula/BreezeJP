@@ -37,8 +37,8 @@ View → Controller
 **硬性规则：**
 
 - Controller 仅调用 Command / Query / Analytics
-- Repository 只返回 Model，不能暴露 Database
-- Query / Analytics 只读，使用 `databaseProvider` 注入 Database
+- Repository 只返回 Model，内部可使用 `AppDatabase.instance`，但不得暴露 Database
+- Query / Analytics 只读，使用 `databaseProvider` 注入 Database（不得直接使用 `AppDatabase.instance`）
 - Command 不返回 Map 或 SQL 原始结果
 - Session 是统计唯一入口：`SessionStatPolicy → accumulator → flush → DailyStatCommand.applySession`
 - External Client 不属于 Repository，独立于 Repository 纯度规则
@@ -187,7 +187,7 @@ lib/
 **组件与职责：**
 
 - `StudySessionCommand`：创建 Session
-- `StudySessionHandle`：持有会话上下文，提供 `submitFirstLearn` / `submitReview` / `submitKanaReview` / `flush`，并暴露语义化事件方法
+- `StudySessionHandle`：对外提供 `onFirstLearn` / `onReviewCorrect` / `onReviewFailed` / `onKanaReview` / `flush`（`submit*` / `recordEvent` 为内部或兼容调用）
 - `SessionScope`：`learn` / `wordReview` / `kanaReview`
 - `SessionStatPolicy`：事件 → 统计语义映射
 - `SessionLifecycleGuard`：flush exactly-once
@@ -195,7 +195,7 @@ lib/
 **硬性规则：**
 
 - Feature 不得直接写 `daily_stats` / `study_logs`
-- 统计仅经 Session → `DailyStatCommand.applySession`
+- 统计链路唯一入口：`SessionStatPolicy → SessionStatAccumulator → flush → DailyStatCommand.applySession`
 
 ## Kana 模块（最终形态）
 

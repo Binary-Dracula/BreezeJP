@@ -7,7 +7,7 @@ inclusion: always
 ## 概览
 
 **数据库**：位于 `assets/database/breeze_jp.sqlite` 的本地 SQLite  
-**访问方式**：仅在 Data 层通过 `AppDatabase.instance` / `databaseProvider` 使用（Controller / Debug 不直接访问）  
+**访问方式**：Repository 内部使用 `AppDatabase.instance`，Query / Analytics 通过 `databaseProvider` 注入 Database（Controller / Debug 不直接访问）  
 **16 张核心表**：
 
 - **单词学习**：words、word_meanings、word_audio、example_sentences、example_audio、word_relations
@@ -18,12 +18,13 @@ inclusion: always
 
 1. **Controller / View / Debug 不得直接访问数据库**，只能通过 Command / Query / Analytics。
 2. **Repository 仅限单表 CRUD**，不得包含 join / 统计 / 业务语义。
-3. **Query / Analytics 只读**，通过 `databaseProvider` 注入 Database。
-4. **Command 是唯一写入口**，不返回 Map 或 SQL 原始结果。
-5. **所有模型类必须实现**：`fromMap(Map<String, dynamic>)` 构造和 `toMap()` 方法。
-6. **命名规则**：数据库使用 snake_case，Dart 使用 camelCase。
-7. **时间字段**：所有 `*_at` 为 Unix 秒级时间戳，读取时用 `DateTime.fromMillisecondsSinceEpoch(value * 1000)`。
-8. **用户上下文**：当前用户来自 `app_state.current_user_id`，由 ActiveUserCommand / ActiveUserQuery 负责读写。
+3. **Repository 内部可使用 `AppDatabase.instance`**，但不得向外暴露 Database。
+4. **Query / Analytics 只读**，通过 `databaseProvider` 注入 Database。
+5. **Command 是唯一写入口**，不返回 Map 或 SQL 原始结果。
+6. **所有模型类必须实现**：`fromMap(Map<String, dynamic>)` 构造和 `toMap()` 方法。
+7. **命名规则**：数据库使用 snake_case，Dart 使用 camelCase。
+8. **时间字段**：所有 `*_at` 为 Unix 秒级时间戳，读取时用 `DateTime.fromMillisecondsSinceEpoch(value * 1000)`。
+9. **用户上下文**：当前用户来自 `app_state.current_user_id`，由 ActiveUserCommand / ActiveUserQuery 负责读写。
 
 ## 表结构速查
 
@@ -501,6 +502,8 @@ class Word {
 ```
 
 ### Repository 模式示例（CRUD only）
+
+示例为 Repository 内部用法（Query / Analytics 不使用 `AppDatabase.instance`）。
 
 ```dart
 class WordRepository {
