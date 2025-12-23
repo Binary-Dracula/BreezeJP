@@ -7,7 +7,7 @@ inclusion: always
 ## 概览
 
 **数据库**：位于 `assets/database/breeze_jp.sqlite` 的本地 SQLite  
-**访问方式**：必须通过 `AppDatabase.instance` 单例（定义在 `lib/data/db/app_database.dart`）  
+**访问方式**：仅在 Data 层通过 `AppDatabase.instance` / `databaseProvider` 使用（Controller / Debug 不直接访问）  
 **16 张核心表**：
 
 - **单词学习**：words、word_meanings、word_audio、example_sentences、example_audio、word_relations
@@ -16,12 +16,14 @@ inclusion: always
 
 ## AI 助手必须遵守的规则
 
-1. **绝不要在 Controller 或 View 中直接访问数据库**，只能走 Repository 层。
-2. **Repository 必须返回模型对象**，不要返回 `Map`。
-3. **所有模型类必须实现**：`fromMap(Map<String, dynamic>)` 构造和 `toMap()` 方法。
-4. **命名规则**：数据库使用 snake_case，Dart 使用 camelCase。
-5. **时间字段**：所有 `*_at` 为 Unix 秒级时间戳，读取时用 `DateTime.fromMillisecondsSinceEpoch(value * 1000)`。
-6. **用户上下文**：当前用户来自 `app_state` 表的 `current_user_id`。
+1. **Controller / View / Debug 不得直接访问数据库**，只能通过 Command / Query / Analytics。
+2. **Repository 仅限单表 CRUD**，不得包含 join / 统计 / 业务语义。
+3. **Query / Analytics 只读**，通过 `databaseProvider` 注入 Database。
+4. **Command 是唯一写入口**，不返回 Map 或 SQL 原始结果。
+5. **所有模型类必须实现**：`fromMap(Map<String, dynamic>)` 构造和 `toMap()` 方法。
+6. **命名规则**：数据库使用 snake_case，Dart 使用 camelCase。
+7. **时间字段**：所有 `*_at` 为 Unix 秒级时间戳，读取时用 `DateTime.fromMillisecondsSinceEpoch(value * 1000)`。
+8. **用户上下文**：当前用户来自 `app_state.current_user_id`，由 ActiveUserCommand / ActiveUserQuery 负责读写。
 
 ## 表结构速查
 
@@ -219,7 +221,7 @@ CREATE TABLE daily_stats (
 
   algorithm INTEGER DEFAULT 1,               -- 当天使用 SRS 算法（1/2）
 
-  learning_quality_score REAL,               -- 预留字段：学习质量评分（未来用）
+  learning_quality_score REAL,               -- 学习质量评分
 
   UNIQUE(user_id, date)
 );
@@ -498,16 +500,21 @@ class Word {
 }
 ```
 
-### Repository 模式示例
+### Repository 模式示例（CRUD only）
 
 ```dart
 class WordRepository {
-  // ✅ 正确：返回模型对象
-  Future<List<Word>> getWordsByLevel(String level) async {
+  // ✅ 正确：单表 CRUD，返回模型对象
+  Future<Word?> getWordById(int id) async {
     final db = await AppDatabase.instance.database;
-    final results =
-        await db.query('words', where: 'jlpt_level = ?', whereArgs: [level]);
-    return results.map((map) => Word.fromMap(map)).toList();
+    final results = await db.query(
+      'words',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (results.isEmpty) return null;
+    return Word.fromMap(results.first);
   }
 
   // ❌ 错误：不要返回 Map
@@ -531,9 +538,5 @@ final nowSeconds = (DateTime.now().millisecondsSinceEpoch / 1000).round();
 ### 获取当前用户
 
 ```dart
-Future<int> getCurrentUserId() async {
-  final db = await AppDatabase.instance.database;
-  final result = await db.query('app_state', where: 'id = 1');
-  return result.first['current_user_id'] as int;
-}
+final userId = await ref.read(activeUserQueryProvider).getActiveUserId();
 ```
