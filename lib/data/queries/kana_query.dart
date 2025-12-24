@@ -14,12 +14,17 @@ import '../models/read/kana_learning_stats.dart';
 import '../models/read/kana_log_item.dart';
 import '../models/read/kana_type_item.dart';
 
-/// Kana read query layer (joins / filters / aggregates).
+/// Kana 相关只读查询的辅助类。
+///
+/// 统一管理 `kana_*` 表的关联、过滤与聚合查询，并返回类型化模型对象。
+/// 每个方法都会记录查询日志，发生数据库错误时会记录并重新抛出，便于调用方统一处理。
 class KanaQuery {
   KanaQuery(this._db);
 
   final Database _db;
 
+  /// 从 `kana_letters` 中返回去重后的分组名称，
+  /// 并按每个分组内最早的 `sort_index` 排序。
   Future<List<KanaGroupItem>> getAllKanaGroups() async {
     try {
       final results = await _db.rawQuery('''
@@ -51,6 +56,8 @@ class KanaQuery {
     }
   }
 
+  /// 从 `kana_letters` 中返回去重后的类型，
+  /// 并按每个类型内最早的 `sort_index` 排序。
   Future<List<KanaTypeItem>> getAllKanaTypes() async {
     try {
       final results = await _db.rawQuery('''
@@ -83,6 +90,10 @@ class KanaQuery {
     }
   }
 
+  /// 返回用户当前到期需要复习的学习状态记录。
+  ///
+  /// 到期条件：`learning_status` 为 `learning`，
+  /// 且 `next_review_at` 小于等于当前时间戳（秒）。
   Future<List<KanaLearningState>> getDueReviewKana(int userId) async {
     try {
       final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -116,6 +127,9 @@ class KanaQuery {
     }
   }
 
+  /// 统计用户到期需要复习的学习状态数量。
+  ///
+  /// 规则同 [getDueReviewKana]。
   Future<int> countDueKanaReviews(int userId) async {
     try {
       final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -150,6 +164,10 @@ class KanaQuery {
     }
   }
 
+  /// 返回用户到期需要复习的 Kana 字符。
+  ///
+  /// 关联 `kana_letters` 与 `kana_learning_state`，
+  /// 过滤条件为 `learning_status = mastered` 且 `next_review_at` 为空或已到期。
   Future<List<KanaLetter>> getKanaDueForReview(int userId) async {
     try {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -185,6 +203,7 @@ class KanaQuery {
     }
   }
 
+  /// 返回指定用户与 Kana 的日志列表，按时间倒序。
   Future<List<KanaLogItem>> getKanaLogs(int userId, int kanaId) async {
     try {
       final results = await _db.query(
@@ -214,6 +233,7 @@ class KanaQuery {
     }
   }
 
+  /// 返回用户的日志列表，按时间倒序，可选限制数量。
   Future<List<KanaLogItem>> getAllKanaLogs(int userId, {int? limit}) async {
     try {
       final results = await _db.query(
@@ -244,6 +264,10 @@ class KanaQuery {
     }
   }
 
+  /// 返回用户针对指定 Kana 最近一次复习的题型。
+  ///
+  /// 仅统计 `log_type = review` 且 `question_type` 非空的日志。
+  /// 若未找到记录或旧表结构缺少 `question_type` 列，则返回 null。
   Future<String?> getLastKanaReviewQuestionType(int userId, int kanaId) async {
     try {
       final result = await _db.rawQuery(
@@ -274,6 +298,9 @@ class KanaQuery {
     }
   }
 
+  /// 基于日志评分统计用户在指定 Kana 上的正确率。
+  ///
+  /// 以 `rating >= 2` 视为正确，忽略 `rating` 为空的记录。
   Future<KanaAccuracy> getKanaAccuracy(int userId, int kanaId) async {
     try {
       final result = await _db.rawQuery(
@@ -313,6 +340,7 @@ class KanaQuery {
     }
   }
 
+  /// 汇总用户在所有 Kana 上的日志类型统计数量。
   Future<KanaLogStats> getKanaLogStats(int userId) async {
     try {
       final result = await _db.rawQuery(
@@ -355,6 +383,9 @@ class KanaQuery {
     }
   }
 
+  /// 加载指定 Kana 的完整详情，包括关联数据。
+  ///
+  /// 若 Kana 字符不存在则返回 null。
   Future<KanaDetail?> getKanaDetail(int userId, int kanaId) async {
     try {
       final letter = await getKanaLetterById(kanaId);
@@ -390,6 +421,9 @@ class KanaQuery {
     }
   }
 
+  /// 返回全部 Kana 字符以及对应的用户学习状态（若存在）。
+  ///
+  /// 使用左连接，确保即使用户尚无学习状态记录也会返回该字符。
   Future<List<KanaLetterWithState>> getAllKanaLettersWithState(
     int userId,
   ) async {
@@ -464,6 +498,7 @@ class KanaQuery {
     }
   }
 
+  /// 返回用户的学习统计：总数、已学、剩余。
   Future<KanaLearningStats> getKanaLearningStats(int userId) async {
     try {
       final totalResult = await _db.rawQuery(
@@ -503,6 +538,7 @@ class KanaQuery {
     }
   }
 
+  /// 返回指定 Kana 的音频记录（如存在）。
   Future<KanaAudio?> getKanaAudio(int kanaId) async {
     try {
       final results = await _db.query(
@@ -531,6 +567,7 @@ class KanaQuery {
     }
   }
 
+  /// 返回指定 Kana 的笔顺记录（如存在）。
   Future<KanaStrokeOrder?> getKanaStrokeOrder(int kanaId) async {
     try {
       final results = await _db.query(
@@ -559,6 +596,7 @@ class KanaQuery {
     }
   }
 
+  /// 根据 id 返回单个 Kana 字符，未找到则返回 null。
   Future<KanaLetter?> getKanaLetterById(int kanaId) async {
     try {
       final results = await _db.query(
@@ -587,6 +625,7 @@ class KanaQuery {
     }
   }
 
+  /// 返回用户对指定 Kana 的学习状态，若不存在则返回 null。
   Future<KanaLearningState?> getKanaLearningState(
     int userId,
     int kanaId,
@@ -618,6 +657,7 @@ class KanaQuery {
     }
   }
 
+  /// 返回指定 Kana 的例词列表（来自 `kana_examples`）。
   Future<List<KanaExample>> _getKanaExamples(int kanaId) async {
     try {
       final results = await _db.query(
