@@ -102,3 +102,15 @@ Frozen 状态下：
 1. 先更新 steering 文档
 2. 再修改代码
 3. 在变更说明中明确指出破坏了哪一条 Freeze 规则
+
+### Note on Historical Statistics
+
+Learning analytics rules in `learning_analytics.md`
+apply to all real-time, state-based statistics.
+
+Existing historical statistics based on daily_stat
+or study_log are event-driven and are not yet aligned
+with the state-based analytics model.
+
+Do not refactor historical statistics until a
+dedicated migration plan is defined.

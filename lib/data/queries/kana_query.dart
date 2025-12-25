@@ -168,7 +168,8 @@ class KanaQuery {
   /// 返回用户到期需要复习的 Kana 字符。
   ///
   /// 关联 `kana_letters` 与 `kana_learning_state`，
-  /// 过滤条件为 `learning_status = mastered` 且 `next_review_at` 为空或已到期。
+  /// 过滤条件为 `learning_status = learning`，
+  /// 且 `next_review_at` 不为空并已到期。
   Future<List<KanaLetter>> getKanaDueForReview(int userId) async {
     try {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -180,10 +181,11 @@ class KanaQuery {
         INNER JOIN kana_learning_state kls ON kl.id = kls.kana_id
         WHERE kls.user_id = ?
           AND kls.learning_status = ?
-          AND (kls.next_review_at IS NULL OR kls.next_review_at <= ?)
+          AND kls.next_review_at IS NOT NULL
+          AND kls.next_review_at <= ?
         ORDER BY kls.next_review_at ASC
       ''',
-        [userId, LearningStatus.mastered.value, now],
+        [userId, LearningStatus.learning.value, now],
       );
 
       logger.dbQuery(
@@ -511,9 +513,13 @@ class KanaQuery {
         '''
         SELECT COUNT(*) as count 
         FROM kana_learning_state 
-        WHERE user_id = ? AND learning_status = ?
+        WHERE user_id = ? AND learning_status IN (?, ?)
         ''',
-        [userId, LearningStatus.mastered.value],
+        [
+          userId,
+          LearningStatus.learning.value,
+          LearningStatus.mastered.value,
+        ],
       );
       final learned = learnedResult.first['count'] as int;
 
