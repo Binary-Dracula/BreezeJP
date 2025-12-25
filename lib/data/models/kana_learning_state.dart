@@ -1,11 +1,4 @@
-/// 五十音学习状态枚举
-/// 与 study_words.user_state 保持一致
-enum KanaLearningStatus {
-  notLearned, // 0 - 未学
-  learning, // 1 - 学习中
-  mastered, // 2 - 已掌握
-  ignored, // 3 - 忽略
-}
+import '../../core/constants/learning_status.dart';
 
 /// 五十音学习状态模型
 /// 与 study_words 表结构保持一致，支持 SM-2 和 FSRS 双算法
@@ -14,8 +7,8 @@ class KanaLearningState {
   final int userId;
   final int kanaId;
 
-  /// 学习状态：0=未学, 1=学习中, 2=已掌握, 3=忽略
-  final KanaLearningStatus learningStatus;
+  /// 学习状态：0=已曝光, 1=学习中, 2=已掌握, 3=忽略
+  final LearningStatus learningStatus;
 
   /// 下次复习时间 (Unix 时间戳)
   final int? nextReviewAt;
@@ -54,7 +47,7 @@ class KanaLearningState {
     required this.id,
     required this.userId,
     required this.kanaId,
-    this.learningStatus = KanaLearningStatus.notLearned,
+    this.learningStatus = LearningStatus.seen,
     this.nextReviewAt,
     this.lastReviewedAt,
     this.streak = 0,
@@ -70,12 +63,12 @@ class KanaLearningState {
        updatedAt = updatedAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
   /// 是否处于掌握状态
-  bool get isMastered => learningStatus == KanaLearningStatus.mastered;
+  bool get isMastered => learningStatus == LearningStatus.mastered;
 
   /// 是否处于学习中
   bool get isLearning =>
-      learningStatus == KanaLearningStatus.learning ||
-      learningStatus == KanaLearningStatus.mastered;
+      learningStatus == LearningStatus.learning ||
+      learningStatus == LearningStatus.mastered;
 
   /// 是否需要复习
   bool get isDueForReview {
@@ -86,13 +79,13 @@ class KanaLearningState {
 
   factory KanaLearningState.fromMap(Map<String, dynamic> map) {
     final statusValue = (map['learning_status'] as int? ?? 0)
-        .clamp(0, KanaLearningStatus.values.length - 1)
+        .clamp(0, LearningStatus.values.length - 1)
         .toInt();
     return KanaLearningState(
       id: map['id'] as int,
       userId: map['user_id'] as int,
       kanaId: map['kana_id'] as int,
-      learningStatus: KanaLearningStatus.values[statusValue],
+      learningStatus: LearningStatus.values[statusValue],
       nextReviewAt: map['next_review_at'] as int?,
       lastReviewedAt: map['last_reviewed_at'] as int?,
       streak: map['streak'] as int? ?? 0,
@@ -112,7 +105,7 @@ class KanaLearningState {
       'id': id,
       'user_id': userId,
       'kana_id': kanaId,
-      'learning_status': learningStatus.index,
+      'learning_status': learningStatus.value,
       'next_review_at': nextReviewAt,
       'last_reviewed_at': lastReviewedAt,
       'streak': streak,
@@ -139,7 +132,7 @@ class KanaLearningState {
     int? id,
     int? userId,
     int? kanaId,
-    KanaLearningStatus? learningStatus,
+    LearningStatus? learningStatus,
     int? nextReviewAt,
     int? lastReviewedAt,
     int? streak,

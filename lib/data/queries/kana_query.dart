@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/kana_audio.dart';
 import '../models/kana_example.dart';
@@ -105,7 +106,7 @@ class KanaQuery {
           AND learning_status = ? 
           AND next_review_at <= ?
         ''',
-        whereArgs: [userId, KanaLearningStatus.learning.index, nowSeconds],
+        whereArgs: [userId, LearningStatus.learning.value, nowSeconds],
         orderBy: 'next_review_at ASC',
       );
 
@@ -141,7 +142,7 @@ class KanaQuery {
           AND learning_status = ?
           AND next_review_at <= ?
       ''',
-        [userId, KanaLearningStatus.learning.index, nowSeconds],
+        [userId, LearningStatus.learning.value, nowSeconds],
       );
 
       final count = (result.first['cnt'] as int?) ?? 0;
@@ -182,7 +183,7 @@ class KanaQuery {
           AND (kls.next_review_at IS NULL OR kls.next_review_at <= ?)
         ORDER BY kls.next_review_at ASC
       ''',
-        [userId, KanaLearningStatus.mastered.index, now],
+        [userId, LearningStatus.mastered.value, now],
       );
 
       logger.dbQuery(
@@ -469,8 +470,8 @@ class KanaQuery {
             userId: map['state_user_id'] as int,
             kanaId: letter.id,
             learningStatus:
-                KanaLearningStatus.values[(map['learning_status'] as int? ?? 0)
-                    .clamp(0, KanaLearningStatus.values.length - 1)],
+                LearningStatus.values[(map['learning_status'] as int? ?? 0)
+                    .clamp(0, LearningStatus.values.length - 1)],
             nextReviewAt: map['next_review_at'] as int?,
             lastReviewedAt: map['last_reviewed_at'] as int?,
             streak: map['streak'] as int? ?? 0,
@@ -512,7 +513,7 @@ class KanaQuery {
         FROM kana_learning_state 
         WHERE user_id = ? AND learning_status = ?
         ''',
-        [userId, KanaLearningStatus.mastered.index],
+        [userId, LearningStatus.mastered.value],
       );
       final learned = learnedResult.first['count'] as int;
 

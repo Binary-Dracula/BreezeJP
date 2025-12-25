@@ -149,6 +149,30 @@ class _KanaStrokePracticePageState
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            tooltip: '已掌握',
+            icon: const Icon(Icons.check_circle_outline),
+            onPressed: () async {
+              await ref
+                  .read(kanaStrokeControllerProvider.notifier)
+                  .markCurrentAsMastered();
+              if (!mounted) return;
+              _showToast('已标记为已掌握');
+            },
+          ),
+          IconButton(
+            tooltip: '忽略',
+            icon: const Icon(Icons.block),
+            onPressed: () async {
+              await ref
+                  .read(kanaStrokeControllerProvider.notifier)
+                  .markCurrentAsIgnored();
+              if (!mounted) return;
+              _showToast('已标记为忽略');
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: state.isLoading
@@ -275,6 +299,16 @@ class _KanaStrokePracticePageState
     );
   }
 
+  void _showToast(String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   Widget _buildPracticeArea(
     BuildContext context,
     AppLocalizations l10n,
@@ -387,7 +421,7 @@ class _KanaStrokePracticePageState
         ];
       },
       onAllCompleted: () {
-        ref.read(kanaStrokeControllerProvider.notifier).recordLearningAction();
+        ref.read(kanaStrokeControllerProvider.notifier).completePractice();
       },
     );
   }

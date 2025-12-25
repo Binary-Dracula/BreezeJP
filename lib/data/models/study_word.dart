@@ -1,10 +1,12 @@
+import '../../core/constants/learning_status.dart';
+
 /// 用户学习进度模型
 /// 记录用户对每个单词的学习状态和 SRS 数据
 class StudyWord {
   final int id;
   final int userId;
   final int wordId;
-  final UserWordState userState;
+  final LearningStatus userState;
   final DateTime? nextReviewAt;
   final DateTime? lastReviewedAt;
   final double interval;
@@ -41,7 +43,7 @@ class StudyWord {
       id: map['id'] as int,
       userId: map['user_id'] as int,
       wordId: map['word_id'] as int,
-      userState: UserWordState.fromValue(map['user_state'] as int),
+      userState: LearningStatus.fromValue(map['user_state'] as int),
       nextReviewAt: map['next_review_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
               (map['next_review_at'] as int) * 1000,
@@ -104,7 +106,7 @@ class StudyWord {
     int? id,
     int? userId,
     int? wordId,
-    UserWordState? userState,
+    LearningStatus? userState,
     DateTime? nextReviewAt,
     DateTime? lastReviewedAt,
     double? interval,
@@ -138,60 +140,18 @@ class StudyWord {
 
   /// 是否需要复习
   bool get needsReview {
-    if (userState != UserWordState.learning) return false;
+    if (userState != LearningStatus.learning) return false;
     if (nextReviewAt == null) return true;
     return DateTime.now().isAfter(nextReviewAt!);
   }
 
   /// 是否为新单词
-  bool get isNew => userState == UserWordState.newWord && totalReviews == 0;
+  bool get isNew => userState == LearningStatus.seen && totalReviews == 0;
 
   /// 学习进度百分比（基于连续答对次数）
   double get progressPercentage {
     // 假设连续答对 5 次即为掌握
     const masteryStreak = 5;
     return (streak / masteryStreak).clamp(0.0, 1.0);
-  }
-}
-
-/// 用户对单词的状态
-/// 注意：数据库中只存储已学习过的单词，所以实际上 newWord 状态只用于内存中的临时对象
-enum UserWordState {
-  /// 未学习（新单词）- 仅用于内存中临时对象，数据库中不会有此状态
-  newWord(0),
-
-  /// 学习中（SRS 正常进行）
-  learning(1),
-
-  /// 已掌握（用户主动标记"我已经会了，不需要学习"）
-  mastered(2),
-
-  /// 忽略（例如脏词、用户不想学）
-  ignored(3);
-
-  const UserWordState(this.value);
-
-  final int value;
-
-  /// 从数据库值创建枚举
-  static UserWordState fromValue(int value) {
-    return UserWordState.values.firstWhere(
-      (state) => state.value == value,
-      orElse: () => UserWordState.learning, // 数据库中默认是 learning
-    );
-  }
-
-  /// 获取状态描述
-  String get description {
-    switch (this) {
-      case UserWordState.newWord:
-        return '未学习';
-      case UserWordState.learning:
-        return '学习中';
-      case UserWordState.mastered:
-        return '已掌握';
-      case UserWordState.ignored:
-        return '已忽略';
-    }
   }
 }

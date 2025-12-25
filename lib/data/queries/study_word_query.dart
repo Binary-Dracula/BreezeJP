@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import '../db/app_database_provider.dart';
 import '../models/study_word.dart';
@@ -19,7 +20,7 @@ class StudyWordQuery {
   /// 获取用户的所有学习记录
   Future<List<StudyWord>> getUserStudyWords(
     int userId, {
-    UserWordState? state,
+    LearningStatus? state,
     int? limit,
     int? offset,
   }) async {
@@ -60,13 +61,14 @@ class StudyWordQuery {
     try {
       final db = _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final learningValue = LearningStatus.learning.value;
       final whereClause =
-          'user_id = $userId AND user_state = 1 AND next_review_at <= $now';
+          'user_id = $userId AND user_state = $learningValue AND next_review_at <= $now';
 
       final results = await db.query(
         'study_words',
-        where: 'user_id = ? AND user_state = 1 AND next_review_at <= ?',
-        whereArgs: [userId, now],
+        where: 'user_id = ? AND user_state = ? AND next_review_at <= ?',
+        whereArgs: [userId, learningValue, now],
         orderBy: 'next_review_at ASC',
         limit: limit,
       );
@@ -89,15 +91,16 @@ class StudyWordQuery {
     }
   }
 
-  /// 获取新单词（未学习的）
+  /// 获取新单词（已曝光但未进入 SRS）
   Future<List<StudyWord>> getNewWords(int userId, {int? limit}) async {
     try {
       final db = _db;
-      final whereClause = 'user_id = $userId AND user_state = 0';
+      final seenValue = LearningStatus.seen.value;
+      final whereClause = 'user_id = $userId AND user_state = $seenValue';
       final results = await db.query(
         'study_words',
-        where: 'user_id = ? AND user_state = 0',
-        whereArgs: [userId],
+        where: 'user_id = ? AND user_state = ?',
+        whereArgs: [userId, seenValue],
         orderBy: 'created_at ASC',
         limit: limit,
       );
@@ -125,19 +128,20 @@ class StudyWordQuery {
     try {
       final db = _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final learningValue = LearningStatus.learning.value;
 
       final result = await db.rawQuery(
         '''
         SELECT COUNT(*) as count
         FROM study_words
-        WHERE user_id = ? AND user_state = 1 AND next_review_at <= ?
+        WHERE user_id = ? AND user_state = ? AND next_review_at <= ?
       ''',
-        [userId, now],
+        [userId, learningValue, now],
       );
 
       logger.dbQuery(
         table: 'study_words',
-        where: 'user_id = $userId AND user_state = 1 (due count)',
+        where: 'user_id = $userId AND user_state = $learningValue (due count)',
         resultCount: 1,
       );
 

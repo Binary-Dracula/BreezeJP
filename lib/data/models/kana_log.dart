@@ -5,6 +5,7 @@ enum KanaLogType {
   mastered, // 3 - 掌握
   quiz, // 4 - 测验
   forgot, // 5 - 忘记/失败
+  ignored, // 6 - 忽略
 }
 
 /// 五十音学习日志模型
@@ -14,7 +15,7 @@ class KanaLog {
   final int userId;
   final int kanaId;
 
-  /// 日志类型：1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败
+  /// 日志类型：1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败, 6=忽略
   final KanaLogType logType;
 
   /// 评分：1=Again, 2=Good, 3=Easy

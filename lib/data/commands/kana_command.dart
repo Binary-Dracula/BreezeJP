@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/algorithm/algorithm_service.dart';
+import '../../core/algorithm/algorithm_service_provider.dart';
+import '../../core/algorithm/srs_types.dart';
+import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/kana_learning_state.dart';
 import '../models/kana_log.dart';
+import '../models/study_log.dart';
 import '../repositories/kana_repository.dart';
 import '../repositories/kana_repository_provider.dart';
 import 'session/study_session_handle.dart';
@@ -14,6 +19,8 @@ class KanaCommand {
   final Ref ref;
 
   KanaRepository get _repo => ref.read(kanaRepositoryProvider);
+  AlgorithmService get _algorithmService =>
+      ref.read(algorithmServiceProvider);
 
   /// Get or create a kana learning state (UNIQUE: user_id + kana_id).
   /// Ensures a baseline record before first learn/review.
@@ -25,17 +32,14 @@ class KanaCommand {
       final existing = await _repo.getKanaLearningState(userId, kanaId);
       if (existing != null) return existing;
 
-      final now = DateTime.now();
-      final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
-      final nextReviewAt =
-          now.add(const Duration(hours: 4)).millisecondsSinceEpoch ~/ 1000;
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       final state = KanaLearningState(
         id: 0,
         userId: userId,
         kanaId: kanaId,
-        learningStatus: KanaLearningStatus.learning,
-        nextReviewAt: nextReviewAt,
+        learningStatus: LearningStatus.seen,
+        nextReviewAt: null,
         streak: 0,
         totalReviews: 0,
         failCount: 0,
@@ -60,15 +64,69 @@ class KanaCommand {
     }
   }
 
-  /// Mark kana as learned.
-  Future<void> markKanaAsLearned(int userId, int kanaId) async {
+  /// 进入学习阶段（仅允许 seen -> learning），并生成初始复习计划。
+  Future<void> enterKanaLearningIfNeeded(int userId, int kanaId) async {
+    try {
+      final existing = await _repo.getKanaLearningState(userId, kanaId);
+      if (existing == null) {
+        logger.warning('假名学习状态不存在: userId=$userId, kanaId=$kanaId');
+        return;
+      }
+      if (existing.learningStatus != LearningStatus.seen) {
+        return;
+      }
+
+      final algorithmType = _algorithmService.defaultAlgorithm;
+      final output = _algorithmService.calculate(
+        algorithmType: algorithmType,
+        input: SRSInput.initial(ReviewRating.good),
+      );
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final nextReviewAt = output.nextReviewAt.millisecondsSinceEpoch ~/ 1000;
+
+      final updated = existing.copyWith(
+        learningStatus: LearningStatus.learning,
+        nextReviewAt: nextReviewAt,
+        interval: output.interval,
+        easeFactor: output.easeFactor,
+        stability: output.stability,
+        difficulty: output.difficulty,
+        updatedAt: nowSeconds,
+      );
+      await _repo.updateKanaLearningState(updated);
+
+      await addKanaLogQuick(
+        userId: userId,
+        kanaId: kanaId,
+        logType: KanaLogType.firstLearn,
+        algorithm: AlgorithmService.getAlgorithmValue(algorithmType),
+        intervalAfter: output.interval,
+        nextReviewAtAfter: nextReviewAt,
+        easeFactorAfter: output.easeFactor,
+        fsrsStabilityAfter: output.stability,
+        fsrsDifficultyAfter: output.difficulty,
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 标记假名为已掌握
+  Future<void> markKanaAsMastered(int userId, int kanaId) async {
     try {
       final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final existing = await _repo.getKanaLearningState(userId, kanaId);
 
       if (existing != null) {
         final updated = existing.copyWith(
-          learningStatus: KanaLearningStatus.mastered,
+          learningStatus: LearningStatus.mastered,
+          nextReviewAt: null,
           lastReviewedAt: nowSeconds,
           updatedAt: nowSeconds,
         );
@@ -78,7 +136,8 @@ class KanaCommand {
           id: 0,
           userId: userId,
           kanaId: kanaId,
-          learningStatus: KanaLearningStatus.mastered,
+          learningStatus: LearningStatus.mastered,
+          nextReviewAt: null,
           lastReviewedAt: nowSeconds,
           streak: 0,
           totalReviews: 0,
@@ -93,7 +152,60 @@ class KanaCommand {
         await _repo.insertKanaLearningState(state);
       }
 
-      logger.info('假名标记为已学习: userId=$userId, kanaId=$kanaId');
+      await addKanaLogQuick(
+        userId: userId,
+        kanaId: kanaId,
+        logType: KanaLogType.mastered,
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 标记假名为忽略
+  Future<void> markKanaAsIgnored(int userId, int kanaId) async {
+    try {
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final existing = await _repo.getKanaLearningState(userId, kanaId);
+
+      if (existing != null) {
+        final updated = existing.copyWith(
+          learningStatus: LearningStatus.ignored,
+          nextReviewAt: null,
+          updatedAt: nowSeconds,
+        );
+        await _repo.updateKanaLearningState(updated);
+      } else {
+        final state = KanaLearningState(
+          id: 0,
+          userId: userId,
+          kanaId: kanaId,
+          learningStatus: LearningStatus.ignored,
+          nextReviewAt: null,
+          streak: 0,
+          totalReviews: 0,
+          failCount: 0,
+          interval: 0,
+          easeFactor: 2.5,
+          stability: 0,
+          difficulty: 0,
+          createdAt: nowSeconds,
+          updatedAt: nowSeconds,
+        );
+        await _repo.insertKanaLearningState(state);
+      }
+
+      await addKanaLogQuick(
+        userId: userId,
+        kanaId: kanaId,
+        logType: KanaLogType.ignored,
+      );
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPSERT',
@@ -273,6 +385,12 @@ class KanaCommand {
       final existing = await _repo.getKanaLearningState(userId, kanaId);
       if (existing == null) {
         logger.warning('假名学习状态不存在: userId=$userId, kanaId=$kanaId');
+        return;
+      }
+      if (existing.learningStatus != LearningStatus.learning) {
+        logger.warning(
+          '假名复习状态非法: userId=$userId, kanaId=$kanaId, status=${existing.learningStatus}',
+        );
         return;
       }
 

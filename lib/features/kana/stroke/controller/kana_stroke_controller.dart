@@ -139,7 +139,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
     }
   }
 
-  /// 记录一次学习动作：更新时间、写日志并同步状态
+  /// 记录一次学习动作：仅更新时间
   Future<void> recordLearningAction() async {
     final current = state.currentKana;
     final learningState = state.learningState;
@@ -149,16 +149,64 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
 
     await _kanaCommand.updateLearningTimestamp(user.id, current.letter.id);
 
-    await _kanaCommand.insertLearningLog(
-      userId: user.id,
-      kanaId: current.letter.id,
-      durationMs: 0,
-    );
-
     state = state.copyWith(
       learningState: learningState.copyWith(
         updatedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       ),
+    );
+  }
+
+  /// 描红完成后进入学习阶段（仅 seen -> learning）
+  Future<void> completePractice() async {
+    final current = state.currentKana;
+    if (current == null) return;
+    final user = await _getActiveUser();
+
+    await _kanaCommand.updateLearningTimestamp(user.id, current.letter.id);
+    await _kanaCommand.enterKanaLearningIfNeeded(user.id, current.letter.id);
+    await refreshState();
+  }
+
+  /// 标记当前假名为已掌握
+  Future<void> markCurrentAsMastered() async {
+    final current = state.currentKana;
+    if (current == null) return;
+    final user = await _getActiveUser();
+    await _kanaCommand.markKanaAsMastered(user.id, current.letter.id);
+    await refreshState();
+  }
+
+  /// 标记当前假名为忽略
+  Future<void> markCurrentAsIgnored() async {
+    final current = state.currentKana;
+    if (current == null) return;
+    final user = await _getActiveUser();
+    await _kanaCommand.markKanaAsIgnored(user.id, current.letter.id);
+    await refreshState();
+  }
+
+  /// 刷新当前假名的学习状态
+  Future<void> refreshState() async {
+    final current = state.currentKana;
+    if (current == null) return;
+    final user = await _getActiveUser();
+    final learningState = await _kanaQuery.getKanaLearningState(
+      user.id,
+      current.letter.id,
+    );
+    if (learningState == null) return;
+
+    final updatedKanaLetters = state.kanaLetters.map((item) {
+      if (item.letter.id != current.letter.id) return item;
+      return KanaLetterWithState(
+        letter: item.letter,
+        learningState: learningState,
+      );
+    }).toList();
+
+    state = state.copyWith(
+      kanaLetters: updatedKanaLetters,
+      learningState: learningState,
     );
   }
 }

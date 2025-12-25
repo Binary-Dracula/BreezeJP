@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import 'session/review_result.dart';
 import '../models/study_word.dart';
@@ -83,7 +85,7 @@ class StudyWordCommand {
 
       final now = DateTime.now();
       final updated = studyWord.copyWith(
-        userState: UserWordState.learning,
+        userState: LearningStatus.learning,
         lastReviewedAt: now,
         nextReviewAt: reviewResult.nextReviewAtAfter,
         interval: reviewResult.intervalAfter,
@@ -117,7 +119,7 @@ class StudyWordCommand {
       }
 
       final updated = studyWord.copyWith(
-        userState: UserWordState.mastered,
+        userState: LearningStatus.mastered,
         updatedAt: DateTime.now(),
       );
 
@@ -142,7 +144,7 @@ class StudyWordCommand {
       }
 
       final updated = studyWord.copyWith(
-        userState: UserWordState.ignored,
+        userState: LearningStatus.ignored,
         updatedAt: DateTime.now(),
       );
 
@@ -168,7 +170,7 @@ class StudyWordCommand {
 
       final now = DateTime.now();
       final updated = studyWord.copyWith(
-        userState: UserWordState.newWord,
+        userState: LearningStatus.seen,
         nextReviewAt: null,
         lastReviewedAt: null,
         interval: 0,
@@ -205,7 +207,7 @@ class StudyWordCommand {
           id: 0,
           userId: userId,
           wordId: wordId,
-          userState: UserWordState.learning,
+          userState: LearningStatus.learning,
           createdAt: now,
           updatedAt: now,
         );
@@ -214,12 +216,12 @@ class StudyWordCommand {
         return;
       }
 
-      if (studyWord.userState == UserWordState.mastered) {
+      if (studyWord.userState == LearningStatus.mastered) {
         return;
       }
 
       final updated = studyWord.copyWith(
-        userState: UserWordState.learning,
+        userState: LearningStatus.learning,
         updatedAt: now,
       );
 
