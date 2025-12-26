@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../controller/learn_controller.dart';
 import '../state/learn_state.dart';
+import '../widgets/word_action_bar.dart';
 import '../widgets/word_examples_section.dart';
 import '../widgets/word_header.dart';
 import '../widgets/word_meanings_section.dart';
@@ -66,6 +67,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
             ],
           ),
         ),
+        bottomNavigationBar: _buildWordActionBar(state),
       ),
     );
   }
@@ -170,6 +172,31 @@ class _LearnPageState extends ConsumerState<LearnPage> {
             ],
           ),
         );
+      },
+    );
+  }
+
+  Widget? _buildWordActionBar(LearnState state) {
+    if (state.isLoading || state.isEmpty) return null;
+
+    final currentWord = state.currentWordDetail;
+    if (currentWord == null) return null;
+
+    final controller = ref.read(learnControllerProvider.notifier);
+
+    return WordActionBar(
+      userState: currentWord.userState,
+      onAddToReview: () {
+        controller.addCurrentWordToReview();
+      },
+      onQuickMaster: () {
+        controller.quickMasterCurrentWord();
+      },
+      onMarkMastered: () {
+        controller.markCurrentWordAsMastered();
+      },
+      onToggleIgnored: () {
+        controller.toggleCurrentWordIgnored();
       },
     );
   }

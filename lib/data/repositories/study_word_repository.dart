@@ -66,6 +66,34 @@ class StudyWordRepository {
     }
   }
 
+  /// 创建学习记录（忽略唯一冲突）
+  Future<int> createStudyWordIgnoreConflict(StudyWord studyWord) async {
+    try {
+      final data = studyWord.toMapForInsert();
+      final db = await _db;
+      final id = await db.insert(
+        'study_words',
+        data,
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+
+      logger.dbInsert(
+        table: 'study_words',
+        id: id,
+        keyFields: {'wordId': studyWord.wordId, 'userId': studyWord.userId},
+      );
+      return id;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'INSERT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 更新学习记录
   Future<void> updateStudyWord(StudyWord studyWord) async {
     try {

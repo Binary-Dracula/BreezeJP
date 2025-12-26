@@ -3,6 +3,7 @@ import 'word_meaning.dart';
 import 'word_audio.dart';
 import 'example_sentence.dart';
 import 'example_audio.dart';
+import '../../core/constants/learning_status.dart';
 
 /// 单词详情（包含所有关联数据）
 class WordDetail {
@@ -10,12 +11,14 @@ class WordDetail {
   final List<WordMeaning> meanings;
   final List<WordAudio> audios;
   final List<ExampleSentenceWithAudio> examples;
+  final LearningStatus userState;
 
   WordDetail({
     required this.word,
     required this.meanings,
     required this.audios,
     required this.examples,
+    this.userState = LearningStatus.seen,
   });
 
   /// 获取主要释义（第一个）
@@ -39,6 +42,22 @@ class WordDetail {
   String? get primaryAudioPath => primaryAudioFilename != null
       ? 'assets/audio/words/$primaryAudioFilename'
       : null;
+
+  WordDetail copyWith({
+    Word? word,
+    List<WordMeaning>? meanings,
+    List<WordAudio>? audios,
+    List<ExampleSentenceWithAudio>? examples,
+    LearningStatus? userState,
+  }) {
+    return WordDetail(
+      word: word ?? this.word,
+      meanings: meanings ?? this.meanings,
+      audios: audios ?? this.audios,
+      examples: examples ?? this.examples,
+      userState: userState ?? this.userState,
+    );
+  }
 }
 
 /// 例句及其音频（组合）

@@ -56,6 +56,35 @@ class StudyWordQuery {
     }
   }
 
+  /// 获取用户对某个单词的学习记录
+  Future<StudyWord?> getStudyWord(int userId, int wordId) async {
+    try {
+      final results = await _db.query(
+        'study_words',
+        where: 'user_id = ? AND word_id = ?',
+        whereArgs: [userId, wordId],
+        limit: 1,
+      );
+
+      logger.dbQuery(
+        table: 'study_words',
+        where: 'user_id = $userId AND word_id = $wordId',
+        resultCount: results.length,
+      );
+
+      if (results.isEmpty) return null;
+      return StudyWord.fromMap(results.first);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 获取需要复习的单词
   Future<List<StudyWord>> getDueReviews(int userId, {int? limit}) async {
     try {
