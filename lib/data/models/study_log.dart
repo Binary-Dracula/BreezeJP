@@ -4,6 +4,7 @@ class StudyLog {
   final int id;
   final int userId;
   final int wordId;
+  final String questionType;
   final LogType logType;
   final ReviewRating? rating;
   final int algorithm;
@@ -19,6 +20,7 @@ class StudyLog {
     required this.id,
     required this.userId,
     required this.wordId,
+    required this.questionType,
     required this.logType,
     this.rating,
     this.algorithm = 1,
@@ -37,6 +39,7 @@ class StudyLog {
       id: map['id'] as int,
       userId: map['user_id'] as int,
       wordId: map['word_id'] as int,
+      questionType: map['question_type'] as String,
       logType: LogType.fromValue(map['log_type'] as int),
       rating: map['rating'] != null
           ? ReviewRating.fromValue(map['rating'] as int)
@@ -63,6 +66,7 @@ class StudyLog {
     return {
       'user_id': userId,
       'word_id': wordId,
+      'question_type': questionType,
       'log_type': logType.value,
       'rating': rating?.value,
       'algorithm': algorithm,
@@ -90,6 +94,7 @@ class StudyLog {
     int? id,
     int? userId,
     int? wordId,
+    String? questionType,
     LogType? logType,
     ReviewRating? rating,
     int? algorithm,
@@ -105,6 +110,7 @@ class StudyLog {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       wordId: wordId ?? this.wordId,
+      questionType: questionType ?? this.questionType,
       logType: logType ?? this.logType,
       rating: rating ?? this.rating,
       algorithm: algorithm ?? this.algorithm,

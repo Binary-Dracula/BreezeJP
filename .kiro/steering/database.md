@@ -185,6 +185,7 @@ CREATE TABLE study_logs (
     id                    INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id               INTEGER NOT NULL,
     word_id               INTEGER NOT NULL,
+    question_type         TEXT,                         -- recall / audio / switchMode
     log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=忽略, 5=重置
     rating                INTEGER,                      -- 1=Hard, 2=Good, 3=Easy
     algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS

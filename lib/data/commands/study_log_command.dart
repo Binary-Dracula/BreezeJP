@@ -31,6 +31,7 @@ class StudyLogCommand {
       id: 0,
       userId: userId,
       wordId: wordId,
+      questionType: 'recall',
       logType: LogType.firstLearn,
       durationMs: durationMs,
       intervalAfter: intervalAfter,
@@ -64,6 +65,7 @@ class StudyLogCommand {
       id: 0,
       userId: userId,
       wordId: wordId,
+      questionType: 'recall',
       logType: LogType.review,
       rating: rating,
       durationMs: durationMs,
@@ -90,6 +92,7 @@ class StudyLogCommand {
       id: 0,
       userId: userId,
       wordId: wordId,
+      questionType: 'recall',
       logType: LogType.markMastered,
       createdAt: DateTime.now(),
     );
@@ -108,6 +111,7 @@ class StudyLogCommand {
       id: 0,
       userId: userId,
       wordId: wordId,
+      questionType: 'recall',
       logType: LogType.markIgnored,
       createdAt: DateTime.now(),
     );
@@ -124,6 +128,7 @@ class StudyLogCommand {
       id: 0,
       userId: userId,
       wordId: wordId,
+      questionType: 'recall',
       logType: LogType.reset,
       createdAt: DateTime.now(),
     );
