@@ -286,7 +286,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
               ),
               _StatTile(
                 label: '今日复习',
-                value: '${state.reviewCount}',
+                value: '${state.todayReviewCount}',
                 icon: Icons.repeat_rounded,
                 color: const Color(0xFF14B8A6),
               ),

@@ -118,14 +118,37 @@ class DailyStatQuery {
     try {
       final db = _db;
 
-      final recentDays = await db.rawQuery(
+      final result = await db.rawQuery(
         '''
-        SELECT date
-        FROM daily_stats
-        WHERE user_id = ?
-          AND (new_learned_count > 0 OR review_count > 0 OR total_time_ms > 0)
-        ORDER BY date DESC
-        LIMIT 365
+        WITH active_days AS (
+          SELECT date
+          FROM daily_stats
+          WHERE user_id = ?
+            AND (new_learned_count > 0 OR review_count > 0 OR total_time_ms > 0)
+        ),
+        ranked AS (
+          SELECT
+            date,
+            julianday(date) - ROW_NUMBER() OVER (ORDER BY date DESC) AS grp
+          FROM active_days
+        ),
+        anchor AS (
+          SELECT grp
+          FROM ranked
+          WHERE date = (
+            SELECT MAX(date)
+            FROM active_days
+            WHERE date = DATE('now','localtime')
+               OR date = DATE('now','localtime','-1 day')
+          )
+        )
+        SELECT
+          CASE
+            WHEN EXISTS (SELECT 1 FROM anchor)
+            THEN (SELECT COUNT(*) FROM ranked WHERE grp = (SELECT grp FROM anchor))
+            ELSE 0
+          END AS count;
+
       ''',
         [userId],
       );
@@ -133,37 +156,10 @@ class DailyStatQuery {
       logger.dbQuery(
         table: 'daily_stats',
         where: 'user_id = $userId (streak)',
-        resultCount: recentDays.length,
+        resultCount: 1,
       );
 
-      if (recentDays.isEmpty) return 0;
-
-      final today = DateTime.now();
-      final yesterday = today.subtract(const Duration(days: 1));
-      final todayStr = _formatDate(today);
-      final yesterdayStr = _formatDate(yesterday);
-
-      final latestDateStr = recentDays.first['date'] as String;
-      if (latestDateStr != todayStr && latestDateStr != yesterdayStr) {
-        return 0;
-      }
-
-      int streak = 0;
-      DateTime expectedDate = DateTime.parse(latestDateStr);
-
-      for (final row in recentDays) {
-        final dateStr = row['date'] as String;
-        final date = DateTime.parse(dateStr);
-
-        if (_isSameDay(date, expectedDate)) {
-          streak++;
-          expectedDate = expectedDate.subtract(const Duration(days: 1));
-        } else {
-          break;
-        }
-      }
-
-      return streak;
+      return (result.first['count'] as num?)?.toInt() ?? 0;
     } catch (e, stackTrace) {
       logger.error(
         'calculateStreak failed (streak query on daily_stats)',

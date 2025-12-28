@@ -5,7 +5,7 @@ import '../../../data/commands/active_user_command_provider.dart';
 import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/queries/daily_stat_query.dart';
-import '../../../data/analytics/study_word_analytics.dart';
+import '../../../data/queries/mastered_count_query.dart';
 import '../../../data/queries/study_word_query.dart';
 import '../../../data/queries/kana_query.dart';
 import '../../../data/queries/kana_query_provider.dart';
@@ -23,9 +23,9 @@ class HomeController extends Notifier<HomeState> {
   HomeState build() => const HomeState();
 
   StudyWordQuery get _studyWordQuery => ref.read(studyWordQueryProvider);
-  StudyWordAnalytics get _studyWordAnalytics =>
-      ref.read(studyWordAnalyticsProvider);
   DailyStatQuery get _dailyStatQuery => ref.read(dailyStatQueryProvider);
+  MasteredStateQuery get _masteredCountQuery =>
+      ref.read(masteredStateQueryProvider);
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
@@ -51,9 +51,6 @@ class HomeController extends Notifier<HomeState> {
       // 2. 获取学习统计
       final reviewCount = await _studyWordQuery.getDueReviewCount(userId);
       final kanaReviewCount = await _kanaQuery.countDueKanaReviews(userId);
-      final userStats = await _studyWordAnalytics.getUserStatistics(userId);
-      final newWordCount = userStats.newWords;
-      final masteredWordCount = userStats.masteredWords;
 
       // 3. 获取每日统计 (Streak & Duration)
       final streakDays = await _dailyStatQuery.calculateStreak(userId);
@@ -65,14 +62,20 @@ class HomeController extends Notifier<HomeState> {
         endDate: todayStart,
       );
       final todayStat = todayStats.isNotEmpty ? todayStats.first : null;
-      final todayDurationMinutes =
-          ((todayStat?.totalTimeMs ?? 0) / 1000 / 60).round();
+      final todayLearnedCount = todayStat?.newLearnedCount ?? 0;
+      final todayReviewCount = todayStat?.reviewCount ?? 0;
+      final todayDurationMinutes = ((todayStat?.totalTimeMs ?? 0) / 1000 / 60)
+          .round();
+      final masteredWordCount = await _masteredCountQuery.getTotalMasteredCount(
+        userId,
+      );
 
       state = state.copyWith(
         isLoading: false,
         userName: userName,
         reviewCount: reviewCount,
-        newWordCount: newWordCount,
+        newWordCount: todayLearnedCount,
+        todayReviewCount: todayReviewCount,
         kanaReviewCount: kanaReviewCount,
         streakDays: streakDays,
         masteredWordCount: masteredWordCount,

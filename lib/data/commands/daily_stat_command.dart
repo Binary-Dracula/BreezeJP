@@ -16,6 +16,30 @@ class DailyStatCommand {
 
   DailyStatRepository get _repo => ref.read(dailyStatRepositoryProvider);
 
+  /// 应用单次学习增量（初学/复习）
+  Future<void> applyLearningDelta({
+    required int userId,
+    required int learnedDelta,
+    required int reviewedDelta,
+    required int durationMs,
+  }) async {
+    if (learnedDelta == 0 && reviewedDelta == 0 && durationMs == 0) {
+      return;
+    }
+
+    final stat = await _ensureDailyStat(
+      userId: userId,
+      date: DateTime.now(),
+    );
+
+    final updated = stat.copyWith(
+      totalTimeMs: stat.totalTimeMs + durationMs,
+      newLearnedCount: stat.newLearnedCount + learnedDelta,
+      reviewCount: stat.reviewCount + reviewedDelta,
+    );
+    await _repo.update(updated);
+  }
+
   Future<void> applySession({
     required int userId,
     required int learned,

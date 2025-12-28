@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/study_log.dart';
+import 'daily_stat_command.dart';
 import '../repositories/study_log_repository.dart';
 import '../repositories/study_log_repository_provider.dart';
 final studyLogCommandProvider = Provider<StudyLogCommand>((ref) {
@@ -14,6 +15,7 @@ class StudyLogCommand {
   final Ref ref;
 
   StudyLogRepository get _repo => ref.read(studyLogRepositoryProvider);
+  DailyStatCommand get _dailyStatCommand => ref.read(dailyStatCommandProvider);
 
   /// 记录首次学习
   Future<int> logFirstLearn({
@@ -44,6 +46,12 @@ class StudyLogCommand {
     );
 
     final id = await _repo.insert(log);
+    await _dailyStatCommand.applyLearningDelta(
+      userId: userId,
+      learnedDelta: 1,
+      reviewedDelta: 0,
+      durationMs: durationMs,
+    );
 
     return id;
   }
@@ -79,6 +87,12 @@ class StudyLogCommand {
     );
 
     final id = await _repo.insert(log);
+    await _dailyStatCommand.applyLearningDelta(
+      userId: userId,
+      learnedDelta: 0,
+      reviewedDelta: 1,
+      durationMs: durationMs,
+    );
 
     return id;
   }

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/study_log.dart';
-import '../daily_stat_command.dart';
 import '../study_log_command.dart';
 import '../study_word_command.dart';
 import 'review_result.dart';
@@ -29,9 +28,6 @@ class StudySessionHandle {
       _ref.read(studyWordCommandProvider);
   StudyLogCommand get _studyLogCommand =>
       _ref.read(studyLogCommandProvider);
-  DailyStatCommand get _dailyStatCommand =>
-      _ref.read(dailyStatCommandProvider);
-
   void onFirstLearn({required int durationMs}) {
     _recordEvent(
       SessionEventType.firstLearn,
@@ -120,17 +116,7 @@ class StudySessionHandle {
   }
 
   Future<void> flush() async {
-    await _guard.flushOnce(() async {
-      await _dailyStatCommand.applySession(
-        userId: userId,
-        learned: _accumulator.learnedCount,
-        reviewed: _accumulator.reviewCount,
-        failed: _accumulator.failedCount,
-        mastered: _accumulator.masteredCount,
-        durationMs: _accumulator.totalDurationMs,
-        kanaReviewCount: _accumulator.kanaReviewCount,
-      );
-    });
+    await _guard.flushOnce(() async {});
   }
 
   void _recordEvent(

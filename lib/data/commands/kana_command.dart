@@ -10,6 +10,7 @@ import '../models/kana_log.dart';
 import '../models/study_log.dart';
 import '../repositories/kana_repository.dart';
 import '../repositories/kana_repository_provider.dart';
+import 'daily_stat_command.dart';
 import 'session/study_session_handle.dart';
 
 /// Kana command layer (state updates / review results / log writes).
@@ -21,6 +22,8 @@ class KanaCommand {
   KanaRepository get _repo => ref.read(kanaRepositoryProvider);
   AlgorithmService get _algorithmService =>
       ref.read(algorithmServiceProvider);
+  DailyStatCommand get _dailyStatCommand =>
+      ref.read(dailyStatCommandProvider);
 
   /// Get or create a kana learning state (UNIQUE: user_id + kana_id).
   /// Ensures a baseline record before first learn/review.
@@ -220,7 +223,17 @@ class KanaCommand {
   /// Insert a kana log (base CRUD).
   Future<int> addKanaLog(KanaLog log) async {
     try {
-      return await _repo.insertKanaLog(log);
+      final id = await _repo.insertKanaLog(log);
+      if (log.logType == KanaLogType.firstLearn ||
+          log.logType == KanaLogType.review) {
+        await _dailyStatCommand.applyLearningDelta(
+          userId: log.userId,
+          learnedDelta: log.logType == KanaLogType.firstLearn ? 1 : 0,
+          reviewedDelta: log.logType == KanaLogType.review ? 1 : 0,
+          durationMs: log.durationMs,
+        );
+      }
+      return id;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'INSERT',
