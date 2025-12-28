@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/tracking/page_duration_tracker.dart';
 import '../../../l10n/app_localizations.dart';
 import '../controller/learn_controller.dart';
 import '../state/learn_state.dart';
@@ -22,10 +23,13 @@ class LearnPage extends ConsumerStatefulWidget {
 
 class _LearnPageState extends ConsumerState<LearnPage> {
   late PageController _pageController;
+  late final PageDurationTracker _pageDurationTracker;
 
   @override
   void initState() {
     super.initState();
+    _pageDurationTracker = PageDurationTracker(ref);
+    _pageDurationTracker.onEnter();
     _pageController = PageController();
 
     // 页面加载时初始化学习
@@ -38,6 +42,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
 
   @override
   void dispose() {
+    _pageDurationTracker.onExit();
     _pageController.dispose();
     super.dispose();
   }

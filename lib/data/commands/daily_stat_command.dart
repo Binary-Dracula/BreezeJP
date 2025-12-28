@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/daily_stat.dart';
+import '../queries/active_user_query_provider.dart';
 import '../repositories/daily_stat_repository.dart';
 import '../repositories/daily_stat_repository_provider.dart';
 
@@ -16,14 +17,33 @@ class DailyStatCommand {
 
   DailyStatRepository get _repo => ref.read(dailyStatRepositoryProvider);
 
+  /// 仅应用学习时长（页面驻留时间）
+  Future<void> applyTimeOnlyDelta({
+    required int durationMs,
+  }) async {
+    if (durationMs <= 0) return;
+
+    final userId = await ref.read(activeUserQueryProvider).getActiveUserId();
+    if (userId == null) return;
+
+    final stat = await _ensureDailyStat(
+      userId: userId,
+      date: DateTime.now(),
+    );
+
+    final updated = stat.copyWith(
+      totalTimeMs: stat.totalTimeMs + durationMs,
+    );
+    await _repo.update(updated);
+  }
+
   /// 应用单次学习增量（初学/复习）
   Future<void> applyLearningDelta({
     required int userId,
     required int learnedDelta,
     required int reviewedDelta,
-    required int durationMs,
   }) async {
-    if (learnedDelta == 0 && reviewedDelta == 0 && durationMs == 0) {
+    if (learnedDelta == 0 && reviewedDelta == 0) {
       return;
     }
 
@@ -33,7 +53,6 @@ class DailyStatCommand {
     );
 
     final updated = stat.copyWith(
-      totalTimeMs: stat.totalTimeMs + durationMs,
       newLearnedCount: stat.newLearnedCount + learnedDelta,
       reviewCount: stat.reviewCount + reviewedDelta,
     );
@@ -46,14 +65,12 @@ class DailyStatCommand {
     required int reviewed,
     required int failed,
     required int mastered,
-    required int durationMs,
     required int kanaReviewCount,
   }) async {
     if (learned == 0 &&
         reviewed == 0 &&
         failed == 0 &&
         mastered == 0 &&
-        durationMs == 0 &&
         kanaReviewCount == 0) {
       return;
     }
@@ -64,7 +81,6 @@ class DailyStatCommand {
     );
 
     final updated = stat.copyWith(
-      totalTimeMs: stat.totalTimeMs + durationMs,
       newLearnedCount: stat.newLearnedCount + learned,
       reviewCount: stat.reviewCount + reviewed,
       uniqueKanaReviewedCount:

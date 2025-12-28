@@ -70,7 +70,7 @@ class StudySessionHandle {
     await _studyLogCommand.logFirstLearn(
       userId: userId,
       wordId: wordId,
-      durationMs: durationMs,
+      durationMs: 0,
     );
   }
 
@@ -98,7 +98,7 @@ class StudySessionHandle {
       userId: userId,
       wordId: wordId,
       rating: rating,
-      durationMs: durationMs,
+      durationMs: 0,
       intervalAfter: reviewResult.intervalAfter,
       easeFactorAfter: reviewResult.easeFactorAfter,
       nextReviewAtAfter: reviewResult.nextReviewAtAfter,

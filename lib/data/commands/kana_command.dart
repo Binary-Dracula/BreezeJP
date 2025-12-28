@@ -230,7 +230,6 @@ class KanaCommand {
           userId: log.userId,
           learnedDelta: log.logType == KanaLogType.firstLearn ? 1 : 0,
           reviewedDelta: log.logType == KanaLogType.review ? 1 : 0,
-          durationMs: log.durationMs,
         );
       }
       return id;

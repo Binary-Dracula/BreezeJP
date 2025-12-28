@@ -50,7 +50,6 @@ class StudyLogCommand {
       userId: userId,
       learnedDelta: 1,
       reviewedDelta: 0,
-      durationMs: durationMs,
     );
 
     return id;
@@ -91,7 +90,6 @@ class StudyLogCommand {
       userId: userId,
       learnedDelta: 0,
       reviewedDelta: 1,
-      durationMs: durationMs,
     );
 
     return id;
