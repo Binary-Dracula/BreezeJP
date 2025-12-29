@@ -17,6 +17,14 @@ class DailyStatCommand {
 
   DailyStatRepository get _repo => ref.read(dailyStatRepositoryProvider);
 
+  /// 仅用于页面驻留时间写入（工程封板）
+  ///
+  /// ⚠️ 这是写入 total_time_ms 的【唯一入口】
+  ///
+  /// 禁止：
+  /// - 行为侧调用
+  /// - session 侧调用
+  /// - 任何非页面生命周期的时间写入
   /// 仅应用学习时长（页面驻留时间）
   Future<void> applyTimeOnlyDelta({
     required int durationMs,

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/tracking/page_duration_tracker.dart';
+import '../../../../core/tracking/page_duration_tracking_mixin.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/audio_service_provider.dart';
 import '../controller/matching_controller.dart';
@@ -19,23 +19,14 @@ class MatchingPage extends ConsumerStatefulWidget {
   ConsumerState<MatchingPage> createState() => _MatchingPageState();
 }
 
-class _MatchingPageState extends ConsumerState<MatchingPage> {
-  late final PageDurationTracker _pageDurationTracker;
-
+class _MatchingPageState extends ConsumerState<MatchingPage>
+    with PageDurationTrackingMixin<MatchingPage> {
   @override
   void initState() {
     super.initState();
-    _pageDurationTracker = PageDurationTracker(ref);
-    _pageDurationTracker.onEnter();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(matchingControllerProvider.notifier).loadReview();
     });
-  }
-
-  @override
-  void dispose() {
-    _pageDurationTracker.onExit();
-    super.dispose();
   }
 
   @override

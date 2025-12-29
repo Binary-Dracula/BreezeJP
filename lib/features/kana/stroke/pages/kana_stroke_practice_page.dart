@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xml/xml.dart';
 
-import '../../../../core/tracking/page_duration_tracker.dart';
+import '../../../../core/tracking/page_duration_tracking_mixin.dart';
 import '../../../../core/widgets/stroke_order_animator.dart';
 import '../../../../data/models/kana_detail.dart';
 import '../../../../services/audio_service_provider.dart';
@@ -43,7 +43,8 @@ class KanaStrokePracticePage extends ConsumerStatefulWidget {
 }
 
 class _KanaStrokePracticePageState
-    extends ConsumerState<KanaStrokePracticePage> {
+    extends ConsumerState<KanaStrokePracticePage>
+    with PageDurationTrackingMixin<KanaStrokePracticePage> {
   /// UI 状态：完整字形是否需要淡入
   bool _showFinalGlyph = false;
 
@@ -56,13 +57,10 @@ class _KanaStrokePracticePageState
   final _animatorKey = GlobalKey<StrokeOrderAnimatorState>();
   final _traceKey = GlobalKey<StrokeTraceCanvasState>();
   ProviderSubscription<KanaStrokeState>? _strokeSubscription;
-  late final PageDurationTracker _pageDurationTracker;
 
   @override
   void initState() {
     super.initState();
-    _pageDurationTracker = PageDurationTracker(ref);
-    _pageDurationTracker.onEnter();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(kanaStrokeControllerProvider.notifier)
@@ -87,7 +85,6 @@ class _KanaStrokePracticePageState
 
   @override
   void dispose() {
-    _pageDurationTracker.onExit();
     _strokeSubscription?.close();
     super.dispose();
   }
