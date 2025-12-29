@@ -16,9 +16,10 @@ class MasteredStateQuery {
 
   final Database _db;
 
-  Future<int> getTotalMasteredCount(int userId) async {
+  /// 统计单词已掌握数量
+  Future<int> getWordMasteredCount(int userId) async {
     try {
-      final wordResult = await _db.rawQuery(
+      final result = await _db.rawQuery(
         '''
         SELECT COUNT(*) as count
         FROM study_words
@@ -26,7 +27,7 @@ class MasteredStateQuery {
       ''',
         [userId, LearningStatus.mastered.value],
       );
-      final wordCount = (wordResult.first['count'] as int?) ?? 0;
+      final count = (result.first['count'] as int?) ?? 0;
 
       logger.dbQuery(
         table: 'study_words',
@@ -35,7 +36,22 @@ class MasteredStateQuery {
         resultCount: 1,
       );
 
-      final kanaResult = await _db.rawQuery(
+      return count;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 统计假名已掌握数量
+  Future<int> getKanaMasteredCount(int userId) async {
+    try {
+      final result = await _db.rawQuery(
         '''
         SELECT COUNT(*) as count
         FROM kana_learning_state
@@ -43,7 +59,7 @@ class MasteredStateQuery {
       ''',
         [userId, LearningStatus.mastered.value],
       );
-      final kanaCount = (kanaResult.first['count'] as int?) ?? 0;
+      final count = (result.first['count'] as int?) ?? 0;
 
       logger.dbQuery(
         table: 'kana_learning_state',
@@ -52,15 +68,21 @@ class MasteredStateQuery {
         resultCount: 1,
       );
 
-      return wordCount + kanaCount;
+      return count;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
-        table: 'study_words + kana_learning_state',
+        table: 'kana_learning_state',
         dbError: e,
         stackTrace: stackTrace,
       );
       rethrow;
     }
+  }
+
+  Future<int> getTotalMasteredCount(int userId) async {
+    final wordCount = await getWordMasteredCount(userId);
+    final kanaCount = await getKanaMasteredCount(userId);
+    return wordCount + kanaCount;
   }
 }

@@ -14,6 +14,12 @@ class DebugController extends Notifier<DebugState> {
   List<DebugTestItem> _buildTestItems() {
     return const [
       DebugTestItem(
+        key: 'statistics',
+        title: 'Statistics Debug',
+        description: '只读统计验证页（daily_stats / mastered / streak）',
+        route: '/debug/statistics',
+      ),
+      DebugTestItem(
         key: 'kana_review_data',
         title: 'Kana Review Queue Generator',
         description: '生成假名待复习队列数据（驱动 Home/Review）',
