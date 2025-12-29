@@ -19,7 +19,7 @@ import '../../data/commands/daily_stat_command.dart';
 class PageDurationTracker with WidgetsBindingObserver {
   PageDurationTracker(this.ref);
 
-  final Ref ref;
+  final WidgetRef ref;
 
   static const int _minDurationMs = 2000;
 
@@ -67,8 +67,8 @@ class PageDurationTracker with WidgetsBindingObserver {
     final durationMs = now - enterTs;
     if (durationMs < _minDurationMs) return;
 
-    await ref.read(dailyStatCommandProvider).applyTimeOnlyDelta(
-          durationMs: durationMs,
-        );
+    await ref
+        .read(dailyStatCommandProvider)
+        .applyTimeOnlyDelta(durationMs: durationMs);
   }
 }
