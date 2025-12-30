@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/commands/daily_stat_command.dart';
 
@@ -17,9 +16,9 @@ import '../../data/commands/daily_stat_command.dart';
 ///
 /// ⚠️ 此类为统计底座，不得复制或绕过
 class PageDurationTracker with WidgetsBindingObserver {
-  PageDurationTracker(this.ref);
+  PageDurationTracker(this._dailyStatCommand);
 
-  final WidgetRef ref;
+  final DailyStatCommand _dailyStatCommand;
 
   static const int _minDurationMs = 2000;
 
@@ -67,8 +66,6 @@ class PageDurationTracker with WidgetsBindingObserver {
     final durationMs = now - enterTs;
     if (durationMs < _minDurationMs) return;
 
-    await ref
-        .read(dailyStatCommandProvider)
-        .applyTimeOnlyDelta(durationMs: durationMs);
+    await _dailyStatCommand.applyTimeOnlyDelta(durationMs: durationMs);
   }
 }
