@@ -23,13 +23,16 @@ class PageDurationTracker with WidgetsBindingObserver {
   static const int _minDurationMs = 2000;
 
   int? _enterTimestampMs;
+  DateTime? _enterDate;
   bool _isTracking = false;
 
   /// 页面进入时调用
   void onEnter() {
     if (_isTracking) return;
     _isTracking = true;
-    _enterTimestampMs = DateTime.now().millisecondsSinceEpoch;
+    final now = DateTime.now();
+    _enterTimestampMs = now.millisecondsSinceEpoch;
+    _enterDate = DateTime(now.year, now.month, now.day);
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -52,20 +55,27 @@ class PageDurationTracker with WidgetsBindingObserver {
     }
 
     if (state == AppLifecycleState.resumed && _enterTimestampMs == null) {
-      _enterTimestampMs = DateTime.now().millisecondsSinceEpoch;
+      final now = DateTime.now();
+      _enterTimestampMs = now.millisecondsSinceEpoch;
+      _enterDate = DateTime(now.year, now.month, now.day);
     }
   }
 
   Future<void> _flush() async {
     final enterTs = _enterTimestampMs;
-    if (enterTs == null) return;
+    final date = _enterDate;
+    if (enterTs == null || date == null) return;
 
     _enterTimestampMs = null;
+    _enterDate = null;
 
     final now = DateTime.now().millisecondsSinceEpoch;
     final durationMs = now - enterTs;
     if (durationMs < _minDurationMs) return;
 
-    await _dailyStatCommand.applyTimeOnlyDelta(durationMs: durationMs);
+    await _dailyStatCommand.applyTimeOnlyDelta(
+      durationMs: durationMs,
+      date: date,
+    );
   }
 }

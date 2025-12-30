@@ -28,6 +28,7 @@ class DailyStatCommand {
   /// 仅应用学习时长（页面驻留时间）
   Future<void> applyTimeOnlyDelta({
     required int durationMs,
+    required DateTime date,
   }) async {
     if (durationMs <= 0) return;
 
@@ -36,7 +37,7 @@ class DailyStatCommand {
 
     final stat = await _ensureDailyStat(
       userId: userId,
-      date: DateTime.now(),
+      date: date,
     );
 
     final updated = stat.copyWith(

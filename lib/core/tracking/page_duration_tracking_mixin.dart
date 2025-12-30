@@ -11,7 +11,7 @@ mixin PageDurationTrackingMixin<T extends ConsumerStatefulWidget>
   void initState() {
     super.initState();
     _pageDurationTracker = PageDurationTracker(
-      ref.read(dailyStatCommandProvider),
+      ref.read<DailyStatCommand>(dailyStatCommandProvider),
     );
     _pageDurationTracker.onEnter();
   }
