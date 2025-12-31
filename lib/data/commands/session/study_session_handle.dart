@@ -66,12 +66,6 @@ class StudySessionHandle {
       userId: userId,
       wordId: wordId,
     );
-
-    await _studyLogCommand.logFirstLearn(
-      userId: userId,
-      wordId: wordId,
-      durationMs: 0,
-    );
   }
 
   Future<void> submitReview({

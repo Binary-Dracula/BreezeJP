@@ -17,44 +17,6 @@ class StudyLogCommand {
   StudyLogRepository get _repo => ref.read(studyLogRepositoryProvider);
   DailyStatCommand get _dailyStatCommand => ref.read(dailyStatCommandProvider);
 
-  /// 记录首次学习
-  Future<int> logFirstLearn({
-    required int userId,
-    required int wordId,
-    required int durationMs,
-    double? intervalAfter,
-    double? easeFactorAfter,
-    DateTime? nextReviewAtAfter,
-    int algorithm = 1,
-    double? fsrsStabilityAfter,
-    double? fsrsDifficultyAfter,
-  }) async {
-    final log = StudyLog(
-      id: 0,
-      userId: userId,
-      wordId: wordId,
-      questionType: 'recall',
-      logType: LogType.firstLearn,
-      durationMs: durationMs,
-      intervalAfter: intervalAfter,
-      easeFactorAfter: easeFactorAfter,
-      nextReviewAtAfter: nextReviewAtAfter,
-      algorithm: algorithm,
-      fsrsStabilityAfter: fsrsStabilityAfter,
-      fsrsDifficultyAfter: fsrsDifficultyAfter,
-      createdAt: DateTime.now(),
-    );
-
-    final id = await _repo.insert(log);
-    await _dailyStatCommand.applyLearningDelta(
-      userId: userId,
-      learnedDelta: 1,
-      reviewedDelta: 0,
-    );
-
-    return id;
-  }
-
   /// 记录复习
   Future<int> logReview({
     required int userId,

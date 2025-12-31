@@ -5,8 +5,11 @@ import '../../core/algorithm/algorithm_service_provider.dart';
 import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
+import 'daily_stat_command.dart';
 import '../models/study_log.dart';
 import '../models/study_word.dart';
+import '../repositories/study_log_repository.dart';
+import '../repositories/study_log_repository_provider.dart';
 import '../repositories/study_word_repository.dart';
 import '../repositories/study_word_repository_provider.dart';
 import '../repositories/word_repository.dart';
@@ -27,9 +30,10 @@ class WordCommand {
   final Ref ref;
 
   StudyWordRepository get _repo => ref.read(studyWordRepositoryProvider);
+  StudyLogRepository get _studyLogRepo => ref.read(studyLogRepositoryProvider);
+  DailyStatCommand get _dailyStatCommand => ref.read(dailyStatCommandProvider);
   WordRepository get _wordRepo => ref.read(wordRepositoryProvider);
-  AlgorithmService get _algorithmService =>
-      ref.read(algorithmServiceProvider);
+  AlgorithmService get _algorithmService => ref.read(algorithmServiceProvider);
   StudyLogCommand get _studyLogCommand => ref.read(studyLogCommandProvider);
 
   /// 获取或创建学习状态（首次展示：seen）。
@@ -91,28 +95,16 @@ class WordCommand {
     }
   }
 
-  /// 进入学习阶段（仅允许 seen -> learning）。
+  /// 进入学习阶段（firstLearn 写入唯一入口）
   ///
-  /// 伪代码：
-  /// enterWordLearningIfNeeded(userId, wordId):
-  ///   s = repo.get(userId, wordId)
-  ///   if s == null: return (warn)
-  ///   if s.status != seen: return
-  ///   out = algorithm.calculate(initial GOOD)
-  ///   now = now()
-  ///   s2 = s.copy(status=learning, nextReviewAt=out.nextReviewAt,
-  ///             interval=out.interval, easeFactor=out.easeFactor,
-  ///             stability=out.stability, difficulty=out.difficulty,
-  ///             updatedAt=now)
-  ///   repo.update(s2)
-  ///   log firstLearn (optional)
+  /// 规则（工程封板）：
+  /// 1. firstLearn 只允许在「study_words 不存在 → 创建 learning」时写入
+  /// 2. seen → learning 仅更新状态，不写 firstLearn、不更新 daily_stats
+  /// 3. 并发下以 createIgnoreConflict + 回读保证一致性
   Future<void> enterWordLearningIfNeeded(int userId, int wordId) async {
-    AlgorithmType? firstLearnAlgorithm;
-    SRSOutput? firstLearnOutput;
-
     final existing = await _repo.getStudyWord(userId, wordId);
 
-    // -------- 情况 1：不存在记录，尝试 auto-create learning --------
+    // ========= 情况 1：不存在记录，尝试 auto-create learning =========
     if (existing == null) {
       final algorithmType = _algorithmService.defaultAlgorithm;
       final output = _algorithmService.calculate(
@@ -139,24 +131,45 @@ class WordCommand {
         updatedAt: now,
       );
 
-      final insertedRowId =
-          await _repo.createStudyWordIgnoreConflict(state);
+      final insertedRowId = await _repo.createStudyWordIgnoreConflict(state);
 
+      // ---- 本线程成功创建：唯一允许写 firstLearn 的地方 ----
       if (insertedRowId > 0) {
-        // 本线程成功创建
         logger.info(
-          '[WordState] wordId=$wordId userId=$userId null -> learning via enter_learning(auto_create)',
+          '[WordState] wordId=$wordId userId=$userId null -> learning (firstLearn)',
         );
-        firstLearnAlgorithm = algorithmType;
-        firstLearnOutput = output;
-      } else {
-        // 被并发插入抢先，回读后判断是否需要 seen -> learning
-        final after = await _repo.getStudyWord(userId, wordId);
-        if (after == null || after.userState != LearningStatus.seen) {
-          return;
-        }
 
-        await _repo.updateStudyWord(after.copyWith(
+        final log = StudyLog(
+          id: 0,
+          userId: userId,
+          wordId: wordId,
+          questionType: 'recall',
+          logType: LogType.firstLearn,
+          durationMs: 0,
+          intervalAfter: output.interval,
+          easeFactorAfter: output.easeFactor,
+          nextReviewAtAfter: output.nextReviewAt,
+          algorithm: AlgorithmService.getAlgorithmValue(algorithmType),
+          fsrsStabilityAfter: output.stability,
+          fsrsDifficultyAfter: output.difficulty,
+          createdAt: now,
+        );
+
+        await _studyLogRepo.insert(log);
+        await _dailyStatCommand.applyLearningDelta(
+          userId: userId,
+          learnedDelta: 1,
+          reviewedDelta: 0,
+        );
+        return;
+      }
+
+      // ---- 并发被抢先创建：只允许 seen -> learning，不写 firstLearn ----
+      final after = await _repo.getStudyWord(userId, wordId);
+      if (after == null || after.userState != LearningStatus.seen) return;
+
+      await _repo.updateStudyWord(
+        after.copyWith(
           userState: LearningStatus.learning,
           nextReviewAt: output.nextReviewAt,
           interval: output.interval,
@@ -164,26 +177,27 @@ class WordCommand {
           stability: output.stability,
           difficulty: output.difficulty,
           updatedAt: now,
-        ));
+        ),
+      );
 
-        logger.info(
-          '[WordState] wordId=$wordId userId=$userId seen -> learning via enter_learning',
-        );
-        firstLearnAlgorithm = algorithmType;
-        firstLearnOutput = output;
-      }
+      logger.info(
+        '[WordState] wordId=$wordId userId=$userId seen -> learning (no firstLearn)',
+      );
+      return;
     }
 
-    // -------- 情况 2：已有记录且为 seen --------
-    else if (existing.userState == LearningStatus.seen) {
-      final algorithmType = _algorithmService.defaultAlgorithm;
-      final output = _algorithmService.calculate(
-        algorithmType: algorithmType,
-        input: SRSInput.initial(ReviewRating.good),
-      );
-      final now = DateTime.now();
+    // ========= 情况 2：已有记录但为 seen =========
+    if (existing.userState != LearningStatus.seen) return;
 
-      await _repo.updateStudyWord(existing.copyWith(
+    final algorithmType = _algorithmService.defaultAlgorithm;
+    final output = _algorithmService.calculate(
+      algorithmType: algorithmType,
+      input: SRSInput.initial(ReviewRating.good),
+    );
+    final now = DateTime.now();
+
+    await _repo.updateStudyWord(
+      existing.copyWith(
         userState: LearningStatus.learning,
         nextReviewAt: output.nextReviewAt,
         interval: output.interval,
@@ -191,34 +205,11 @@ class WordCommand {
         stability: output.stability,
         difficulty: output.difficulty,
         updatedAt: now,
-      ));
+      ),
+    );
 
-      logger.info(
-        '[WordState] wordId=$wordId userId=$userId seen -> learning via enter_learning',
-      );
-      firstLearnAlgorithm = algorithmType;
-      firstLearnOutput = output;
-    }
-
-    // -------- 其他状态：no-op --------
-    else {
-      return;
-    }
-
-    // -------- 写 firstLearn 日志（仅一次） --------
-    if (firstLearnAlgorithm == null || firstLearnOutput == null) return;
-
-    await _studyLogCommand.logFirstLearn(
-      userId: userId,
-      wordId: wordId,
-      durationMs: 0,
-      intervalAfter: firstLearnOutput.interval,
-      easeFactorAfter: firstLearnOutput.easeFactor,
-      nextReviewAtAfter: firstLearnOutput.nextReviewAt,
-      algorithm:
-          AlgorithmService.getAlgorithmValue(firstLearnAlgorithm),
-      fsrsStabilityAfter: firstLearnOutput.stability,
-      fsrsDifficultyAfter: firstLearnOutput.difficulty,
+    logger.info(
+      '[WordState] wordId=$wordId userId=$userId seen -> learning (no firstLearn)',
     );
   }
 
@@ -262,10 +253,7 @@ class WordCommand {
     }
 
     try {
-      await _studyLogCommand.logMarkMastered(
-        userId: userId,
-        wordId: wordId,
-      );
+      await _studyLogCommand.logMarkMastered(userId: userId, wordId: wordId);
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'INSERT',
@@ -345,8 +333,8 @@ class WordCommand {
         final fromState = existing.userState == LearningStatus.learning
             ? 'learning'
             : existing.userState == LearningStatus.mastered
-                ? 'mastered'
-                : 'seen';
+            ? 'mastered'
+            : 'seen';
         logger.info(
           '[WordState] wordId=$wordId userId=$userId $fromState -> ignored via toggle_ignored',
         );
