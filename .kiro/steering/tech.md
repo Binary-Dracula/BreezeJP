@@ -2,36 +2,41 @@
 inclusion: always
 ---
 
-# 技术栈与开发规范
+# 技术栈与开发规范（冻结对齐版）
 
 ## 技术栈
 
-**Flutter 3.38.1** (Dart SDK ^3.10.0) - 跨平台移动应用
+**Flutter 3.38.1**（Dart SDK ^3.10.0）
+跨平台移动应用（iOS / Android / Web / Desktop）
 
-### 核心依赖
+---
 
-| 类别     | 包名                      | 用途                                                                  |
-| -------- | ------------------------- | --------------------------------------------------------------------- |
-| 状态管理 | flutter_riverpod ^3.0.3   | MVVM 状态管理（使用 `NotifierProvider`）                              |
-| 数据库   | sqflite ^2.3.3            | SQLite 本地数据库（Data 层通过 `AppDatabase.instance`/Provider 访问） |
-| 路由     | go_router ^17.0.0         | 声明式路由（`context.go()`, `context.pop()`）                         |
-| 音频     | just_audio ^0.10.5        | 音频播放（通过 `AudioService` 封装）                                  |
-| UI       | ruby_text ^3.0.3          | 日文假名注音渲染                                                      |
-| 动画     | flutter_animate ^4.5.0    | 声明式动画                                                            |
-| 手势     | gesture_x_detector ^1.1.1 | 高级手势识别                                                          |
-| 工具     | kana_kit ^2.1.1           | 假名/罗马音转换                                                       |
-| 网络     | dio ^5.7.0                | HTTP 客户端                                                           |
-| 日志     | logger ^2.5.0             | 日志输出（通过 `lib/core/utils/app_logger.dart`）                     |
-| 国际化   | intl ^0.20.2              | 多语言支持（`AppLocalizations`）                                      |
+## 核心依赖
 
-## 架构模式
+| 类别   | 包名                        | 用途                            |
+| ---- | ------------------------- | ----------------------------- |
+| 状态管理 | flutter_riverpod ^3.0.3   | MVVM 状态管理（`NotifierProvider`） |
+| 数据库  | sqflite ^2.3.3            | SQLite 本地数据库                  |
+| 路由   | go_router ^17.0.0         | 声明式路由                         |
+| 音频   | just_audio ^0.10.5        | 音频播放（由 AudioService 封装）       |
+| UI   | ruby_text ^3.0.3          | 日文假名注音                        |
+| 动画   | flutter_animate ^4.5.0    | 声明式动画                         |
+| 手势   | gesture_x_detector ^1.1.1 | 高级手势识别                        |
+| 工具   | kana_kit ^2.1.1           | 假名/罗马音转换                      |
+| 网络   | dio ^5.7.0                | HTTP 客户端                      |
+| 日志   | logger ^2.5.0             | 日志输出（统一封装）                    |
+| 国际化  | intl ^0.20.2              | 多语言支持                         |
 
-**MVVM + Command/Query/Analytics/Repository + Session + Riverpod**
+---
+
+## 架构模式（冻结）
+
+**MVVM + Command / Query / Analytics / Repository + Session + Riverpod**
 
 ```
 View → Controller
            ├─→ Query (Read)
-           ├─→ Analytics (Statistics)
+           ├─→ Analytics (Read-only Statistics)
            └─→ Command (Behavior / Write)
                        ↓
                  Repository (Entity CRUD)
@@ -39,273 +44,249 @@ View → Controller
                     Database
 ```
 
-### 层级职责与约束
+---
 
-| 层级                | 职责                                               | 禁止事项                               |
-| ------------------- | -------------------------------------------------- | -------------------------------------- |
-| **View**            | UI 渲染、用户交互                                  | 直接访问数据库、业务逻辑、修改 state   |
-| **Controller**      | 流程编排、调用 Command/Query/Analytics、管理 State | 直接 DB 查询、直接调用 Repository      |
-| **Command**         | 写行为、状态变更、副作用入口                       | 返回 Map、直接 SQL 拼接                |
-| **Command/Session** | 学习/复习流程编排、统计聚合入口                    | 绕过 Session 写 daily_stats/study_logs |
-| **Query**           | 只读查询（join / filter / paging / 列表 / 详情）   | 写操作                                 |
-| **Analytics**       | 统计聚合 / 报表 / 计数                             | 写操作                                 |
-| **Repository**      | Entity CRUD（单表/强一致实体）                     | join / 统计 / 业务语义 / 暴露 Database |
-| **External**        | 外部 API Client（HTTP/SDK 适配）                   | 本地持久化或业务语义                   |
-| **Model**           | 数据结构，含 `fromMap()`/`toMap()`                 | 业务逻辑                               |
-| **State**           | 不可变数据容器                                     | 可变字段、逻辑                         |
+## 层级职责与约束（冻结）
 
-**关键规则**：
+| 层级                    | 职责                         | 明确禁止                    |
+| --------------------- | -------------------------- | ----------------------- |
+| **View**              | UI 渲染、用户交互                 | 统计计算、直接 DB / Repository |
+| **Controller**        | 流程编排、状态管理                  | 直接 DB / Repository      |
+| **Command**           | 写行为、状态变更、副作用               | 返回 Map / SQL 原始结果       |
+| **Command / Session** | 会话级统计聚合                    | 绕过规则写统计                 |
+| **Query**             | 只读查询（join / list / detail） | 写操作                     |
+| **Analytics**         | 聚合统计（只读）                   | 写操作                     |
+| **Repository**        | 单表 CRUD                    | join / 统计 / 业务语义        |
+| **External**          | 外部 API Client              | 本地持久化                   |
+| **Model**             | 数据结构                       | 业务逻辑                    |
+| **State**             | 不可变状态容器                    | 可变字段                    |
 
-- Controller 仅调用 Command / Query / Analytics
-- Repository 只做 CRUD，不能包含 join/统计/业务语义
-- Query / Analytics 只读，使用 `databaseProvider` 注入 Database
-- Command 不返回 Map 或 SQL 原始结果
-- Session 是统计唯一入口：`SessionStatPolicy → accumulator → flush → DailyStatCommand.applySession`
-- External Client 不属于 Repository，不纳入 Repository 纯度规则
+---
+
+## 关键架构规则（强约束）
+
+### 1️⃣ Controller 规则
+
+* Controller **仅调用**：
+
+  * Command
+  * Query
+  * Analytics
+* ❌ 禁止：
+
+  * 直接访问 Repository
+  * 直接读写 `daily_stats / study_logs / kana_logs`
+
+---
+
+### 2️⃣ Repository 规则
+
+* 仅包含 **单表 CRUD**
+* 返回 **Model**
+* ❌ 禁止：
+
+  * join / count / group by
+  * firstLearn / mastered 等业务语义
+
+---
+
+### 3️⃣ Query / Analytics 规则
+
+* **只读**
+* Query / Analytics 使用 `databaseProvider` 注入 Database
+* ❌ 禁止：
+
+  * 写操作
+  * 使用 `AppDatabase.instance`
+
+---
+
+## Command 与 Session 的关系（重要冻结说明）
+
+### 写入类型三分法（冻结）
+
+| 写入类型     | 写入对象                                  | 责任组件                          | 是否经 Session |
+| -------- | ------------------------------------- | ----------------------------- | ----------- |
+| **状态写入** | `study_words` / `kana_learning_state` | `WordCommand` / `KanaCommand` | ❌           |
+| **行为日志** | `study_logs` / `kana_logs`            | 对应 Command                    | ❌           |
+| **统计写入** | `daily_stats`                         | Session / DailyStatCommand    | ✅ / ❌       |
+
+> ⚠️ **关键澄清**
+> “Session 是统计唯一入口”**不等于**“所有统计都走 Session”。
+
+---
+
+### Session 的唯一职责（冻结）
+
+Session **只负责**：
+
+* 今日学习数（new_learned_count）
+* 今日复习数（review_count）
+* 会话级统计聚合
+
+Session 统计链路固定为：
+
+```
+SessionStatPolicy
+   → SessionStatAccumulator
+      → flush
+         → DailyStatCommand.applySession
+```
+
+---
+
+### Session 的明确不适用范围（冻结）
+
+以下行为 **不经 Session，且是合法的**：
+
+* Word / Kana 的 `seen` / `learning` / `mastered` / `ignored` 状态写入
+* `firstLearn` 行为日志写入
+* 学习时长统计（PageDurationTracker）
+
+---
+
+## 学习时长统计（冻结特例）
+
+* **唯一来源**：`PageDurationTracker`
+* **唯一写入口**：`DailyStatCommand.applyTimeOnlyDelta`
+* ❌ 不经 Session
+* ❌ 不写入 `study_logs`
+* ❌ 不从 logs / 行为参数推导
+
+这是 **唯一允许绕过 Session 的统计写入路径**。
+
+---
 
 ## 命名规范
 
-### 文件命名
+### 文件 / 标识符
 
-| 类型       | 格式           | 示例                                        |
-| ---------- | -------------- | ------------------------------------------- |
-| 文件名     | snake_case     | `app_database.dart`, `word_repository.dart` |
-| 类名       | PascalCase     | `AppDatabase`, `WordRepository`             |
-| 变量/函数  | camelCase      | `wordId`, `getUserById()`                   |
-| 数据库列名 | snake_case     | `word_id`, `jlpt_level`, `created_at`       |
-| 常量       | lowerCamelCase | `defaultEaseFactor`, `maxRetryCount`        |
+| 类型    | 规范             | 示例                     |
+| ----- | -------------- | ---------------------- |
+| 文件名   | snake_case     | `word_repository.dart` |
+| 类名    | PascalCase     | `WordRepository`       |
+| 变量/方法 | camelCase      | `getWordById()`        |
+| 数据库列  | snake_case     | `created_at`           |
+| 常量    | lowerCamelCase | `defaultEaseFactor`    |
 
-### Feature 模块文件结构
+---
+
+## Feature 模块结构（冻结）
 
 ```
-lib/features/{feature_name}/
-├── controller/{feature}_controller.dart
-├── state/{feature}_state.dart
-├── pages/{feature}_page.dart
-└── widgets/{component}_widget.dart (可选)
+lib/features/{feature}/
+├── controller/
+├── state/
+├── pages/
+└── widgets/ (可选)
 ```
 
-### 数据层文件命名
+---
 
-- Model: `lib/data/models/{entity}.dart`
-- Read DTO: `lib/data/models/read/{dto}.dart`
-- Repository: `lib/data/repositories/{entity}_repository.dart`
-- Query: `lib/data/queries/{entity}_query.dart`
-- Analytics: `lib/data/analytics/{entity}_analytics.dart`
-- Command: `lib/data/commands/{entity}_command.dart`
-- External Client: `lib/data/external/{name}_client.dart`
+## 数据层文件规范
 
-## 国际化（i18n）
+* Model：`lib/data/models/{entity}.dart`
+* Read DTO：`lib/data/models/read/{dto}.dart`
+* Repository：`lib/data/repositories/{entity}_repository.dart`
+* Query：`lib/data/queries/{entity}_query.dart`
+* Analytics：`lib/data/analytics/{entity}_analytics.dart`
+* Command：`lib/data/commands/{entity}_command.dart`
+* External：`lib/data/external/{name}_client.dart`
 
-**⚠️ 所有用户可见文本必须使用 `AppLocalizations`，严禁硬编码字符串**
+---
+
+## 国际化（强制）
+
+**所有用户可见文本必须使用 `AppLocalizations`**
 
 ```dart
-// ✅ 正确
 final l10n = AppLocalizations.of(context)!;
 Text(l10n.startLearning);
-Button(onPressed: () {}, child: Text(l10n.cancelButton));
-
-// ❌ 错误
-Text('开始学习');
-Button(onPressed: () {}, child: Text('取消'));
 ```
+
+❌ 禁止硬编码字符串。
+
+---
 
 ## 日志规范
 
-**使用 `logger` 包，禁止使用 `print()`**
+* 使用统一封装的 `logger`
+* ❌ 禁止 `print()`
 
 ```dart
-import 'package:breeze_jp/core/utils/app_logger.dart';
-
-logger.i('用户开始学习 Session');
-logger.d('加载单词详情: wordId=$wordId');
-logger.w('音频文件不存在: $audioPath');
-logger.e('数据库查询失败', error: e, stackTrace: stackTrace);
+logger.i('Session started');
+logger.w('Audio missing: $path');
+logger.e('DB error', error: e, stackTrace: stackTrace);
 ```
+
+---
 
 ## 数据模型规范
 
-**所有 Model 类必须实现 `fromMap()` 和 `toMap()`**
+* 所有 Model 必须实现 `fromMap()` / `toMap()`
+* 时间统一使用 **秒级时间戳存储**
 
 ```dart
-class Word {
-  final int id;
-  final String word;
-  final String? furigana;
-  final String? jlptLevel;
-
-  Word({required this.id, required this.word, this.furigana, this.jlptLevel});
-
-  factory Word.fromMap(Map<String, dynamic> map) {
-    return Word(
-      id: map['id'] as int,
-      word: map['word'] as String,
-      furigana: map['furigana'] as String?,
-      jlptLevel: map['jlpt_level'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'word': word,
-      'furigana': furigana,
-      'jlpt_level': jlptLevel,
-    };
-  }
-}
+final seconds = map['created_at'] as int;
+final dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
 ```
 
-**时间戳处理**：
+---
 
-```dart
-final timestamp = map['created_at'] as int;
-final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+## Riverpod 使用规范
 
-final nowSeconds = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-```
+### Provider 类型
 
-## Riverpod 状态管理
+| Provider           | 用途                                       |
+| ------------------ | ---------------------------------------- |
+| `NotifierProvider` | Feature Controller                       |
+| `Provider`         | Command / Query / Analytics / Repository |
 
-**Provider 定义**：
+---
 
-```dart
-final myControllerProvider = NotifierProvider<MyController, MyState>(
-  MyController.new,
-);
-```
+## UI / UX 开发规范
 
-**Controller（流程编排）**：
+* 假名注音使用 `ruby_text`
+* 音频通过 `AudioService`，不进 Repository
+* 遵循 `flutter_lints`
+* 使用 `dart format`
 
-```dart
-class MyController extends Notifier<MyState> {
-  @override
-  MyState build() => const MyState();
+---
 
-  Future<void> loadData() async {
-    final query = ref.read(wordReadQueriesProvider);
-    final words = await query.getRandomWords(limit: 10);
-    state = state.copyWith(words: words);
-  }
-}
-```
-
-**State（不可变数据）**：
-
-```dart
-@immutable
-class MyState {
-  final bool isLoading;
-  final List<Word> words;
-
-  const MyState({this.isLoading = false, this.words = const []});
-
-  MyState copyWith({bool? isLoading, List<Word>? words}) {
-    return MyState(
-      isLoading: isLoading ?? this.isLoading,
-      words: words ?? this.words,
-    );
-  }
-}
-```
-
-**View（UI）**：
-
-```dart
-class MyPage extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(myControllerProvider);
-    final controller = ref.read(myControllerProvider.notifier);
-
-    return Scaffold(
-      body: state.isLoading
-          ? const CircularProgressIndicator()
-          : ListView(...),
-    );
-  }
-}
-```
-
-## Repository / Query / Analytics 示例
-
-**Repository（CRUD only）**：
-
-```dart
-class WordRepository {
-  Future<Word?> getWordById(int id) async {
-    final db = await AppDatabase.instance.database;
-    final results = await db.query('words', where: 'id = ?', whereArgs: [id]);
-    if (results.isEmpty) return null;
-    return Word.fromMap(results.first);
-  }
-}
-```
-
-**Query（只读）**：
-
-```dart
-class WordReadQueries {
-  WordReadQueries(this._db);
-  final Database _db;
-
-  Future<List<Word>> getRandomWords({int limit = 10}) async {
-    final results = await _db.rawQuery(
-      'SELECT * FROM words ORDER BY RANDOM() LIMIT ?',
-      [limit],
-    );
-    return results.map((row) => Word.fromMap(row)).toList();
-  }
-}
-```
-
-## UI 开发规范
-
-- 日文文本使用 `ruby_text` 包显示假名注音
-- 例句高亮使用 `<b>` 标签，View 层解析显示
-- 音频播放通过 `AudioService` 封装，不在 Repository 中处理
-- 遵循 `flutter_lints` 规则
-- 使用 `dart format` 格式化代码
-
-## 路由导航
+## 路由规范
 
 ```dart
 context.go('/home');
-context.go('/word-detail', extra: wordId);
 context.pop();
 context.replace('/login');
 ```
 
-## 常用命令
-
-```bash
-flutter pub get
-flutter pub upgrade
-flutter run
-flutter run -d chrome
-flutter run -d macos
-flutter analyze
-flutter test
-dart format lib/
-flutter build apk --release
-flutter build ios --release
-flutter build web --release
-flutter clean
-```
+---
 
 ## 数据库配置
 
-- 预置数据库路径：`assets/database/breeze_jp.sqlite`
-- Database 生命周期由 `lib/data/db/` 管理
-- Repository 使用 `AppDatabase.instance`，Query/Analytics 使用 `databaseProvider`
-- 当前用户由 `ActiveUserCommand` / `ActiveUserQuery` 读写
+* 数据库路径：`assets/database/breeze_jp.sqlite`
+* Database 生命周期由 `lib/data/db/` 管理
+* Repository 使用 `AppDatabase.instance`
+* Query / Analytics 使用 `databaseProvider`
+* 当前用户由 `ActiveUserCommand / ActiveUserQuery` 管理
 
-## 关键约束总结
+---
 
-1. **禁止硬编码字符串** - 所有用户可见文本必须使用 `AppLocalizations`
-2. **禁止使用 print()** - 必须使用 `logger`
-3. **禁止 Repository 返回 Map** - 必须返回 Model
-4. **禁止 Controller 直接访问 Repository/Database** - 仅调用 Command / Query / Analytics
-5. **禁止 Query/Analytics 写操作** - 只读
-6. **Command 为唯一写入口** - 不返回 Map 或 SQL 原始结果
-7. **Session 为统计唯一入口** - `applySession` 写入 daily_stats
+## 关键约束总结（Hard Stop）
+
+1. ❌ Controller 直连 Repository / DB
+2. ❌ Query / Analytics 写数据
+3. ❌ 从 logs 推导统计
+4. ❌ 在 UI / Controller 中计算统计
+5. ❌ 为“展示好看”篡改统计口径
+6. ✅ **所有写操作必须落在 Command（或 PageDurationTracker → DailyStatCommand）**
+
+---
+
+### 🔒 最终冻结声明
+
+> **本文件与 Architecture Freeze、Learning Analytics Rules 同级。**
+>
+> 当实现与文档冲突时，
+> **实现必错，文档必对。**
