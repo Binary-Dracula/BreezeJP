@@ -35,6 +35,33 @@ class StudyLogRepository {
     }
   }
 
+  /// 是否存在首次学习日志
+  Future<bool> existsFirstLearn({
+    required int userId,
+    required int wordId,
+  }) async {
+    try {
+      final db = await _db;
+      final rows = await db.query(
+        'study_logs',
+        columns: ['id'],
+        where: 'user_id = ? AND word_id = ? AND log_type = ?',
+        whereArgs: [userId, wordId, LogType.firstLearn.value],
+        limit: 1,
+      );
+
+      return rows.isNotEmpty;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'study_logs',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 删除日志
   Future<void> deleteById(int id) async {
     try {

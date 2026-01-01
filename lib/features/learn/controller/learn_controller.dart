@@ -250,7 +250,7 @@ class LearnController extends Notifier<LearnState> {
 
     logger.info('[WordUI] action=add_to_review wordId=${word.word.id}');
     final user = await _getActiveUser();
-    await _wordCommand.enterWordLearningIfNeeded(user.id, word.word.id);
+    await _wordCommand.addWordToReview(user.id, word.word.id);
 
     await _refreshCurrentWordState(word.word.id);
   }
@@ -262,8 +262,6 @@ class LearnController extends Notifier<LearnState> {
 
     logger.info('[WordUI] action=quick_master wordId=${word.word.id}');
     final user = await _getActiveUser();
-
-    await _wordCommand.enterWordLearningIfNeeded(user.id, word.word.id);
     await _wordCommand.markWordAsMastered(user.id, word.word.id);
 
     await _refreshCurrentWordState(word.word.id);

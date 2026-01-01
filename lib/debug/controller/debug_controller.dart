@@ -20,6 +20,12 @@ class DebugController extends Notifier<DebugState> {
         route: '/debug/statistics',
       ),
       DebugTestItem(
+        key: 'first_learn',
+        title: 'FirstLearn Inspector',
+        description: 'firstLearn 最近日志（需传 userId 参数）',
+        route: '/debug/first-learn',
+      ),
+      DebugTestItem(
         key: 'kana_review_data',
         title: 'Kana Review Queue Generator',
         description: '生成假名待复习队列数据（驱动 Home/Review）',
