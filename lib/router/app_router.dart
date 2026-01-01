@@ -9,6 +9,8 @@ import '../features/kana/chart/pages/kana_chart_page.dart';
 import '../debug/pages/debug_page.dart';
 import '../debug/pages/debug_statistics_page.dart';
 import '../debug/pages/tests/debug_first_learn_inspector_page.dart';
+import '../debug/pages/tests/debug_study_logs_inspector_page.dart';
+import '../debug/pages/tests/debug_study_words_inspector_page.dart';
 import '../debug/pages/tests/debug_kana_review_data_generator_page.dart';
 import '../debug/pages/tests/debug_srs_test_page.dart';
 import 'app_route_observer.dart';
@@ -81,6 +83,24 @@ final appRouter = GoRouter(
         final userIdParam = state.uri.queryParameters['userId'];
         final userId = int.tryParse(userIdParam ?? '');
         return DebugFirstLearnInspectorPage(userId: userId);
+      },
+    ),
+    GoRoute(
+      path: '/debug/study-words',
+      name: 'debug-study-words',
+      builder: (context, state) {
+        final userIdParam = state.uri.queryParameters['userId'];
+        final userId = int.tryParse(userIdParam ?? '');
+        return DebugStudyWordsInspectorPage(userId: userId);
+      },
+    ),
+    GoRoute(
+      path: '/debug/study-logs',
+      name: 'debug-study-logs',
+      builder: (context, state) {
+        final userIdParam = state.uri.queryParameters['userId'];
+        final userId = int.tryParse(userIdParam ?? '');
+        return DebugStudyLogsInspectorPage(userId: userId);
       },
     ),
     GoRoute(

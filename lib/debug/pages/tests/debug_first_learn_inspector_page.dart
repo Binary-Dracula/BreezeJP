@@ -10,10 +10,8 @@ import '../../../data/queries/debug_first_learn_query.dart';
 class DebugFirstLearnInspectorPage extends ConsumerStatefulWidget {
   const DebugFirstLearnInspectorPage({
     super.key,
-    required this.userId,
+    int? userId,
   });
-
-  final int? userId;
 
   @override
   ConsumerState<DebugFirstLearnInspectorPage> createState() =>
@@ -22,7 +20,7 @@ class DebugFirstLearnInspectorPage extends ConsumerStatefulWidget {
 
 class _DebugFirstLearnInspectorPageState
     extends ConsumerState<DebugFirstLearnInspectorPage> {
-  late Future<_DebugFirstLearnData> _dataFuture;
+  late Future<DebugFirstLearnResult> _dataFuture;
 
   @override
   void initState() {
@@ -46,7 +44,7 @@ class _DebugFirstLearnInspectorPageState
           ),
         ],
       ),
-      body: FutureBuilder<_DebugFirstLearnData>(
+      body: FutureBuilder<DebugFirstLearnResult>(
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -61,7 +59,7 @@ class _DebugFirstLearnInspectorPageState
           final data = snapshot.data;
           if (data == null || data.userId == null) {
             return const Center(
-              child: Text('未指定 userId（使用 /debug/first-learn?userId=...）'),
+              child: Text('未检测到当前用户（active user）'),
             );
           }
 
@@ -78,7 +76,8 @@ class _DebugFirstLearnInspectorPageState
               final timeLabel = _formatDateTime(item.createdAt);
               final todayLabel = item.isToday ? '  TODAY' : '';
               final line =
-                  '[word_id=${item.wordId}]  $timeLabel$todayLabel';
+                  '[word_id=${item.wordId}] ${item.displayWord}  '
+                  '$timeLabel$todayLabel';
               return Text(line);
             },
           );
@@ -87,15 +86,9 @@ class _DebugFirstLearnInspectorPageState
     );
   }
 
-  Future<_DebugFirstLearnData> _loadData() async {
-    final userId = widget.userId;
-    if (userId == null) {
-      return const _DebugFirstLearnData(userId: null, items: []);
-    }
-
+  Future<DebugFirstLearnResult> _loadData() async {
     final query = ref.read(debugFirstLearnQueryProvider);
-    final items = await query.getRecentFirstLearns(userId);
-    return _DebugFirstLearnData(userId: userId, items: items);
+    return query.getRecentFirstLearns();
   }
 
   String _formatDateTime(DateTime value) {
@@ -107,14 +100,4 @@ class _DebugFirstLearnInspectorPageState
     final second = value.second.toString().padLeft(2, '0');
     return '$year-$month-$day $hour:$minute:$second';
   }
-}
-
-class _DebugFirstLearnData {
-  const _DebugFirstLearnData({
-    required this.userId,
-    required this.items,
-  });
-
-  final int? userId;
-  final List<DebugFirstLearnItem> items;
 }
