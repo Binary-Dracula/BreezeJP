@@ -9,10 +9,10 @@ class StudyWord {
   final LearningStatus userState;
   final DateTime? nextReviewAt;
   final DateTime? lastReviewedAt;
-  final double interval;
-  final double easeFactor;
-  final double stability;
-  final double difficulty;
+  final int? interval;
+  final double? easeFactor;
+  final double? stability;
+  final double? difficulty;
   final int streak;
   final int totalReviews;
   final int failCount;
@@ -26,10 +26,10 @@ class StudyWord {
     required this.userState,
     this.nextReviewAt,
     this.lastReviewedAt,
-    this.interval = 0,
-    this.easeFactor = 2.5,
-    this.stability = 0,
-    this.difficulty = 0,
+    this.interval,
+    this.easeFactor,
+    this.stability,
+    this.difficulty,
     this.streak = 0,
     this.totalReviews = 0,
     this.failCount = 0,
@@ -54,10 +54,10 @@ class StudyWord {
               (map['last_reviewed_at'] as int) * 1000,
             )
           : null,
-      interval: (map['interval'] as num?)?.toDouble() ?? 0,
-      easeFactor: (map['ease_factor'] as num?)?.toDouble() ?? 2.5,
-      stability: (map['stability'] as num?)?.toDouble() ?? 0,
-      difficulty: (map['difficulty'] as num?)?.toDouble() ?? 0,
+      interval: map['interval'] as int?,
+      easeFactor: (map['ease_factor'] as num?)?.toDouble(),
+      stability: (map['stability'] as num?)?.toDouble(),
+      difficulty: (map['difficulty'] as num?)?.toDouble(),
       streak: map['streak'] as int? ?? 0,
       totalReviews: map['total_reviews'] as int? ?? 0,
       failCount: map['fail_count'] as int? ?? 0,
@@ -109,7 +109,7 @@ class StudyWord {
     LearningStatus? userState,
     DateTime? nextReviewAt,
     DateTime? lastReviewedAt,
-    double? interval,
+    int? interval,
     double? easeFactor,
     double? stability,
     double? difficulty,

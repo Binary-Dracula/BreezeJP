@@ -101,6 +101,7 @@ class LearnController extends Notifier<LearnState> {
         isLoading: false,
         pathEnded: relatedWords.isEmpty,
       );
+      await _onWordsLoaded(queueWithState);
 
       logger.learnSessionStart(userId: userId);
       logger.info(
@@ -330,13 +331,22 @@ class LearnController extends Notifier<LearnState> {
     }
 
     final user = await _getActiveUser();
-    await _wordCommand.getOrCreateLearningState(user.id, wordId);
+    await _wordCommand.ensureWordSeen(user.id, wordId);
     logger.info(
       '[WordUI] wordId=$wordId ensure_seen triggered by page_changed',
     );
 
     // 标记该 word 在本 session 中已 ensure
     _seenEnsuredWordIds.add(wordId);
+  }
+
+  Future<void> _onWordsLoaded(List<WordDetail> words) async {
+    if (words.isEmpty) return;
+
+    final user = await _getActiveUser();
+    final firstWordId = words.first.word.id;
+
+    await _wordCommand.ensureWordSeen(user.id, firstWordId);
   }
 
   Future<WordDetail?> _loadWordDetailWithLog(int wordId) async {

@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
-import 'session/review_result.dart';
 import '../models/study_word.dart';
 import '../repositories/study_word_repository.dart';
 import '../repositories/study_word_repository_provider.dart';
@@ -18,97 +17,6 @@ class StudyWordCommand {
   final Ref ref;
 
   StudyWordRepository get _repo => ref.read(studyWordRepositoryProvider);
-
-  /// 记录复习结果（答对）
-  Future<void> submitCorrectReview(
-    int userId,
-    int wordId, {
-    required double newInterval,
-    required double newEaseFactor,
-    double? newStability,
-    double? newDifficulty,
-  }) async {
-    final nextReview = DateTime.now().add(
-      Duration(days: newInterval.ceil()),
-    );
-    await applyReviewResult(
-      userId: userId,
-      wordId: wordId,
-      isCorrect: true,
-      reviewResult: ReviewResult(
-        intervalAfter: newInterval,
-        easeFactorAfter: newEaseFactor,
-        nextReviewAtAfter: nextReview,
-        fsrsStabilityAfter: newStability,
-        fsrsDifficultyAfter: newDifficulty,
-      ),
-    );
-  }
-
-  /// 记录复习结果（答错）
-  Future<void> submitIncorrectReview(
-    int userId,
-    int wordId, {
-    required double newInterval,
-    required double newEaseFactor,
-    double? newStability,
-    double? newDifficulty,
-  }) async {
-    final nextReview = DateTime.now().add(
-      Duration(days: newInterval.ceil()),
-    );
-    await applyReviewResult(
-      userId: userId,
-      wordId: wordId,
-      isCorrect: false,
-      reviewResult: ReviewResult(
-        intervalAfter: newInterval,
-        easeFactorAfter: newEaseFactor,
-        nextReviewAtAfter: nextReview,
-        fsrsStabilityAfter: newStability,
-        fsrsDifficultyAfter: newDifficulty,
-      ),
-    );
-  }
-
-  Future<void> applyReviewResult({
-    required int userId,
-    required int wordId,
-    required bool isCorrect,
-    required ReviewResult reviewResult,
-  }) async {
-    try {
-      final studyWord = await _repo.getStudyWord(userId, wordId);
-      if (studyWord == null) {
-        throw Exception('学习记录不存在');
-      }
-
-      final now = DateTime.now();
-      final updated = studyWord.copyWith(
-        userState: LearningStatus.learning,
-        lastReviewedAt: now,
-        nextReviewAt: reviewResult.nextReviewAtAfter,
-        interval: reviewResult.intervalAfter,
-        easeFactor: reviewResult.easeFactorAfter,
-        stability: reviewResult.fsrsStabilityAfter ?? studyWord.stability,
-        difficulty: reviewResult.fsrsDifficultyAfter ?? studyWord.difficulty,
-        streak: isCorrect ? studyWord.streak + 1 : 0,
-        totalReviews: studyWord.totalReviews + 1,
-        failCount: isCorrect ? studyWord.failCount : studyWord.failCount + 1,
-        updatedAt: now,
-      );
-
-      await _repo.updateStudyWord(updated);
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'UPDATE',
-        table: 'study_words',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
 
   /// 标记单词为已掌握
   Future<void> markAsMastered(int userId, int wordId) async {
@@ -237,5 +145,4 @@ class StudyWordCommand {
       rethrow;
     }
   }
-
 }

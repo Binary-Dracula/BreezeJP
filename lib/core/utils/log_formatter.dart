@@ -13,7 +13,7 @@ class LogFormatter {
       'id=${word.id}',
       'wordId=${word.wordId}',
       'state=${word.userState.name}',
-      'interval=${word.interval.toStringAsFixed(2)}',
+      'interval=${word.interval != null ? '${word.interval}' : '-'}',
       'nextReview=${word.nextReviewAt != null ? formatTimestamp(word.nextReviewAt!) : "null"}',
     ];
     return parts.join(', ');

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../core/algorithm/algorithm_service.dart';
 import '../../core/algorithm/algorithm_service_provider.dart';
 import '../../core/algorithm/srs_types.dart';
@@ -107,6 +106,44 @@ class WordCommand {
     }
   }
 
+  /// 确保单词存在 seen 状态（幂等）
+  ///
+  /// 规则（工程封板）：
+  /// - 仅用于“用户第一次看到单词”
+  /// - 若 study_words 不存在 → 创建 seen
+  /// - 若已存在 → no-op
+  /// - 严禁写 learning / firstLearn / daily_stats
+  Future<void> ensureWordSeen(int userId, int wordId) async {
+    final existing = await _repo.getStudyWord(userId, wordId);
+    if (existing != null) return;
+
+    final now = DateTime.now();
+
+    await _repo.createStudyWordIgnoreConflict(
+      StudyWord(
+        id: 0,
+        userId: userId,
+        wordId: wordId,
+        userState: LearningStatus.seen,
+        nextReviewAt: null,
+        lastReviewedAt: null,
+        interval: null,
+        easeFactor: null,
+        stability: null,
+        difficulty: null,
+        streak: 0,
+        totalReviews: 0,
+        failCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    logger.info(
+      '[WordState] wordId=$wordId userId=$userId null -> seen (initial exposure)',
+    );
+  }
+
   /// ⚠️ firstLearn 写入约束（工程封板）
   ///
   /// 只允许在「用户点击加入复习」的行为路径调用：
@@ -207,7 +244,7 @@ class WordCommand {
         userState: LearningStatus.learning,
         nextReviewAt: output.nextReviewAt,
         lastReviewedAt: null,
-        interval: output.interval,
+        interval: output.interval.round(),
         easeFactor: output.easeFactor,
         stability: output.stability,
         difficulty: output.difficulty,
@@ -237,7 +274,7 @@ class WordCommand {
           after.copyWith(
             userState: LearningStatus.learning,
             nextReviewAt: output.nextReviewAt,
-            interval: output.interval,
+            interval: output.interval.round(),
             easeFactor: output.easeFactor,
             stability: output.stability,
             difficulty: output.difficulty,
@@ -263,7 +300,7 @@ class WordCommand {
         existing.copyWith(
           userState: LearningStatus.learning,
           nextReviewAt: output.nextReviewAt,
-          interval: output.interval,
+          interval: output.interval.round(),
           easeFactor: output.easeFactor,
           stability: output.stability,
           difficulty: output.difficulty,
