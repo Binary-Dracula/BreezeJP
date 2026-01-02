@@ -2,10 +2,9 @@
 enum KanaLogType {
   firstLearn, // 1 - 初学
   review, // 2 - 复习
-  mastered, // 3 - 掌握
-  quiz, // 4 - 测验
-  forgot, // 5 - 忘记/失败
-  ignored, // 6 - 忽略
+  markMastered, // 3 - 掌握
+  markIgnored, // 4 - 忽略
+  reset, // 5 - 测验
 }
 
 /// 五十音学习日志模型
@@ -64,15 +63,6 @@ class KanaLog {
     this.questionType,
     int? createdAt,
   }) : createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-  /// 是否为测验记录
-  bool get isQuiz => logType == KanaLogType.quiz;
-
-  /// 是否为复习记录
-  bool get isReview => logType == KanaLogType.review;
-
-  /// 是否为初学记录
-  bool get isFirstLearn => logType == KanaLogType.firstLearn;
 
   factory KanaLog.fromMap(Map<String, dynamic> map) {
     final logTypeValue = (map['log_type'] as int? ?? 1)

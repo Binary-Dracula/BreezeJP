@@ -20,10 +20,8 @@ class KanaCommand {
   final Ref ref;
 
   KanaRepository get _repo => ref.read(kanaRepositoryProvider);
-  AlgorithmService get _algorithmService =>
-      ref.read(algorithmServiceProvider);
-  DailyStatCommand get _dailyStatCommand =>
-      ref.read(dailyStatCommandProvider);
+  AlgorithmService get _algorithmService => ref.read(algorithmServiceProvider);
+  DailyStatCommand get _dailyStatCommand => ref.read(dailyStatCommandProvider);
 
   /// Get or create a kana learning state (UNIQUE: user_id + kana_id).
   /// Ensures a baseline record before first learn/review.
@@ -158,7 +156,7 @@ class KanaCommand {
       await addKanaLogQuick(
         userId: userId,
         kanaId: kanaId,
-        logType: KanaLogType.mastered,
+        logType: KanaLogType.markMastered,
       );
     } catch (e, stackTrace) {
       logger.dbError(
@@ -207,7 +205,7 @@ class KanaCommand {
       await addKanaLogQuick(
         userId: userId,
         kanaId: kanaId,
-        logType: KanaLogType.ignored,
+        logType: KanaLogType.markIgnored,
       );
     } catch (e, stackTrace) {
       logger.dbError(
@@ -408,8 +406,9 @@ class KanaCommand {
 
       final isCorrect = rating >= 2;
       final newStreak = isCorrect ? existing.streak + 1 : 0;
-      final newFailCount =
-          isCorrect ? existing.failCount : existing.failCount + 1;
+      final newFailCount = isCorrect
+          ? existing.failCount
+          : existing.failCount + 1;
 
       final updated = existing.copyWith(
         lastReviewedAt: nowSeconds,

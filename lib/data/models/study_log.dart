@@ -151,11 +151,8 @@ enum LogType {
   /// 手动忽略
   markIgnored(4),
 
-  /// 手动恢复/重置
-  reset(5),
-
-  /// 自动计划生成（可选）
-  autoSchedule(6);
+  /// 手动重置
+  reset(5);
 
   const LogType(this.value);
 
@@ -182,8 +179,6 @@ enum LogType {
         return '标记忽略';
       case LogType.reset:
         return '重置进度';
-      case LogType.autoSchedule:
-        return '自动计划';
     }
   }
 }

@@ -156,7 +156,7 @@ CREATE TABLE study_words (
     streak           INTEGER DEFAULT 0,             -- 连续答对次数
     total_reviews    INTEGER DEFAULT 0,             -- 累计复习次数
     fail_count       INTEGER DEFAULT 0,             -- 累计失败次数
-    interval         REAL DEFAULT 0,                -- [SM-2] 复习间隔 (天)
+    interval         INTEGER DEFAULT 0,             -- [SM-2] 复习间隔 (天)
     ease_factor      REAL DEFAULT 2.5,              -- [SM-2] 难度因子
     stability        REAL DEFAULT 0,                -- [FSRS] 记忆稳定性 (S)
     difficulty       REAL DEFAULT 0,                -- [FSRS] 记忆难度 (D)
@@ -408,7 +408,7 @@ CREATE TABLE kana_logs (
 
     question_type         TEXT,                         -- recall / audio / switchMode
 
-    log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败
+    log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=测验, 5=重置
     rating                INTEGER,                      -- 1=Again, 2=Good, 3=Easy
     algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS
 
