@@ -58,11 +58,9 @@ class LearnController extends Notifier<LearnState> {
   Future<void> initWithWord(int wordId) async {
     final userId = await _ensureUserId();
     await _session?.flush();
-    _session =
-        ref.read(studySessionCommandProvider).createSession(
-              userId: userId,
-              scope: SessionScope.learn,
-            );
+    _session = ref
+        .read(studySessionCommandProvider)
+        .createSession(userId: userId, scope: SessionScope.learn);
     _sessionStartTime = DateTime.now();
     state = state.copyWith(isLoading: true, error: null);
 
@@ -90,10 +88,10 @@ class LearnController extends Notifier<LearnState> {
       }
 
       // 3. 初始化学习队列
-      final queueWithState = await _applyUserStates(
-        userId,
-        [selectedWord, ...relatedDetails],
-      );
+      final queueWithState = await _applyUserStates(userId, [
+        selectedWord,
+        ...relatedDetails,
+      ]);
       state = state.copyWith(
         studyQueue: queueWithState,
         currentIndex: 0,
@@ -114,17 +112,9 @@ class LearnController extends Notifier<LearnState> {
   }
 
   /// 页面切换回调
+  /// ❌ 禁止在页面滑动中产生任何 learning / firstLearn 行为
+  /// 页面滑动 ≠ 学习完成
   Future<void> onPageChanged(int newIndex) async {
-    final oldIndex = state.currentIndex;
-
-    // 向前滑动时标记上一个单词为已学习
-    if (newIndex > oldIndex && oldIndex < state.studyQueue.length) {
-      final previousWordId = state.studyQueue[oldIndex].word.id;
-      if (!state.learnedWordIds.contains(previousWordId)) {
-        await markWordAsLearned(previousWordId);
-      }
-    }
-
     // 更新当前索引
     state = state.copyWith(currentIndex: newIndex);
 
@@ -206,10 +196,9 @@ class LearnController extends Notifier<LearnState> {
       final userId = await _ensureUserId();
       final session =
           _session ??
-          ref.read(studySessionCommandProvider).createSession(
-                userId: userId,
-                scope: SessionScope.learn,
-              );
+          ref
+              .read(studySessionCommandProvider)
+              .createSession(userId: userId, scope: SessionScope.learn);
       _session ??= session;
       final now = DateTime.now();
       final durationMs = _sessionStartTime == null
@@ -221,10 +210,7 @@ class LearnController extends Notifier<LearnState> {
       final newLearnedWordIds = {...state.learnedWordIds, wordId};
       state = state.copyWith(learnedWordIds: newLearnedWordIds);
 
-      await session.submitFirstLearn(
-        wordId: wordId,
-        durationMs: durationMs,
-      );
+      await session.submitFirstLearn(wordId: wordId, durationMs: durationMs);
 
       logger.info('标记单词为已学习: wordId=$wordId');
     } catch (e, stackTrace) {
@@ -353,9 +339,7 @@ class LearnController extends Notifier<LearnState> {
     final count = (_wordDetailLoadCount[wordId] ?? 0) + 1;
     _wordDetailLoadCount[wordId] = count;
 
-    logger.info(
-      '[WordDetailLoad] session wordId=$wordId count=$count',
-    );
+    logger.info('[WordDetailLoad] session wordId=$wordId count=$count');
 
     final wordQueries = ref.read(wordReadQueriesProvider);
     return wordQueries.getWordDetail(wordId);
@@ -368,9 +352,7 @@ class LearnController extends Notifier<LearnState> {
           '[WordDetailLoadSummary] wordId=$wordId loaded $count times in one session',
         );
       } else {
-        logger.info(
-          '[WordDetailLoadSummary] wordId=$wordId loaded once',
-        );
+        logger.info('[WordDetailLoadSummary] wordId=$wordId loaded once');
       }
     });
   }
