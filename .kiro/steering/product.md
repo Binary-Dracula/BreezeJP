@@ -185,12 +185,14 @@ Stats Card 仅用于**展示结果**，不承担解释职责。
 `seen` **只允许**在以下时机创建：
 
 * 用户在 Learn 页面中
-* 左右滑动 **第一次看到该单词**
-* 触发点：`LearnController.onPageChanged`
+* **当前 word 首次成为可见主内容（initial index 或 onPageChanged）**
+* 触发点：
+  * PageView 首次展示的 initialWord
+  * 或 `LearnController.onPageChanged`
+
 
 **明确禁止：**
 
-* 页面初始化
 * 音频播放
 * 停留时间判断
 * 任意按钮点击
@@ -202,17 +204,24 @@ Stats Card 仅用于**展示结果**，不承担解释职责。
 `learning` **只能由用户显式行为触发**：
 
 * 点击「加入复习」
-* 点击「一键掌握」（状态由`seen → mastered`,不经过`learning` ）
 
-禁止任何自动、隐式进入。
+**明确声明：**
+
+* 点击「已掌握」**不会进入 `learning`**
+* 状态将直接由 `seen → mastered`
+* 不产生 `firstLearn`
 
 ---
 
 ### 4️⃣ `mastered` 规则（冻结）
 
-* UI 可直接提供“一键掌握”
-* 数据层必须完整保留中间状态
-* 状态由 `seen → mastered`
+* UI 可直接提供“已掌握”
+* 状态由 `seen → mastered` 或者由 `learning → mastered`
+* 可恢复为 `learning`
+* **恢复学习仅为状态回退：**
+  * ❌ 不产生 `firstLearn`
+  * ❌ 不影响任何统计口径
+  * ❌ 不重置历史学习记录
 
 ---
 
@@ -229,10 +238,10 @@ Stats Card 仅用于**展示结果**，不承担解释职责。
 
 | 状态         | 可见操作             |
 | ---------- | ---------------- |
-| `seen`     | 加入复习 / 一键掌握 / 忽略 |
+| `seen`     | 加入复习 / 已掌握 / 忽略 |
 | `learning` | 已掌握 / 忽略         |
-| `ignored`  | 恢复学习             |
 | `mastered` | 恢复学习               |
+| `ignored`  | 恢复学习             |
 
 ---
 
@@ -249,11 +258,11 @@ Stats Card 仅用于**展示结果**，不承担解释职责。
 
 firstLearn 定义（冻结）：
 - firstLearn 表示用户第一次点击「加入复习」
+- firstLearn **只可能发生在「加入复习」这一行为入口**
 - 与 study_words 状态无关
 - 每个 (user, word) 最多一次
 - 是否计入“今日学习”，仅取决于 firstLearn.created_at 是否在今日
 - mastered / ignored / restore 均不会产生 firstLearn
-
 
 ---
 
