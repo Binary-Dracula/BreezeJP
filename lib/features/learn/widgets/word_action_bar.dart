@@ -10,6 +10,7 @@ class WordActionBar extends StatelessWidget {
   final VoidCallback onQuickMaster;
   final VoidCallback onMarkMastered;
   final VoidCallback onToggleIgnored;
+  final VoidCallback onRestoreLearning;
 
   const WordActionBar({
     super.key,
@@ -18,6 +19,7 @@ class WordActionBar extends StatelessWidget {
     required this.onQuickMaster,
     required this.onMarkMastered,
     required this.onToggleIgnored,
+    required this.onRestoreLearning,
   });
 
   @override
@@ -27,56 +29,42 @@ class WordActionBar extends StatelessWidget {
     //   seen -> [加入复习, 一键掌握, 忽略]
     //   learning -> [已掌握, 忽略]
     //   ignored -> [恢复学习]
-    //   mastered -> []
+    //   mastered -> [恢复学习]
     final buttons = <Widget>[];
 
     if (userState == LearningStatus.seen) {
       buttons.addAll([
         _expandedButton(
-          FilledButton(
-            onPressed: onAddToReview,
-            child: const Text('加入复习'),
-          ),
+          FilledButton(onPressed: onAddToReview, child: const Text('加入复习')),
         ),
         _expandedButton(
-          OutlinedButton(
-            onPressed: onQuickMaster,
-            child: const Text('一键掌握'),
-          ),
+          OutlinedButton(onPressed: onQuickMaster, child: const Text('一键掌握')),
         ),
         _expandedButton(
-          OutlinedButton(
-            onPressed: onToggleIgnored,
-            child: const Text('忽略'),
-          ),
+          OutlinedButton(onPressed: onToggleIgnored, child: const Text('忽略')),
         ),
       ]);
     } else if (userState == LearningStatus.learning) {
       buttons.addAll([
         _expandedButton(
-          FilledButton(
-            onPressed: onMarkMastered,
-            child: const Text('已掌握'),
-          ),
+          FilledButton(onPressed: onMarkMastered, child: const Text('已掌握')),
         ),
         _expandedButton(
-          OutlinedButton(
-            onPressed: onToggleIgnored,
-            child: const Text('忽略'),
-          ),
+          OutlinedButton(onPressed: onToggleIgnored, child: const Text('忽略')),
         ),
       ]);
     } else if (userState == LearningStatus.ignored) {
       buttons.add(
         _expandedButton(
-          OutlinedButton(
-            onPressed: onToggleIgnored,
-            child: const Text('恢复学习'),
-          ),
+          FilledButton(onPressed: onToggleIgnored, child: const Text('恢复学习')),
         ),
       );
     } else if (userState == LearningStatus.mastered) {
-      return const SizedBox.shrink();
+      buttons.add(
+        _expandedButton(
+          FilledButton(onPressed: onRestoreLearning, child: const Text('恢复学习')),
+        ),
+      );
     }
 
     return SafeArea(
@@ -93,9 +81,7 @@ class WordActionBar extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          children: _withGaps(buttons, gap: 8),
-        ),
+        child: Row(children: _withGaps(buttons, gap: 8)),
       ),
     );
   }

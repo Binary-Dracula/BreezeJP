@@ -217,7 +217,7 @@ Stats Card 仅用于**展示结果**，不承担解释职责。
 
 * UI 可直接提供“已掌握”
 * 状态由 `seen → mastered` 或者由 `learning → mastered`
-* 可恢复为 `learning`
+* 可恢复为 `seen`
 * **恢复学习仅为状态回退：**
   * ❌ 不产生 `firstLearn`
   * ❌ 不影响任何统计口径

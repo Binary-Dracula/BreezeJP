@@ -200,6 +200,9 @@ class _LearnPageState extends ConsumerState<LearnPage>
       onToggleIgnored: () {
         controller.toggleCurrentWordIgnored();
       },
+      onRestoreLearning: () {
+        controller.onRestoreLearningTapped(currentWord.word.id);
+      },
     );
   }
 

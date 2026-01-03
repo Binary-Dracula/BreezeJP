@@ -372,6 +372,46 @@ class WordCommand {
     }
   }
 
+  /// 恢复学习（mastered / ignored -> seen）
+  Future<void> restoreToSeen({
+    required int userId,
+    required int wordId,
+  }) async {
+    try {
+      final existing = await _repo.getStudyWord(userId, wordId);
+      if (existing == null) {
+        logger.warning('单词学习状态不存在: userId=$userId, wordId=$wordId');
+        return;
+      }
+
+      if (existing.userState != LearningStatus.mastered &&
+          existing.userState != LearningStatus.ignored) {
+        return;
+      }
+
+      final now = DateTime.now();
+      await _repo.updateStudyWord(
+        existing.copyWith(
+          userState: LearningStatus.seen,
+          nextReviewAt: null,
+          updatedAt: now,
+        ),
+      );
+
+      logger.info(
+        '[WordState] wordId=$wordId userId=$userId restore -> seen',
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPDATE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 切换忽略状态（忽略按钮）。
   ///
   /// 伪代码：

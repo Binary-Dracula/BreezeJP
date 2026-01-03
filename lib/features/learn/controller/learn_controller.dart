@@ -266,6 +266,15 @@ class LearnController extends Notifier<LearnState> {
     await _refreshCurrentWordState(word.word.id);
   }
 
+  /// mastered -> seen（恢复学习）
+  Future<void> onRestoreLearningTapped(int wordId) async {
+    logger.info('[WordUI] action=restore_to_seen wordId=$wordId');
+    final user = await _getActiveUser();
+    await _wordCommand.restoreToSeen(userId: user.id, wordId: wordId);
+
+    await _refreshCurrentWordState(wordId);
+  }
+
   /// toggle ignored（忽略 ↔ seen）
   Future<void> toggleCurrentWordIgnored() async {
     final word = state.currentWordDetail;
