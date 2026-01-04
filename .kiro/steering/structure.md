@@ -2,301 +2,230 @@
 inclusion: always
 ---
 
-# 项目架构与文件组织（冻结版）
+# 项目架构与文件组织（Structure · 冻结版）
+
+> 本文档定义的是 **工程结构、层级职责与依赖规则**  
+> 不裁决产品行为、不裁决统计语义  
+> 所有业务与数据语义以 `freeze.md` 为最终依据
+
+---
 
 ## 架构模式
 
 **MVVM + Command / Query / Analytics / Repository + Session + Riverpod**
 
+该模式用于保证：
+
+* 写入口集中
+* 读写职责分离
+* 统计链路可控
+* Feature 与数据层解耦
+
 ---
 
-## 一、全局数据流（冻结）
+## 一、全局数据流（工程级冻结）
 
 ```
+
 View → Controller
-           ├─→ Query (Read)
-           ├─→ Analytics (Statistics / Read-only)
-           └─→ Command (Behavior / Write)
-                       ↓
-                 Repository (Entity CRUD)
-                       ↓
-                    Database
+├─→ Query        (Read-only)
+├─→ Analytics   (Read-only Aggregation)
+└─→ Command     (Write / Side Effects)
+↓
+Repository (Single-table CRUD)
+↓
+Database
+
 ```
 
-### 补充说明（关键）
+### 工程级说明
 
-* **Session 不是所有写操作的必经路径**
-* Session 只负责：
-  **“学习 / 复习过程中的统计聚合”**
-* 以下行为 **不经过 Session**，且是合法的：
-
-  * Word `seen` 创建
-  * Word `learning` 进入（点击加入复习）
-  * Word `mastered / ignored` 状态切换
-  * PageDurationTracker 写入学习时长
+* **Controller 是 Feature 的唯一编排点**
+* **Repository 永不暴露给 Feature**
+* **Database 只允许通过 Provider 注入**
 
 ---
 
-## 二、各层职责与禁止项（冻结）
+## 二、各层职责与禁止项（结构级冻结）
 
-| Layer                 | 职责                                  | 明确禁止                 |
-| --------------------- | ----------------------------------- | -------------------- |
-| **View**              | UI 渲染、用户交互                          | 直接访问 DB、统计计算、状态推导    |
-| **Controller**        | 流程编排、调用 Command / Query / Analytics | 直接调用 Repository / DB |
-| **Command**           | 写行为 / 状态变更 / 副作用入口                  | 返回 Map / SQL 原始结果    |
-| **Command / Session** | 会话级统计聚合                             | 绕过规则写 daily_stats    |
-| **Query**             | 只读查询（join / list / detail）          | 写操作                  |
-| **Analytics**         | 聚合统计 / 报表（只读）                       | 写操作                  |
-| **Repository**        | 单表 CRUD                             | join / 统计 / 业务语义     |
-| **External**          | 外部 API Client                       | 本地持久化 / 业务规则         |
-| **Model**             | 数据结构                                | 行为 / 业务逻辑            |
-| **State**             | 不可变状态容器                             | 可变字段                 |
+| Layer | 工程职责 | 明确禁止 |
+|------|---------|---------|
+| **View** | UI 渲染、用户交互 | 访问 Repository / DB、统计推导 |
+| **Controller** | 调度流程、调用 Command / Query / Analytics | 直接访问 Repository / DB |
+| **Command** | 写行为入口、状态变更、副作用触发 | 返回 Map / SQL 原始结构 |
+| **Query** | 只读查询（detail / list / join） | 写操作 |
+| **Analytics** | 聚合统计（只读） | 写操作 |
+| **Repository** | 单表 CRUD、一致性保证 | join / 统计 / 业务语义 |
+| **Model** | 数据结构定义 | 行为 / 业务逻辑 |
+| **State** | 不可变状态容器 | 可变字段 |
+| **External** | 外部 API / SDK | 本地持久化 / 业务裁决 |
 
 ---
 
-## 三、核心冻结规则（Hard Rules）
+## 三、Controller 层规则（工程约束）
 
-### 1️⃣ Controller 规则
-
-* Controller **只调用**：
-
+* Controller **只能调用**：
   * Command
   * Query
   * Analytics
-* ❌ 不直接写：
 
-  * `daily_stats`
-  * `study_logs`
-  * `kana_logs`
+* Controller **不允许**：
+  * 直接写数据库
+  * 推导学习 / 统计语义
+  * 操作 Session 内部状态
+
+> Controller 只负责编排，不负责裁决。
 
 ---
 
-### 2️⃣ Repository 规则
+## 四、Repository 层规则
 
-* 仅负责 **单表实体一致性**
-* 不包含：
+* Repository 只保证：
+  * 单表一致性
+  * 基本 CRUD
 
+* Repository **不允许**：
   * join
   * count / group by
-  * 业务判断（如 firstLearn / mastered）
+  * firstLearn / mastered 等业务判断
 
 ---
 
-### 3️⃣ Query / Analytics 规则
+## 五、Query / Analytics 层规则
 
 * **只读**
 * 通过 `databaseProvider` 注入 Database
-* ❌ 禁止：
-
-  * 使用 `AppDatabase.instance`
-  * 写入任何状态
-
----
-
-### 4️⃣ Command 规则（重要修订说明）
-
-Command 是**唯一写入口**，但存在 **三类正交写路径**：
-
-| 写入类型                                    | 责任组件                                        | 是否经 Session |
-| --------------------------------------- | ------------------------------------------- | ----------- |
-| 状态写入（study_words / kana_learning_state） | `WordCommand / KanaCommand`                 | ❌           |
-| 行为日志（study_logs / kana_logs）            | `WordCommand / KanaCommand / ReviewCommand` | ❌           |
-| 统计聚合（daily_stats）                       | `Session` / `DailyStatCommand`              | ✅ / ❌（时间除外） |
-
-> **关键冻结点**
-> “唯一写入口” ≠ “必须走 Session”
+* 不允许：
+  * 使用全局单例 Database
+  * 写任何表
+  * 推导学习事件
 
 ---
 
-## 四、Session 架构（统计专用）
+## 六、Command 层结构说明（重要）
 
-### 适用范围（冻结）
+Command 是**唯一写入口**，但写入路径在结构上是**正交的**：
 
-Session **只负责以下统计类写入**：
+| 写入类型 | 责任组件 | 是否经 Session |
+|--------|---------|---------------|
+| 状态写入 | `WordCommand / KanaCommand` | ❌ |
+| 行为日志 | `WordCommand / ReviewCommand` | ❌ |
+| 统计聚合 | `Session / DailyStatCommand` | ✅ |
 
-* 今日学习数（new_learned_count）
-* 今日复习数（review_count）
-* 会话级统计聚合
-
-### 不适用范围（明确）
-
-以下行为 **不经过 Session**：
-
-* Word `seen` 创建
-* Word `learning` 进入
-* Word `mastered / ignored`
-* PageDurationTracker 学习时长
+> 结构层只声明「谁写」，不声明「何时写」  
+> 具体语义由 freeze.md 冻结
 
 ---
 
-### Session 统计链路（冻结）
+## 七、Session 架构（工程层）
+
+### 工程定位
+
+Session 是**统计聚合工具**，不是通用写入口。
+
+### 仅用于：
+
+* Session 内统计累积
+* flush 到 `daily_stats`
+
+### 不用于：
+
+* 状态写入
+* 行为日志写入
+* UI 触发行为
+
+---
+
+### Session 结构链路（固定）
 
 ```
+
 SessionStatPolicy
-   → SessionStatAccumulator
-      → flush
-         → DailyStatCommand.applySession
-```
-
-### 硬性规则
-
-* Feature 不得直接写 `daily_stats`
-* 不允许绕过 Policy / Accumulator
-
----
-
-## 五、Word 学习数据三层模型（关键冻结）
-
-### 1️⃣ study_words（状态表）
-
-> **描述：当前状态**
-
-* 每个 word **最多一条**
-* 不表达“今天发生了什么”
-
-合法状态：
-
-* `seen`
-* `learning`
-* `mastered`
-* `ignored`
-
----
-
-### 2️⃣ study_logs（行为日志）
-
-> **描述：用户做了什么**
-
-* 同一 word 可有多条
-
-* `firstLearn` 语义冻结：
-
-  > firstLearn 是「第一次点击加入复习」，而不是「第一次进入 learning」
-  > 当且仅当：
-      用户点击「加入复习」
-      且该单词 此前从未出现过 firstLearn log
-  > 与以下因素全部无关
-      study_words 当前状态
-      是否曾是 mastered / ignored
-      是否曾恢复为 seen
-      是否是第一次展示
-      是否是第一次进入 learning
-      
-* 与 `study_words` **无直接推导关系**
-
----
-
-### 3️⃣ daily_stats（统计快照）
-
-> **描述：今天发生了多少次**
-
-* 只增量写
-* 不反推状态
-* 不回放日志
-
----
-
-## 六、Word 学习生命周期（冻结对齐）
-
-### 状态流转（唯一合法）
+→ SessionStatAccumulator
+→ flush
+→ DailyStatCommand
 
 ```
-无记录
-   ↓（首次展示）
-seen
-   ↓（点击加入复习）
-learning
-   ↓（点击已掌握）
-mastered
-```
-
-* `ignored` 可由任意状态进入
-* `ignored → seen` 仅由用户显式操作
 
 ---
 
-### seen 创建规则（冻结）
+## 八、学习时长统计（结构说明）
 
-* **唯一时机**：
-
-  * Learn 页面 `onPageChanged`
-* 行为：
-
-  * `getOrCreateLearningState`
-* ❌ 禁止：
-
-  * 页面初始化
-  * 音频播放
-  * 停留时间判断
-
----
-
-### learning 进入规则（冻结）
-
-* **唯一合法触发**：
-
-  * 点击「加入复习」
-  * 「一键掌握」（内部拆分）
-* ❌ 禁止隐式进入
-
----
-
-## 七、学习时长统计（冻结补充）
-
-* 唯一来源：`PageDurationTracker`
-* 唯一写入口：`DailyStatCommand.applyTimeOnlyDelta`
+* 数据来源：`PageDurationTracker`
+* 写入口：`DailyStatCommand.applyTimeOnlyDelta`
 * 不经过 Session
-* 不参与行为日志
+* 不产生行为日志
 
 ---
 
-## 八、Debug 架构规则（冻结）
+## 九、Debug 架构规则（工程级）
 
-* Debug：
-
+* Debug Feature：
   * 只能调用 Command / Query / Analytics
-  * ❌ 不直连 Repository / DB
+  * 不直连 Repository / Database
+
 * Debug Command：
-
-  * 不被 Feature 调用
-  * 不参与正式统计链路
+  * 不被正式 Feature 依赖
+  * 不进入正式统计链路
 
 ---
 
-## 九、依赖关系规则（冻结）
+## 十、模块依赖方向（冻结）
 
-* Feature → Data / Services / Core
-* Services → Data / Core
-* Data → Core
+```
+
+Feature
+↓
+Services
+↓
+Data
+↓
+Core
+
+```
+
+补充规则：
+
 * Debug → Command / Query / Analytics
+* Data 不依赖 Feature
+* Core 不依赖任何上层模块
 
 ---
 
-## 十、目录结构（与当前代码一致）
+## 十一、目录结构声明
 
-> **目录结构保持不变，仅语义冻结**
+> 目录结构以当前代码为准  
+> 本文档 **不负责维护目录树快照**
 
-（目录树保持你提供的版本，此处不再重复）
+目录的任何调整：
 
----
-
-## 十一、最终冻结声明（Hard Stop）
-
-> 本文档定义的是 **“什么可以写、什么不可以写”**，
-> 而不是“怎么写得更方便”。
-
-任何违反本文档的实现：
-
-* ❌ 不是优化
-* ❌ 不是临时方案
-* ❌ 不是 UI 问题
-* ✅ 是 **架构错误**
+* 不得破坏上述依赖方向
+* 不得引入跨层访问
 
 ---
 
-### 🔒 Final Rule
+## 十二、Structure 文档冻结声明
 
-> **当你发现统计、状态或行为“感觉怪怪的”，
-> 问题一定不在感觉，而在是否违反了本文件。**
+> 本文档回答的问题是：
+> **“这一层能不能依赖那一层”**
+> **“这一类代码能不能做这类事”**
+
+它不回答：
+
+* 产品该怎么做
+* 数据语义该如何解释
+
+若出现冲突：
+
+* **Freeze > Product > Structure > Tech**
+
+---
+
+### ⛔ Hard Stop
+
+> **任何为了“少写一层”而破坏结构边界的行为，
+> 都是架构错误，而不是工程优化。**
+
+```
 
 ---
