@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/domain_event_bus.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../data/models/kana_detail.dart';
 import '../../../../data/commands/kana_command.dart';
@@ -46,13 +47,17 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
     final safeIndex = kanaLetters.isEmpty
         ? 0
         : initialIndex.clamp(0, kanaLetters.length - 1);
+    final currentKanaId =
+        kanaLetters.isEmpty ? null : kanaLetters[safeIndex].letter.id;
 
     state = state.copyWith(
       kanaLetters: kanaLetters,
       currentIndex: safeIndex,
+      currentKanaId: currentKanaId,
       displayMode: displayMode,
       error: null,
       isLoading: true,
+      learningState: null,
       svgData: null,
       audioFilename: null,
     );
@@ -63,10 +68,13 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
   /// 切换到指定索引
   Future<void> goToIndex(int index) async {
     if (index < 0 || index >= state.kanaLetters.length) return;
+    final currentKanaId = state.kanaLetters[index].letter.id;
     state = state.copyWith(
       currentIndex: index,
+      currentKanaId: currentKanaId,
       isLoading: true,
       error: null,
+      learningState: null,
       svgData: null,
       audioFilename: null,
     );
@@ -97,30 +105,46 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
       return;
     }
 
+    final requestedKanaId = current.letter.id;
+    state = state.copyWith(
+      currentKanaId: requestedKanaId,
+      learningState: null,
+    );
+
     try {
-      // --------------------------------------------------
-      // ⭐ STEP 2：在这里加载或创建 kana_learning_state
-      // --------------------------------------------------
       final user = await _getActiveUser();
-
-      final learningState = await _kanaCommand.getOrCreateLearningState(
+      if (state.currentKanaId != requestedKanaId) {
+        return;
+      }
+      final learningState = await _kanaQuery.getKanaLearningState(
         user.id,
-        current.letter.id,
+        requestedKanaId,
+      );
+      if (state.currentKanaId != requestedKanaId) {
+        return;
+      }
+      state = state.copyWith(
+        currentKanaId: requestedKanaId,
+        learningState: learningState,
       );
 
-      // 将学习状态存到 Controller 状态里
-      state = state.copyWith(learningState: learningState);
-
-      logger.info(
-        '五十音学习状态已加载: kanaId=${current.letter.id}, '
-        'status=${learningState.learningStatus}',
-      );
-      // --------------------------------------------------
+      if (learningState != null) {
+        logger.info(
+          '五十音学习状态已加载: kanaId=$requestedKanaId, '
+          'status=${learningState.learningStatus}',
+        );
+      }
 
       final strokeOrder = await _kanaQuery.getKanaStrokeOrder(
-        current.letter.id,
+        requestedKanaId,
       );
-      final audio = await _kanaQuery.getKanaAudio(current.letter.id);
+      if (state.currentKanaId != requestedKanaId) {
+        return;
+      }
+      final audio = await _kanaQuery.getKanaAudio(requestedKanaId);
+      if (state.currentKanaId != requestedKanaId) {
+        return;
+      }
 
       final svg = state.displayMode == KanaDisplayMode.hiragana
           ? strokeOrder?.hiraganaSvg
@@ -132,56 +156,39 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
         audioFilename: audio?.audioFilename,
       );
 
-      logger.info('加载假名笔顺成功: kanaId=${current.letter.id}');
+      logger.info('加载假名笔顺成功: kanaId=$requestedKanaId');
     } catch (e, stackTrace) {
+      if (state.currentKanaId != requestedKanaId) {
+        return;
+      }
       logger.error('加载假名笔顺失败', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// 记录一次学习动作：仅更新时间
-  Future<void> recordLearningAction() async {
-    final current = state.currentKana;
-    final learningState = state.learningState;
-    if (current == null || learningState == null) return;
-
+  /// 描红完成后创建 learning 状态（仅首次）
+  Future<void> onKanaTraceCompleted(int kanaId) async {
     final user = await _getActiveUser();
-
-    await _kanaCommand.updateLearningTimestamp(user.id, current.letter.id);
-
-    state = state.copyWith(
-      learningState: learningState.copyWith(
-        updatedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      ),
+    final event = await _kanaCommand.onKanaPracticed(
+      userId: user.id,
+      kanaId: kanaId,
     );
-  }
-
-  /// 描红完成后进入学习阶段（仅 seen -> learning）
-  Future<void> completePractice() async {
-    final current = state.currentKana;
-    if (current == null) return;
-    final user = await _getActiveUser();
-
-    await _kanaCommand.updateLearningTimestamp(user.id, current.letter.id);
-    await _kanaCommand.enterKanaLearningIfNeeded(user.id, current.letter.id);
+    if (event != null) {
+      DomainEventBus().publish(event);
+    }
     await refreshState();
   }
 
-  /// 标记当前假名为已掌握
-  Future<void> markCurrentAsMastered() async {
-    final current = state.currentKana;
-    if (current == null) return;
+  /// 切换当前假名掌握状态（learning ↔ mastered）
+  Future<void> toggleKanaMastered(int kanaId) async {
     final user = await _getActiveUser();
-    await _kanaCommand.markKanaAsMastered(user.id, current.letter.id);
-    await refreshState();
-  }
-
-  /// 标记当前假名为忽略
-  Future<void> markCurrentAsIgnored() async {
-    final current = state.currentKana;
-    if (current == null) return;
-    final user = await _getActiveUser();
-    await _kanaCommand.markKanaAsIgnored(user.id, current.letter.id);
+    final event = await _kanaCommand.toggleKanaMastered(
+      userId: user.id,
+      kanaId: kanaId,
+    );
+    if (event != null) {
+      DomainEventBus().publish(event);
+    }
     await refreshState();
   }
 
@@ -189,15 +196,25 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
   Future<void> refreshState() async {
     final current = state.currentKana;
     if (current == null) return;
+    final requestedKanaId = current.letter.id;
+    state = state.copyWith(
+      currentKanaId: requestedKanaId,
+      learningState: null,
+    );
     final user = await _getActiveUser();
+    if (state.currentKanaId != requestedKanaId) {
+      return;
+    }
     final learningState = await _kanaQuery.getKanaLearningState(
       user.id,
-      current.letter.id,
+      requestedKanaId,
     );
-    if (learningState == null) return;
+    if (state.currentKanaId != requestedKanaId) {
+      return;
+    }
 
     final updatedKanaLetters = state.kanaLetters.map((item) {
-      if (item.letter.id != current.letter.id) return item;
+      if (item.letter.id != requestedKanaId) return item;
       return KanaLetterWithState(
         letter: item.letter,
         learningState: learningState,
@@ -206,6 +223,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
 
     state = state.copyWith(
       kanaLetters: updatedKanaLetters,
+      currentKanaId: requestedKanaId,
       learningState: learningState,
     );
   }

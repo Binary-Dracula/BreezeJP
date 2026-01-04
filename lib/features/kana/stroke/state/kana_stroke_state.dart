@@ -10,6 +10,7 @@ class KanaStrokeState {
   final String? error;
   final List<KanaLetterWithState> kanaLetters;
   final int currentIndex;
+  final int? currentKanaId;
   final KanaDisplayMode displayMode;
   final String? svgData;
   final String? audioFilename;
@@ -20,6 +21,7 @@ class KanaStrokeState {
     this.error,
     this.kanaLetters = const [],
     this.currentIndex = 0,
+    this.currentKanaId,
     this.displayMode = KanaDisplayMode.hiragana,
     this.svgData,
     this.audioFilename,
@@ -40,8 +42,9 @@ class KanaStrokeState {
     String? error,
     List<KanaLetterWithState>? kanaLetters,
     int? currentIndex,
+    Object? currentKanaId = _unset,
     KanaDisplayMode? displayMode,
-    KanaLearningState? learningState,
+    Object? learningState = _unset,
     Object? svgData = _unset,
     Object? audioFilename = _unset,
   }) {
@@ -50,8 +53,13 @@ class KanaStrokeState {
       error: error ?? this.error,
       kanaLetters: kanaLetters ?? this.kanaLetters,
       currentIndex: currentIndex ?? this.currentIndex,
+      currentKanaId: identical(currentKanaId, _unset)
+          ? this.currentKanaId
+          : currentKanaId as int?,
       displayMode: displayMode ?? this.displayMode,
-      learningState: learningState ?? this.learningState,
+      learningState: identical(learningState, _unset)
+          ? this.learningState
+          : learningState as KanaLearningState?,
       svgData: identical(svgData, _unset) ? this.svgData : svgData as String?,
       audioFilename: identical(audioFilename, _unset)
           ? this.audioFilename

@@ -5,7 +5,6 @@ import '../models/kana_letter.dart';
 import '../models/kana_audio.dart';
 import '../models/kana_example.dart';
 import '../models/kana_learning_state.dart';
-import '../models/kana_log.dart';
 import '../models/kana_stroke_order.dart';
 
 /// 五十音数据仓库
@@ -300,51 +299,6 @@ class KanaRepository {
       logger.dbError(
         operation: 'UPDATE',
         table: 'kana_learning_state',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  // ==================== 学习日志 ====================
-
-  /// 插入学习日志（基础 CRUD）
-  Future<int> insertKanaLog(KanaLog log) async {
-    try {
-      final db = await _db;
-      final result = await db.insert('kana_logs', log.toInsertMap());
-
-      logger.dbInsert(table: 'kana_logs', id: result);
-
-      return result;
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'INSERT',
-        table: 'kana_logs',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 删除用户的假名日志
-  Future<int> deleteKanaLogsByUser(int userId) async {
-    try {
-      final db = await _db;
-      final count = await db.delete(
-        'kana_logs',
-        where: 'user_id = ?',
-        whereArgs: [userId],
-      );
-
-      logger.dbDelete(table: 'kana_logs', deletedRows: count);
-      return count;
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'DELETE',
-        table: 'kana_logs',
         dbError: e,
         stackTrace: stackTrace,
       );

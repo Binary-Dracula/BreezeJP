@@ -24,8 +24,8 @@ class KanaChartState {
   /// 学习统计 - 总数
   final int totalCount;
 
-  /// 学习统计 - 已完成数量
-  final int learnedCount;
+  /// 学习统计 - 已掌握数量
+  final int masteredCount;
 
   const KanaChartState({
     this.isLoading = false,
@@ -35,18 +35,14 @@ class KanaChartState {
     this.selectedType,
     this.displayMode = KanaDisplayMode.hiragana,
     this.totalCount = 0,
-    this.learnedCount = 0,
+    this.masteredCount = 0,
   });
 
   /// 是否有错误
   bool get hasError => error != null;
 
-  /// 学习进度百分比
-  double get progressPercent =>
-      totalCount > 0 ? learnedCount / totalCount : 0.0;
-
-  /// 剩余未学习数
-  int get remainingCount => totalCount - learnedCount;
+  /// 剩余未掌握数
+  int get remainingCount => totalCount - masteredCount;
 
   /// 根据当前筛选获取假名列表
   List<KanaLetterWithState> get filteredKanaLetters {
@@ -72,7 +68,7 @@ class KanaChartState {
     String? selectedType,
     KanaDisplayMode? displayMode,
     int? totalCount,
-    int? learnedCount,
+    int? masteredCount,
   }) {
     return KanaChartState(
       isLoading: isLoading ?? this.isLoading,
@@ -82,7 +78,7 @@ class KanaChartState {
       selectedType: selectedType,
       displayMode: displayMode ?? this.displayMode,
       totalCount: totalCount ?? this.totalCount,
-      learnedCount: learnedCount ?? this.learnedCount,
+      masteredCount: masteredCount ?? this.masteredCount,
     );
   }
 }

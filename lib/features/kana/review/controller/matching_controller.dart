@@ -1,21 +1,12 @@
-import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../state/matching_state.dart';
 import '../state/review_kana_item.dart';
 import '../../../../data/models/kana_letter.dart';
 import '../../../../data/models/kana_learning_state.dart';
-import '../../../../data/models/kana_log.dart';
 import '../../../../data/models/user.dart';
 import '../../../../data/commands/active_user_command.dart';
 import '../../../../data/commands/active_user_command_provider.dart';
-import '../../../../data/commands/kana_command.dart';
-import '../../../../data/commands/kana_command_provider.dart';
-import '../../../../data/commands/session/session_scope.dart';
-import '../../../../data/commands/session/study_session_handle.dart';
-import '../../../../data/commands/study_session_command_provider.dart';
 import '../../../../data/queries/active_user_query.dart';
 import '../../../../data/queries/active_user_query_provider.dart';
 import '../../../../data/queries/kana_query.dart';
@@ -51,12 +42,9 @@ class MatchingController extends Notifier<MatchingState> {
 
   /// Controller 访问查询的入口：KanaQuery（禁止 View 直接查 DB）。
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
-  KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
-
-  StudySessionHandle? _session;
 
   /// 待复习队列按题型拆分后的缓存：
   /// - startReview 时一次性分组
@@ -67,12 +55,6 @@ class MatchingController extends Notifier<MatchingState> {
 
   /// 防止「选中左右 → 判定 → 落库/补位」流程重入（例如连点导致多次触发）。
   bool _isResolvingSelection = false;
-
-  /// 记录每个 kana 在本次出题中的尝试次数/错误次数（用于计算 rating）。
-  ///
-  /// key：kana_id
-  final Map<int, int> _attemptCountByKanaId = {};
-  final Map<int, int> _wrongCountByKanaId = {};
 
   @override
   /// Riverpod Notifier 的 build 仅返回初始 State。
@@ -123,19 +105,11 @@ class MatchingController extends Notifier<MatchingState> {
   Future<void> loadReview() async {
     try {
       _setSessionBootstrapState(isLoading: true, isEmpty: false);
-      _attemptCountByKanaId.clear();
-      _wrongCountByKanaId.clear();
 
       // 1) 获取当前用户
       final user = await _getActiveUser();
-      await _session?.flush();
-      _session =
-          ref.read(studySessionCommandProvider).createSession(
-                userId: user.id,
-                scope: SessionScope.kanaReview,
-              );
 
-      // 2) 获取「已到期需复习」的 kana_learning_state
+      // 2) 获取处于 learning 状态的 kana_learning_state
       final learningStates = await _kanaQuery.getDueReviewKana(user.id);
 
       // 3) 将 learning_state + kana_letters + kana_audio + 历史题型，组装成 ReviewKanaItem
@@ -225,9 +199,6 @@ class MatchingController extends Notifier<MatchingState> {
     );
 
     try {
-      _attemptCountByKanaId.clear();
-      _wrongCountByKanaId.clear();
-
       final split = _buildInitialPairs(groupItems);
       final activePairs = split.activePairs;
       final remaining = split.remainingItems;
@@ -312,14 +283,9 @@ class MatchingController extends Notifier<MatchingState> {
       return;
     }
 
-    final kanaId = pair.item.kanaLetter.id;
-    final attemptCount = (_attemptCountByKanaId[kanaId] ?? 0) + 1;
-    _attemptCountByKanaId[kanaId] = attemptCount;
-
     // 关键判定逻辑：左侧 index 必须等于右侧选项的 pairIndex。
     final isCorrect = selectedLeftIndex == rightPairIndex;
     if (!isCorrect) {
-      _wrongCountByKanaId[kanaId] = (_wrongCountByKanaId[kanaId] ?? 0) + 1;
       _isResolvingSelection = true;
       try {
         await Future.delayed(const Duration(milliseconds: 420));
@@ -336,11 +302,7 @@ class MatchingController extends Notifier<MatchingState> {
 
     _isResolvingSelection = true;
     try {
-      await _handleCorrectMatch(
-        pairIndex: selectedLeftIndex,
-        pair: pair,
-        attemptCount: attemptCount,
-      );
+      await _handleCorrectMatch(pairIndex: selectedLeftIndex, pair: pair);
     } catch (e, stackTrace) {
       logger.error('处理配对成功失败', e, stackTrace);
       state = state.copyWith(error: e.toString());
@@ -352,17 +314,7 @@ class MatchingController extends Notifier<MatchingState> {
   Future<void> _handleCorrectMatch({
     required int pairIndex,
     required MatchingPair pair,
-    required int attemptCount,
   }) async {
-    final kanaId = pair.item.kanaLetter.id;
-    final wrongCount = _wrongCountByKanaId[kanaId] ?? 0;
-    final rating = _calculateRating(wrongCount, attemptCount);
-
-    await _onItemRated(pair.item, rating);
-
-    _attemptCountByKanaId.remove(kanaId);
-    _wrongCountByKanaId.remove(kanaId);
-
     final activePairs = List<MatchingPair>.from(state.activePairs);
     if (pairIndex < 0 || pairIndex >= activePairs.length) return;
 
@@ -526,8 +478,6 @@ class MatchingController extends Notifier<MatchingState> {
   /// - 清空题目与剩余队列
   /// - resetCurrentQuestionType=true（避免 UI 因 null/旧值判断异常）
   Future<void> finishAll() async {
-    _attemptCountByKanaId.clear();
-    _wrongCountByKanaId.clear();
     state = state.copyWith(
       isLoading: false,
       isAllFinished: true,
@@ -539,7 +489,6 @@ class MatchingController extends Notifier<MatchingState> {
       selectedLeftIndex: null,
       selectedRightIndex: null,
     );
-    await _flushSession();
   }
 
   /// 将「待复习学习进度记录」组装为 UI 出题所需的 [ReviewKanaItem] 列表。
@@ -547,7 +496,6 @@ class MatchingController extends Notifier<MatchingState> {
   /// 组装内容：
   /// - kana_letters：用于显示（平/片/罗马音）
   /// - kana_audio：audio 题型需要音频文件名/Key
-  /// - last question type：用于尽量避免连续重复同一题型
   Future<List<ReviewKanaItem>> _composeReviewItems(
     int userId,
     List<KanaLearningState> learningStates,
@@ -564,11 +512,7 @@ class MatchingController extends Notifier<MatchingState> {
       }
 
       final audio = await _kanaQuery.getKanaAudio(learningState.kanaId);
-      final lastType = await _kanaQuery.getLastKanaReviewQuestionType(
-        userId,
-        learningState.kanaId,
-      );
-      final questionType = _chooseQuestionType(learningState, lastType);
+      final questionType = _chooseQuestionType(learningState);
 
       items.add(
         ReviewKanaItem(
@@ -583,65 +527,16 @@ class MatchingController extends Notifier<MatchingState> {
     return items;
   }
 
-  /// 根据学习状态与历史题型，选择本次要出的题型。
-  ///
-  /// 规则概要：
-  /// - 先根据学习状态判定「强/新/弱」等级（[_judgeLevel]）
-  /// - 不同等级有不同的题型优先级
-  /// - 若上一次题型与本次首选题型相同，则降级为次选题型（减少重复）
-  ReviewQuestionType _chooseQuestionType(
-    KanaLearningState learningState,
-    String? lastType,
-  ) {
-    final level = _judgeLevel(learningState);
-    final priorities = switch (level) {
-      _SkillLevel.weak => [
-        ReviewQuestionType.audio,
-        ReviewQuestionType.switchMode,
-        ReviewQuestionType.recall,
-      ],
-      _SkillLevel.newbie => [
-        ReviewQuestionType.switchMode,
-        ReviewQuestionType.audio,
-      ],
-      _SkillLevel.strong => [
-        ReviewQuestionType.recall,
-        ReviewQuestionType.switchMode,
-        ReviewQuestionType.audio,
-      ],
-    };
-
-    final primary = priorities.first;
-    final secondary = priorities.length > 1 ? priorities[1] : primary;
-
-    if (lastType != null) {
-      final normalizedLast = _mapStringToQuestionType(lastType);
-      if (normalizedLast != null && normalizedLast == primary) {
-        return secondary;
-      }
-    }
-
-    return primary;
-  }
-
-  /// 粗略评估掌握程度，用于题型策略（不涉及 SRS 算法推导）。
-  _SkillLevel _judgeLevel(KanaLearningState learningState) {
-    if (learningState.failCount >= 3) return _SkillLevel.weak;
-    if (learningState.streak <= 1) return _SkillLevel.newbie;
-    return _SkillLevel.strong;
-  }
-
-  /// 将数据库/日志存储的 questionType 字符串映射为枚举。
-  ReviewQuestionType? _mapStringToQuestionType(String value) {
-    switch (value) {
-      case 'recall':
-        return ReviewQuestionType.recall;
-      case 'audio':
+  /// 根据 kanaId 选择题型（保持稳定分布，避免依赖日志与评分）。
+  ReviewQuestionType _chooseQuestionType(KanaLearningState learningState) {
+    final mod = learningState.kanaId % 3;
+    switch (mod) {
+      case 0:
         return ReviewQuestionType.audio;
-      case 'switchMode':
+      case 1:
         return ReviewQuestionType.switchMode;
       default:
-        return null;
+        return ReviewQuestionType.recall;
     }
   }
 
@@ -688,173 +583,7 @@ class MatchingController extends Notifier<MatchingState> {
     }
   }
 
-  /// 将一次题目的表现映射为 SRS rating（1/2/3）。
-  ///
-  /// 规则：
-  /// - 0 次尝试（理论上不会发生）：按中等（2）处理
-  /// - 0 次错误：好（3）
-  /// - 1 次错误：中（2）
-  /// - >=2 次错误：差（1）
-  int _calculateRating(int wrongCount, int attemptCount) {
-    if (attemptCount == 0) return 2;
-    if (wrongCount == 0) return 3;
-    if (wrongCount == 1) return 2;
-    return 1;
-  }
-
-  /// 在用户完成一个题目后，将结果落库（更新学习进度 + 追加日志）。
-  Future<void> _onItemRated(ReviewKanaItem item, int rating) async {
-    final user = await _getActiveUser();
-    final algorithm = _extractAlgorithm(user);
-    final learningState = await _kanaQuery.getKanaLearningState(
-      user.id,
-      item.kanaLetter.id,
-    );
-    if (learningState == null) return;
-    final srs = _computeSrsResult(learningState, rating, algorithm);
-
-    await _kanaCommand.updateKanaReviewResult(
-      userId: user.id,
-      kanaId: item.kanaLetter.id,
-      rating: rating,
-      newInterval: srs.newInterval,
-      newEaseFactor: srs.newEaseFactor,
-      nextReviewAt: srs.nextReviewAt,
-    );
-
-    final session =
-        _session ??
-        ref.read(studySessionCommandProvider).createSession(
-              userId: user.id,
-              scope: SessionScope.kanaReview,
-            );
-    _session ??= session;
-
-    await _kanaCommand.addKanaLogQuick(
-      userId: user.id,
-      kanaId: item.kanaLetter.id,
-      logType: KanaLogType.review,
-      rating: rating,
-      algorithm: algorithm,
-      intervalAfter: srs.newInterval,
-      nextReviewAtAfter: srs.nextReviewAt,
-      easeFactorAfter: srs.newEaseFactor,
-      fsrsStabilityAfter: srs.newStability,
-      fsrsDifficultyAfter: srs.newDifficulty,
-      questionType: item.questionType.name,
-      session: session,
-    );
-  }
-
   Future<void> endSession() async {
-    await _flushSession();
-  }
-
-  Future<void> _flushSession() async {
-    try {
-      await _session?.flush();
-    } catch (e, stackTrace) {
-      logger.error('假名复习 Session flush 失败', e, stackTrace);
-    } finally {
-      _session = null;
-    }
-  }
-
-  /// 根据算法类型生成新的复习结果（interval/ef/nextReviewAt 等）。
-  ///
-  /// 说明：
-  /// - algorithm=1：使用本 Controller 内的简化 SM-2（[_sm2]）
-  /// - algorithm=2：目前为占位实现（不推导 FSRS），保持原逻辑不变
-  SrsResult _computeSrsResult(
-    KanaLearningState learningState,
-    int rating,
-    int algorithm,
-  ) {
-    if (algorithm == 2) {
-      return SrsResult(
-        newInterval: max(1, learningState.interval),
-        newEaseFactor: learningState.easeFactor,
-        nextReviewAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 86400,
-        newStability: learningState.stability,
-        newDifficulty: learningState.difficulty,
-      );
-    }
-
-    return _sm2(learningState, rating);
-  }
-
-  /// 简化 SM-2（保持现有实现，不在此处做更复杂的算法推导）。
-  SrsResult _sm2(KanaLearningState learningState, int rating) {
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    double interval = learningState.interval;
-    double ef = learningState.easeFactor;
-
-    if (rating == 1) {
-      ef = max(1.3, ef - 0.20);
-      interval = 0;
-      return SrsResult(
-        newInterval: interval,
-        newEaseFactor: ef,
-        nextReviewAt: now + 600,
-      );
-    }
-
-    if (rating == 2) {
-      if (interval == 0) {
-        interval = 1;
-      } else {
-        interval = interval * ef;
-      }
-      return SrsResult(
-        newInterval: interval,
-        newEaseFactor: ef,
-        nextReviewAt: now + (interval * 86400).toInt(),
-      );
-    }
-
-    ef = ef + 0.05;
-    interval = max(1, interval * ef * 1.3);
-    return SrsResult(
-      newInterval: interval,
-      newEaseFactor: ef,
-      nextReviewAt: now + (interval * 86400).toInt(),
-    );
-  }
-
-  /// 从用户 settings 中提取 SRS 算法开关：
-  /// - 默认 1（SM-2）
-  /// - settings 支持 key：srsAlgorithm / srs_algorithm
-  int _extractAlgorithm(User user) {
-    if (user.settings == null) return 1;
-    try {
-      final map = jsonDecode(user.settings!) as Map<String, dynamic>;
-      final raw = map['srsAlgorithm'] ?? map['srs_algorithm'];
-      if (raw is num) {
-        final value = raw.toInt();
-        if (value == 2) return 2;
-      }
-    } catch (_) {
-      // ignore parse errors, fallback to default
-    }
-    return 1;
+    return;
   }
 }
-
-/// 一次复习操作的结果集合（用于落库与日志记录）。
-class SrsResult {
-  final double newInterval;
-  final double newEaseFactor;
-  final int nextReviewAt;
-  final double? newStability;
-  final double? newDifficulty;
-
-  SrsResult({
-    required this.newInterval,
-    required this.newEaseFactor,
-    required this.nextReviewAt,
-    this.newStability,
-    this.newDifficulty,
-  });
-}
-
-enum _SkillLevel { weak, newbie, strong }

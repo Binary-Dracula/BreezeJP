@@ -10,7 +10,7 @@
    - 唯一来源：页面驻留时间（PageDurationTracker）
    - 唯一写入表：daily_stats.total_time_ms
    - 写入路径：DailyStatCommand.applyTimeOnlyDelta
-   - ❌ 禁止从 study_logs / kana_logs / session / 行为中计算时间
+   - ❌ 禁止从 study_logs / session / 行为中计算时间
    - ❌ 禁止在行为日志中携带 duration
 
 2. **今日学习 / 今日复习**
@@ -35,7 +35,7 @@
 ### 明确禁止的反模式（Anti-patterns）
 
 - ❌ 在页面中直接写入 daily_stats
-- ❌ 从 study_logs / kana_logs 统计今日学习、连续学习
+- ❌ 从 study_logs 统计今日学习、连续学习
 - ❌ 在行为日志中维护 durationMs
 - ❌ 引入第二套统计表或缓存统计结果
 - ❌ 在 UI 层进行任何统计计算

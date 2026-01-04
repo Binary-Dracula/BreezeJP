@@ -446,7 +446,7 @@ class KanaGrid extends ConsumerWidget {
     );
 
     final wrappedCell = GestureDetector(
-      onTap: () => _onKanaTap(context, ref, kana),
+      onTap: () => _onKanaTap(context, kana),
       child: cell,
     );
 
@@ -461,16 +461,15 @@ class KanaGrid extends ConsumerWidget {
   }
 
   /// 处理假名点击
-  void _onKanaTap(
+  Future<void> _onKanaTap(
     BuildContext context,
-    WidgetRef ref,
     KanaLetterWithState kana,
-  ) {
+  ) async {
     final index = kanaLetters.indexWhere(
       (item) => item.letter.id == kana.letter.id,
     );
     if (!context.mounted) return;
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => KanaStrokePracticePage(
           kanaLetters: kanaLetters,

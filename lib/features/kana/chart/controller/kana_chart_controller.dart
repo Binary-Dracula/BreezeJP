@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../data/commands/active_user_command.dart';
@@ -21,7 +23,10 @@ class KanaChartController extends Notifier<KanaChartState> {
   int? _userId;
 
   @override
-  KanaChartState build() => const KanaChartState();
+  KanaChartState build() {
+    unawaited(loadKanaChart());
+    return const KanaChartState();
+  }
 
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
   ActiveUserCommand get _activeUserCommand =>
@@ -54,15 +59,17 @@ class KanaChartController extends Notifier<KanaChartState> {
         userId,
       );
 
-      // 3. 获取学习统计
-      final stats = await _kanaQuery.getKanaLearningStats(userId);
+      // 3. 获取统计数量
+      final totalCount = await _kanaQuery.countTotalKana();
+      final masteredCount =
+          await _kanaQuery.countMasteredKana(userId: userId);
 
       state = state.copyWith(
         isLoading: false,
         kanaTypes: kanaTypes.map((item) => item.type).toList(),
         kanaLetters: kanaLetters,
-        totalCount: stats.total,
-        learnedCount: stats.learned,
+        totalCount: totalCount,
+        masteredCount: masteredCount,
       );
 
       logger.info('五十音表加载成功: ${kanaLetters.length}个假名, ${kanaTypes.length}个类型');
@@ -90,11 +97,6 @@ class KanaChartController extends Notifier<KanaChartState> {
   void setTypeFilter(String? type) {
     state = state.copyWith(selectedType: type);
     logger.info('设置类型筛选: ${type ?? '全部'}');
-  }
-
-  /// 刷新数据
-  Future<void> refresh() async {
-    await loadKanaChart();
   }
 
   /// 清空错误

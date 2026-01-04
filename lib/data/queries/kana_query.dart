@@ -6,13 +6,9 @@ import '../models/kana_audio.dart';
 import '../models/kana_example.dart';
 import '../models/kana_learning_state.dart';
 import '../models/kana_letter.dart';
-import '../models/kana_log.dart';
 import '../models/kana_stroke_order.dart';
-import '../models/read/kana_accuracy.dart';
 import '../models/read/kana_detail.dart';
 import '../models/read/kana_group_item.dart';
-import '../models/read/kana_learning_stats.dart';
-import '../models/read/kana_log_item.dart';
 import '../models/read/kana_type_item.dart';
 
 /// Kana 相关只读查询的辅助类。
@@ -91,28 +87,19 @@ class KanaQuery {
     }
   }
 
-  /// 返回用户当前到期需要复习的学习状态记录。
-  ///
-  /// 到期条件：`learning_status` 为 `learning`，
-  /// 且 `next_review_at` 小于等于当前时间戳（秒）。
+  /// 返回用户当前处于 learning 状态的学习记录。
   Future<List<KanaLearningState>> getDueReviewKana(int userId) async {
     try {
-      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
       final results = await _db.query(
         'kana_learning_state',
-        where: '''
-          user_id = ? 
-          AND learning_status = ? 
-          AND next_review_at <= ?
-        ''',
-        whereArgs: [userId, LearningStatus.learning.value, nowSeconds],
-        orderBy: 'next_review_at ASC',
+        where: 'user_id = ? AND learning_status = ?',
+        whereArgs: [userId, LearningStatus.learning.value],
+        orderBy: 'updated_at DESC',
       );
 
       logger.dbQuery(
         table: 'kana_learning_state',
-        where: 'user_id = $userId, due review kana',
+        where: 'user_id = $userId, learning kana',
         resultCount: results.length,
       );
 
@@ -128,28 +115,24 @@ class KanaQuery {
     }
   }
 
-  /// 统计用户到期需要复习的学习状态数量。
-  ///
-  /// 规则同 [getDueReviewKana]。
+  /// 统计用户处于 learning 状态的学习数量。
   Future<int> countDueKanaReviews(int userId) async {
     try {
-      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final result = await _db.rawQuery(
         '''
         SELECT COUNT(*) AS cnt
         FROM kana_learning_state
         WHERE user_id = ?
           AND learning_status = ?
-          AND next_review_at <= ?
       ''',
-        [userId, LearningStatus.learning.value, nowSeconds],
+        [userId, LearningStatus.learning.value],
       );
 
       final count = (result.first['cnt'] as int?) ?? 0;
 
       logger.dbQuery(
         table: 'kana_learning_state',
-        where: 'user_id = $userId, due review count',
+        where: 'user_id = $userId, learning count',
         resultCount: 1,
       );
 
@@ -165,36 +148,54 @@ class KanaQuery {
     }
   }
 
-  /// 返回用户到期需要复习的 Kana 字符。
-  ///
-  /// 关联 `kana_letters` 与 `kana_learning_state`，
-  /// 过滤条件为 `learning_status = learning`，
-  /// 且 `next_review_at` 不为空并已到期。
-  Future<List<KanaLetter>> getKanaDueForReview(int userId) async {
+  /// 统计用户处于 mastered 状态的学习数量。
+  Future<int> countMasteredKana({required int userId}) async {
     try {
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-      final results = await _db.rawQuery(
+      final result = await _db.rawQuery(
         '''
-        SELECT kl.*
-        FROM kana_letters kl
-        INNER JOIN kana_learning_state kls ON kl.id = kls.kana_id
-        WHERE kls.user_id = ?
-          AND kls.learning_status = ?
-          AND kls.next_review_at IS NOT NULL
-          AND kls.next_review_at <= ?
-        ORDER BY kls.next_review_at ASC
+        SELECT COUNT(*) AS cnt
+        FROM kana_learning_state
+        WHERE user_id = ?
+          AND learning_status = ?
       ''',
-        [userId, LearningStatus.learning.value, now],
+        [userId, LearningStatus.mastered.value],
       );
+
+      final count = (result.first['cnt'] as int?) ?? 0;
 
       logger.dbQuery(
-        table: 'kana_letters + kana_learning_state',
-        where: 'user_id = $userId, due for review',
-        resultCount: results.length,
+        table: 'kana_learning_state',
+        where: 'user_id = $userId, mastered count',
+        resultCount: 1,
       );
 
-      return results.map((map) => KanaLetter.fromMap(map)).toList();
+      return count;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 统计全部 Kana 字符数量。
+  Future<int> countTotalKana() async {
+    try {
+      final result = await _db.rawQuery(
+        'SELECT COUNT(*) AS cnt FROM kana_letters',
+      );
+      final count = (result.first['cnt'] as int?) ?? 0;
+
+      logger.dbQuery(
+        table: 'kana_letters',
+        where: 'total count',
+        resultCount: 1,
+      );
+
+      return count;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
@@ -206,179 +207,35 @@ class KanaQuery {
     }
   }
 
-  /// 返回指定用户与 Kana 的日志列表，按时间倒序。
-  Future<List<KanaLogItem>> getKanaLogs(int userId, int kanaId) async {
+  /// 返回用户处于 learning 状态的 Kana 字符。
+  ///
+  /// 关联 `kana_letters` 与 `kana_learning_state`，
+  /// 过滤条件为 `learning_status = learning`。
+  Future<List<KanaLetter>> getKanaDueForReview(int userId) async {
     try {
-      final results = await _db.query(
-        'kana_logs',
-        where: 'user_id = ? AND kana_id = ?',
-        whereArgs: [userId, kanaId],
-        orderBy: 'created_at DESC',
+      final results = await _db.rawQuery(
+        '''
+        SELECT kl.*
+        FROM kana_letters kl
+        INNER JOIN kana_learning_state kls ON kl.id = kls.kana_id
+        WHERE kls.user_id = ?
+          AND kls.learning_status = ?
+        ORDER BY kl.sort_index ASC
+      ''',
+        [userId, LearningStatus.learning.value],
       );
 
       logger.dbQuery(
-        table: 'kana_logs',
-        where: 'user_id = $userId, kana_id = $kanaId',
+        table: 'kana_letters + kana_learning_state',
+        where: 'user_id = $userId, learning list',
         resultCount: results.length,
       );
 
-      return results
-          .map((map) => KanaLogItem.fromLog(KanaLog.fromMap(map)))
-          .toList();
+      return results.map((map) => KanaLetter.fromMap(map)).toList();
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
-        table: 'kana_logs',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 返回用户的日志列表，按时间倒序，可选限制数量。
-  Future<List<KanaLogItem>> getAllKanaLogs(int userId, {int? limit}) async {
-    try {
-      final results = await _db.query(
-        'kana_logs',
-        where: 'user_id = ?',
-        whereArgs: [userId],
-        orderBy: 'created_at DESC',
-        limit: limit,
-      );
-
-      logger.dbQuery(
-        table: 'kana_logs',
-        where: 'user_id = $userId',
-        resultCount: results.length,
-      );
-
-      return results
-          .map((map) => KanaLogItem.fromLog(KanaLog.fromMap(map)))
-          .toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'kana_logs',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 返回用户针对指定 Kana 最近一次复习的题型。
-  ///
-  /// 仅统计 `log_type = review` 且 `question_type` 非空的日志。
-  /// 若未找到记录或旧表结构缺少 `question_type` 列，则返回 null。
-  Future<String?> getLastKanaReviewQuestionType(int userId, int kanaId) async {
-    try {
-      final result = await _db.rawQuery(
-        '''
-        SELECT question_type 
-        FROM kana_logs 
-        WHERE user_id = ? 
-          AND kana_id = ? 
-          AND log_type = ? 
-          AND question_type IS NOT NULL
-        ORDER BY created_at DESC
-        LIMIT 1
-        ''',
-        [userId, kanaId, KanaLogType.review.index + 1],
-      );
-
-      if (result.isEmpty) return null;
-      return result.first['question_type'] as String?;
-    } catch (e, stackTrace) {
-      // ignore errors for legacy table without question_type
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'kana_logs.question_type',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
-
-  /// 基于日志评分统计用户在指定 Kana 上的正确率。
-  ///
-  /// 以 `rating >= 2` 视为正确，忽略 `rating` 为空的记录。
-  Future<KanaAccuracy> getKanaAccuracy(int userId, int kanaId) async {
-    try {
-      final result = await _db.rawQuery(
-        '''
-        SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN rating >= 2 THEN 1 ELSE 0 END) as correct_count
-        FROM kana_logs
-        WHERE user_id = ? AND kana_id = ? AND rating IS NOT NULL
-      ''',
-        [userId, kanaId],
-      );
-
-      logger.dbQuery(
-        table: 'kana_logs',
-        where: 'user_id = $userId, kana_id = $kanaId (accuracy)',
-        resultCount: 1,
-      );
-
-      final total = result.first['total'] as int;
-      final correctCount = result.first['correct_count'] as int? ?? 0;
-      final accuracy = total == 0 ? 0.0 : correctCount / total;
-
-      return KanaAccuracy(
-        total: total,
-        correct: correctCount,
-        accuracy: accuracy,
-      );
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'kana_logs',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 汇总用户在所有 Kana 上的日志类型统计数量。
-  Future<KanaLogStats> getKanaLogStats(int userId) async {
-    try {
-      final result = await _db.rawQuery(
-        '''
-        SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN log_type = 1 THEN 1 ELSE 0 END) as first_learn_count,
-          SUM(CASE WHEN log_type = 2 THEN 1 ELSE 0 END) as review_count,
-          SUM(CASE WHEN log_type = 3 THEN 1 ELSE 0 END) as mastered_count,
-          SUM(CASE WHEN log_type = 4 THEN 1 ELSE 0 END) as quiz_count,
-          SUM(CASE WHEN log_type = 5 THEN 1 ELSE 0 END) as forgot_count
-        FROM kana_logs
-        WHERE user_id = ?
-      ''',
-        [userId],
-      );
-
-      logger.dbQuery(
-        table: 'kana_logs',
-        where: 'user_id = $userId (stats)',
-        resultCount: 1,
-      );
-
-      return KanaLogStats(
-        total: result.first['total'] as int? ?? 0,
-        firstLearnCount: result.first['first_learn_count'] as int? ?? 0,
-        reviewCount: result.first['review_count'] as int? ?? 0,
-        masteredCount: result.first['mastered_count'] as int? ?? 0,
-        quizCount: result.first['quiz_count'] as int? ?? 0,
-        forgotCount: result.first['forgot_count'] as int? ?? 0,
-      );
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'kana_logs',
+        table: 'kana_letters',
         dbError: e,
         stackTrace: stackTrace,
       );
@@ -438,15 +295,6 @@ class KanaQuery {
           kls.id as state_id,
           kls.user_id as state_user_id,
           kls.learning_status,
-          kls.next_review_at,
-          kls.last_reviewed_at,
-          kls.streak,
-          kls.total_reviews,
-          kls.fail_count,
-          kls.interval,
-          kls.ease_factor,
-          kls.stability,
-          kls.difficulty,
           kls.created_at as state_created_at,
           kls.updated_at as state_updated_at
         FROM kana_letters kl
@@ -474,15 +322,6 @@ class KanaQuery {
             learningStatus:
                 LearningStatus.values[(map['learning_status'] as int? ?? 0)
                     .clamp(0, LearningStatus.values.length - 1)],
-            nextReviewAt: map['next_review_at'] as int?,
-            lastReviewedAt: map['last_reviewed_at'] as int?,
-            streak: map['streak'] as int? ?? 0,
-            totalReviews: map['total_reviews'] as int? ?? 0,
-            failCount: map['fail_count'] as int? ?? 0,
-            interval: (map['interval'] as num?)?.toDouble() ?? 0,
-            easeFactor: (map['ease_factor'] as num?)?.toDouble() ?? 2.5,
-            stability: (map['stability'] as num?)?.toDouble() ?? 0,
-            difficulty: (map['difficulty'] as num?)?.toDouble() ?? 0,
             createdAt: map['state_created_at'] as int?,
             updatedAt: map['state_updated_at'] as int?,
           );
@@ -494,50 +333,6 @@ class KanaQuery {
       logger.dbError(
         operation: 'SELECT',
         table: 'kana_letters + kana_learning_state',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 返回用户的学习统计：总数、已学、剩余。
-  Future<KanaLearningStats> getKanaLearningStats(int userId) async {
-    try {
-      final totalResult = await _db.rawQuery(
-        'SELECT COUNT(*) as count FROM kana_letters',
-      );
-      final total = totalResult.first['count'] as int;
-
-      final learnedResult = await _db.rawQuery(
-        '''
-        SELECT COUNT(*) as count 
-        FROM kana_learning_state 
-        WHERE user_id = ? AND learning_status IN (?, ?)
-        ''',
-        [
-          userId,
-          LearningStatus.learning.value,
-          LearningStatus.mastered.value,
-        ],
-      );
-      final learned = learnedResult.first['count'] as int;
-
-      logger.dbQuery(
-        table: 'kana_letters + kana_learning_state',
-        where: 'user_id = $userId, stats',
-        resultCount: 2,
-      );
-
-      return KanaLearningStats(
-        total: total,
-        learned: learned,
-        remaining: total - learned,
-      );
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'kana_letters',
         dbError: e,
         stackTrace: stackTrace,
       );

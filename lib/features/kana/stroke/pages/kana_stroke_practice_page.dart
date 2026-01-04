@@ -7,6 +7,7 @@ import 'package:xml/xml.dart';
 
 import '../../../../core/tracking/page_duration_tracking_mixin.dart';
 import '../../../../core/widgets/stroke_order_animator.dart';
+import '../../../../core/constants/learning_status.dart';
 import '../../../../data/models/kana_detail.dart';
 import '../../../../services/audio_service_provider.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -42,8 +43,7 @@ class KanaStrokePracticePage extends ConsumerStatefulWidget {
       _KanaStrokePracticePageState();
 }
 
-class _KanaStrokePracticePageState
-    extends ConsumerState<KanaStrokePracticePage>
+class _KanaStrokePracticePageState extends ConsumerState<KanaStrokePracticePage>
     with PageDurationTrackingMixin<KanaStrokePracticePage> {
   /// UI 状态：完整字形是否需要淡入
   bool _showFinalGlyph = false;
@@ -138,6 +138,7 @@ class _KanaStrokePracticePageState
   Widget build(BuildContext context) {
     final state = ref.watch(kanaStrokeControllerProvider);
     final kana = state.currentKana;
+    final learningState = state.learningState;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -153,25 +154,29 @@ class _KanaStrokePracticePageState
         ),
         actions: [
           IconButton(
-            tooltip: '已掌握',
-            icon: const Icon(Icons.check_circle_outline),
+            tooltip: learningState?.learningStatus == LearningStatus.mastered
+                ? '已掌握'
+                : '标记为已掌握',
+            icon: Icon(
+              learningState?.learningStatus == LearningStatus.mastered
+                  ? Icons.check_circle
+                  : Icons.check_circle_outline,
+              color: learningState?.learningStatus == LearningStatus.mastered
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey,
+            ),
             onPressed: () async {
+              final kanaId = ref
+                  .read(kanaStrokeControllerProvider)
+                  .currentKana
+                  ?.letter
+                  .id;
+              if (kanaId == null) return;
               await ref
                   .read(kanaStrokeControllerProvider.notifier)
-                  .markCurrentAsMastered();
+                  .toggleKanaMastered(kanaId);
               if (!mounted) return;
-              _showToast('已标记为已掌握');
-            },
-          ),
-          IconButton(
-            tooltip: '忽略',
-            icon: const Icon(Icons.block),
-            onPressed: () async {
-              await ref
-                  .read(kanaStrokeControllerProvider.notifier)
-                  .markCurrentAsIgnored();
-              if (!mounted) return;
-              _showToast('已标记为忽略');
+              _showToast('已更新掌握状态');
             },
           ),
         ],
@@ -284,9 +289,6 @@ class _KanaStrokePracticePageState
           onPressed: (audioFilename == null || audioFilename.isEmpty)
               ? null
               : () {
-                  ref
-                      .read(kanaStrokeControllerProvider.notifier)
-                      .recordLearningAction();
                   _playAudio(audioFilename);
                 },
           icon: const Icon(Icons.volume_up),
@@ -304,10 +306,7 @@ class _KanaStrokePracticePageState
   void _showToast(String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -361,9 +360,6 @@ class _KanaStrokePracticePageState
                         _showFinalGlyph = true;
                         _canPractice = true;
                       });
-                      ref
-                          .read(kanaStrokeControllerProvider.notifier)
-                          .recordLearningAction();
                     },
                   ),
                   if (guide != null)
@@ -423,7 +419,15 @@ class _KanaStrokePracticePageState
         ];
       },
       onAllCompleted: () {
-        ref.read(kanaStrokeControllerProvider.notifier).completePractice();
+        final kanaId = ref
+            .read(kanaStrokeControllerProvider)
+            .currentKana
+            ?.letter
+            .id;
+        if (kanaId == null) return;
+        ref
+            .read(kanaStrokeControllerProvider.notifier)
+            .onKanaTraceCompleted(kanaId);
       },
     );
   }

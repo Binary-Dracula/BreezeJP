@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../router/app_route_observer.dart';
 import '../controller/kana_chart_controller.dart';
 import '../state/kana_chart_state.dart';
 import '../widgets/kana_grid.dart';
@@ -13,22 +14,33 @@ class KanaChartPage extends ConsumerStatefulWidget {
 }
 
 class _KanaChartPageState extends ConsumerState<KanaChartPage>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, RouteAware {
   TabController? _tabController;
+  bool _routeObserverSubscribed = false;
 
   @override
-  void initState() {
-    super.initState();
-    // 加载数据
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(kanaChartControllerProvider.notifier).loadKanaChart();
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeObserverSubscribed) return;
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      appRouteObserver.subscribe(this, route);
+      _routeObserverSubscribed = true;
+    }
   }
 
   @override
   void dispose() {
+    if (_routeObserverSubscribed) {
+      appRouteObserver.unsubscribe(this);
+    }
     _tabController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    ref.read(kanaChartControllerProvider.notifier).loadKanaChart();
   }
 
   /// 更新 TabController
@@ -115,6 +127,9 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
 
   /// 学习进度条
   Widget _buildProgressBar(KanaChartState state) {
+    final progress = state.totalCount > 0
+        ? state.masteredCount / state.totalCount
+        : 0.0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: Colors.white,
@@ -129,7 +144,7 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: state.progressPercent,
+                value: progress,
                 backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).primaryColor,
@@ -140,7 +155,7 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
           ),
           const SizedBox(width: 12),
           Text(
-            '${state.learnedCount}/${state.totalCount}',
+            '${state.masteredCount}/${state.totalCount}',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -214,13 +229,6 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
           const Icon(Icons.error_outline, size: 48, color: Colors.grey),
           const SizedBox(height: 16),
           Text(error, style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              ref.read(kanaChartControllerProvider.notifier).loadKanaChart();
-            },
-            child: const Text('重试'),
-          ),
         ],
       ),
     );
