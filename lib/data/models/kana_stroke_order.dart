@@ -2,22 +2,19 @@
 class KanaStrokeOrder {
   final int id;
   final int? kanaId;
-  final String? hiraganaSvg;
-  final String? katakanaSvg;
+  final String? svg;
 
   KanaStrokeOrder({
     required this.id,
     this.kanaId,
-    this.hiraganaSvg,
-    this.katakanaSvg,
+    this.svg,
   });
 
   factory KanaStrokeOrder.fromMap(Map<String, dynamic> map) {
     return KanaStrokeOrder(
       id: map['id'],
       kanaId: map['kana_id'],
-      hiraganaSvg: map['hiragana_svg'],
-      katakanaSvg: map['katakana_svg'],
+      svg: map['svg'],
     );
   }
 
@@ -25,8 +22,7 @@ class KanaStrokeOrder {
     return {
       'id': id,
       'kana_id': kanaId,
-      'hiragana_svg': hiraganaSvg,
-      'katakana_svg': katakanaSvg,
+      'svg': svg,
     };
   }
 }

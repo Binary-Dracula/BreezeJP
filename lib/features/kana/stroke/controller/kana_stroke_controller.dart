@@ -146,9 +146,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
         return;
       }
 
-      final svg = state.displayMode == KanaDisplayMode.hiragana
-          ? strokeOrder?.hiraganaSvg
-          : strokeOrder?.katakanaSvg;
+      final svg = strokeOrder?.svg;
 
       state = state.copyWith(
         isLoading: false,

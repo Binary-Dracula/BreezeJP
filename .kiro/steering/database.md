@@ -433,8 +433,7 @@ ON kana_logs (user_id, kana_id, created_at);
 CREATE TABLE kana_stroke_order (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     kana_id    INTEGER REFERENCES kana_letters(id),  -- 关联假名
-    stroke_svg TEXT,                                  -- SVG 笔顺数据
-    created_at TEXT
+    svg TEXT
 );
 ```
 
