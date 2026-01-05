@@ -2,7 +2,6 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
 import '../models/kana_letter.dart';
-import '../models/kana_audio.dart';
 import '../models/kana_example.dart';
 import '../models/kana_learning_state.dart';
 import '../models/kana_stroke_order.dart';
@@ -23,7 +22,8 @@ class KanaRepository {
   Future<List<KanaLetter>> getAllKanaLetters() async {
     try {
       final db = await _db;
-      final results = await db.query('kana_letters', orderBy: 'sort_index ASC');
+      final results =
+          await db.query('kana_letters', orderBy: 'display_order ASC');
 
       logger.dbQuery(
         table: 'kana_letters',
@@ -80,14 +80,14 @@ class KanaRepository {
       final db = await _db;
       final results = await db.query(
         'kana_letters',
-        where: 'type = ?',
+        where: 'kana_category = ?',
         whereArgs: [type],
-        orderBy: 'sort_index ASC',
+        orderBy: 'display_order ASC',
       );
 
       logger.dbQuery(
         table: 'kana_letters',
-        where: 'type = $type',
+        where: 'kana_category = $type',
         resultCount: results.length,
       );
 
@@ -109,14 +109,14 @@ class KanaRepository {
       final db = await _db;
       final results = await db.query(
         'kana_letters',
-        where: 'kana_group = ?',
+        where: 'row_group = ?',
         whereArgs: [kanaGroup],
-        orderBy: 'sort_index ASC',
+        orderBy: 'display_order ASC',
       );
 
       logger.dbQuery(
         table: 'kana_letters',
-        where: 'kana_group = $kanaGroup',
+        where: 'row_group = $kanaGroup',
         resultCount: results.length,
       );
 
@@ -133,36 +133,6 @@ class KanaRepository {
   }
 
   // ==================== 假名音频 ====================
-
-  /// 获取假名的音频
-  Future<KanaAudio?> getKanaAudio(int kanaId) async {
-    try {
-      final db = await _db;
-      final results = await db.query(
-        'kana_audio',
-        where: 'kana_id = ?',
-        whereArgs: [kanaId],
-        limit: 1,
-      );
-
-      logger.dbQuery(
-        table: 'kana_audio',
-        where: 'kana_id = $kanaId',
-        resultCount: results.length,
-      );
-
-      if (results.isEmpty) return null;
-      return KanaAudio.fromMap(results.first);
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'kana_audio',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
 
   // ==================== 假名示例 ====================
 

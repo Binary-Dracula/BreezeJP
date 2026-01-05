@@ -141,7 +141,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
       if (state.currentKanaId != requestedKanaId) {
         return;
       }
-      final audio = await _kanaQuery.getKanaAudio(requestedKanaId);
+      final audio = await _kanaQuery.getKanaAudioByKanaId(requestedKanaId);
       if (state.currentKanaId != requestedKanaId) {
         return;
       }

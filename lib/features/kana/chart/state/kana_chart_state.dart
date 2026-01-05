@@ -47,14 +47,16 @@ class KanaChartState {
   /// 根据当前筛选获取假名列表
   List<KanaLetterWithState> get filteredKanaLetters {
     if (selectedType == null) return kanaLetters;
-    return kanaLetters.where((k) => k.letter.type == selectedType).toList();
+    return kanaLetters
+        .where((k) => k.letter.kanaCategory == selectedType)
+        .toList();
   }
 
   /// 按行分组的假名
   Map<String, List<KanaLetterWithState>> get groupedKanaLetters {
     final grouped = <String, List<KanaLetterWithState>>{};
     for (final kana in filteredKanaLetters) {
-      final group = kana.letter.kanaGroup ?? '其他';
+      final group = kana.letter.rowGroup ?? '其他';
       grouped.putIfAbsent(group, () => []).add(kana);
     }
     return grouped;

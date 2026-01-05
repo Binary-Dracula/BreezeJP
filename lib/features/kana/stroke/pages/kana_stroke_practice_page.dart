@@ -112,9 +112,7 @@ class _KanaStrokePracticePageState extends ConsumerState<KanaStrokePracticePage>
   String _displayText(KanaStrokeState state) {
     final kana = state.currentKana;
     if (kana == null) return '';
-    return state.displayMode == KanaDisplayMode.hiragana
-        ? kana.letter.hiragana ?? ''
-        : kana.letter.katakana ?? '';
+    return kana.letter.kanaChar;
   }
 
   void _playAudio(String? audioFilename) {

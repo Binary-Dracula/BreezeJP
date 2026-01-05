@@ -511,7 +511,8 @@ class MatchingController extends Notifier<MatchingState> {
         continue;
       }
 
-      final audio = await _kanaQuery.getKanaAudio(learningState.kanaId);
+      final audio =
+          await _kanaQuery.getKanaAudioByKanaId(learningState.kanaId);
       final questionType = _chooseQuestionType(learningState);
 
       items.add(
@@ -540,15 +541,8 @@ class MatchingController extends Notifier<MatchingState> {
     }
   }
 
-  /// 根据假名字母模型，决定在 UI 中显示的字符（平/片假名）。
-  ///
-  /// - preferKatakana=true：优先显示片假名（例如该条目缺失 hiragana 时）
-  String _kanaDisplay(KanaLetter letter, {bool preferKatakana = false}) {
-    if (preferKatakana) {
-      return letter.katakana ?? letter.hiragana ?? '';
-    }
-    return letter.hiragana ?? letter.katakana ?? '';
-  }
+  /// 根据假名字母模型，决定在 UI 中显示的字符。
+  String _kanaDisplay(KanaLetter letter) => letter.kanaChar;
 
   String _leftValueForItem(ReviewKanaItem item) {
     switch (item.questionType) {
@@ -564,22 +558,11 @@ class MatchingController extends Notifier<MatchingState> {
   String _rightValueForItem(ReviewKanaItem item) {
     switch (item.questionType) {
       case ReviewQuestionType.recall:
-        return item.kanaLetter.romaji ?? '';
+        return item.kanaLetter.romaji;
       case ReviewQuestionType.audio:
-        final preferKatakana =
-            item.kanaLetter.hiragana == null &&
-            item.kanaLetter.katakana != null;
-        return _kanaDisplay(item.kanaLetter, preferKatakana: preferKatakana);
+        return _kanaDisplay(item.kanaLetter);
       case ReviewQuestionType.switchMode:
-        final hiragana = item.kanaLetter.hiragana;
-        final katakana = item.kanaLetter.katakana;
-        if (hiragana != null &&
-            hiragana.isNotEmpty &&
-            katakana != null &&
-            katakana.isNotEmpty) {
-          return katakana;
-        }
-        return katakana ?? hiragana ?? '';
+        return _kanaDisplay(item.kanaLetter);
     }
   }
 

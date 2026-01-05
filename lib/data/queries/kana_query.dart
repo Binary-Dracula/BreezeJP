@@ -21,25 +21,25 @@ class KanaQuery {
   final Database _db;
 
   /// 从 `kana_letters` 中返回去重后的分组名称，
-  /// 并按每个分组内最早的 `sort_index` 排序。
+  /// 并按每个分组内最早的 `display_order` 排序。
   Future<List<KanaGroupItem>> getAllKanaGroups() async {
     try {
       final results = await _db.rawQuery('''
-        SELECT DISTINCT kana_group
+        SELECT DISTINCT row_group
         FROM kana_letters
-        WHERE kana_group IS NOT NULL
-        ORDER BY MIN(sort_index)
+        WHERE row_group IS NOT NULL
+        ORDER BY MIN(display_order)
       ''');
 
       logger.dbQuery(
         table: 'kana_letters',
-        where: 'DISTINCT kana_group',
+        where: 'DISTINCT row_group',
         resultCount: results.length,
       );
 
       return results
           .map(
-            (map) => KanaGroupItem(group: map['kana_group'] as String),
+            (map) => KanaGroupItem(group: map['row_group'] as String),
           )
           .toList();
     } catch (e, stackTrace) {
@@ -54,26 +54,26 @@ class KanaQuery {
   }
 
   /// 从 `kana_letters` 中返回去重后的类型，
-  /// 并按每个类型内最早的 `sort_index` 排序。
+  /// 并按每个类型内最早的 `display_order` 排序。
   Future<List<KanaTypeItem>> getAllKanaTypes() async {
     try {
       final results = await _db.rawQuery('''
-        SELECT DISTINCT type
+        SELECT DISTINCT kana_category
         FROM kana_letters
-        WHERE type IS NOT NULL
-        GROUP BY type
-        ORDER BY MIN(sort_index)
+        WHERE kana_category IS NOT NULL
+        GROUP BY kana_category
+        ORDER BY MIN(display_order)
       ''');
 
       logger.dbQuery(
         table: 'kana_letters',
-        where: 'DISTINCT type',
+        where: 'DISTINCT kana_category',
         resultCount: results.length,
       );
 
       return results
           .map(
-            (map) => KanaTypeItem(type: map['type'] as String),
+            (map) => KanaTypeItem(type: map['kana_category'] as String),
           )
           .toList();
     } catch (e, stackTrace) {
@@ -220,7 +220,7 @@ class KanaQuery {
         INNER JOIN kana_learning_state kls ON kl.id = kls.kana_id
         WHERE kls.user_id = ?
           AND kls.learning_status = ?
-        ORDER BY kl.sort_index ASC
+        ORDER BY kl.display_order ASC
       ''',
         [userId, LearningStatus.learning.value],
       );
@@ -254,13 +254,13 @@ class KanaQuery {
         return null;
       }
 
-      final audio = await getKanaAudio(kanaId);
+      final audio = await getKanaAudioByKanaId(kanaId);
       final examples = await _getKanaExamples(kanaId);
       final learningState = await getKanaLearningState(userId, kanaId);
       final strokeOrder = await getKanaStrokeOrder(kanaId);
 
       logger.info(
-        'Kana detail loaded: ${letter.hiragana ?? letter.katakana} (${examples.length} examples)',
+        'Kana detail loaded: ${letter.kanaChar} (${examples.length} examples)',
       );
 
       return KanaDetail(
@@ -299,7 +299,7 @@ class KanaQuery {
           kls.updated_at as state_updated_at
         FROM kana_letters kl
         LEFT JOIN kana_learning_state kls ON kl.id = kls.kana_id AND kls.user_id = ?
-        ORDER BY kl.sort_index ASC
+        ORDER BY kl.display_order ASC
       ''',
         [userId],
       );
@@ -341,27 +341,32 @@ class KanaQuery {
   }
 
   /// 返回指定 Kana 的音频记录（如存在）。
-  Future<KanaAudio?> getKanaAudio(int kanaId) async {
+  Future<KanaAudio?> getKanaAudioByKanaId(int kanaId) async {
     try {
-      final results = await _db.query(
-        'kana_audio',
-        where: 'kana_id = ?',
-        whereArgs: [kanaId],
-        limit: 1,
+      final results = await _db.rawQuery(
+        '''
+        SELECT ka.*
+        FROM kana_letters kl
+        LEFT JOIN kana_audio ka ON ka.id = kl.audio_id
+        WHERE kl.id = ?
+        LIMIT 1
+      ''',
+        [kanaId],
       );
 
       logger.dbQuery(
-        table: 'kana_audio',
+        table: 'kana_letters + kana_audio',
         where: 'kana_id = $kanaId',
         resultCount: results.length,
       );
 
-      if (results.isEmpty) return null;
-      return KanaAudio.fromMap(results.first);
+      final row = results.isNotEmpty ? results.first : null;
+      if (row == null || row['id'] == null) return null;
+      return KanaAudio.fromMap(row);
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
-        table: 'kana_audio',
+        table: 'kana_letters + kana_audio',
         dbError: e,
         stackTrace: stackTrace,
       );

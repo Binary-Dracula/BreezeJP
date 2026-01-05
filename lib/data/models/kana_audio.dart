@@ -1,25 +1,22 @@
 /// 五十音发音音频模型
 class KanaAudio {
   final int id;
-  final int? kanaId;
-  final String? audioFilename;
-  final String? source;
-  final String? createdAt;
+  final String audioFilename;
+  final String? audioSource;
+  final String createdAt;
 
   KanaAudio({
     required this.id,
-    this.kanaId,
-    this.audioFilename,
-    this.source,
-    this.createdAt,
+    required this.audioFilename,
+    this.audioSource,
+    required this.createdAt,
   });
 
   factory KanaAudio.fromMap(Map<String, dynamic> map) {
     return KanaAudio(
       id: map['id'],
-      kanaId: map['kana_id'],
       audioFilename: map['audio_filename'],
-      source: map['source'],
+      audioSource: map['audio_source'],
       createdAt: map['created_at'],
     );
   }
@@ -27,9 +24,8 @@ class KanaAudio {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'kana_id': kanaId,
       'audio_filename': audioFilename,
-      'source': source,
+      'audio_source': audioSource,
       'created_at': createdAt,
     };
   }

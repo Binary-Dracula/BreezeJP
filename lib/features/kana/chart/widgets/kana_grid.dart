@@ -122,7 +122,7 @@ class KanaGrid extends ConsumerWidget {
     // 按行分组
     final groupedByRow = <String, List<KanaLetterWithState>>{};
     for (final kana in kanaLetters) {
-      final group = kana.letter.kanaGroup ?? 'other';
+      final group = kana.letter.rowGroup ?? 'other';
       groupedByRow.putIfAbsent(group, () => []).add(kana);
     }
 
@@ -186,7 +186,7 @@ class KanaGrid extends ConsumerWidget {
     // 按行分组
     final groupedByRow = <String, List<KanaLetterWithState>>{};
     for (final kana in kanaLetters) {
-      final group = kana.letter.kanaGroup ?? 'other';
+      final group = kana.letter.rowGroup ?? 'other';
       groupedByRow.putIfAbsent(group, () => []).add(kana);
     }
 
@@ -390,9 +390,7 @@ class KanaGrid extends ConsumerWidget {
     KanaLetterWithState kana, {
     double? size,
   }) {
-    final displayText = displayMode == KanaDisplayMode.hiragana
-        ? kana.letter.hiragana
-        : kana.letter.katakana;
+    final displayText = kana.letter.kanaChar;
 
     final isLearned = kana.isMastered;
 
@@ -433,7 +431,7 @@ class KanaGrid extends ConsumerWidget {
           const SizedBox(height: 2),
           // 罗马音
           Text(
-            kana.letter.romaji ?? '',
+            kana.letter.romaji,
             style: TextStyle(
               fontSize: 10,
               color: isLearned

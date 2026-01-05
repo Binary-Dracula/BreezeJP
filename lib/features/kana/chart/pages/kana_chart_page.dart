@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../router/app_route_observer.dart';
+import '../../../../data/models/kana_letter.dart';
 import '../controller/kana_chart_controller.dart';
 import '../state/kana_chart_state.dart';
 import '../widgets/kana_grid.dart';
@@ -199,9 +200,17 @@ class _KanaChartPageState extends ConsumerState<KanaChartPage>
 
   /// 构建单个 Tab 内容
   Widget _buildKanaTabContent(KanaChartState state, String type) {
+    final scriptKind = state.displayMode == KanaDisplayMode.hiragana
+        ? KanaScriptKind.hiragana
+        : KanaScriptKind.katakana;
+
     // 过滤当前类型的假名
     final filteredKana = state.kanaLetters
-        .where((k) => k.letter.type == type)
+        .where(
+          (k) =>
+              k.letter.kanaCategory == type &&
+              k.letter.scriptKind == scriptKind,
+        )
         .toList();
 
     if (filteredKana.isEmpty) {
