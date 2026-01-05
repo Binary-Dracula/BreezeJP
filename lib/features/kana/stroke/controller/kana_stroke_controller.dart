@@ -213,16 +213,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
       return;
     }
 
-    final updatedKanaLetters = state.kanaLetters.map((item) {
-      if (item.letter.id != requestedKanaId) return item;
-      return KanaLetterWithState(
-        letter: item.letter,
-        learningState: learningState,
-      );
-    }).toList();
-
     state = state.copyWith(
-      kanaLetters: updatedKanaLetters,
       currentKanaId: requestedKanaId,
       learningState: learningState,
     );
