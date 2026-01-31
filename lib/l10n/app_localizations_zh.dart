@@ -244,6 +244,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tapToShowAnswer => '点击查看释义';
 
   @override
+  String get wordReviewTitle => '复习单词';
+
+  @override
+  String get wordReviewEmpty => '暂无待复习单词';
+
+  @override
+  String get wordReviewFinished => '今日单词复习已完成';
+
+  @override
+  String get wordReviewTitleWordMeaning => '单词 → 释义（配对）';
+
+  @override
+  String get wordReviewSubtitleWordMeaning => '点击单词 → 点击正确释义';
+
+  @override
+  String get wordReviewTitleMeaningWord => '释义 → 单词（配对）';
+
+  @override
+  String get wordReviewSubtitleMeaningWord => '点击释义 → 点击正确单词';
+
+  @override
+  String get wordReviewTitleAudioWord => '听音辨单词（配对）';
+
+  @override
+  String get wordReviewSubtitleAudioWord => '点击音频 → 点击对应单词';
+
+  @override
+  String get wordReviewTitleReadingWord => '读音 → 单词（配对）';
+
+  @override
+  String get wordReviewSubtitleReadingWord => '点击读音 → 点击对应单词';
+
+  @override
   String get nextWord => '下一个';
 
   @override

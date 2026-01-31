@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/algorithm/algorithm_service.dart';
 import '../../core/algorithm/algorithm_service_provider.dart';
 import '../../core/algorithm/srs_types.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import 'daily_stat_command.dart';
@@ -217,6 +218,84 @@ class WordCommand {
     await _enterLearningStateOnly(userId, wordId);
   }
 
+  /// 记录一次复习并更新 SRS 状态。
+  Future<void> onWordReviewed({
+    required int userId,
+    required int wordId,
+    required ReviewRating rating,
+    int durationMs = 0,
+    AlgorithmType? algorithmType,
+  }) async {
+    final existing = await _repo.getStudyWord(userId, wordId);
+    if (existing == null) {
+      logger.warning('单词学习状态不存在: userId=$userId, wordId=$wordId');
+      return;
+    }
+    if (existing.userState != LearningStatus.learning) {
+      logger.warning(
+        '[WordState] ignore review: wordId=$wordId userId=$userId state=${existing.userState.name}',
+      );
+      return;
+    }
+
+    final now = DateTime.now();
+    final resolvedAlgorithm =
+        algorithmType ?? _algorithmService.defaultAlgorithm;
+    final lastReviewedAt = existing.lastReviewedAt;
+    final elapsedSeconds = lastReviewedAt == null
+        ? 0
+        : now.difference(lastReviewedAt).inSeconds;
+    final double elapsedDays = elapsedSeconds <= 0
+        ? 0.0
+        : elapsedSeconds / 86400.0;
+    final input = SRSInput(
+      interval: (existing.interval ?? 0).toDouble(),
+      easeFactor: existing.easeFactor ?? AppConstants.defaultEaseFactor,
+      stability: existing.stability ?? 0,
+      difficulty: existing.difficulty ?? 0,
+      reviews: existing.totalReviews,
+      lapses: existing.failCount,
+      rating: rating,
+      elapsedDays: elapsedDays,
+    );
+    final output = _algorithmService.calculate(
+      algorithmType: resolvedAlgorithm,
+      input: input,
+    );
+
+    final totalReviews = existing.totalReviews + 1;
+    final failCount = existing.failCount + (rating.isCorrect ? 0 : 1);
+    final streak = rating.isCorrect ? existing.streak + 1 : 0;
+
+    final updated = existing.copyWith(
+      nextReviewAt: output.nextReviewAt,
+      lastReviewedAt: now,
+      interval: output.interval.round(),
+      easeFactor: output.easeFactor,
+      stability: output.stability,
+      difficulty: output.difficulty,
+      streak: streak,
+      totalReviews: totalReviews,
+      failCount: failCount,
+      updatedAt: now,
+    );
+
+    await _repo.updateStudyWord(updated);
+
+    await _studyLogCommand.logReview(
+      userId: userId,
+      wordId: wordId,
+      rating: rating,
+      durationMs: durationMs,
+      intervalAfter: output.interval,
+      easeFactorAfter: output.easeFactor,
+      nextReviewAtAfter: output.nextReviewAt,
+      algorithm: AlgorithmService.getAlgorithmValue(resolvedAlgorithm),
+      fsrsStabilityAfter: output.stability,
+      fsrsDifficultyAfter: output.difficulty,
+    );
+  }
+
   /// 进入学习阶段（仅状态迁移，不写 firstLearn）
   Future<_LearningEntryContext> _enterLearningStateOnly(
     int userId,
@@ -373,10 +452,7 @@ class WordCommand {
   }
 
   /// 恢复学习（mastered / ignored -> seen）
-  Future<void> restoreToSeen({
-    required int userId,
-    required int wordId,
-  }) async {
+  Future<void> restoreToSeen({required int userId, required int wordId}) async {
     try {
       final existing = await _repo.getStudyWord(userId, wordId);
       if (existing == null) {
@@ -398,9 +474,7 @@ class WordCommand {
         ),
       );
 
-      logger.info(
-        '[WordState] wordId=$wordId userId=$userId restore -> seen',
-      );
+      logger.info('[WordState] wordId=$wordId userId=$userId restore -> seen');
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',

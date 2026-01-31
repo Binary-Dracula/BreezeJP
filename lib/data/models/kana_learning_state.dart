@@ -1,6 +1,7 @@
+import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
 
-/// 五十音学习状态模型（仅状态，不含 SRS 字段）
+/// 五十音学习状态模型（含 SRS 字段）
 class KanaLearningState {
   final int id;
   final int userId;
@@ -8,6 +9,33 @@ class KanaLearningState {
 
   /// 学习状态：learning / mastered
   final LearningStatus learningStatus;
+
+  /// 下次复习时间 (Unix 时间戳)
+  final int? nextReviewAt;
+
+  /// 上次复习时间 (Unix 时间戳)
+  final int? lastReviewedAt;
+
+  /// 连续答对次数
+  final int streak;
+
+  /// 累计复习次数
+  final int totalReviews;
+
+  /// 累计失败次数
+  final int failCount;
+
+  /// 当前间隔（天, SM-2/FSRS）
+  final double interval;
+
+  /// 当前 Ease Factor (SM-2)
+  final double easeFactor;
+
+  /// 当前 Stability (FSRS)
+  final double stability;
+
+  /// 当前 Difficulty (FSRS)
+  final double difficulty;
 
   /// 创建时间 (Unix 时间戳)
   final int createdAt;
@@ -20,6 +48,15 @@ class KanaLearningState {
     required this.userId,
     required this.kanaId,
     this.learningStatus = LearningStatus.learning,
+    this.nextReviewAt,
+    this.lastReviewedAt,
+    this.streak = 0,
+    this.totalReviews = 0,
+    this.failCount = 0,
+    this.interval = 0,
+    this.easeFactor = AppConstants.defaultEaseFactor,
+    this.stability = 0,
+    this.difficulty = 0,
     int? createdAt,
     int? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -40,6 +77,17 @@ class KanaLearningState {
       userId: map['user_id'] as int,
       kanaId: map['kana_id'] as int,
       learningStatus: LearningStatus.values[statusValue],
+      nextReviewAt: map['next_review_at'] as int?,
+      lastReviewedAt: map['last_reviewed_at'] as int?,
+      streak: map['streak'] as int? ?? 0,
+      totalReviews: map['total_reviews'] as int? ?? 0,
+      failCount: map['fail_count'] as int? ?? 0,
+      interval: (map['interval'] as num?)?.toDouble() ?? 0,
+      easeFactor:
+          (map['ease_factor'] as num?)?.toDouble() ??
+          AppConstants.defaultEaseFactor,
+      stability: (map['stability'] as num?)?.toDouble() ?? 0,
+      difficulty: (map['difficulty'] as num?)?.toDouble() ?? 0,
       createdAt: map['created_at'] as int?,
       updatedAt: map['updated_at'] as int?,
     );
@@ -51,6 +99,15 @@ class KanaLearningState {
       'user_id': userId,
       'kana_id': kanaId,
       'learning_status': learningStatus.value,
+      'next_review_at': nextReviewAt,
+      'last_reviewed_at': lastReviewedAt,
+      'streak': streak,
+      'total_reviews': totalReviews,
+      'fail_count': failCount,
+      'interval': interval,
+      'ease_factor': easeFactor,
+      'stability': stability,
+      'difficulty': difficulty,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
@@ -69,6 +126,15 @@ class KanaLearningState {
     int? userId,
     int? kanaId,
     LearningStatus? learningStatus,
+    int? nextReviewAt,
+    int? lastReviewedAt,
+    int? streak,
+    int? totalReviews,
+    int? failCount,
+    double? interval,
+    double? easeFactor,
+    double? stability,
+    double? difficulty,
     int? createdAt,
     int? updatedAt,
   }) {
@@ -77,6 +143,15 @@ class KanaLearningState {
       userId: userId ?? this.userId,
       kanaId: kanaId ?? this.kanaId,
       learningStatus: learningStatus ?? this.learningStatus,
+      nextReviewAt: nextReviewAt ?? this.nextReviewAt,
+      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
+      streak: streak ?? this.streak,
+      totalReviews: totalReviews ?? this.totalReviews,
+      failCount: failCount ?? this.failCount,
+      interval: interval ?? this.interval,
+      easeFactor: easeFactor ?? this.easeFactor,
+      stability: stability ?? this.stability,
+      difficulty: difficulty ?? this.difficulty,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

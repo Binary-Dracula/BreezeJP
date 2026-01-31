@@ -342,6 +342,50 @@
   "@tapToShowAnswer": {
     "description": "复习模式提示点击查看答案"
   },
+  "wordReviewTitle": "复习单词",
+  "@wordReviewTitle": {
+    "description": "单词复习页面标题"
+  },
+  "wordReviewEmpty": "暂无待复习单词",
+  "@wordReviewEmpty": {
+    "description": "单词复习空状态"
+  },
+  "wordReviewFinished": "今日单词复习已完成",
+  "@wordReviewFinished": {
+    "description": "单词复习完成提示"
+  },
+  "wordReviewTitleWordMeaning": "单词 → 释义（配对）",
+  "@wordReviewTitleWordMeaning": {
+    "description": "单词复习题型标题-单词到释义"
+  },
+  "wordReviewSubtitleWordMeaning": "点击单词 → 点击正确释义",
+  "@wordReviewSubtitleWordMeaning": {
+    "description": "单词复习题型说明-单词到释义"
+  },
+  "wordReviewTitleMeaningWord": "释义 → 单词（配对）",
+  "@wordReviewTitleMeaningWord": {
+    "description": "单词复习题型标题-释义到单词"
+  },
+  "wordReviewSubtitleMeaningWord": "点击释义 → 点击正确单词",
+  "@wordReviewSubtitleMeaningWord": {
+    "description": "单词复习题型说明-释义到单词"
+  },
+  "wordReviewTitleAudioWord": "听音辨单词（配对）",
+  "@wordReviewTitleAudioWord": {
+    "description": "单词复习题型标题-听音到单词"
+  },
+  "wordReviewSubtitleAudioWord": "点击音频 → 点击对应单词",
+  "@wordReviewSubtitleAudioWord": {
+    "description": "单词复习题型说明-听音到单词"
+  },
+  "wordReviewTitleReadingWord": "读音 → 单词（配对）",
+  "@wordReviewTitleReadingWord": {
+    "description": "单词复习题型标题-读音到单词"
+  },
+  "wordReviewSubtitleReadingWord": "点击读音 → 点击对应单词",
+  "@wordReviewSubtitleReadingWord": {
+    "description": "单词复习题型说明-读音到单词"
+  },
   "nextWord": "下一个",
   "@nextWord": {
     "description": "学习模式下一个单词按钮"

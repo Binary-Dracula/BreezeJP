@@ -520,6 +520,72 @@ abstract class AppLocalizations {
   /// **'点击查看释义'**
   String get tapToShowAnswer;
 
+  /// 单词复习页面标题
+  ///
+  /// In zh, this message translates to:
+  /// **'复习单词'**
+  String get wordReviewTitle;
+
+  /// 单词复习空状态
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无待复习单词'**
+  String get wordReviewEmpty;
+
+  /// 单词复习完成提示
+  ///
+  /// In zh, this message translates to:
+  /// **'今日单词复习已完成'**
+  String get wordReviewFinished;
+
+  /// 单词复习题型标题-单词到释义
+  ///
+  /// In zh, this message translates to:
+  /// **'单词 → 释义（配对）'**
+  String get wordReviewTitleWordMeaning;
+
+  /// 单词复习题型说明-单词到释义
+  ///
+  /// In zh, this message translates to:
+  /// **'点击单词 → 点击正确释义'**
+  String get wordReviewSubtitleWordMeaning;
+
+  /// 单词复习题型标题-释义到单词
+  ///
+  /// In zh, this message translates to:
+  /// **'释义 → 单词（配对）'**
+  String get wordReviewTitleMeaningWord;
+
+  /// 单词复习题型说明-释义到单词
+  ///
+  /// In zh, this message translates to:
+  /// **'点击释义 → 点击正确单词'**
+  String get wordReviewSubtitleMeaningWord;
+
+  /// 单词复习题型标题-听音到单词
+  ///
+  /// In zh, this message translates to:
+  /// **'听音辨单词（配对）'**
+  String get wordReviewTitleAudioWord;
+
+  /// 单词复习题型说明-听音到单词
+  ///
+  /// In zh, this message translates to:
+  /// **'点击音频 → 点击对应单词'**
+  String get wordReviewSubtitleAudioWord;
+
+  /// 单词复习题型标题-读音到单词
+  ///
+  /// In zh, this message translates to:
+  /// **'读音 → 单词（配对）'**
+  String get wordReviewTitleReadingWord;
+
+  /// 单词复习题型说明-读音到单词
+  ///
+  /// In zh, this message translates to:
+  /// **'点击读音 → 点击对应单词'**
+  String get wordReviewSubtitleReadingWord;
+
   /// 学习模式下一个单词按钮
   ///
   /// In zh, this message translates to:

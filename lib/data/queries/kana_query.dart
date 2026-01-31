@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/kana_audio.dart';
@@ -90,16 +91,19 @@ class KanaQuery {
   /// 返回用户当前处于 learning 状态的学习记录。
   Future<List<KanaLearningState>> getDueReviewKana(int userId) async {
     try {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final results = await _db.query(
         'kana_learning_state',
-        where: 'user_id = ? AND learning_status = ?',
-        whereArgs: [userId, LearningStatus.learning.value],
-        orderBy: 'updated_at DESC',
+        where:
+            'user_id = ? AND learning_status = ? '
+            'AND (next_review_at IS NULL OR next_review_at <= ?)',
+        whereArgs: [userId, LearningStatus.learning.value, now],
+        orderBy: 'next_review_at ASC',
       );
 
       logger.dbQuery(
         table: 'kana_learning_state',
-        where: 'user_id = $userId, learning kana',
+        where: 'user_id = $userId, learning kana, next_review_at <= $now',
         resultCount: results.length,
       );
 
@@ -118,21 +122,23 @@ class KanaQuery {
   /// 统计用户处于 learning 状态的学习数量。
   Future<int> countDueKanaReviews(int userId) async {
     try {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final result = await _db.rawQuery(
         '''
         SELECT COUNT(*) AS cnt
         FROM kana_learning_state
         WHERE user_id = ?
           AND learning_status = ?
+          AND (next_review_at IS NULL OR next_review_at <= ?)
       ''',
-        [userId, LearningStatus.learning.value],
+        [userId, LearningStatus.learning.value, now],
       );
 
       final count = (result.first['cnt'] as int?) ?? 0;
 
       logger.dbQuery(
         table: 'kana_learning_state',
-        where: 'user_id = $userId, learning count',
+        where: 'user_id = $userId, learning count, next_review_at <= $now',
         resultCount: 1,
       );
 
@@ -213,6 +219,7 @@ class KanaQuery {
   /// 过滤条件为 `learning_status = learning`。
   Future<List<KanaLetter>> getKanaDueForReview(int userId) async {
     try {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final results = await _db.rawQuery(
         '''
         SELECT kl.*
@@ -220,14 +227,15 @@ class KanaQuery {
         INNER JOIN kana_learning_state kls ON kl.id = kls.kana_id
         WHERE kls.user_id = ?
           AND kls.learning_status = ?
-        ORDER BY kl.display_order ASC
+          AND (kls.next_review_at IS NULL OR kls.next_review_at <= ?)
+        ORDER BY kls.next_review_at ASC, kl.display_order ASC
       ''',
-        [userId, LearningStatus.learning.value],
+        [userId, LearningStatus.learning.value, now],
       );
 
       logger.dbQuery(
         table: 'kana_letters + kana_learning_state',
-        where: 'user_id = $userId, learning list',
+        where: 'user_id = $userId, learning list, next_review_at <= $now',
         resultCount: results.length,
       );
 
@@ -295,6 +303,15 @@ class KanaQuery {
           kls.id as state_id,
           kls.user_id as state_user_id,
           kls.learning_status,
+          kls.next_review_at as state_next_review_at,
+          kls.last_reviewed_at as state_last_reviewed_at,
+          kls.streak as state_streak,
+          kls.total_reviews as state_total_reviews,
+          kls.fail_count as state_fail_count,
+          kls.interval as state_interval,
+          kls.ease_factor as state_ease_factor,
+          kls.stability as state_stability,
+          kls.difficulty as state_difficulty,
           kls.created_at as state_created_at,
           kls.updated_at as state_updated_at
         FROM kana_letters kl
@@ -322,6 +339,17 @@ class KanaQuery {
             learningStatus:
                 LearningStatus.values[(map['learning_status'] as int? ?? 0)
                     .clamp(0, LearningStatus.values.length - 1)],
+            nextReviewAt: map['state_next_review_at'] as int?,
+            lastReviewedAt: map['state_last_reviewed_at'] as int?,
+            streak: map['state_streak'] as int? ?? 0,
+            totalReviews: map['state_total_reviews'] as int? ?? 0,
+            failCount: map['state_fail_count'] as int? ?? 0,
+            interval: (map['state_interval'] as num?)?.toDouble() ?? 0,
+            easeFactor:
+                (map['state_ease_factor'] as num?)?.toDouble() ??
+                AppConstants.defaultEaseFactor,
+            stability: (map['state_stability'] as num?)?.toDouble() ?? 0,
+            difficulty: (map['state_difficulty'] as num?)?.toDouble() ?? 0,
             createdAt: map['state_created_at'] as int?,
             updatedAt: map['state_updated_at'] as int?,
           );

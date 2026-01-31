@@ -4,9 +4,12 @@ import '../state/matching_state.dart';
 import '../state/review_kana_item.dart';
 import '../../../../data/models/kana_letter.dart';
 import '../../../../data/models/kana_learning_state.dart';
+import '../../../../data/models/study_log.dart';
 import '../../../../data/models/user.dart';
 import '../../../../data/commands/active_user_command.dart';
 import '../../../../data/commands/active_user_command_provider.dart';
+import '../../../../data/commands/kana_command.dart';
+import '../../../../data/commands/kana_command_provider.dart';
 import '../../../../data/queries/active_user_query.dart';
 import '../../../../data/queries/active_user_query_provider.dart';
 import '../../../../data/queries/kana_query.dart';
@@ -45,6 +48,7 @@ class MatchingController extends Notifier<MatchingState> {
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
+  KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
 
   /// 待复习队列按题型拆分后的缓存：
   /// - startReview 时一次性分组
@@ -55,6 +59,7 @@ class MatchingController extends Notifier<MatchingState> {
 
   /// 防止「选中左右 → 判定 → 落库/补位」流程重入（例如连点导致多次触发）。
   bool _isResolvingSelection = false;
+  final Set<int> _mistakeKanaIds = {};
 
   @override
   /// Riverpod Notifier 的 build 仅返回初始 State。
@@ -72,6 +77,7 @@ class MatchingController extends Notifier<MatchingState> {
     _audioGroup = [];
     _switchModeGroup = [];
     _recallGroup = [];
+    _mistakeKanaIds.clear();
   }
 
   /// 统一的「进入 Session 初始化态」状态写入。
@@ -105,6 +111,7 @@ class MatchingController extends Notifier<MatchingState> {
   Future<void> loadReview() async {
     try {
       _setSessionBootstrapState(isLoading: true, isEmpty: false);
+      _mistakeKanaIds.clear();
 
       // 1) 获取当前用户
       final user = await _getActiveUser();
@@ -286,6 +293,7 @@ class MatchingController extends Notifier<MatchingState> {
     // 关键判定逻辑：左侧 index 必须等于右侧选项的 pairIndex。
     final isCorrect = selectedLeftIndex == rightPairIndex;
     if (!isCorrect) {
+      _mistakeKanaIds.add(pair.item.kanaLetter.id);
       _isResolvingSelection = true;
       try {
         await Future.delayed(const Duration(milliseconds: 420));
@@ -317,6 +325,8 @@ class MatchingController extends Notifier<MatchingState> {
   }) async {
     final activePairs = List<MatchingPair>.from(state.activePairs);
     if (pairIndex < 0 || pairIndex >= activePairs.length) return;
+
+    await _applyReviewResult(pair.item);
 
     final remaining = List<ReviewKanaItem>.from(state.remainingItems);
 
@@ -543,6 +553,16 @@ class MatchingController extends Notifier<MatchingState> {
 
   /// 根据假名字母模型，决定在 UI 中显示的字符。
   String _kanaDisplay(KanaLetter letter) => letter.kanaChar;
+
+  Future<void> _applyReviewResult(ReviewKanaItem item) async {
+    final hadMistake = _mistakeKanaIds.remove(item.kanaLetter.id);
+    final rating = hadMistake ? ReviewRating.hard : ReviewRating.good;
+    await _kanaCommand.onKanaReviewed(
+      userId: item.learningState.userId,
+      kanaId: item.kanaLetter.id,
+      rating: rating,
+    );
+  }
 
   String _leftValueForItem(ReviewKanaItem item) {
     switch (item.questionType) {

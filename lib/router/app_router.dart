@@ -6,6 +6,7 @@ import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
 import '../features/learn/pages/learn_page.dart';
 import '../features/kana/chart/pages/kana_chart_page.dart';
+import '../features/word_review/pages/word_review_page.dart';
 import '../debug/pages/debug_placeholder_page.dart';
 import 'app_route_observer.dart';
 
@@ -57,6 +58,12 @@ final appRouter = GoRouter(
       path: '/matching_page',
       name: 'matching_page',
       builder: (context, state) => const MatchingPage(),
+    ),
+    // 复习单词页面
+    GoRoute(
+      path: '/word-review',
+      name: 'word-review',
+      builder: (context, state) => const WordReviewPage(),
     ),
 
     // Debug 占位入口

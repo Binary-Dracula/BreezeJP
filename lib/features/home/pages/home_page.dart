@@ -228,7 +228,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
                     : '还没有需要复习的单词',
                 icon: Icons.refresh_rounded,
                 color: const Color(0xFF2563EB),
-                onTap: () {},
+                onTap: () => context.pushNamed('word-review'),
               ),
             ),
           ],
