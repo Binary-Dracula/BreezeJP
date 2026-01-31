@@ -110,9 +110,16 @@ class StudyWordRepository {
         affectedRows: affectedRows,
         updatedFields: [
           'user_state',
+          'next_review_at',
+          'last_reviewed_at',
           'interval',
           'ease_factor',
-          'next_review_at',
+          'stability',
+          'difficulty',
+          'streak',
+          'total_reviews',
+          'fail_count',
+          'updated_at',
         ],
       );
     } catch (e, stackTrace) {

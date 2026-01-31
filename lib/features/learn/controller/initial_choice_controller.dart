@@ -40,7 +40,7 @@ class InitialChoiceController extends Notifier<InitialChoiceState> {
 
       state = state.copyWith(choices: choices, isLoading: false);
 
-      logger.info('初始选择页加载完成: ${choices.length} 个单词');
+      logger.debug('初始选择页加载完成: ${choices.length} 个单词');
     } catch (e, stackTrace) {
       logger.error('初始选择页加载失败', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());

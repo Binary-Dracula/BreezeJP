@@ -69,7 +69,7 @@ class WordReadQueries {
           ),
       ];
 
-      logger.info(
+      logger.debug(
         '单词详情获取成功: ${word.word} (${meanings.length}个释义, ${examples.length}个例句)',
       );
 

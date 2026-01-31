@@ -104,6 +104,17 @@ logger.learnSessionEnd(
   reviewedCount: 5,
 );
 // 输出: [LEARN] session_end: duration=5m 30s, learned=10, reviewed=5
+
+// 记录状态迁移
+logger.stateChange(
+  scope: 'word',
+  userId: 1,
+  itemId: 123,
+  fromState: 'seen',
+  toState: 'learning',
+  reason: 'add_to_review',
+);
+// 输出: [LEARN] state_change: scope=word, userId=1, itemId=123, from=seen, to=learning, reason=add_to_review
 ```
 
 ### 数据库操作日志 [DB]
@@ -234,6 +245,18 @@ logger.algoScheduleChange(
   newSchedule: DateTime(2024, 11, 30, 10, 30),
 );
 // 输出: [ALGO] schedule_change: wordId=123, old=null, new=2024-11-30T10:30:00+08:00
+
+// 记录 SRS 更新
+logger.srsUpdate(
+  scope: 'word',
+  userId: 1,
+  itemId: 123,
+  rating: ReviewRating.good,
+  algorithmType: AlgorithmType.sm2,
+  before: {'interval': 1, 'nextReview': null},
+  after: {'interval': 3, 'nextReview': '2024-11-30T10:30:00+08:00'},
+);
+// 输出: [ALGO] srs_update: scope=word, userId=1, itemId=123, rating=good, algo=sm2, changes=[interval: 1 -> 3, nextReview: null -> 2024-11-30T10:30:00+08:00]
 ```
 
 ---
@@ -268,6 +291,10 @@ final duration = LogFormatter.formatDuration(330000);  // 5分30秒
 // 格式化键值对
 final kvStr = LogFormatter.formatKeyValues({'userId': 1, 'wordId': 123});
 // 输出: userId=1, wordId=123
+
+// 格式化变更集
+final diffStr = LogFormatter.formatChanges({'interval': 1}, {'interval': 2});
+// 输出: changes=[interval: 1 -> 2]
 
 // 格式化列表摘要
 final listStr = LogFormatter.formatListSummary([1, 2, 3, 4, 5], maxItems: 3);

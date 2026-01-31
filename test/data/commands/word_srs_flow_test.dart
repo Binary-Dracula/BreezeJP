@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breeze_jp/core/constants/learning_status.dart';
+import 'package:breeze_jp/core/utils/app_logger.dart';
 import 'package:breeze_jp/data/commands/daily_stat_command.dart';
 import 'package:breeze_jp/data/commands/word_command.dart';
 import 'package:breeze_jp/data/models/study_log.dart';
@@ -92,6 +93,10 @@ class _FakeDailyStatCommand extends DailyStatCommand {
 }
 
 void main() {
+  setUpAll(() {
+    logger.setTestMode(true);
+  });
+
   test('word SRS flow: seen -> learning -> reviews -> mastered', () async {
     final studyWordRepo = _InMemoryStudyWordRepository();
     final studyLogRepo = _InMemoryStudyLogRepository();

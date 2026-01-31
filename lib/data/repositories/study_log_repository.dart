@@ -50,6 +50,12 @@ class StudyLogRepository {
         limit: 1,
       );
 
+      logger.dbQuery(
+        table: 'study_logs',
+        where: 'user_id = $userId AND word_id = $wordId AND log_type = ${LogType.firstLearn.value}',
+        resultCount: rows.length,
+      );
+
       return rows.isNotEmpty;
     } catch (e, stackTrace) {
       logger.dbError(

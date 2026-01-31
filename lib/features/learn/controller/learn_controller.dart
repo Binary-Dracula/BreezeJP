@@ -327,7 +327,7 @@ class LearnController extends Notifier<LearnState> {
 
     final user = await _getActiveUser();
     await _wordCommand.ensureWordSeen(user.id, wordId);
-    logger.info(
+    logger.debug(
       '[WordUI] wordId=$wordId ensure_seen triggered by page_changed',
     );
 
@@ -348,7 +348,7 @@ class LearnController extends Notifier<LearnState> {
     final count = (_wordDetailLoadCount[wordId] ?? 0) + 1;
     _wordDetailLoadCount[wordId] = count;
 
-    logger.info('[WordDetailLoad] session wordId=$wordId count=$count');
+    logger.debug('[WordDetailLoad] session wordId=$wordId count=$count');
 
     final wordQueries = ref.read(wordReadQueriesProvider);
     return wordQueries.getWordDetail(wordId);
@@ -357,11 +357,11 @@ class LearnController extends Notifier<LearnState> {
   void _logWordDetailLoadSummary() {
     _wordDetailLoadCount.forEach((wordId, count) {
       if (count > 1) {
-        logger.warning(
+        logger.debug(
           '[WordDetailLoadSummary] wordId=$wordId loaded $count times in one session',
         );
       } else {
-        logger.info('[WordDetailLoadSummary] wordId=$wordId loaded once');
+        logger.debug('[WordDetailLoadSummary] wordId=$wordId loaded once');
       }
     });
   }

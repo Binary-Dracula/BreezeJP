@@ -40,7 +40,7 @@ class HomeController extends Notifier<HomeState> {
   /// 加载主页数据
   Future<void> loadHomeData() async {
     try {
-      logger.info('开始加载主页数据');
+      logger.debug('开始加载主页数据');
       state = state.copyWith(isLoading: true, error: null);
 
       // 1. 获取当前活跃用户
@@ -83,7 +83,7 @@ class HomeController extends Notifier<HomeState> {
         isInitialized: true,
       );
 
-      logger.info('主页数据加载成功');
+      logger.debug('主页数据加载成功');
     } catch (e, stackTrace) {
       logger.error('加载主页数据失败', e, stackTrace);
       state = state.copyWith(

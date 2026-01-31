@@ -5,6 +5,7 @@ import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/log_formatter.dart';
 import 'daily_stat_command.dart';
 import '../models/study_log.dart';
 import '../models/study_word.dart';
@@ -92,8 +93,13 @@ class WordCommand {
       );
 
       final id = await _repo.createStudyWord(state);
-      logger.info(
-        '[WordState] wordId=$wordId userId=$userId null -> seen via ensure_seen',
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: 'null',
+        toState: 'seen',
+        reason: 'ensure_seen',
       );
       return state.copyWith(id: id);
     } catch (e, stackTrace) {
@@ -140,8 +146,13 @@ class WordCommand {
       ),
     );
 
-    logger.info(
-      '[WordState] wordId=$wordId userId=$userId null -> seen (initial exposure)',
+    logger.stateChange(
+      scope: 'word',
+      userId: userId,
+      itemId: wordId,
+      fromState: 'null',
+      toState: 'seen',
+      reason: 'initial_exposure',
     );
   }
 
@@ -203,7 +214,11 @@ class WordCommand {
   /// - 任何状态迁移 API（enter/restore 等）
   ///   都不允许隐式产生 firstLearn
   Future<void> addWordToReview(int userId, int wordId) async {
-    final context = await _enterLearningStateOnly(userId, wordId);
+    final context = await _enterLearningStateOnly(
+      userId,
+      wordId,
+      reason: 'add_to_review',
+    );
     await _logFirstLearnIfMissing(
       userId: userId,
       wordId: wordId,
@@ -215,7 +230,7 @@ class WordCommand {
 
   /// 进入学习阶段（仅状态迁移，不写 firstLearn）
   Future<void> enterWordLearningIfNeeded(int userId, int wordId) async {
-    await _enterLearningStateOnly(userId, wordId);
+    await _enterLearningStateOnly(userId, wordId, reason: 'enter_learning');
   }
 
   /// 记录一次复习并更新 SRS 状态。
@@ -281,6 +296,15 @@ class WordCommand {
     );
 
     await _repo.updateStudyWord(updated);
+    logger.srsUpdate(
+      scope: 'word',
+      userId: userId,
+      itemId: wordId,
+      rating: rating,
+      algorithmType: resolvedAlgorithm,
+      before: _srsSnapshot(existing),
+      after: _srsSnapshot(updated),
+    );
 
     await _studyLogCommand.logReview(
       userId: userId,
@@ -299,8 +323,9 @@ class WordCommand {
   /// 进入学习阶段（仅状态迁移，不写 firstLearn）
   Future<_LearningEntryContext> _enterLearningStateOnly(
     int userId,
-    int wordId,
-  ) async {
+    int wordId, {
+    required String reason,
+  }) async {
     final existing = await _repo.getStudyWord(userId, wordId);
     final algorithmType = _algorithmService.defaultAlgorithm;
     final output = _algorithmService.calculate(
@@ -338,8 +363,13 @@ class WordCommand {
 
       // ---- 本线程成功创建：进入 learning ----
       if (insertedRowId > 0) {
-        logger.info(
-          '[WordState] wordId=$wordId userId=$userId null -> learning',
+        logger.stateChange(
+          scope: 'word',
+          userId: userId,
+          itemId: wordId,
+          fromState: 'null',
+          toState: 'learning',
+          reason: reason,
         );
         return context;
       }
@@ -366,8 +396,13 @@ class WordCommand {
             : after.userState == LearningStatus.ignored
             ? 'ignored'
             : 'seen';
-        logger.info(
-          '[WordState] wordId=$wordId userId=$userId $fromState -> learning',
+        logger.stateChange(
+          scope: 'word',
+          userId: userId,
+          itemId: wordId,
+          fromState: fromState,
+          toState: 'learning',
+          reason: reason,
         );
       }
       return context;
@@ -392,8 +427,13 @@ class WordCommand {
           : existing.userState == LearningStatus.ignored
           ? 'ignored'
           : 'seen';
-      logger.info(
-        '[WordState] wordId=$wordId userId=$userId $fromState -> learning',
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: fromState,
+        toState: 'learning',
+        reason: reason,
       );
     }
     return context;
@@ -425,8 +465,13 @@ class WordCommand {
         updatedAt: now,
       );
       await _repo.updateStudyWord(updated);
-      logger.info(
-        '[WordState] wordId=$wordId userId=$userId learning -> mastered via mark_mastered',
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: existing.userState.name,
+        toState: 'mastered',
+        reason: 'mark_mastered',
       );
     } catch (e, stackTrace) {
       logger.dbError(
@@ -474,7 +519,14 @@ class WordCommand {
         ),
       );
 
-      logger.info('[WordState] wordId=$wordId userId=$userId restore -> seen');
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: existing.userState.name,
+        toState: 'seen',
+        reason: 'restore_seen',
+      );
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',
@@ -510,7 +562,6 @@ class WordCommand {
       final now = DateTime.now();
 
       if (existing == null) {
-        logger.warning('单词学习状态不存在: userId=$userId, wordId=$wordId');
         final state = StudyWord(
           id: 0,
           userId: userId,
@@ -529,8 +580,13 @@ class WordCommand {
           updatedAt: now,
         );
         await _repo.createStudyWord(state);
-        logger.info(
-          '[WordState] wordId=$wordId userId=$userId seen -> ignored via toggle_ignored',
+        logger.stateChange(
+          scope: 'word',
+          userId: userId,
+          itemId: wordId,
+          fromState: 'null',
+          toState: 'ignored',
+          reason: 'toggle_ignored',
         );
         shouldLogIgnored = true;
       } else if (existing.userState == LearningStatus.ignored) {
@@ -540,8 +596,13 @@ class WordCommand {
           updatedAt: now,
         );
         await _repo.updateStudyWord(updated);
-        logger.info(
-          '[WordState] wordId=$wordId userId=$userId ignored -> seen via restore_seen',
+        logger.stateChange(
+          scope: 'word',
+          userId: userId,
+          itemId: wordId,
+          fromState: 'ignored',
+          toState: 'seen',
+          reason: 'restore_seen',
         );
         return;
       } else {
@@ -556,8 +617,13 @@ class WordCommand {
             : existing.userState == LearningStatus.mastered
             ? 'mastered'
             : 'seen';
-        logger.info(
-          '[WordState] wordId=$wordId userId=$userId $fromState -> ignored via toggle_ignored',
+        logger.stateChange(
+          scope: 'word',
+          userId: userId,
+          itemId: wordId,
+          fromState: fromState,
+          toState: 'ignored',
+          reason: 'toggle_ignored',
         );
         shouldLogIgnored = true;
       }
@@ -584,5 +650,23 @@ class WordCommand {
       );
       rethrow;
     }
+  }
+
+  Map<String, dynamic> _srsSnapshot(StudyWord word) {
+    return {
+      'interval': word.interval,
+      'ef': word.easeFactor,
+      'stability': word.stability,
+      'difficulty': word.difficulty,
+      'nextReview': word.nextReviewAt != null
+          ? LogFormatter.formatTimestamp(word.nextReviewAt!)
+          : null,
+      'lastReview': word.lastReviewedAt != null
+          ? LogFormatter.formatTimestamp(word.lastReviewedAt!)
+          : null,
+      'streak': word.streak,
+      'totalReviews': word.totalReviews,
+      'failCount': word.failCount,
+    };
   }
 }

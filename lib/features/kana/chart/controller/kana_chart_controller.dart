@@ -52,7 +52,7 @@ class KanaChartController extends Notifier<KanaChartState> {
     try {
       final userId = await _ensureUserId();
       if (_activeLoadToken != token) return;
-      logger.info('开始加载五十音表数据');
+      logger.debug('开始加载五十音表数据');
       state = state.copyWith(isLoading: true, error: null);
 
       // 1. 获取所有假名类型
@@ -80,7 +80,7 @@ class KanaChartController extends Notifier<KanaChartState> {
         masteredCount: masteredCount,
       );
 
-      logger.info('五十音表加载成功: ${kanaLetters.length}个假名, ${kanaTypes.length}个类型');
+      logger.debug('五十音表加载成功: ${kanaLetters.length}个假名, ${kanaTypes.length}个类型');
     } catch (e, stackTrace) {
       if (_activeLoadToken != token) return;
       logger.error('加载五十音表失败', e, stackTrace);
@@ -95,7 +95,7 @@ class KanaChartController extends Notifier<KanaChartState> {
         : KanaDisplayMode.hiragana;
     state = state.copyWith(displayMode: newMode);
     unawaited(loadKanaChart());
-    logger.info('切换显示模式: $newMode');
+    logger.debug('切换显示模式: $newMode');
   }
 
   /// 设置显示模式（外部直接指定）
@@ -108,7 +108,7 @@ class KanaChartController extends Notifier<KanaChartState> {
   /// 设置类型筛选
   void setTypeFilter(String? type) {
     state = state.copyWith(selectedType: type);
-    logger.info('设置类型筛选: ${type ?? '全部'}');
+    logger.debug('设置类型筛选: ${type ?? '全部'}');
   }
 
   /// 清空错误

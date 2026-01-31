@@ -6,6 +6,7 @@ import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/log_formatter.dart';
 import '../../domain/kana/kana_domain_event.dart';
 import '../models/kana_learning_state.dart';
 import '../models/study_log.dart';
@@ -53,6 +54,14 @@ class KanaCommand {
         updatedAt: nowSeconds,
       );
       await _repo.insertKanaLearningState(state);
+      logger.stateChange(
+        scope: 'kana',
+        userId: userId,
+        itemId: kanaId,
+        fromState: 'null',
+        toState: 'learning',
+        reason: 'practice',
+      );
       return KanaPracticed(userId: userId, kanaId: kanaId, occurredAt: now);
     } catch (e, stackTrace) {
       logger.dbError(
@@ -140,6 +149,15 @@ class KanaCommand {
       } else {
         await _repo.updateKanaLearningState(updated);
       }
+      logger.srsUpdate(
+        scope: 'kana',
+        userId: userId,
+        itemId: kanaId,
+        rating: rating,
+        algorithmType: resolvedAlgorithm,
+        before: existing == null ? const {} : _srsSnapshot(existing),
+        after: _srsSnapshot(updated),
+      );
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',
@@ -170,6 +188,14 @@ class KanaCommand {
           updatedAt: nowSeconds,
         );
         await _repo.insertKanaLearningState(state);
+        logger.stateChange(
+          scope: 'kana',
+          userId: userId,
+          itemId: kanaId,
+          fromState: 'null',
+          toState: 'mastered',
+          reason: 'toggle_mastered',
+        );
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -179,6 +205,14 @@ class KanaCommand {
           updatedAt: nowSeconds,
         );
         await _repo.updateKanaLearningState(updated);
+        logger.stateChange(
+          scope: 'kana',
+          userId: userId,
+          itemId: kanaId,
+          fromState: 'mastered',
+          toState: 'learning',
+          reason: 'toggle_mastered',
+        );
         return KanaUnmastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -188,6 +222,14 @@ class KanaCommand {
           updatedAt: nowSeconds,
         );
         await _repo.updateKanaLearningState(updated);
+        logger.stateChange(
+          scope: 'kana',
+          userId: userId,
+          itemId: kanaId,
+          fromState: 'learning',
+          toState: 'mastered',
+          reason: 'toggle_mastered',
+        );
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
       return null;
@@ -200,5 +242,27 @@ class KanaCommand {
       );
       rethrow;
     }
+  }
+
+  Map<String, dynamic> _srsSnapshot(KanaLearningState state) {
+    return {
+      'interval': state.interval,
+      'ef': state.easeFactor,
+      'stability': state.stability,
+      'difficulty': state.difficulty,
+      'nextReview': state.nextReviewAt != null
+          ? LogFormatter.formatTimestamp(
+              DateTime.fromMillisecondsSinceEpoch(state.nextReviewAt! * 1000),
+            )
+          : null,
+      'lastReview': state.lastReviewedAt != null
+          ? LogFormatter.formatTimestamp(
+              DateTime.fromMillisecondsSinceEpoch(state.lastReviewedAt! * 1000),
+            )
+          : null,
+      'streak': state.streak,
+      'totalReviews': state.totalReviews,
+      'failCount': state.failCount,
+    };
   }
 }

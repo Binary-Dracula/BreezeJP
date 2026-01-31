@@ -267,7 +267,7 @@ class KanaQuery {
       final learningState = await getKanaLearningState(userId, kanaId);
       final strokeOrder = await getKanaStrokeOrder(kanaId);
 
-      logger.info(
+      logger.debug(
         'Kana detail loaded: ${letter.kanaChar} (${examples.length} examples)',
       );
 

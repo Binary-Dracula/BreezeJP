@@ -105,6 +105,26 @@ class LogFormatter {
     return data.entries.map((e) => '${e.key}=${e.value}').join(', ');
   }
 
+  /// 格式化变更集
+  /// 输出格式: changes=[key1: before -> after, key2: before -> after]
+  static String formatChanges(
+    Map<String, dynamic> before,
+    Map<String, dynamic> after,
+  ) {
+    if (after.isEmpty) return 'changes=[]';
+    final changes = <String>[];
+    for (final entry in after.entries) {
+      final key = entry.key;
+      final beforeVal = before[key];
+      final afterVal = entry.value;
+      if (beforeVal != afterVal) {
+        changes.add('$key: $beforeVal -> $afterVal');
+      }
+    }
+    if (changes.isEmpty) return 'changes=[]';
+    return 'changes=[${changes.join(', ')}]';
+  }
+
   /// 格式化列表摘要
   /// 输出格式: count=5, items=[item1, item2, item3, ...]
   static String formatListSummary<T>(

@@ -107,8 +107,8 @@ class StudyWord {
     int? userId,
     int? wordId,
     LearningStatus? userState,
-    DateTime? nextReviewAt,
-    DateTime? lastReviewedAt,
+    Object? nextReviewAt = _sentinel,
+    Object? lastReviewedAt = _sentinel,
     int? interval,
     double? easeFactor,
     double? stability,
@@ -124,8 +124,12 @@ class StudyWord {
       userId: userId ?? this.userId,
       wordId: wordId ?? this.wordId,
       userState: userState ?? this.userState,
-      nextReviewAt: nextReviewAt ?? this.nextReviewAt,
-      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
+      nextReviewAt: nextReviewAt == _sentinel
+          ? this.nextReviewAt
+          : nextReviewAt as DateTime?,
+      lastReviewedAt: lastReviewedAt == _sentinel
+          ? this.lastReviewedAt
+          : lastReviewedAt as DateTime?,
       interval: interval ?? this.interval,
       easeFactor: easeFactor ?? this.easeFactor,
       stability: stability ?? this.stability,
@@ -137,6 +141,8 @@ class StudyWord {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  static const Object _sentinel = Object();
 
   /// 是否需要复习
   bool get needsReview {

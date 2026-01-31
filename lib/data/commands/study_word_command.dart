@@ -32,6 +32,14 @@ class StudyWordCommand {
       );
 
       await _repo.updateStudyWord(updated);
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: studyWord.userState.name,
+        toState: 'mastered',
+        reason: 'mark_mastered',
+      );
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',
@@ -57,6 +65,14 @@ class StudyWordCommand {
       );
 
       await _repo.updateStudyWord(updated);
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: studyWord.userState.name,
+        toState: 'ignored',
+        reason: 'mark_ignored',
+      );
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',
@@ -92,6 +108,14 @@ class StudyWordCommand {
       );
 
       await _repo.updateStudyWord(updated);
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: studyWord.userState.name,
+        toState: 'seen',
+        reason: 'reset_progress',
+      );
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',
@@ -120,7 +144,14 @@ class StudyWordCommand {
           updatedAt: now,
         );
         await _repo.createStudyWord(newRecord);
-        logger.info('标记单词为学习中: userId=$userId wordId=$wordId');
+        logger.stateChange(
+          scope: 'word',
+          userId: userId,
+          itemId: wordId,
+          fromState: 'null',
+          toState: 'learning',
+          reason: 'mark_learned',
+        );
         return;
       }
 
@@ -134,7 +165,14 @@ class StudyWordCommand {
       );
 
       await _repo.updateStudyWord(updated);
-      logger.info('标记单词为学习中: userId=$userId wordId=$wordId');
+      logger.stateChange(
+        scope: 'word',
+        userId: userId,
+        itemId: wordId,
+        fromState: studyWord.userState.name,
+        toState: 'learning',
+        reason: 'mark_learned',
+      );
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'UPDATE',

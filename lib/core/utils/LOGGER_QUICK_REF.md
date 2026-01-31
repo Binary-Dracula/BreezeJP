@@ -39,6 +39,16 @@ logger.learnAnswerSubmit(wordId: 123, rating: 'good', newInterval: 2.5, newEaseF
 
 // 会话结束
 logger.learnSessionEnd(durationMs: 330000, learnedCount: 10, reviewedCount: 5);
+
+// 状态迁移
+logger.stateChange(
+  scope: 'word',
+  userId: 1,
+  itemId: 123,
+  fromState: 'seen',
+  toState: 'learning',
+  reason: 'add_to_review',
+);
 ```
 
 ### [DB] 数据库操作
@@ -90,6 +100,17 @@ logger.algoParamsUpdate(wordId: 123, before: {...}, after: {...});
 
 // 计划变更
 logger.algoScheduleChange(wordId: 123, oldSchedule: null, newSchedule: newDate);
+
+// SRS 更新
+logger.srsUpdate(
+  scope: 'word',
+  userId: 1,
+  itemId: 123,
+  rating: ReviewRating.good,
+  algorithmType: AlgorithmType.sm2,
+  before: {...},
+  after: {...},
+);
 ```
 
 ---
@@ -116,6 +137,10 @@ LogFormatter.formatDuration(330000);
 // 键值对
 LogFormatter.formatKeyValues({'userId': 1, 'wordId': 123});
 // → userId=1, wordId=123
+
+// 变更集
+LogFormatter.formatChanges({'interval': 1}, {'interval': 2});
+// → changes=[interval: 1 -> 2]
 
 // 列表摘要
 LogFormatter.formatListSummary([1, 2, 3, 4, 5], maxItems: 3);

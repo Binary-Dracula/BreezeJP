@@ -237,7 +237,11 @@ class KanaRepository {
 
       final result = await db.insert('kana_learning_state', map);
 
-      logger.dbInsert(table: 'kana_learning_state', id: result);
+      logger.dbInsert(
+        table: 'kana_learning_state',
+        id: result,
+        keyFields: {'userId': state.userId, 'kanaId': state.kanaId},
+      );
 
       return result;
     } catch (e, stackTrace) {
@@ -262,7 +266,23 @@ class KanaRepository {
         whereArgs: [state.id],
       );
 
-      logger.dbUpdate(table: 'kana_learning_state', affectedRows: result);
+      logger.dbUpdate(
+        table: 'kana_learning_state',
+        affectedRows: result,
+        updatedFields: [
+          'learning_status',
+          'next_review_at',
+          'last_reviewed_at',
+          'interval',
+          'ease_factor',
+          'stability',
+          'difficulty',
+          'streak',
+          'total_reviews',
+          'fail_count',
+          'updated_at',
+        ],
+      );
 
       return result;
     } catch (e, stackTrace) {

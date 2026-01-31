@@ -2,8 +2,11 @@ import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
 
 import '../algorithm/srs_types.dart';
+import '../../data/models/study_log.dart';
 import 'log_category.dart';
 import 'log_formatter.dart';
+
+const bool _defaultTestMode = bool.fromEnvironment('FLUTTER_TEST');
 
 /// 应用日志工具类
 /// 统一管理所有日志输出
@@ -11,19 +14,34 @@ class AppLogger {
   static final AppLogger _instance = AppLogger._internal();
   factory AppLogger() => _instance;
 
-  late final Logger _logger;
+  late Logger _logger;
+  late bool _isTestMode;
 
   AppLogger._internal() {
-    _logger = Logger(
-      filter: _AppLogFilter(),
-      printer: PrettyPrinter(
-        methodCount: 2, // 显示的方法调用栈数量
-        errorMethodCount: 8, // 错误时显示的方法调用栈数量
-        lineLength: 120, // 每行的宽度
-        colors: true, // 彩色输出
-        printEmojis: true, // 打印表情符号
-        dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart, // 时间格式
-      ),
+    _isTestMode = _defaultTestMode;
+    _logger = _buildLogger(isTestMode: _isTestMode);
+  }
+
+  void setTestMode(bool enabled) {
+    if (_isTestMode == enabled) return;
+    _isTestMode = enabled;
+    _logger = _buildLogger(isTestMode: _isTestMode);
+  }
+
+  Logger _buildLogger({required bool isTestMode}) {
+    final minLevel = isTestMode ? Level.info : Level.debug;
+    return Logger(
+      filter: _AppLogFilter(minLevel: minLevel),
+      printer: isTestMode
+          ? _TestLogPrinter()
+          : PrettyPrinter(
+              methodCount: 2, // 显示的方法调用栈数量
+              errorMethodCount: 8, // 错误时显示的方法调用栈数量
+              lineLength: 120, // 每行的宽度
+              colors: true, // 彩色输出
+              printEmojis: true, // 打印表情符号
+              dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart, // 时间格式
+            ),
       output: _AppLogOutput(),
     );
   }
@@ -141,6 +159,21 @@ class AppLogger {
     );
   }
 
+  /// 记录学习状态迁移
+  void stateChange({
+    required String scope,
+    required int userId,
+    required int itemId,
+    required String fromState,
+    required String toState,
+    String? reason,
+  }) {
+    final reasonPart = reason != null ? ', reason=$reason' : '';
+    info(
+      '${LogCategory.learn.prefix} state_change: scope=$scope, userId=$userId, itemId=$itemId, from=$fromState, to=$toState$reasonPart',
+    );
+  }
+
   // ==================== 数据库操作日志 [DB] ====================
 
   /// 记录数据库查询
@@ -244,9 +277,13 @@ class AppLogger {
     required SRSInput input,
   }) {
     final inputStr = LogFormatter.formatSRSInput(input);
-    info(
-      '${LogCategory.algo.prefix} calculate_start: type=$algorithmType, $inputStr',
-    );
+    final message =
+        '${LogCategory.algo.prefix} calculate_start: type=$algorithmType, $inputStr';
+    if (_isTestMode) {
+      debug(message);
+    } else {
+      info(message);
+    }
   }
 
   /// 记录 SRS 计算完成
@@ -256,9 +293,13 @@ class AppLogger {
     required SRSOutput output,
   }) {
     final outputStr = LogFormatter.formatSRSOutput(output);
-    info(
-      '${LogCategory.algo.prefix} calculate_complete: type=$algorithmType, $outputStr',
-    );
+    final message =
+        '${LogCategory.algo.prefix} calculate_complete: type=$algorithmType, $outputStr';
+    if (_isTestMode) {
+      debug(message);
+    } else {
+      info(message);
+    }
   }
 
   /// 记录参数更新
@@ -296,14 +337,34 @@ class AppLogger {
       '${LogCategory.algo.prefix} schedule_change: wordId=$wordId, old=$oldStr, new=$newStr',
     );
   }
+
+  /// 记录 SRS 状态更新（对比前后差异）
+  void srsUpdate({
+    required String scope,
+    required int userId,
+    required int itemId,
+    required ReviewRating rating,
+    required AlgorithmType algorithmType,
+    required Map<String, dynamic> before,
+    required Map<String, dynamic> after,
+  }) {
+    final changes = LogFormatter.formatChanges(before, after);
+    info(
+      '${LogCategory.algo.prefix} srs_update: scope=$scope, userId=$userId, itemId=$itemId, rating=${rating.name}, algo=${algorithmType.name}, $changes',
+    );
+  }
 }
 
 /// 日志过滤器 - 仅在 Debug 模式输出日志
 class _AppLogFilter extends LogFilter {
+  _AppLogFilter({required this.minLevel});
+
+  final Level minLevel;
+
   @override
   bool shouldLog(LogEvent event) {
     // 仅在 Debug 模式输出日志
-    return kDebugMode;
+    return kDebugMode && event.level.index >= minLevel.index;
   }
 }
 
@@ -323,6 +384,29 @@ class _AppLogOutput extends LogOutput {
     // - 写入文件
     // - 发送到远程日志服务器
     // - 保存到数据库
+  }
+}
+
+class _TestLogPrinter extends LogPrinter {
+  @override
+  List<String> log(LogEvent event) {
+    final level = event.level.name.toUpperCase();
+    final message = event.message?.toString() ?? '';
+    final buffer = StringBuffer('[$level] $message');
+    if (event.error != null) {
+      buffer.write(' error=${event.error}');
+    }
+    if (event.stackTrace != null && event.level.index >= Level.error.index) {
+      final firstLine = event.stackTrace
+          .toString()
+          .split('\n')
+          .first
+          .trim();
+      if (firstLine.isNotEmpty) {
+        buffer.write(' stack=$firstLine');
+      }
+    }
+    return [buffer.toString()];
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breeze_jp/core/constants/learning_status.dart';
+import 'package:breeze_jp/core/utils/app_logger.dart';
 import 'package:breeze_jp/data/commands/kana_command.dart';
 import 'package:breeze_jp/data/commands/kana_command_provider.dart';
 import 'package:breeze_jp/data/models/kana_learning_state.dart';
@@ -41,6 +42,10 @@ class _InMemoryKanaRepository extends KanaRepository {
 }
 
 void main() {
+  setUpAll(() {
+    logger.setTestMode(true);
+  });
+
   test('kana SRS flow: practice -> reviews -> mastered', () async {
     final repo = _InMemoryKanaRepository();
     final container = ProviderContainer(

@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:breeze_jp/core/constants/learning_status.dart';
+import 'package:breeze_jp/core/utils/app_logger.dart';
 import 'package:breeze_jp/data/commands/daily_stat_command.dart';
 import 'package:breeze_jp/data/commands/word_command.dart';
 import 'package:breeze_jp/data/models/study_log.dart';
@@ -100,6 +101,7 @@ class _FakeDailyStatCommand extends DailyStatCommand {
 
 void main() {
   setUpAll(() {
+    logger.setTestMode(true);
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   });
