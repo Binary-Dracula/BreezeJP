@@ -45,10 +45,14 @@ class SM2Algorithm implements SRSAlgorithm {
       // 这里简化处理：失败重置
     } else {
       // 成功
+      // SM-2 标准逻辑：
+      // - 首次复习后（reviews=0）：interval = 6 天
+      // - 第二次复习后（reviews=1）：interval = 6 × EF
+      // - 后续复习：interval = previous × EF
       if (input.reviews == 0) {
-        newInterval = 1;
+        newInterval = 6; // 首次复习后跳到 6 天
       } else if (input.reviews == 1) {
-        newInterval = 6;
+        newInterval = (6 * input.easeFactor).roundToDouble();
       } else {
         newInterval = (input.interval * input.easeFactor).roundToDouble();
       }
