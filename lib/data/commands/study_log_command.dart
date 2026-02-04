@@ -4,6 +4,7 @@ import '../models/study_log.dart';
 import 'daily_stat_command.dart';
 import '../repositories/study_log_repository.dart';
 import '../repositories/study_log_repository_provider.dart';
+
 final studyLogCommandProvider = Provider<StudyLogCommand>((ref) {
   return StudyLogCommand(ref);
 });
@@ -22,7 +23,6 @@ class StudyLogCommand {
     required int userId,
     required int wordId,
     required ReviewRating rating,
-    required int durationMs,
     double? intervalAfter,
     double? easeFactorAfter,
     DateTime? nextReviewAtAfter,
@@ -37,7 +37,6 @@ class StudyLogCommand {
       questionType: 'recall',
       logType: LogType.review,
       rating: rating,
-      durationMs: durationMs,
       intervalAfter: intervalAfter,
       easeFactorAfter: easeFactorAfter,
       nextReviewAtAfter: nextReviewAtAfter,
@@ -77,10 +76,7 @@ class StudyLogCommand {
   }
 
   /// 标记忽略
-  Future<int> logMarkIgnored({
-    required int userId,
-    required int wordId,
-  }) async {
+  Future<int> logMarkIgnored({required int userId, required int wordId}) async {
     final log = StudyLog(
       id: 0,
       userId: userId,
@@ -94,10 +90,7 @@ class StudyLogCommand {
   }
 
   /// 重置进度
-  Future<int> logReset({
-    required int userId,
-    required int wordId,
-  }) async {
+  Future<int> logReset({required int userId, required int wordId}) async {
     final log = StudyLog(
       id: 0,
       userId: userId,

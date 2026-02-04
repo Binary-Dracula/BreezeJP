@@ -27,7 +27,6 @@ class SessionStatAccumulator {
   int failedCount;
   int masteredCount;
   int kanaReviewCount;
-  int totalDurationMs;
 
   SessionStatAccumulator({
     this.learnedCount = 0,
@@ -35,7 +34,6 @@ class SessionStatAccumulator {
     this.failedCount = 0,
     this.masteredCount = 0,
     this.kanaReviewCount = 0,
-    this.totalDurationMs = 0,
   });
 
   void applyDelta(SessionStatDelta delta) {
@@ -44,7 +42,6 @@ class SessionStatAccumulator {
     failedCount += delta.failed;
     masteredCount += delta.mastered;
     kanaReviewCount += delta.kanaReviewed;
-    totalDurationMs += delta.durationMs;
   }
 }
 
@@ -55,7 +52,6 @@ class SessionStatDelta {
   final int failed;
   final int mastered;
   final int kanaReviewed;
-  final int durationMs;
 
   const SessionStatDelta({
     this.learned = 0,
@@ -63,47 +59,28 @@ class SessionStatDelta {
     this.failed = 0,
     this.mastered = 0,
     this.kanaReviewed = 0,
-    this.durationMs = 0,
   });
 }
 
 /// Session 统计语义策略（核心）
 class SessionStatPolicy {
   /// 根据事件类型生成统计增量
-  static SessionStatDelta deltaFor(
-    SessionEventType type, {
-    int durationMs = 0,
-  }) {
+  static SessionStatDelta deltaFor(SessionEventType type) {
     switch (type) {
       case SessionEventType.firstLearn:
-        return SessionStatDelta(
-          learned: 1,
-          durationMs: durationMs,
-        );
+        return const SessionStatDelta(learned: 1);
 
       case SessionEventType.review:
-        return SessionStatDelta(
-          reviewed: 1,
-          durationMs: durationMs,
-        );
+        return const SessionStatDelta(reviewed: 1);
 
       case SessionEventType.reviewFailed:
-        return SessionStatDelta(
-          reviewed: 1,
-          failed: 1,
-          durationMs: durationMs,
-        );
+        return const SessionStatDelta(reviewed: 1, failed: 1);
 
       case SessionEventType.markMastered:
-        return const SessionStatDelta(
-          mastered: 1,
-        );
+        return const SessionStatDelta(mastered: 1);
 
       case SessionEventType.kanaReview:
-        return SessionStatDelta(
-          kanaReviewed: 1,
-          durationMs: durationMs,
-        );
+        return const SessionStatDelta(kanaReviewed: 1);
     }
   }
 }

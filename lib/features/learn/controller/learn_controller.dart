@@ -201,16 +201,11 @@ class LearnController extends Notifier<LearnState> {
               .createSession(userId: userId, scope: SessionScope.learn);
       _session ??= session;
       final now = DateTime.now();
-      final durationMs = _sessionStartTime == null
-          ? 0
-          : now.difference(_sessionStartTime!).inMilliseconds;
-      _sessionStartTime = now;
-
       // 更新 learnedWordIds
       final newLearnedWordIds = {...state.learnedWordIds, wordId};
       state = state.copyWith(learnedWordIds: newLearnedWordIds);
 
-      await session.submitFirstLearn(wordId: wordId, durationMs: durationMs);
+      await session.submitFirstLearn(wordId: wordId);
 
       logger.info('标记单词为已学习: wordId=$wordId');
     } catch (e, stackTrace) {

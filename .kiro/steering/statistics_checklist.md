@@ -5,7 +5,7 @@ inclusion: always
 # 统计相关改动 Checklist（封板）
 
 > **适用范围**
-> 任何涉及 **学习统计 / 学习时长 / 今日学习 / 今日复习 / streak / 掌握数 / daily_stats / study_logs / kana_logs** 的改动
+> 任何涉及 **学习统计 / 学习时长 / 今日学习 / 今日复习 / streak / 掌握数 / daily_stats / study_logs** 的改动
 >
 > **以下任一项未通过 → 不允许合并**
 
@@ -17,7 +17,7 @@ inclusion: always
 
 * [ ] `study_words / kana_learning_state`
   **只描述“当前状态”**
-* [ ] `study_logs / kana_logs`
+* [ ] `study_logs`
   **只描述“用户行为事件”**
 * [ ] 两者 **不互为推导来源**
 * [ ] 所有 Dashboard / Analytics 数值
@@ -42,7 +42,6 @@ inclusion: always
 * [ ] 是否 **完全没有** 从以下来源计算时间：
 
   * `study_logs`
-  * `kana_logs`
   * Session / Accumulator
   * 行为参数 `durationMs`
 * [ ] 页面驻留 < **最小阈值（2000ms）** 是否被静默丢弃
@@ -104,7 +103,6 @@ inclusion: always
 
   * `daily_stats`
   * `study_logs`
-  * `kana_logs`
 * [ ] 是否为 **去重后的实体数**（不是次数、不是历史）
 
 ---
@@ -153,7 +151,7 @@ inclusion: always
 
 ---
 
-### 行为日志（study_logs / kana_logs）
+### 行为日志（study_logs）
 
 **角色定义（冻结）**
 

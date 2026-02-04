@@ -13,7 +13,6 @@ class StudyLog {
   final double? fsrsStabilityAfter;
   final double? fsrsDifficultyAfter;
   final DateTime? nextReviewAtAfter;
-  final int durationMs;
   final DateTime createdAt;
 
   StudyLog({
@@ -29,7 +28,6 @@ class StudyLog {
     this.fsrsStabilityAfter,
     this.fsrsDifficultyAfter,
     this.nextReviewAtAfter,
-    this.durationMs = 0,
     required this.createdAt,
   });
 
@@ -54,7 +52,6 @@ class StudyLog {
               (map['next_review_at_after'] as int) * 1000,
             )
           : null,
-      durationMs: map['duration_ms'] as int? ?? 0,
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         (map['created_at'] as int) * 1000,
       ),
@@ -77,7 +74,6 @@ class StudyLog {
       'next_review_at_after': nextReviewAtAfter != null
           ? nextReviewAtAfter!.millisecondsSinceEpoch ~/ 1000
           : null,
-      'duration_ms': durationMs,
       'created_at': createdAt.millisecondsSinceEpoch ~/ 1000,
     };
   }
@@ -103,7 +99,6 @@ class StudyLog {
     double? fsrsStabilityAfter,
     double? fsrsDifficultyAfter,
     DateTime? nextReviewAtAfter,
-    int? durationMs,
     DateTime? createdAt,
   }) {
     return StudyLog(
@@ -119,7 +114,6 @@ class StudyLog {
       fsrsStabilityAfter: fsrsStabilityAfter ?? this.fsrsStabilityAfter,
       fsrsDifficultyAfter: fsrsDifficultyAfter ?? this.fsrsDifficultyAfter,
       nextReviewAtAfter: nextReviewAtAfter ?? this.nextReviewAtAfter,
-      durationMs: durationMs ?? this.durationMs,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -129,12 +123,6 @@ class StudyLog {
 
   /// 是否为初次学习
   bool get isFirstLearn => logType == LogType.firstLearn;
-
-  /// 学习时长（秒）
-  double get durationSeconds => durationMs / 1000.0;
-
-  /// 学习时长（分钟）
-  double get durationMinutes => durationMs / 1000.0 / 60.0;
 }
 
 /// 日志事件类型
@@ -148,7 +136,7 @@ enum LogType {
   /// 手动标记已掌握
   markMastered(3),
 
-  /// 手动忽略
+  /// 手动标记忽略
   markIgnored(4),
 
   /// 手动重置

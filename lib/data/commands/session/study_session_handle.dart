@@ -24,44 +24,38 @@ class StudySessionHandle {
 
   StudyWordCommand get _studyWordCommand => _ref.read(studyWordCommandProvider);
   StudyLogCommand get _studyLogCommand => _ref.read(studyLogCommandProvider);
-  void onFirstLearn({required int durationMs}) {
-    _recordEvent(SessionEventType.firstLearn, durationMs: durationMs);
+  void onFirstLearn() {
+    _recordEvent(SessionEventType.firstLearn);
   }
 
-  void onReviewCorrect({required int durationMs}) {
-    _recordEvent(SessionEventType.review, durationMs: durationMs);
+  void onReviewCorrect() {
+    _recordEvent(SessionEventType.review);
   }
 
-  void onReviewFailed({required int durationMs}) {
-    _recordEvent(SessionEventType.reviewFailed, durationMs: durationMs);
+  void onReviewFailed() {
+    _recordEvent(SessionEventType.reviewFailed);
   }
 
-  void onKanaReview({required int durationMs}) {
-    _recordEvent(SessionEventType.kanaReview, durationMs: durationMs);
+  void onKanaReview() {
+    _recordEvent(SessionEventType.kanaReview);
   }
 
-  Future<void> submitFirstLearn({
-    required int wordId,
-    required int durationMs,
-  }) async {
-    onFirstLearn(durationMs: durationMs);
+  Future<void> submitFirstLearn({required int wordId}) async {
+    onFirstLearn();
 
     await _studyWordCommand.markAsLearned(userId: userId, wordId: wordId);
   }
 
-  Future<void> submitKanaReview({
-    required int rating,
-    required int durationMs,
-  }) async {
-    onKanaReview(durationMs: durationMs);
+  Future<void> submitKanaReview({required int rating}) async {
+    onKanaReview();
   }
 
   Future<void> flush() async {
     await _guard.flushOnce(() async {});
   }
 
-  void _recordEvent(SessionEventType type, {int durationMs = 0}) {
-    final delta = SessionStatPolicy.deltaFor(type, durationMs: durationMs);
+  void _recordEvent(SessionEventType type) {
+    final delta = SessionStatPolicy.deltaFor(type);
     _accumulator.applyDelta(delta);
   }
 }

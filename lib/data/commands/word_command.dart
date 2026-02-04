@@ -189,7 +189,6 @@ class WordCommand {
       wordId: wordId,
       questionType: 'recall',
       logType: LogType.firstLearn,
-      durationMs: 0,
       intervalAfter: output.interval,
       easeFactorAfter: output.easeFactor,
       nextReviewAtAfter: output.nextReviewAt,
@@ -238,7 +237,6 @@ class WordCommand {
     required int userId,
     required int wordId,
     required ReviewRating rating,
-    int durationMs = 0,
     AlgorithmType? algorithmType,
   }) async {
     final existing = await _repo.getStudyWord(userId, wordId);
@@ -310,7 +308,6 @@ class WordCommand {
       userId: userId,
       wordId: wordId,
       rating: rating,
-      durationMs: durationMs,
       intervalAfter: output.interval,
       easeFactorAfter: output.easeFactor,
       nextReviewAtAfter: output.nextReviewAt,
