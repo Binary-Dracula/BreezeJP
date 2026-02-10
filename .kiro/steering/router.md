@@ -25,11 +25,11 @@ BreezeJP 使用 `go_router ^17.0.0` 实现 **声明式、集中式** 路由管�
 
 ### Router 的职责边界
 
-| 能做         | 不能做                    |
-| ---------- | ---------------------- |
-| 页面跳转       | ❌ 业务判断                 |
-| 参数传递       | ❌ 学习状态判断               |
-| 导航栈管理      | ❌ 统计 / analytics       |
+| 能做           | 不能做                   |
+| -------------- | ------------------------ |
+| 页面跳转       | ❌ 业务判断               |
+| 参数传递       | ❌ 学习状态判断           |
+| 导航栈管理     | ❌ 统计 / analytics       |
 | Debug 页面入口 | ❌ Session / Command 调用 |
 
 **Router ≠ Controller ≠ Feature 逻辑的一部分**
@@ -71,11 +71,11 @@ lib/router/app_router.dart
 
 ### 3️⃣ 导航方式（冻结）
 
-| 场景    | 方法                  |
-| ----- | ------------------- |
-| 普通跳转  | `context.go()`      |
+| 场景       | 方法                |
+| ---------- | ------------------- |
+| 普通跳转   | `context.go()`      |
 | 替换当前栈 | `context.replace()` |
-| 返回    | `context.pop()`     |
+| 返回       | `context.pop()`     |
 
 ❌ 禁止：
 
@@ -125,18 +125,16 @@ if (wordIdStr == null) {
 
 ## 五、当前路由结构（与代码一致）
 
-| 路由                        | 页面                                 | 模块                     | 参数       |
-| ------------------------- | ---------------------------------- | ---------------------- | -------- |
-| `/splash`                 | `SplashPage`                       | `features/splash`      | 无        |
-| `/home`                   | `HomePage`                         | `features/home`        | 无        |
-| `/initial-choice`         | `InitialChoicePage`                | `features/learn`       | 无        |
-| `/learn/:wordId`          | `LearnPage`                        | `features/learn`       | `wordId` |
-| `/kana-chart`             | `KanaChartPage`                    | `features/kana/chart`  | 无        |
-| `/matching_page`          | `MatchingPage`                     | `features/kana/review` | 无        |
-| `/debug`                  | `DebugPage`                        | `debug/pages`          | 无        |
-| `/debug/srs`              | `DebugSrsTestPage`                 | `debug/pages/tests`    | 无        |
-| `/debug/kana-review-data` | `DebugKanaReviewDataGeneratorPage` | `debug/pages/tests`    | 无        |
-| `/debug/statistics`       | `DebugStatisticsPage`              | `debug/pages`          | 无        |
+| 路由              | 页面                   | 模块                   | 参数     |
+| ----------------- | ---------------------- | ---------------------- | -------- |
+| `/splash`         | `SplashPage`           | `features/splash`      | 无       |
+| `/home`           | `HomePage`             | `features/home`        | 无       |
+| `/initial-choice` | `InitialChoicePage`    | `features/learn`       | 无       |
+| `/learn/:wordId`  | `LearnPage`            | `features/learn`       | `wordId` |
+| `/kana-chart`     | `KanaChartPage`        | `features/kana/chart`  | 无       |
+| `/matching_page`  | `MatchingPage`         | `features/kana/review` | 无       |
+| `/word-review`    | `WordReviewPage`       | `features/word_review` | 无       |
+| `/debug`          | `DebugPlaceholderPage` | `debug/pages`          | 无       |
 
 ---
 

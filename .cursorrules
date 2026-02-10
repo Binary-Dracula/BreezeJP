@@ -1,0 +1,140 @@
+# Cursor Rules & Preferences - BreezeJP
+
+## 1. 语言偏好 (Language Preference)
+- **请务必使用中文 (Chinese)** 回答所有问题和进行交流。
+- 代码注释使用中文。
+
+## 2. 技术栈 (Tech Stack)
+- **Framework**: Flutter 3.38.1
+- **Language**: Dart (SDK ^3.10.0)
+- **State Management**: Flutter Riverpod (`flutter_riverpod` ^3.0.3)
+  - 优先使用 `ConsumerWidget` 或 `ConsumerStatefulWidget`。
+  - 避免混合使用 `setState` 和 Riverpod，除非仅涉及局部且无关紧要的 UI 状态。
+- **Navigation**: GoRouter (`go_router` ^17.0.0)
+- **Database**: Sqflite
+- **Network**: Dio
+- **Localization**: `flutter_localizations` (intl)
+
+## 3. 代码风格 (Code Style)
+- **简洁性**: 保持代码简洁，避免过度工程化。
+- **注释**: 关键逻辑必须添加注释。
+- **类型安全**: 尽量显式声明类型，减少 `dynamic` 的使用。
+- **异步处理**: 正确使用 `async/await`，注意错误捕获 (try-catch)。
+- **命名**: 文件名 snake_case，类名 PascalCase，方法/变量 camelCase，DB 列 snake_case。
+- **日志**: 使用统一封装的 `logger`，❌ 禁止 `print()`。
+- **国际化**: 所有用户可见文本必须使用 `AppLocalizations`，❌ 禁止硬编码字符串。
+
+## 4. 特定行为 (Specific Behaviors)
+- **修改文件**: 在编辑文件时，尽量只展示修改的部分，除非为了上下文需要展示更多。
+- **引用库**: 优先使用项目 `pubspec.yaml` 中已有的库，不要随意引入新库。
+
+## 5. 项目结构 (Project Structure)
+- `lib/core`: 核心工具、常量、算法
+- `lib/data`: 数据层 (Models, Repositories, Commands, Queries, Analytics)
+- `lib/features`: 功能层 (Pages, Widgets, Controllers, State)
+- `lib/services`: 服务层 (AudioService 等)
+- `lib/l10n`: 国际化文件
+- `lib/router`: 路由配置
+
+---
+
+## 6. 架构红线 (Architecture Boundaries) ⛔
+
+> 以下规则从 `.kiro/steering/structure.md` 与 `freeze.md` 中提炼，**不可违反**。
+
+### 分层依赖规则
+
+| 层级 | 允许调用 | 禁止 |
+| ---- | -------- | ---- |
+| View | Controller | ❌ Repository / DB / 统计计算 |
+| Controller | Command / Query / Analytics | ❌ Repository / DB |
+| Command | Repository | ❌ 返回 Map / SQL 原始结构 |
+| Query / Analytics | Database (via Provider) | ❌ 任何写操作 |
+| Repository | Database | ❌ join / 统计 / 业务语义 |
+
+- **Controller 是 Feature 的唯一编排点**
+- **Repository 永不暴露给 Feature**
+- **Command 是所有写操作的唯一入口**
+
+### 模块依赖方向
+```
+Feature → Services → Data → Core
+```
+
+---
+
+## 7. 学习统计红线 (Analytics Constraints) ⛔
+
+> 以下规则从 `.kiro/steering/freeze.md` 与 `learning_analytics.md` 中提炼。
+
+### 数据模型角色（不可混用）
+- `study_words` / `kana_learning_state` = **状态表**（当前状态，不参与统计）
+- `study_logs` = **行为表**（只追加，不覆盖，不删除）
+- `daily_stats` = **统计表**（已确认口径的结果）
+
+### firstLearn 规则
+- `firstLearn` **只在用户点击「加入复习」时写入**
+- 每个 `(user_id, word_id)` **最多一条** firstLearn
+- ❌ 禁止从状态变化（seen → learning）推导 firstLearn
+- ❌ 禁止因 study_words 不存在而补写 firstLearn
+
+### 统计口径（冻结）
+- **今日学习** = `daily_stats.new_learned_count`，唯一来源是 firstLearn 事件
+- **今日复习** = `daily_stats.review_count`，行为发生时增量写入
+- **累计掌握** = 状态表中 `mastered` 的去重实体数
+- **学习时长** = `daily_stats.total_time_ms`，唯一写入口 `DailyStatCommand.applyTimeOnlyDelta`
+
+### 绝对禁止
+- ❌ 从 logs 回放推导统计
+- ❌ 从状态表反推事件
+- ❌ 混用 state-based 与 event-based 统计
+- ❌ 补算 / 修正 / 回填统计
+
+---
+
+## 8. Word vs Kana 差异 ⚠️
+
+| 维度 | Word（单词） | Kana（假名） |
+| ---- | ------------ | ------------ |
+| 数据模型 | Event + State | State only |
+| SRS | ✅ 独立 SRS | ✅ 独立 SRS |
+| study_logs | ✅ 写入 | ❌ 不写 |
+| daily_stats | ✅ 影响 | ❌ 不影响 |
+| firstLearn | ✅ 产生 | ❌ 不产生 |
+
+> ❌ **禁止统一 Word 与 Kana 的学习语义**，这是架构破坏。
+
+---
+
+## 9. 路由规则 (Router)
+- 所有路由集中在 `lib/router/app_router.dart`
+- 页面参数通过 GoRouter `pathParameters` 或 `extra` 传递
+- ❌ 禁止页面内部硬编码路径字符串
+- ❌ 禁止在 Router 中执行业务判断 / 统计 / Session 调用
+
+---
+
+## 10. 详细规则参考 (Steering Docs)
+
+> 修改相关代码前，**必须先阅读**对应的 steering 文档：
+
+| 改动类型 | 必读文档 |
+| -------- | -------- |
+| 学习状态 / 生命周期 | `.kiro/steering/freeze.md` |
+| 统计逻辑 | `.kiro/steering/statistics_checklist.md` |
+| 路由 | `.kiro/steering/router.md` |
+| 产品行为 | `.kiro/steering/product.md` |
+| 学习统计口径 | `.kiro/steering/learning_analytics.md` |
+| 架构分层 | `.kiro/steering/structure.md` |
+| 技术规范 | `.kiro/steering/tech.md` |
+| 数据库表结构 | `.kiro/steering/database.md` |
+
+### 文档优先级（冻结）
+```
+Freeze > Product > Structure > Tech
+```
+
+---
+
+## 11. 其他 (Misc)
+- 如果遇到构建错误，优先检查 generated files (`*.g.dart`, `*.freezed.dart` 等)，必要时建议运行 `dart run build_runner build --delete-conflicting-outputs`。

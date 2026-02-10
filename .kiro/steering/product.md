@@ -154,6 +154,7 @@ kana_learning_state
 WHERE
   user_id = current
   AND learning_status = learning
+  AND next_review_at <= now
 ```
 
 #### 说明
@@ -195,12 +196,12 @@ Stats Card **仅用于展示结果**。
 
 ### 学习状态（展示语义）
 
-| 状态       | 用户感知含义     |
-| -------- | ---------- |
+| 状态     | 用户感知含义         |
+| -------- | -------------------- |
 | seen     | 看过，但尚未决定学习 |
-| learning | 已加入复习      |
-| mastered | 已完成学习      |
-| ignored  | 明确不学       |
+| learning | 已加入复习           |
+| mastered | 已完成学习           |
+| ignored  | 明确不学             |
 
 ### 用户操作反馈
 

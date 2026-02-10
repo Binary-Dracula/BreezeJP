@@ -143,7 +143,7 @@ inclusion: always
 
 * [x] Word：firstLearn **只允许在“加入复习”入口写入**
 * [x] Word：state 与 event 完全解耦
-* [x] Kana：不写 event / log / stats
+* [x] Kana：独立 SRS，不写 event (study_logs) / stats (daily_stats)
 * [x] Command 不以 state 推导 event
 * [x] Command 不以 event 反写 state（除非明确冻结规则允许）
 
@@ -151,14 +151,14 @@ inclusion: always
 
 ## 五、Word 学习生命周期冻结（最终）
 
-| 行为 | study_words | study_logs |
-|----|------------|------------|
-| PageView 展示 | seen（若不存在则创建） | ❌ |
-| 点击加入复习 | learning | firstLearn（仅一次） |
-| 播放音频 | 不变 | ❌ |
-| 一键掌握 | mastered | mastered log |
-| 点击忽略 | ignored | ignored log |
-| 恢复学习 | seen | ❌ |
+| 行为          | study_words            | study_logs           |
+| ------------- | ---------------------- | -------------------- |
+| PageView 展示 | seen（若不存在则创建） | ❌                    |
+| 点击加入复习  | learning               | firstLearn（仅一次） |
+| 播放音频      | 不变                   | ❌                    |
+| 一键掌握      | mastered               | mastered log         |
+| 点击忽略      | ignored                | ignored log          |
+| 恢复学习      | seen                   | ❌                    |
 
 ### 明确禁止
 
@@ -172,12 +172,14 @@ inclusion: always
 
 ### 1️⃣ 模型定位（裁决）
 
-Kana 为 **技能熟练度模型**，而非记忆 / 探索模型。
+### 1️⃣ 模型定位（裁决）
 
-* 不进入 SRS
-* 不产生 firstLearn
-* 不写学习统计
-* 不与 Word 学习模型同构
+Kana 为 **技能熟练度与记忆模型**。
+
+*   ✅ **独立 SRS 系统**：拥有独立的复习调度（next_review_at / stability / difficulty）
+*   ❌ 不产生 `firstLearn` 事件（不计入今日新学）
+*   ❌ 不写 `study_logs`（无 event 记录）
+*   ❌ 不与 Word 学习模型同构（表结构独立）
 
 ---
 
@@ -201,7 +203,7 @@ mastered
 * ignored
 * restore
 * joinLearning
-* review / SRS 相关状态
+* 显式 review 状态 (使用 learning + SRS 数据代替)
 
 ---
 
@@ -251,9 +253,10 @@ learning ↔ mastered
 
 #### 明确禁止
 
-* ❌ 写 logs
-* ❌ 写统计
-* ❌ 写 SRS / review
+#### 明确禁止
+
+* ❌ 写 `study_logs` (Event)
+* ❌ 写 `daily_stats` (Analytics)
 * ❌ 自动状态迁移
 
 ---

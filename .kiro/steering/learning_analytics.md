@@ -18,17 +18,17 @@ inclusion: always
 
 本规则适用于：
 
-* 假名（Kana）学习
-* 单词（Word）学习
-* Dashboard / Home 页面统计
-* 成就系统（若有）
-* 周报 / 月报 / 学习总结（若有）
+*   **单词（Word）学习**：完整遵循 Event-based + State-based 模型
+*   **假名（Kana）学习**：目前仅遵循 State-based 模型（`kana_learning_state`），**暂不计入 `study_logs`**
+*   Dashboard / Home 页面统计
+*   成就系统（若有）
+*   周报 / 月报 / 学习总结（若有）
 
 不适用于：
 
-* UI 展示样式
-* 数据库存储结构
-* SRS 算法内部参数
+*   UI 展示样式
+*   数据库存储结构
+*   SRS 算法内部参数
 
 ---
 
@@ -36,10 +36,10 @@ inclusion: always
 
 在 BreezeJP 中，**学习统计必须严格区分三类数据角色**：
 
-| 数据源           | 类型          | 角色      |
-| ------------- | ----------- | ------- |
-| `study_words` | State-based | 当前状态    |
-| `study_logs`  | Event-based | 用户行为事件  |
+| 数据源        | 类型        | 角色           |
+| ------------- | ----------- | -------------- |
+| `study_words` | State-based | 当前状态       |
+| `study_logs`  | Event-based | 用户行为事件   |
 | `daily_stats` | Analytics   | 已确认统计结果 |
 
 > ❗ 任何统计口径 **只能来自一个角色**
@@ -51,12 +51,12 @@ inclusion: always
 
 以下状态**仅用于描述当前状态，不直接参与统计计算**：
 
-| Status     | Description           |
-| ---------- | --------------------- |
+| Status     | Description                                |
+| ---------- | ------------------------------------------ |
 | `seen`     | 已曝光。内容被展示，但用户尚未做出学习承诺 |
-| `learning` | 学习中。当前参与 SRS          |
-| `mastered` | 已掌握。学习生命周期完成          |
-| `ignored`  | 已忽略。用户明确选择不学习         |
+| `learning` | 学习中。当前参与 SRS                       |
+| `mastered` | 已掌握。学习生命周期完成                   |
+| `ignored`  | 已忽略。用户明确选择不学习                 |
 
 ### 重要说明
 
@@ -207,11 +207,11 @@ completion_rate = mastered / (learning + mastered)
 ## 10. SRS Participation Rules（SRS 参与规则）
 
 | Status     | 是否进入 SRS |
-| ---------- | -------- |
-| `seen`     | ❌        |
-| `learning` | ✅        |
-| `mastered` | ❌        |
-| `ignored`  | ❌        |
+| ---------- | ------------ |
+| `seen`     | ❌            |
+| `learning` | ✅            |
+| `mastered` | ❌            |
+| `ignored`  | ❌            |
 
 > SRS **只对 learning 状态负责**
 > 任何其它状态进入 SRS 都属于严重逻辑错误

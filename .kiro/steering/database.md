@@ -8,11 +8,11 @@ inclusion: always
 
 **数据库**：位于 `assets/database/breeze_jp.sqlite` 的本地 SQLite  
 **访问方式**：Repository 内部使用 `AppDatabase.instance`，Query / Analytics 通过 `databaseProvider` 注入 Database（Controller / Debug 不直接访问）  
-**16 张核心表**：
+**15 张核心表**：
 
 - **单词学习**：words、word_meanings、word_audio、example_sentences、example_audio、word_relations
 - **用户进度**：study_words、study_logs、daily_stats、users、app_state
-- **假名学习**：kana_letters、kana_audio、kana_examples、kana_learning_state、kana_logs、kana_stroke_order
+- **假名学习**：kana_letters、kana_audio、kana_examples、kana_learning_state、kana_stroke_order
 
 ## AI 助手必须遵守的规则
 
@@ -45,7 +45,6 @@ inclusion: always
 | kana_audio          | id   | 假名发音文件         | -                                                                   |
 | kana_examples       | id   | 假名示例词           | -                                                                   |
 | kana_learning_state | id   | 假名学习进度         | idx_kana_review_schedule (user_id, learning_status, next_review_at) |
-| kana_logs           | id   | 假名学习日志         | idx_kana_logs (user_id, kana_id, created_at)                        |
 | kana_stroke_order   | id   | 假名笔顺 SVG         | -                                                                   |
 
 ---
@@ -174,7 +173,7 @@ CREATE INDEX idx_study_schedule ON study_words (user_id, user_state, next_review
 **关键字段**：
 
 - `log_type`: 1=初学, 2=复习, 3=掌握, 4=忽略, 5=重置
-- `rating`: 1=Again/Hard, 2=Good, 3=Easy（非复习操作可为 NULL）
+- `rating`: 1=Again, 2=Hard, 3=Good, 4=Easy（非复习操作可为 NULL）
 - `algorithm`: 1=SM-2, 2=FSRS
 - `*_after`: 记录操作后的 SRS 状态快照
 
@@ -187,14 +186,13 @@ CREATE TABLE study_logs (
     word_id               INTEGER NOT NULL,
     question_type         TEXT,                         -- recall / audio / switchMode
     log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=忽略, 5=重置
-    rating                INTEGER,                      -- 1=Hard, 2=Good, 3=Easy
+    rating                INTEGER,                      -- 1=Again, 2=Hard, 3=Good, 4=Easy
     algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS
     interval_after        REAL,                         -- 操作后间隔
     next_review_at_after  INTEGER,                      -- 操作后复习时间
     ease_factor_after     REAL,                         -- [SM-2] 操作后 EF
     fsrs_stability_after  REAL,                         -- [FSRS] 操作后 S
     fsrs_difficulty_after REAL,                         -- [FSRS] 操作后 D
-    duration_ms           INTEGER DEFAULT 0,            -- 学习耗时 (毫秒)
     created_at            INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL -- 创建时间
 );
 
@@ -263,7 +261,8 @@ CREATE TABLE app_state (
 
 ### word_relations
 
-**作用**：用于语义分支学习的关联词
+**作用**：用于语义分支学习的关联词  
+**模型类**：无独立 `WordRelation` 模型，查询结果使用 `WordWithRelation` DTO（包含 `Word` + `score` + `relationType`）
 
 **关键字段**：
 
@@ -307,18 +306,20 @@ CREATE INDEX idx_word_relations_related_word_id ON word_relations (related_word_
 
 ```sql
 CREATE TABLE kana_letters (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    hiragana   TEXT,                              -- 平假名 (如 あ)
-    katakana   TEXT,                              -- 片假名 (如 ア)
-    romaji     TEXT,                              -- 罗马音 (如 a)
-    consonant  TEXT,                              -- 辅音 (如 k, s, t)
-    vowel      TEXT,                              -- 元音 (如 a, i, u, e, o)
-    kana_group TEXT,                              -- 行分组 (如 あ行, か行)
-    type       TEXT,                              -- 类型 (清音/濁音/半濁音/拗音/外来音)
-    sort_index INTEGER,                           -- 排序索引
-    mnemonic   TEXT,                              -- 记忆助记词
-    created_at TEXT,
-    updated_at TEXT
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    kana_char      TEXT,                              -- 假名字符 (如 あ / ア)
+    script_kind    TEXT,                              -- 脚本类型 (hiragana / katakana)
+    romaji         TEXT,                              -- 罗马音 (如 a)
+    consonant      TEXT,                              -- 辅音 (如 k, s, t)
+    vowel          TEXT,                              -- 元音 (如 a, i, u, e, o)
+    row_group      TEXT,                              -- 行分组 (如 あ行, か行)
+    kana_category  TEXT,                              -- 类型 (清音/濁音/半濁音/拗音/外来音)
+    display_order  INTEGER,                           -- 排序索引
+    pair_group_id  INTEGER,                           -- 平片假名配对组 ID
+    audio_id       INTEGER,                           -- 关联音频 ID
+    mnemonic       TEXT,                              -- 记忆助记词
+    created_at     TEXT,
+    updated_at     TEXT
 );
 ```
 
@@ -327,9 +328,8 @@ CREATE TABLE kana_letters (
 ```sql
 CREATE TABLE kana_audio (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    kana_id        INTEGER REFERENCES kana_letters(id),  -- 关联假名
     audio_filename TEXT,                                  -- 音频文件名
-    source         TEXT,                                  -- 音频来源
+    audio_source   TEXT,                                  -- 音频来源
     created_at     TEXT
 );
 ```
@@ -392,41 +392,6 @@ CREATE INDEX idx_kana_review_schedule
 ON kana_learning_state (user_id, learning_status, next_review_at);
 ```
 
-### kana_logs
-
-**作用**：假名学习行为日志（与 `study_logs` 对齐）  
-**关键字段**：
-
-- `log_type`: 1=初学, 2=复习, 3=掌握, 4=测验, 5=忘记/失败
-- 插入式日志，便于分析
-
-```sql
-CREATE TABLE kana_logs (
-    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id               INTEGER NOT NULL REFERENCES users(id),
-    kana_id               INTEGER NOT NULL REFERENCES kana_letters(id),
-
-    question_type         TEXT,                         -- recall / audio / switchMode
-
-    log_type              INTEGER NOT NULL,             -- 1=初学, 2=复习, 3=掌握, 4=测验, 5=重置
-    rating                INTEGER,                      -- 1=Again, 2=Good, 3=Easy
-    algorithm             INTEGER DEFAULT 1,            -- 1=SM-2, 2=FSRS
-
-    interval_after        REAL,                         -- 操作后：SM-2 复习间隔
-    next_review_at_after  INTEGER,                      -- 操作后：下次复习时间戳
-    ease_factor_after     REAL,                         -- 操作后 EF（SM-2）
-
-    fsrs_stability_after  REAL,                         -- 操作后 S（FSRS）
-    fsrs_difficulty_after REAL,                         -- 操作后 D（FSRS）
-
-    duration_ms           INTEGER DEFAULT 0,            -- 单次学习耗时
-    created_at            INTEGER DEFAULT (strftime('%s','now')) NOT NULL
-);
-
-CREATE INDEX idx_kana_logs
-ON kana_logs (user_id, kana_id, created_at);
-```
-
 ### kana_stroke_order
 
 ```sql
@@ -456,10 +421,9 @@ users (1) ──< (N) daily_stats
 ### 假名学习模块
 
 ```
-kana_letters (1) ──< (N) kana_audio
+kana_letters (N) >── (1) kana_audio (via audio_id)
              (1) ──< (N) kana_examples
              (1) ──< (1) kana_learning_state (per user)
-             (1) ──< (N) kana_logs
              (1) ──< (1) kana_stroke_order
 ```
 
