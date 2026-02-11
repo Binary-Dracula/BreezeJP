@@ -8,11 +8,15 @@ class ReviewKanaItem {
   final String? audioFilename;
   final ReviewQuestionType questionType;
 
+  /// switchMode 题型使用：配对的对应假名（平假名 ↔ 片假名）
+  final KanaLetter? counterpartLetter;
+
   ReviewKanaItem({
     required this.kanaLetter,
     required this.learningState,
     this.audioFilename,
     required this.questionType,
+    this.counterpartLetter,
   });
 }
 

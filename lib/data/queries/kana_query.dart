@@ -39,9 +39,7 @@ class KanaQuery {
       );
 
       return results
-          .map(
-            (map) => KanaGroupItem(group: map['row_group'] as String),
-          )
+          .map((map) => KanaGroupItem(group: map['row_group'] as String))
           .toList();
     } catch (e, stackTrace) {
       logger.dbError(
@@ -73,9 +71,7 @@ class KanaQuery {
       );
 
       return results
-          .map(
-            (map) => KanaTypeItem(type: map['kana_category'] as String),
-          )
+          .map((map) => KanaTypeItem(type: map['kana_category'] as String))
           .toList();
     } catch (e, stackTrace) {
       logger.dbError(
@@ -512,6 +508,45 @@ class KanaQuery {
       logger.dbError(
         operation: 'SELECT',
         table: 'kana_examples',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 根据 pair_group_id 查找指定假名的配对假名（平假名 ↔ 片假名）。
+  ///
+  /// 例如：给定平假名 あ，返回片假名 ア（相同 pair_group_id，不同 script_kind）。
+  /// 若无 pair_group_id 或找不到对应配对，返回 null。
+  Future<KanaLetter?> getKanaCounterpart(KanaLetter letter) async {
+    if (letter.pairGroupId == null) return null;
+
+    final oppositeKind = letter.scriptKind == KanaScriptKind.hiragana
+        ? 'katakana'
+        : 'hiragana';
+
+    try {
+      final results = await _db.query(
+        'kana_letters',
+        where: 'pair_group_id = ? AND script_kind = ?',
+        whereArgs: [letter.pairGroupId, oppositeKind],
+        limit: 1,
+      );
+
+      logger.dbQuery(
+        table: 'kana_letters',
+        where:
+            'pair_group_id = ${letter.pairGroupId}, script_kind = $oppositeKind',
+        resultCount: results.length,
+      );
+
+      if (results.isEmpty) return null;
+      return KanaLetter.fromMap(results.first);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_letters',
         dbError: e,
         stackTrace: stackTrace,
       );

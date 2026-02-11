@@ -521,9 +521,20 @@ class MatchingController extends Notifier<MatchingState> {
         continue;
       }
 
-      final audio =
-          await _kanaQuery.getKanaAudioByKanaId(learningState.kanaId);
+      final audio = await _kanaQuery.getKanaAudioByKanaId(learningState.kanaId);
       final questionType = _chooseQuestionType(learningState);
+
+      // switchMode 题型需要查找配对假名（平假名 ↔ 片假名）
+      KanaLetter? counterpart;
+      if (questionType == ReviewQuestionType.switchMode) {
+        counterpart = await _kanaQuery.getKanaCounterpart(letter);
+        if (counterpart == null) {
+          logger.warning(
+            '假名无配对项，跳过 switchMode: kanaId=${letter.id} char=${letter.kanaChar}',
+          );
+          continue;
+        }
+      }
 
       items.add(
         ReviewKanaItem(
@@ -531,6 +542,7 @@ class MatchingController extends Notifier<MatchingState> {
           learningState: learningState,
           audioFilename: audio?.audioFilename,
           questionType: questionType,
+          counterpartLetter: counterpart,
         ),
       );
     }
@@ -582,7 +594,10 @@ class MatchingController extends Notifier<MatchingState> {
       case ReviewQuestionType.audio:
         return _kanaDisplay(item.kanaLetter);
       case ReviewQuestionType.switchMode:
-        return _kanaDisplay(item.kanaLetter);
+        // 右侧显示配对假名（平假名 ↔ 片假名）
+        return item.counterpartLetter != null
+            ? _kanaDisplay(item.counterpartLetter!)
+            : _kanaDisplay(item.kanaLetter);
     }
   }
 

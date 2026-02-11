@@ -344,7 +344,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
           subtitle: l10n.wordBookSubtitle,
           color: Colors.amber,
           onTap: () {
-            // TODO: 跳转到词库列表页
+            context.push('/vocabulary-book');
           },
         ),
         _buildToolCard(

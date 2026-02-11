@@ -66,6 +66,57 @@ Dashboard 的职责是 **调度与入口**，而非任务管理。
 
 ---
 
+### Tools Grid 详细说明
+
+#### 1️⃣ 单词本（Vocabulary Book）
+
+展示用户已学习和已掌握的单词，提供快速状态切换与回顾能力。
+
+##### 入口
+
+* 首页 Tools Grid「单词本」卡片
+* 路由：`/vocabulary-book`
+
+##### 页面结构
+
+* **统计摘要**：展示学习中 / 已掌握的单词数量
+* **TabBar 切换**：「学习中」与「已掌握」两个分页
+* **搜索**：支持按单词、假名、释义搜索过滤
+* **列表项**：单词、假名、释义、JLPT 等级、播放音频按钮、状态切换按钮
+
+##### 用户操作
+
+| 操作     | 当前状态 | 目标状态 | 含义             |
+| -------- | -------- | -------- | ---------------- |
+| 标记掌握 | learning | mastered | 确认已掌握该单词 |
+| 恢复学习 | mastered | learning | 重新加入复习队列 |
+
+##### 数据来源（只读）
+
+```text
+study_words
+  INNER JOIN words
+  LEFT JOIN word_meanings
+  LEFT JOIN word_audio
+WHERE
+  user_id = current
+  AND user_state IN (learning, mastered)
+ORDER BY updated_at DESC
+```
+
+##### 写操作
+
+* 状态变更复用 `WordCommand`（`markWordAsMastered` / `addWordToReview`）
+* 不引入新的 Command
+
+##### 约束
+
+* 列表按 `updated_at` 降序排列
+* 分页加载，每页 20 条
+* 点击列表项可跳转到 `/learn/:wordId` 查看详情
+
+---
+
 ## 五、Header（顶部区域）
 
 展示内容：
