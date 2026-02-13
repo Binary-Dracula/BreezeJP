@@ -39,6 +39,7 @@ dependencies:
   # 日志
   logger: ^2.5.0
   xml: ^6.6.1
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:

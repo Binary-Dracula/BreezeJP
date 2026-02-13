@@ -8,6 +8,7 @@ import '../features/learn/pages/learn_page.dart';
 import '../features/kana/chart/pages/kana_chart_page.dart';
 import '../features/word_review/pages/word_review_page.dart';
 import '../features/vocabulary_book/pages/vocabulary_book_page.dart';
+import '../features/statistics/pages/statistics_page.dart';
 import '../debug/pages/debug_placeholder_page.dart';
 import 'app_route_observer.dart';
 
@@ -79,6 +80,13 @@ final appRouter = GoRouter(
       path: '/debug',
       name: 'debug',
       builder: (context, state) => const DebugPlaceholderPage(),
+    ),
+
+    // 详细统计页面
+    GoRoute(
+      path: '/statistics',
+      name: 'statistics',
+      builder: (context, state) => const StatisticsPage(),
     ),
   ],
 );

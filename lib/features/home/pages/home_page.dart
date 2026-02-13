@@ -255,7 +255,10 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
   }
 
   Widget _buildStatsCard(BuildContext context, HomeState state) {
-    final isNewUser = state.masteredWordCount == 0 && state.streakDays == 0;
+    final hasActivity =
+        state.newWordCount > 0 ||
+        state.todayReviewCount > 0 ||
+        state.todayStudyDurationMinutes > 0;
 
     return Container(
       width: double.infinity,
@@ -274,50 +277,37 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          Row(
             children: [
-              _StatTile(
-                label: '今日学习',
-                value: '${state.newWordCount}',
-                icon: Icons.auto_awesome_rounded,
-                color: const Color(0xFF6366F1),
+              Expanded(
+                child: _buildStatColumn(
+                  icon: Icons.auto_awesome_rounded,
+                  color: const Color(0xFF6366F1),
+                  label: '今日学习',
+                  value: '${state.newWordCount}',
+                ),
               ),
-              _StatTile(
-                label: '今日复习',
-                value: '${state.todayReviewCount}',
-                icon: Icons.repeat_rounded,
-                color: const Color(0xFF14B8A6),
+              Container(width: 1, height: 48, color: Colors.grey.shade200),
+              Expanded(
+                child: _buildStatColumn(
+                  icon: Icons.repeat_rounded,
+                  color: const Color(0xFF14B8A6),
+                  label: '今日复习',
+                  value: '${state.todayReviewCount}',
+                ),
               ),
-              _StatTile(
-                label: '今日时长',
-                value: '${state.todayStudyDurationMinutes} 分钟',
-                icon: Icons.timer_outlined,
-                color: const Color(0xFF0EA5E9),
+              Container(width: 1, height: 48, color: Colors.grey.shade200),
+              Expanded(
+                child: _buildStatColumn(
+                  icon: Icons.timer_outlined,
+                  color: const Color(0xFF0EA5E9),
+                  label: '今日时长',
+                  value: '${state.todayStudyDurationMinutes}分钟',
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _StatTile(
-                label: '累计掌握',
-                value: '${state.masteredWordCount}',
-                icon: Icons.workspace_premium_outlined,
-                color: const Color(0xFFF59E0B),
-              ),
-              _StatTile(
-                label: '连续学习',
-                value: '${state.streakDays} 天',
-                icon: Icons.local_fire_department_rounded,
-                color: const Color(0xFFEF4444),
-              ),
-            ],
-          ),
-          if (isNewUser) ...[
+          if (!hasActivity) ...[
             const SizedBox(height: 12),
             Text(
               '今天还没有开始学习，试着学一个新单词吧',
@@ -329,90 +319,152 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     );
   }
 
-  Widget _buildToolsGrid(BuildContext context, AppLocalizations l10n) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.2,
+  /// 单列统计项（居中排列：图标 + 标签 + 数值）
+  Widget _buildStatColumn({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        _buildToolCard(
-          icon: Icons.book_outlined,
-          title: l10n.wordBook,
-          subtitle: l10n.wordBookSubtitle,
-          color: Colors.amber,
-          onTap: () {
-            context.push('/vocabulary-book');
-          },
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 18),
         ),
-        _buildToolCard(
-          icon: Icons.bar_chart_rounded,
-          title: l10n.detailedStats,
-          subtitle: l10n.detailedStatsSubtitle,
-          color: Colors.teal,
-          onTap: () {
-            // TODO: 跳转到统计详情页
-          },
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
         ),
-        _buildToolCard(
-          icon: Icons.extension_rounded,
-          title: '更多工具',
-          subtitle: '预留未来功能',
-          color: Colors.deepPurple,
-          onTap: () {},
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildToolCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+  Widget _buildToolsGrid(BuildContext context, AppLocalizations l10n) {
+    final tools = [
+      _ToolItem(
+        icon: Icons.book_outlined,
+        title: l10n.wordBook,
+        subtitle: l10n.wordBookSubtitle,
+        gradient: const [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+        onTap: () => context.push('/vocabulary-book'),
+      ),
+      _ToolItem(
+        icon: Icons.bar_chart_rounded,
+        title: l10n.detailedStats,
+        subtitle: l10n.detailedStatsSubtitle,
+        gradient: const [Color(0xFF14B8A6), Color(0xFF0D9488)],
+        onTap: () => context.push('/statistics'),
+      ),
+      _ToolItem(
+        icon: Icons.extension_rounded,
+        title: '更多工具',
+        subtitle: '预留未来功能',
+        gradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+        onTap: () {},
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < tools.length; i++) ...[
+            _buildToolRow(tools[i]),
+            if (i < tools.length - 1)
+              Divider(
+                height: 1,
+                indent: 68,
+                endIndent: 16,
+                color: Colors.grey.shade100,
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolRow(_ToolItem item) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: item.onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              // 渐变图标
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: item.gradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(item.icon, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              // 标题 + 副标题
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey.shade400,
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -630,62 +682,19 @@ class _ReviewCard extends StatelessWidget {
   }
 }
 
-class _StatTile extends StatelessWidget {
-  final String label;
-  final String value;
+/// 工具项数据
+class _ToolItem {
   final IconData icon;
-  final Color color;
+  final String title;
+  final String subtitle;
+  final List<Color> gradient;
+  final VoidCallback onTap;
 
-  const _StatTile({
-    required this.label,
-    required this.value,
+  const _ToolItem({
     required this.icon,
-    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.gradient,
+    required this.onTap,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 150,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
