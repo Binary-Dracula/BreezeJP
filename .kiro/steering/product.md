@@ -10,7 +10,9 @@ inclusion: always
 
 ## 一、产品概述
 
-BreezeJP 是一款追求极致「心流」体验的日语学习 App，核心聚焦 **单词（Word）与五十音（Kana）** 两类基础学习对象。
+BreezeJP 是一款追求极致「心流」体验的日语学习 App，核心聚焦 **单词（Word）、语法（Grammar）与五十音（Kana）** 三类基础学习对象。
+
+
 
 产品通过：
 
@@ -168,6 +170,21 @@ ORDER BY updated_at DESC
 
 ---
 
+### 3️⃣ 学习语法（Learn Grammar）
+
+#### 行为特征（用户视角）
+
+*   类似单词学习的探索流, 但是没有单词的岛的概念
+*   展示接续、含义、典型例句
+*   重点在于**理解构造**与**语感培养**
+
+#### 产品级约束（冻结）
+
+*   展示 ≠ 已学习
+*   不产生学习统计
+
+---
+
 ## 七、Review Section（复习入口）
 
 复习是 BreezeJP 中**唯一明确的强学习入口**。
@@ -212,6 +229,25 @@ WHERE
 
 * Kana 复习不参与 Word 的学习统计
 * 复习机制与 Word 完全独立
+
+---
+
+### 3️⃣ 复习语法（Review Grammar）
+
+#### 数据来源（只读）
+
+```text
+study_grammars
+WHERE
+  user_id = current
+  AND learning_status = learning
+  AND next_review_at <= now
+```
+
+#### 说明
+
+*   复用 FSRS 算法 (与 Word 类似)
+*   拥有独立的复习队列，不与单词混杂
 
 ---
 

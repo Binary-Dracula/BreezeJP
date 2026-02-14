@@ -87,23 +87,29 @@ class LearnController extends Notifier<LearnState> {
         }
       }
 
-      // 3. 初始化学习队列
+      // 3. 初始化学习队列（第一个岛）
       final queueWithState = await _applyUserStates(userId, [
         selectedWord,
         ...relatedDetails,
       ]);
+
+      // 4. 记录第一个岛的结束索引
+      final firstIslandEndIndex = queueWithState.length - 1;
+
       state = state.copyWith(
         studyQueue: queueWithState,
         currentIndex: 0,
         learnedWordIds: {},
         isLoading: false,
-        pathEnded: relatedWords.isEmpty,
+        pathEnded: false,
+        islandEndIndices: [firstIslandEndIndex],
       );
       await _onWordsLoaded(queueWithState);
 
       logger.learnSessionStart(userId: userId);
       logger.info(
-        '学习初始化完成: 起始单词=${selectedWord.word.word}, 关联词=${relatedDetails.length}个',
+        '学习初始化完成: 起始单词=${selectedWord.word.word}, '
+        '关联词=${relatedDetails.length}个, 首岛结束索引=$firstIslandEndIndex',
       );
     } catch (e, stackTrace) {
       logger.error('学习初始化失败', e, stackTrace);
@@ -124,12 +130,9 @@ class LearnController extends Notifier<LearnState> {
     // 触发触觉反馈
     HapticFeedback.lightImpact();
 
-    // 检查是否到达队列末尾，触发加载更多
-    if (state.isAtQueueEnd && !state.pathEnded && !state.isLoadingMore) {
-      final currentWord = state.currentWordDetail;
-      if (currentWord != null) {
-        await loadRelatedWords(currentWord.word.id);
-      }
+    // 检查是否到达当前岛的末尾，触发加载下一个岛
+    if (state.isAtIslandEnd && !state.pathEnded && !state.isLoadingMore) {
+      await loadNextIsland();
     }
 
     logger.learnWordView(
@@ -139,26 +142,42 @@ class LearnController extends Notifier<LearnState> {
     );
   }
 
-  /// 加载关联词
-  Future<void> loadRelatedWords(int wordId) async {
+  /// 加载下一个岛（随机种子词 + 关联词）
+  Future<void> loadNextIsland() async {
     state = state.copyWith(isLoadingMore: true);
 
     try {
       final userId = await _ensureUserId();
       final wordQueries = ref.read(wordReadQueriesProvider);
-      final relatedWords = await wordQueries.getRelatedWords(
+
+      // 收集队列中已有的 word ID，避免重复
+      final existingIds = state.studyQueue.map((w) => w.word.id).toList();
+
+      // 1. 随机选取新种子词（N5 优先，排除已有）
+      final seedWord = await wordQueries.getRandomUnmasteredSeedWord(
         userId: userId,
-        wordId: wordId,
+        excludeIds: existingIds,
       );
 
-      if (relatedWords.isEmpty) {
-        // 断链：没有更多关联词
+      if (seedWord == null) {
+        // 词库耗尽：没有更多未掌握的词
         state = state.copyWith(isLoadingMore: false, pathEnded: true);
-        logger.info('路径结束: 单词 $wordId 没有更多关联词');
+        logger.info('路径结束: 没有更多未掌握的单词');
         return;
       }
 
-      // 加载关联词详情
+      // 2. 加载种子词详情
+      final seedDetail = await _loadWordDetailWithLog(seedWord.id);
+      if (seedDetail == null) {
+        state = state.copyWith(isLoadingMore: false, pathEnded: true);
+        return;
+      }
+
+      // 3. 加载种子词的关联词
+      final relatedWords = await wordQueries.getRelatedWords(
+        userId: userId,
+        wordId: seedWord.id,
+      );
       final relatedDetails = <WordDetail>[];
       for (final related in relatedWords) {
         final detail = await _loadWordDetailWithLog(related.word.id);
@@ -167,20 +186,29 @@ class LearnController extends Notifier<LearnState> {
         }
       }
 
-      final updatedRelatedDetails = await _applyUserStates(
-        userId,
-        relatedDetails,
-      );
+      // 4. 组装新岛：种子词 + 关联词
+      final islandWords = await _applyUserStates(userId, [
+        seedDetail,
+        ...relatedDetails,
+      ]);
 
-      // 追加到学习队列
+      // 5. 记录新岛的结束索引
+      final newIslandEndIndex =
+          state.studyQueue.length + islandWords.length - 1;
+
+      // 6. 追加到学习队列
       state = state.copyWith(
-        studyQueue: [...state.studyQueue, ...updatedRelatedDetails],
+        studyQueue: [...state.studyQueue, ...islandWords],
         isLoadingMore: false,
+        islandEndIndices: [...state.islandEndIndices, newIslandEndIndex],
       );
 
-      logger.info('加载关联词完成: ${relatedDetails.length}个新单词');
+      logger.info(
+        '新岛加载完成: 种子词=${seedWord.word}, '
+        '关联词=${relatedDetails.length}个, 岛结束索引=$newIslandEndIndex',
+      );
     } catch (e, stackTrace) {
-      logger.error('加载关联词失败', e, stackTrace);
+      logger.error('加载新岛失败', e, stackTrace);
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }

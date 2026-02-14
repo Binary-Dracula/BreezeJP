@@ -274,7 +274,25 @@ learning ↔ mastered
 
 ---
 
-## 七、最终冻结裁决（最高约束）
+## 七、Grammar 学习规则（冻结）
+
+### 1️⃣ 模型定位
+
+**SRS 驱动的纯状态模型**。
+
+*   ✅ **复用 Word 的 FSRS 算法** (stability / difficulty / interval)
+*   ❌ **不产生 `study_logs`** (无行为历史)
+*   ❌ **不参与 `daily_stats`** (不计入学习量/复习量)
+
+### 2️⃣ 数据模型
+
+*   表：`study_grammars`
+*   唯一性：`(user_id, grammar_id)`
+*   字段语义与 `study_words` 对齐
+
+---
+
+## 八、最终冻结裁决（最高约束）
 
 > **Word：事件驱动学习模型（state + event + analytics）**
 > **Kana：一次性学习确认 + 极简状态机**

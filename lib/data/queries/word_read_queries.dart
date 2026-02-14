@@ -175,10 +175,7 @@ class WordReadQueries {
   }
 
   /// 搜索单词（按单词文本、假名或罗马音）
-  Future<List<Word>> searchWords({
-    required String keyword,
-    int? limit,
-  }) async {
+  Future<List<Word>> searchWords({required String keyword, int? limit}) async {
     try {
       final db = _db;
       final results = await db.query(
@@ -291,11 +288,20 @@ class WordReadQueries {
       final wordIdRows = await db.rawQuery(
         '''
         SELECT w.id
-        FROM words w
-        LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
-        WHERE sw.user_state IS NULL OR sw.user_state IN (0, 1)
-        ORDER BY RANDOM()
-        LIMIT ?
+      FROM words w
+      LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
+      WHERE sw.user_state IS NULL OR sw.user_state IN (0, 1)
+      ORDER BY
+        CASE w.jlpt_level
+          WHEN 'N5' THEN 1
+          WHEN 'N4' THEN 2
+          WHEN 'N3' THEN 3
+          WHEN 'N2' THEN 4
+          WHEN 'N1' THEN 5
+          ELSE 6
+        END,
+        RANDOM()
+      LIMIT ?
       ''',
         [userId, count],
       );
@@ -345,6 +351,61 @@ class WordReadQueries {
       logger.dbError(
         operation: 'SELECT',
         table: 'words + word_meanings',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 随机获取一个未掌握的种子词（岛式扩展用）
+  /// 优先 N5，排除已在队列中的 word ID
+  Future<Word?> getRandomUnmasteredSeedWord({
+    required int userId,
+    List<int> excludeIds = const [],
+  }) async {
+    try {
+      final db = _db;
+      final args = <Object>[userId];
+      var excludeClause = '';
+
+      if (excludeIds.isNotEmpty) {
+        final placeholders = List.filled(excludeIds.length, '?').join(',');
+        excludeClause = 'AND w.id NOT IN ($placeholders)';
+        args.addAll(excludeIds);
+      }
+
+      final rows = await db.rawQuery('''
+        SELECT w.*
+        FROM words w
+        LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
+        WHERE (sw.user_state IS NULL OR sw.user_state IN (0, 1))
+          $excludeClause
+        ORDER BY
+          CASE w.jlpt_level
+            WHEN 'N5' THEN 1
+            WHEN 'N4' THEN 2
+            WHEN 'N3' THEN 3
+            WHEN 'N2' THEN 4
+            WHEN 'N1' THEN 5
+            ELSE 6
+          END,
+          RANDOM()
+        LIMIT 1
+      ''', args);
+
+      logger.dbQuery(
+        table: 'words',
+        where: 'unmastered seed userId=$userId excludeIds=${excludeIds.length}',
+        resultCount: rows.length,
+      );
+
+      if (rows.isEmpty) return null;
+      return Word.fromMap(rows.first);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'words (seed)',
         dbError: e,
         stackTrace: stackTrace,
       );

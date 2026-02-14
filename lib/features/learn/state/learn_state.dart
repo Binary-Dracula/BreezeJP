@@ -20,6 +20,9 @@ class LearnState {
   /// 路径是否结束（没有更多关联词）
   final bool pathEnded;
 
+  /// 每个岛的结束索引列表
+  final List<int> islandEndIndices;
+
   /// 错误信息
   final String? error;
 
@@ -30,6 +33,7 @@ class LearnState {
     this.isLoading = false,
     this.isLoadingMore = false,
     this.pathEnded = false,
+    this.islandEndIndices = const [],
     this.error,
   });
 
@@ -43,6 +47,12 @@ class LearnState {
   /// 是否在队列末尾
   bool get isAtQueueEnd => currentIndex >= studyQueue.length - 1;
 
+  /// 是否到达当前岛的末尾
+  bool get isAtIslandEnd {
+    if (islandEndIndices.isEmpty) return false;
+    return islandEndIndices.contains(currentIndex);
+  }
+
   /// 队列是否为空
   bool get isEmpty => studyQueue.isEmpty;
 
@@ -53,6 +63,7 @@ class LearnState {
     bool? isLoading,
     bool? isLoadingMore,
     bool? pathEnded,
+    List<int>? islandEndIndices,
     String? error,
   }) {
     return LearnState(
@@ -62,6 +73,7 @@ class LearnState {
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       pathEnded: pathEnded ?? this.pathEnded,
+      islandEndIndices: islandEndIndices ?? this.islandEndIndices,
       error: error,
     );
   }

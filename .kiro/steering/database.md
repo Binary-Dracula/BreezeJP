@@ -8,10 +8,11 @@ inclusion: always
 
 **数据库**：位于 `assets/database/breeze_jp.sqlite` 的本地 SQLite  
 **访问方式**：Repository 内部使用 `AppDatabase.instance`，Query / Analytics 通过 `databaseProvider` 注入 Database（Controller / Debug 不直接访问）  
-**15 张核心表**：
+**18 张核心表**：
 
 - **单词学习**：words、word_meanings、word_audio、example_sentences、example_audio、word_relations
-- **用户进度**：study_words、study_logs、daily_stats、users、app_state
+- **语法学习**：grammars, grammar_examples
+- **用户进度**：study_words、study_grammars, study_logs、daily_stats、users、app_state
 - **假名学习**：kana_letters、kana_audio、kana_examples、kana_learning_state、kana_stroke_order
 
 ## AI 助手必须遵守的规则
@@ -392,6 +393,7 @@ CREATE INDEX idx_kana_review_schedule
 ON kana_learning_state (user_id, learning_status, next_review_at);
 ```
 
+
 ### kana_stroke_order
 
 ```sql
@@ -399,6 +401,63 @@ CREATE TABLE kana_stroke_order (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     kana_id    INTEGER REFERENCES kana_letters(id),  -- 关联假名
     svg TEXT
+);
+```
+
+---
+
+## 语法学习相关表
+
+### grammars
+
+```sql
+CREATE TABLE grammars (
+    id           INTEGER PRIMARY KEY,
+    title        TEXT NOT NULL,                     -- 语法标题 (如 〜に関して)
+    meaning      TEXT,                              -- 含义
+    connection   TEXT,                              -- 接续 (如 名詞 + に関して)
+    jlpt_level   TEXT,                              -- JLPT 等级
+    tags         TEXT,                              -- 标签 (词性、分类等)
+    created_at   INTEGER,
+    updated_at   INTEGER
+);
+```
+
+### grammar_examples
+
+```sql
+CREATE TABLE grammar_examples (
+    id           INTEGER PRIMARY KEY,
+    grammar_id   INTEGER NOT NULL REFERENCES grammars(id),
+    sentence     TEXT,                              -- 日文例句
+    translation  TEXT,                              -- 中文翻译
+    audio_url    TEXT,                              -- 音频路径
+    created_at   INTEGER
+);
+```
+
+### study_grammars
+
+**作用**：记录语法的 FSRS 学习状态 (结构类似 `study_words`)
+
+```sql
+CREATE TABLE study_grammars (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id          INTEGER NOT NULL,
+    grammar_id       INTEGER NOT NULL REFERENCES grammars(id),
+    learning_status  INTEGER DEFAULT 0,             -- 0=未学, 1=学习中, 2=已掌握, 3=忽略
+    next_review_at   INTEGER,                       -- 下次复习时间戳
+    last_reviewed_at INTEGER,                       -- 上次复习时间戳
+    streak           INTEGER DEFAULT 0,
+    total_reviews    INTEGER DEFAULT 0,
+    fail_count       INTEGER DEFAULT 0,
+    interval         REAL DEFAULT 0,                -- 间隔 (天)
+    ease_factor      REAL DEFAULT 2.5,              -- 难度因子
+    stability        REAL DEFAULT 0,                -- [FSRS] 稳定性
+    difficulty       REAL DEFAULT 0,                -- [FSRS] 难度
+    created_at       INTEGER,
+    updated_at       INTEGER,
+    UNIQUE(user_id, grammar_id)
 );
 ```
 
@@ -416,6 +475,13 @@ words (1) ──< (N) word_meanings
 
 users (1) ──< (N) daily_stats
       (1) ──< (1) app_state (singleton, current_user_id)
+```
+
+### 语法学习模块
+
+```
+grammars (1) ──< (N) grammar_examples
+         (1) ──< (N) study_grammars (N) >── (1) users
 ```
 
 ### 假名学习模块
