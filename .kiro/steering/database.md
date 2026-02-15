@@ -301,6 +301,38 @@ CREATE INDEX idx_word_relations_related_word_id ON word_relations (related_word_
 
 ---
 
+## 单词变形相关表
+
+### conjugation_types
+
+```sql
+CREATE TABLE conjugation_types (
+    id             INTEGER PRIMARY KEY,
+    name_ja        TEXT,          -- 日文名称 (如 て形)
+    name_cn        TEXT,          -- 中文名称
+    sort_order     INTEGER        -- 显示排序
+);
+```
+
+### word_conjugations
+
+```sql
+CREATE TABLE word_conjugations (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    word_id          INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+    type_id          INTEGER NOT NULL REFERENCES conjugation_types(id) ON DELETE CASCADE,
+    conjugated_word  TEXT NOT NULL,
+    furigana         TEXT,
+    accent_pattern   TEXT,
+    
+    UNIQUE(word_id, type_id)
+);
+
+CREATE INDEX idx_conjugations_word_id ON word_conjugations (word_id);
+```
+
+---
+
 ## 假名学习相关表
 
 ### kana_letters（母表）
@@ -472,6 +504,7 @@ words (1) ──< (N) word_meanings
       (1) ──< (N) study_words (N) >── (1) users
       (1) ──< (N) study_logs  (N) >── (1) users
       (1) ──< (N) word_relations (N) >── (1) words (related words)
+      (1) ──< (N) word_conjugations (N) >── (1) conjugation_types
 
 users (1) ──< (N) daily_stats
       (1) ──< (1) app_state (singleton, current_user_id)

@@ -279,7 +279,33 @@ Stats Card **仅用于展示结果**。
 
 ---
 
-## 九、Word 学习体验说明（用户可见层）
+## 九、Word Detail / Learning Page（单词详情页）
+
+单词详情页是核心学习载体，兼具 **新学、复习、查询** 三种场景。
+
+### 核心模块
+
+1.  **Header**
+    *   单词（Kanji / Kana）
+    *   音调（Pitch Accent）
+    *   发音播放按钮
+2.  **Meanings**
+    *   中文释义列表
+    *   词性标注
+3.  **Examples**
+    *   日文例句 + 假名注音
+    *   中文翻译
+    *   例句发音
+4.  **Morphology（变形）[NEW]**
+    *   展示动词 / 形容词的常见变形（如 te-form, ta-form, nai-form 等）
+    *   点击可复制变形后的单词
+    *   **数据来源**：`word_conjugations` + `conjugation_types`
+5.  **Action Bar**
+    *   根据入口不同展示不同操作（学习 / 掌握 / 忽略 / 下一个）
+
+---
+
+## 十、Word 学习体验说明（用户可见层）
 
 ### 学习状态（展示语义）
 
