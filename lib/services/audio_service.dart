@@ -54,7 +54,7 @@ class AudioService {
       // 判断是 URL 还是本地资源
       if (source.startsWith('http://') || source.startsWith('https://')) {
         // 在线音频
-        await _player.setUrl(source);
+        await _player.setUrl(source, headers: {'User-Agent': 'BreezeJP/1.0'});
       } else {
         // 本地资源
         await _player.setAsset(source);
