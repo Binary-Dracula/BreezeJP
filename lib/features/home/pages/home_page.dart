@@ -184,28 +184,41 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     AppLocalizations l10n,
     bool isNewUser,
   ) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _PrimaryActionCard(
-            title: '学习新单词',
-            subtitle: isNewUser ? '开始学习你的第一个单词' : '继续探索新词',
-            colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
-            icon: Icons.bolt_rounded,
-            onTap: () => context.push('/initial-choice'),
-            accentText: l10n.startLearning,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _PrimaryActionCard(
+                title: '学习新单词',
+                subtitle: isNewUser ? '开始学习你的第一个单词' : '继续探索新词',
+                colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
+                icon: Icons.bolt_rounded,
+                onTap: () => context.push('/initial-choice'),
+                accentText: l10n.startLearning,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _PrimaryActionCard(
+                title: '学习五十音图',
+                subtitle: '从基础发音开始打好根基',
+                colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
+                icon: Icons.grid_view_rounded,
+                onTap: () => context.push('/kana-chart'),
+                accentText: '进入',
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _PrimaryActionCard(
-            title: '学习五十音图',
-            subtitle: '从基础发音开始打好根基',
-            colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
-            icon: Icons.grid_view_rounded,
-            onTap: () => context.push('/kana-chart'),
-            accentText: '进入',
-          ),
+        const SizedBox(height: 12),
+        _PrimaryActionCard(
+          title: '学习语法',
+          subtitle: '掌握日语核心构造与句型',
+          colors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+          icon: Icons.segment_rounded,
+          onTap: () => context.push('/grammar/list'),
+          accentText: '浏览语法库',
         ),
       ],
     );

@@ -11,6 +11,8 @@ import '../features/vocabulary_book/pages/vocabulary_book_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../debug/pages/debug_placeholder_page.dart';
 import 'app_route_observer.dart';
+import '../features/grammar/pages/grammar_list_page.dart';
+import '../features/grammar/pages/grammar_learning_page.dart';
 
 /// 应用路由配置
 final appRouter = GoRouter(
@@ -87,6 +89,24 @@ final appRouter = GoRouter(
       path: '/statistics',
       name: 'statistics',
       builder: (context, state) => const StatisticsPage(),
+    ),
+
+    // Grammar List
+    GoRoute(
+      path: '/grammar/list',
+      name: 'grammar-list',
+      builder: (context, state) => const GrammarListPage(),
+    ),
+
+    // Grammar Learning
+    GoRoute(
+      path: '/grammar/learn/:id',
+      name: 'grammar-learn',
+      builder: (context, state) {
+        final idStr = state.pathParameters['id'];
+        final id = int.tryParse(idStr ?? '') ?? 0;
+        return GrammarLearningPage(grammarId: id);
+      },
     ),
   ],
 );
