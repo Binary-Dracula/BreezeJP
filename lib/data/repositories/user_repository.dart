@@ -6,8 +6,12 @@ import '../models/user.dart';
 /// 用户数据仓库
 /// 负责所有与用户相关的数据库操作
 class UserRepository {
+  UserRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
   /// 获取数据库实例
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  Future<Database> get _db async => await _dbProvider();
 
   // ==================== 基础 CRUD ====================
 

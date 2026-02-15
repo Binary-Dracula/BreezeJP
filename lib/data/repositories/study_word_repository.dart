@@ -6,8 +6,12 @@ import '../models/study_word.dart';
 /// 学习进度数据仓库
 /// 负责所有与用户学习进度相关的数据库操作
 class StudyWordRepository {
+  StudyWordRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
   /// 获取数据库实例
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  Future<Database> get _db async => await _dbProvider();
 
   // ==================== 基础 CRUD ====================
 

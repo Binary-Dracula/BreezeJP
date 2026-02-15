@@ -7,7 +7,11 @@ import '../models/word_meaning.dart';
 /// 单词释义仓库
 /// 负责 word_meanings 表的查询
 class WordMeaningRepository {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  WordMeaningRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
+  Future<Database> get _db async => await _dbProvider();
 
   /// 获取单词的所有释义
   Future<List<WordMeaning>> getWordMeanings(int wordId) async {
@@ -18,6 +22,10 @@ class WordMeaningRepository {
         where: 'word_id = ?',
         whereArgs: [wordId],
         orderBy: 'definition_order ASC',
+      );
+
+      print(
+        'DEBUG: WordMeaningRepository wordId=$wordId results=${results.length} db=${db.hashCode}',
       );
 
       logger.dbQuery(
@@ -39,9 +47,7 @@ class WordMeaningRepository {
   }
 
   /// 批量获取多个单词的释义
-  Future<List<WordMeaning>> getWordMeaningsByWordIds(
-    List<int> wordIds,
-  ) async {
+  Future<List<WordMeaning>> getWordMeaningsByWordIds(List<int> wordIds) async {
     if (wordIds.isEmpty) return [];
 
     try {

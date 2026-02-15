@@ -210,6 +210,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           hasMore: state.hasMoreMastered,
           isLearningTab: false,
           emptyMessage: '还没有掌握的单词\n继续加油学习吧！',
+          emptyIcon: Icons.emoji_events_outlined,
         ),
       ],
     );
@@ -222,13 +223,14 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
     required bool hasMore,
     required bool isLearningTab,
     required String emptyMessage,
+    IconData emptyIcon = Icons.menu_book_outlined,
   }) {
     if (isLoading && items.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (items.isEmpty) {
-      return _buildEmptyState(emptyMessage);
+      return _buildEmptyState(emptyMessage, emptyIcon);
     }
 
     return NotificationListener<ScrollNotification>(
@@ -273,12 +275,12 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
     );
   }
 
-  Widget _buildEmptyState(String message) {
+  Widget _buildEmptyState(String message, IconData icon) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.menu_book_outlined, size: 64, color: Colors.grey.shade300),
+          Icon(icon, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
             message,

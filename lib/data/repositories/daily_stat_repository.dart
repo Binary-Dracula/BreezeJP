@@ -1,13 +1,16 @@
 import 'package:sqflite/sqflite.dart';
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
 import '../models/daily_stat.dart';
 
 /// 每日统计数据仓库
 /// 仅负责 daily_stats 表的基础 CRUD
 class DailyStatRepository {
+  DailyStatRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
   /// 获取数据库实例
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  Future<Database> get _db async => await _dbProvider();
 
   // ==================== 基础 CRUD ====================
 

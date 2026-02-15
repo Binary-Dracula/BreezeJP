@@ -1,13 +1,16 @@
 import 'package:sqflite/sqflite.dart';
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
 import '../models/app_state.dart';
 
 /// 应用状态数据仓库
 /// 仅负责 app_state 表的基础 CRUD
 class AppStateRepository {
+  AppStateRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
   /// 获取数据库实例
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  Future<Database> get _db async => await _dbProvider();
 
   /// 读取指定 ID 的状态
   Future<AppState?> getState(int id) async {
@@ -45,11 +48,7 @@ class AppStateRepository {
       final db = await _db;
       final id = await db.insert('app_state', state.toMap());
 
-      logger.dbInsert(
-        table: 'app_state',
-        id: id,
-        keyFields: {'id': state.id},
-      );
+      logger.dbInsert(table: 'app_state', id: id, keyFields: {'id': state.id});
 
       return id;
     } catch (e, stackTrace) {

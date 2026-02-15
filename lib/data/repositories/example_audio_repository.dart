@@ -1,13 +1,17 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
 import '../models/example_audio.dart';
 
 /// 例句音频仓库
 /// 负责 example_audio 表的查询
 class ExampleAudioRepository {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  ExampleAudioRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
+  /// 获取数据库实例
+  Future<Database> get _db async => await _dbProvider();
 
   /// 获取例句音频
   Future<ExampleAudio?> getExampleAudio(int exampleId) async {

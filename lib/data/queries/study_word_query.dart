@@ -107,6 +107,14 @@ class StudyWordQuery {
         where: whereClause,
         resultCount: results.length,
       );
+      print(
+        'DEBUG: getDueReviews userId=$userId results=${results.length} now=$now',
+      );
+      for (var r in results) {
+        print(
+          'DEBUG: Review Item: ${r['word_id']} next=${r['next_review_at']}',
+        );
+      }
 
       return results.map((map) => StudyWord.fromMap(map)).toList();
     } catch (e, stackTrace) {

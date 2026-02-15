@@ -1,13 +1,17 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
 import '../models/example_sentence.dart';
 
 /// 例句仓库
 /// 负责 example_sentences 表的查询
 class ExampleRepository {
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  ExampleRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
+  /// 获取数据库实例
+  Future<Database> get _db async => await _dbProvider();
 
   /// 获取单词的所有例句
   Future<List<ExampleSentence>> getExampleSentences(int wordId) async {

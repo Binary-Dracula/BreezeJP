@@ -6,8 +6,12 @@ import '../models/word.dart';
 /// 单词数据仓库
 /// 负责所有与单词相关的数据库操作
 class WordRepository {
+  WordRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
   /// 获取数据库实例
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  Future<Database> get _db async => await _dbProvider();
 
   // ==================== 单词查询 ====================
 
@@ -65,5 +69,4 @@ class WordRepository {
       rethrow;
     }
   }
-
 }

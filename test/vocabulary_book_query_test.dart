@@ -74,6 +74,7 @@ void main() {
         'id': 1,
         'word': '食べる',
         'furigana': 'たべる',
+        'romaji': 'taberu',
         'jlpt_level': 'N5',
         'part_of_speech': '動詞',
       },
@@ -81,6 +82,7 @@ void main() {
         'id': 2,
         'word': '飲む',
         'furigana': 'のむ',
+        'romaji': 'nomu',
         'jlpt_level': 'N5',
         'part_of_speech': '動詞',
       },
@@ -88,6 +90,7 @@ void main() {
         'id': 3,
         'word': '走る',
         'furigana': 'はしる',
+        'romaji': 'hashiru',
         'jlpt_level': 'N4',
         'part_of_speech': '動詞',
       },
@@ -95,6 +98,7 @@ void main() {
         'id': 4,
         'word': '大きい',
         'furigana': 'おおきい',
+        'romaji': 'ookii',
         'jlpt_level': 'N5',
         'part_of_speech': '形容詞',
       },
@@ -102,6 +106,7 @@ void main() {
         'id': 5,
         'word': '小さい',
         'furigana': 'ちいさい',
+        'romaji': 'chiisai',
         'jlpt_level': 'N5',
         'part_of_speech': '形容詞',
       },
@@ -272,6 +277,17 @@ void main() {
 
       expect(items.length, 1);
       expect(items.first.furigana, 'のむ');
+    });
+
+    test('搜索过滤 - 按罗马音', () async {
+      final items = await query.getVocabularyBookItems(
+        userId: testUserId,
+        status: LearningStatus.learning,
+        searchQuery: 'taberu',
+      );
+
+      expect(items.length, 1);
+      expect(items.first.word, '食べる');
     });
 
     test('搜索过滤 - 按释义', () async {

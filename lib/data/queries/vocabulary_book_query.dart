@@ -32,9 +32,9 @@ class VocabularyBookQuery {
       if (searchQuery != null && searchQuery.trim().isNotEmpty) {
         final keyword = '%${searchQuery.trim()}%';
         searchClause = '''
-          AND (w.word LIKE ? OR w.furigana LIKE ? OR wm.meaning_cn LIKE ?)
+          AND (w.word LIKE ? OR w.furigana LIKE ? OR wm.meaning_cn LIKE ? OR w.romaji LIKE ?)
         ''';
-        whereArgs.addAll([keyword, keyword, keyword]);
+        whereArgs.addAll([keyword, keyword, keyword, keyword]);
       }
 
       final sql =
@@ -101,9 +101,9 @@ class VocabularyBookQuery {
       if (searchQuery != null && searchQuery.trim().isNotEmpty) {
         final keyword = '%${searchQuery.trim()}%';
         searchClause = '''
-          AND (w.word LIKE ? OR w.furigana LIKE ? OR wm.meaning_cn LIKE ?)
+          AND (w.word LIKE ? OR w.furigana LIKE ? OR wm.meaning_cn LIKE ? OR w.romaji LIKE ?)
         ''';
-        whereArgs.addAll([keyword, keyword, keyword]);
+        whereArgs.addAll([keyword, keyword, keyword, keyword]);
       }
 
       final sql =

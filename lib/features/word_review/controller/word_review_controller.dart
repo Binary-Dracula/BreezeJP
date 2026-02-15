@@ -284,9 +284,12 @@ class WordReviewController extends Notifier<WordReviewState> {
     final activePairs = List<WordReviewPair>.from(state.activePairs);
     if (pairIndex < 0 || pairIndex >= activePairs.length) return;
 
-    await _applyReviewResult(pair.item);
+    final hadMistake = await _applyReviewResult(pair.item);
 
     final remaining = List<WordReviewItem>.from(state.remainingItems);
+    if (hadMistake) {
+      remaining.add(pair.item);
+    }
 
     if (remaining.isNotEmpty) {
       activePairs.removeAt(pairIndex);
@@ -474,9 +477,7 @@ class WordReviewController extends Notifier<WordReviewState> {
         studyWord.wordId,
       );
       if (detail == null) {
-        logger.warning(
-          'Word not found for review: wordId=${studyWord.wordId}',
-        );
+        logger.warning('Word not found for review: wordId=${studyWord.wordId}');
         continue;
       }
 
@@ -591,14 +592,15 @@ class WordReviewController extends Notifier<WordReviewState> {
     return available.first;
   }
 
-  Future<void> _applyReviewResult(WordReviewItem item) async {
+  Future<bool> _applyReviewResult(WordReviewItem item) async {
     final hadMistake = _mistakeWordIds.remove(item.studyWord.wordId);
-    final rating = hadMistake ? ReviewRating.hard : ReviewRating.good;
+    final rating = hadMistake ? ReviewRating.again : ReviewRating.good;
     await _wordCommand.onWordReviewed(
       userId: item.studyWord.userId,
       wordId: item.studyWord.wordId,
       rating: rating,
     );
+    return hadMistake;
   }
 
   String _leftValueForItem(WordReviewItem item) {

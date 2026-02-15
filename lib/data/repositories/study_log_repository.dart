@@ -6,8 +6,12 @@ import '../models/study_log.dart';
 /// 学习日志数据仓库
 /// 仅负责 study_logs 表的基础 CRUD
 class StudyLogRepository {
+  StudyLogRepository(this._dbProvider);
+
+  final Future<Database> Function() _dbProvider;
+
   /// 获取数据库实例
-  Future<Database> get _db async => await AppDatabase.instance.database;
+  Future<Database> get _db async => await _dbProvider();
 
   // ==================== 基础 CRUD ====================
 
@@ -52,7 +56,8 @@ class StudyLogRepository {
 
       logger.dbQuery(
         table: 'study_logs',
-        where: 'user_id = $userId AND word_id = $wordId AND log_type = ${LogType.firstLearn.value}',
+        where:
+            'user_id = $userId AND word_id = $wordId AND log_type = ${LogType.firstLearn.value}',
         resultCount: rows.length,
       );
 
