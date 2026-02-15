@@ -4,6 +4,7 @@ import 'word_audio.dart';
 import 'example_sentence.dart';
 import 'example_audio.dart';
 import '../../core/constants/learning_status.dart';
+import 'word_conjugation.dart';
 
 /// 单词详情（包含所有关联数据）
 class WordDetail {
@@ -12,6 +13,7 @@ class WordDetail {
   final List<WordAudio> audios;
   final List<ExampleSentenceWithAudio> examples;
   final LearningStatus userState;
+  final List<WordConjugation> conjugations;
 
   WordDetail({
     required this.word,
@@ -19,6 +21,7 @@ class WordDetail {
     required this.audios,
     required this.examples,
     this.userState = LearningStatus.seen,
+    this.conjugations = const [],
   });
 
   /// 获取主要释义（第一个）
@@ -49,6 +52,7 @@ class WordDetail {
     List<WordAudio>? audios,
     List<ExampleSentenceWithAudio>? examples,
     LearningStatus? userState,
+    List<WordConjugation>? conjugations,
   }) {
     return WordDetail(
       word: word ?? this.word,
@@ -56,6 +60,7 @@ class WordDetail {
       audios: audios ?? this.audios,
       examples: examples ?? this.examples,
       userState: userState ?? this.userState,
+      conjugations: conjugations ?? this.conjugations,
     );
   }
 }

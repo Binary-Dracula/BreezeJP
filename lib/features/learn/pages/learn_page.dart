@@ -9,6 +9,7 @@ import '../widgets/word_action_bar.dart';
 import '../widgets/word_examples_section.dart';
 import '../widgets/word_header.dart';
 import '../widgets/word_meanings_section.dart';
+import '../widgets/conjugation_list.dart';
 
 /// 学习页面
 /// 全屏展示单词详情，支持左右滑动切换单词
@@ -166,6 +167,7 @@ class _LearnPageState extends ConsumerState<LearnPage>
               WordHeader(wordDetail: wordDetail),
               WordMeaningsSection(meanings: wordDetail.meanings),
               WordExamplesSection(examples: wordDetail.examples),
+              ConjugationList(conjugations: wordDetail.conjugations),
               if (state.isLoadingMore && index == state.studyQueue.length - 1)
                 const Padding(
                   padding: EdgeInsets.only(top: 8, bottom: 16),

@@ -10,6 +10,7 @@ import '../models/word_choice.dart';
 import '../models/word_detail.dart';
 import '../models/word_meaning.dart';
 import '../models/word_with_relation.dart';
+import '../models/word_conjugation.dart';
 import '../repositories/example_audio_repository_provider.dart';
 import '../repositories/example_repository_provider.dart';
 import '../repositories/word_audio_repository_provider.dart';
@@ -69,8 +70,11 @@ class WordReadQueries {
           ),
       ];
 
+      // 6) 获取变形
+      final conjugations = await getConjugations(wordId);
+
       logger.debug(
-        '单词详情获取成功: ${word.word} (${meanings.length}个释义, ${examples.length}个例句)',
+        '单词详情获取成功: ${word.word} (${meanings.length}个释义, ${examples.length}个例句, ${conjugations.length}个变形)',
       );
 
       return WordDetail(
@@ -78,6 +82,7 @@ class WordReadQueries {
         meanings: meanings,
         audios: audios,
         examples: examples,
+        conjugations: conjugations,
       );
     } catch (e, stackTrace) {
       logger.dbError(
@@ -449,6 +454,44 @@ class WordReadQueries {
         stackTrace: stackTrace,
       );
       rethrow;
+    }
+  }
+
+  /// 获取单词的变形形式（包括元数据）
+  Future<List<WordConjugation>> getConjugations(int wordId) async {
+    try {
+      final db = _db;
+      final results = await db.rawQuery(
+        '''
+        SELECT 
+          wc.*,
+          ct.name_ja,
+          ct.name_cn,
+          ct.sort_order
+        FROM word_conjugations wc
+        JOIN conjugation_types ct ON wc.type_id = ct.id
+        WHERE wc.word_id = ?
+        ORDER BY ct.sort_order ASC
+        ''',
+        [wordId],
+      );
+
+      logger.dbQuery(
+        table: 'word_conjugations + conjugation_types',
+        where: 'word_id = \$wordId',
+        resultCount: results.length,
+      );
+
+      return results.map((map) => WordConjugation.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'word_conjugations',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      // Fail gracefully for conjugations (optional feature)
+      return [];
     }
   }
 }
