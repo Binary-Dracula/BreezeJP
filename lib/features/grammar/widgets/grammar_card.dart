@@ -19,6 +19,8 @@ class GrammarCard extends StatelessWidget {
           _buildConnection(context),
           const SizedBox(height: 16),
           _buildMeaning(context),
+          const SizedBox(height: 16),
+          _buildNote(context),
           const SizedBox(height: 24),
           _buildExamples(context),
         ],
@@ -93,6 +95,21 @@ class GrammarCard extends StatelessWidget {
       ),
       icon: Icons.menu_book_rounded,
       color: Colors.blue,
+    );
+  }
+
+  Widget _buildNote(BuildContext context) {
+    if (detail.grammar.note == null || detail.grammar.note!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return _SectionCard(
+      title: '提示',
+      content: Text(
+        detail.grammar.note!,
+        style: const TextStyle(fontSize: 16, height: 1.5),
+      ),
+      icon: Icons.tips_and_updates_rounded,
+      color: Colors.amber.shade700,
     );
   }
 

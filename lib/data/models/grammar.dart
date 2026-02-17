@@ -5,6 +5,7 @@ class Grammar {
   final String? connection;
   final String? jlptLevel;
   final String? tags;
+  final String? note;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -15,6 +16,7 @@ class Grammar {
     this.connection,
     this.jlptLevel,
     this.tags,
+    this.note,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -27,6 +29,7 @@ class Grammar {
       connection: map['connection'] as String?,
       jlptLevel: map['jlpt_level'] as String?,
       tags: map['tags'] as String?,
+      note: map['note'] as String?,
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         (map['created_at'] as int) * 1000,
       ),
@@ -44,6 +47,7 @@ class Grammar {
       'connection': connection,
       'jlpt_level': jlptLevel,
       'tags': tags,
+      'note': note,
       'created_at': (createdAt.millisecondsSinceEpoch / 1000).round(),
       'updated_at': (updatedAt.millisecondsSinceEpoch / 1000).round(),
     };
@@ -57,6 +61,7 @@ class Grammar {
     String? connection,
     String? jlptLevel,
     String? tags,
+    String? note,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
