@@ -284,7 +284,15 @@ learning ↔ mastered
 *   ❌ **不产生 `study_logs`** (无行为历史)
 *   ❌ **不参与 `daily_stats`** (不计入学习量/复习量)
 
-### 2️⃣ 数据模型
+### 2️⃣ 内容数据模型（三层结构）
+
+*   `grammars`：语法条目（标题 + JLPT 等级）
+*   `grammar_meanings`：义项（接续 + 含义 + 提示），一条语法 → N 个义项
+*   `grammar_examples`：例句，一个义项 → N 条例句
+
+> 内容结构与学习状态解耦：`study_grammars` 关联 `grammar_id`，不关心义项层级。
+
+### 3️⃣ 学习状态模型
 
 *   表：`study_grammars`
 *   唯一性：`(user_id, grammar_id)`

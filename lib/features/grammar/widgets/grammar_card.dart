@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/grammar_detail.dart';
+import '../../../data/models/grammar_meaning.dart';
+import '../../../data/models/grammar_example.dart';
 import '../../learn/widgets/audio_play_button.dart';
 
 class GrammarCard extends StatelessWidget {
@@ -16,13 +18,9 @@ class GrammarCard extends StatelessWidget {
         children: [
           _buildHeader(context),
           const SizedBox(height: 16),
-          _buildConnection(context),
-          const SizedBox(height: 16),
-          _buildMeaning(context),
-          const SizedBox(height: 16),
-          _buildNote(context),
-          const SizedBox(height: 24),
-          _buildExamples(context),
+          ...detail.meanings.map(
+            (meaning) => _buildMeaningSection(context, meaning),
+          ),
         ],
       ),
     );
@@ -48,134 +46,149 @@ class GrammarCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (grammar.jlptLevel != null)
-                  _Tag(
-                    label: grammar.jlptLevel!.toUpperCase(),
-                    color: _jlptColor(grammar.jlptLevel!),
-                  ),
-                if (grammar.tags != null && grammar.tags!.isNotEmpty)
-                  _Tag(label: grammar.tags!, color: Colors.grey.shade700),
-              ],
-            ),
+            if (grammar.jlptLevel != null)
+              _Tag(
+                label: grammar.jlptLevel!.toUpperCase(),
+                color: _jlptColor(grammar.jlptLevel!),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildConnection(BuildContext context) {
-    if (detail.grammar.connection == null ||
-        detail.grammar.connection!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return _SectionCard(
-      title: '接续',
-      content: Text(
-        detail.grammar.connection!,
-        style: const TextStyle(fontSize: 16, height: 1.5),
-      ),
-      icon: Icons.link_rounded,
-      color: Colors.orange,
-    );
-  }
+  /// 渲染单个义项（接续 + 含义 + 例句 + 提示 + 提示例句）
+  Widget _buildMeaningSection(BuildContext context, GrammarMeaning meaning) {
+    // 分离义项例句和提示例句
+    final regularExamples = meaning.examples
+        .where((e) => !e.isTipExample)
+        .toList();
+    final tipExamples = meaning.examples.where((e) => e.isTipExample).toList();
 
-  Widget _buildMeaning(BuildContext context) {
-    if (detail.grammar.meaning == null || detail.grammar.meaning!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return _SectionCard(
-      title: '含义',
-      content: Text(
-        detail.grammar.meaning!,
-        style: const TextStyle(fontSize: 16, height: 1.5),
-      ),
-      icon: Icons.menu_book_rounded,
-      color: Colors.blue,
-    );
-  }
-
-  Widget _buildNote(BuildContext context) {
-    if (detail.grammar.note == null || detail.grammar.note!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return _SectionCard(
-      title: '提示',
-      content: Text(
-        detail.grammar.note!,
-        style: const TextStyle(fontSize: 16, height: 1.5),
-      ),
-      icon: Icons.tips_and_updates_rounded,
-      color: Colors.amber.shade700,
-    );
-  }
-
-  Widget _buildExamples(BuildContext context) {
-    if (detail.examples.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Text(
-            '例句',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        ...detail.examples.map(
-          (example) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 接续
+          if (meaning.connection != null && meaning.connection!.isNotEmpty)
+            _SectionCard(
+              title: '接续',
+              content: Text(
+                meaning.connection!,
+                style: const TextStyle(fontSize: 16, height: 1.5),
+              ),
+              icon: Icons.link_rounded,
+              color: Colors.orange,
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+          if (meaning.connection != null && meaning.connection!.isNotEmpty)
+            const SizedBox(height: 12),
+
+          // 含义
+          if (meaning.meaning != null && meaning.meaning!.isNotEmpty)
+            _SectionCard(
+              title: '含义',
+              content: Text(
+                meaning.meaning!,
+                style: const TextStyle(fontSize: 16, height: 1.5),
+              ),
+              icon: Icons.menu_book_rounded,
+              color: Colors.blue,
+            ),
+          if (meaning.meaning != null && meaning.meaning!.isNotEmpty)
+            const SizedBox(height: 12),
+
+          // 义项例句
+          if (regularExamples.isNotEmpty)
+            _buildExampleList(context, regularExamples),
+
+          // 提示
+          if (meaning.tip != null && meaning.tip!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: '提示',
+              content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          example.sentence ?? '',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
-                      if (example.audioUrl != null &&
-                          example.audioUrl!.isNotEmpty)
-                        AudioPlayButton(
-                          audioSource: example.audioUrl!,
-                          size: 24,
-                          color: Colors.blue,
-                        ),
-                    ],
+                  Text(
+                    meaning.tip!,
+                    style: const TextStyle(fontSize: 16, height: 1.5),
                   ),
-                  if (example.translation != null) ...[
-                    const Divider(height: 24),
-                    Text(
-                      example.translation!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                        height: 1.4,
-                      ),
-                    ),
+                  // 提示中的例句
+                  if (tipExamples.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildExampleList(context, tipExamples),
                   ],
                 ],
               ),
+              icon: Icons.tips_and_updates_rounded,
+              color: Colors.amber.shade700,
             ),
-          ),
-        ),
-      ],
+          ],
+
+          const Divider(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExampleList(
+    BuildContext context,
+    List<GrammarExample> examples,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: examples
+          .map(
+            (example) => Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            example.sentence ?? '',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                        if (example.audioUrl != null &&
+                            example.audioUrl!.isNotEmpty)
+                          AudioPlayButton(
+                            audioSource: example.audioUrl!,
+                            size: 24,
+                            color: Colors.blue,
+                          ),
+                      ],
+                    ),
+                    if (example.translation != null) ...[
+                      const Divider(height: 24),
+                      Text(
+                        example.translation!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 

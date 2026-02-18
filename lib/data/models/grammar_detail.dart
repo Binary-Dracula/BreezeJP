@@ -1,27 +1,27 @@
 import 'grammar.dart';
-import 'grammar_example.dart';
+import 'grammar_meaning.dart';
 import '../../core/constants/learning_status.dart';
 
-/// 语法详情（包含关联数据）
+/// 语法详情（包含关联的义项和例句）
 class GrammarDetail {
   final Grammar grammar;
-  final List<GrammarExample> examples;
+  final List<GrammarMeaning> meanings;
   final LearningStatus userState;
 
   GrammarDetail({
     required this.grammar,
-    required this.examples,
+    required this.meanings,
     this.userState = LearningStatus.seen,
   });
 
   GrammarDetail copyWith({
     Grammar? grammar,
-    List<GrammarExample>? examples,
+    List<GrammarMeaning>? meanings,
     LearningStatus? userState,
   }) {
     return GrammarDetail(
       grammar: grammar ?? this.grammar,
-      examples: examples ?? this.examples,
+      meanings: meanings ?? this.meanings,
       userState: userState ?? this.userState,
     );
   }

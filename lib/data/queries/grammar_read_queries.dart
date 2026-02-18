@@ -7,6 +7,7 @@ import '../models/grammar.dart';
 import '../models/grammar_detail.dart';
 
 import '../repositories/grammar_example_repository_provider.dart';
+import '../repositories/grammar_meaning_repository_provider.dart';
 import '../repositories/grammar_repository_provider.dart';
 import '../repositories/study_grammar_repository_provider.dart';
 
@@ -21,26 +22,39 @@ class GrammarReadQueries {
   final Ref ref;
   final Database _db;
 
-  /// 获取语法详情 (Grammar + Examples + UserState)
+  /// 获取语法详情 (Grammar + Meanings + Examples + UserState)
   Future<GrammarDetail?> getGrammarDetail(int userId, int grammarId) async {
     try {
       final grammarRepo = ref.read(grammarRepositoryProvider);
+      final meaningRepo = ref.read(grammarMeaningRepositoryProvider);
       final exampleRepo = ref.read(grammarExampleRepositoryProvider);
       final studyRepo = ref.read(studyGrammarRepositoryProvider);
 
+      // 1. 获取语法条目
       final grammar = await grammarRepo.getGrammarById(grammarId);
       if (grammar == null) return null;
 
-      final examples = await exampleRepo.getExamplesByGrammarId(grammarId);
-      final studyState = await studyRepo.getStudyGrammar(userId, grammarId);
+      // 2. 获取所有义项
+      final meanings = await meaningRepo.getMeaningsByGrammarId(grammarId);
 
+      // 3. 批量获取所有义项的例句（避免 N+1）
+      final meaningIds = meanings.map((m) => m.id).toList();
+      final examplesMap = await exampleRepo.getExamplesByMeaningIds(meaningIds);
+
+      // 4. 将例句填充到对应义项中
+      final meaningsWithExamples = meanings.map((m) {
+        return m.copyWith(examples: examplesMap[m.id] ?? []);
+      }).toList();
+
+      // 5. 获取用户学习状态
+      final studyState = await studyRepo.getStudyGrammar(userId, grammarId);
       final statusValue =
           studyState?.learningStatus ?? LearningStatus.seen.value;
       final status = LearningStatus.fromValue(statusValue);
 
       return GrammarDetail(
         grammar: grammar,
-        examples: examples,
+        meanings: meaningsWithExamples,
         userState: status,
       );
     } catch (e, stackTrace) {
@@ -150,6 +164,35 @@ class GrammarReadQueries {
         stackTrace: stackTrace,
       );
       rethrow;
+    }
+  }
+
+  /// 获取每个 JLPT 级别的语法数量
+  Future<Map<String, int>> getGrammarCountsByLevel() async {
+    try {
+      final db = _db;
+      final results = await db.rawQuery(
+        'SELECT jlpt_level, COUNT(*) as count FROM grammars GROUP BY jlpt_level',
+      );
+
+      final counts = <String, int>{};
+      for (final row in results) {
+        final level = row['jlpt_level'] as String?;
+        final count = row['count'] as int;
+        if (level != null) {
+          counts[level] = count;
+        }
+      }
+      return counts;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'grammars (counts)',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      // Return empty map on error to avoid breaking UI
+      return {};
     }
   }
 }

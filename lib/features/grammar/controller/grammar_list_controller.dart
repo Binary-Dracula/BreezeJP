@@ -25,7 +25,18 @@ class GrammarListController extends Notifier<GrammarListState> {
       final grammars = await _queries.getGrammarList(
         jlptLevel: state.selectedLevel,
       );
-      state = state.copyWith(grammars: grammars, isLoading: false);
+
+      // If counts are not loaded yet, load them
+      Map<String, int> counts = state.levelCounts;
+      if (counts.isEmpty) {
+        counts = await _queries.getGrammarCountsByLevel();
+      }
+
+      state = state.copyWith(
+        grammars: grammars,
+        isLoading: false,
+        levelCounts: counts,
+      );
     } catch (e, stackTrace) {
       logger.error('Failed to load grammar list', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());

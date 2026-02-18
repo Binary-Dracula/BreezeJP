@@ -8,11 +8,11 @@ inclusion: always
 
 **数据库**：位于 `assets/database/breeze_jp.sqlite` 的本地 SQLite  
 **访问方式**：Repository 内部使用 `AppDatabase.instance`，Query / Analytics 通过 `databaseProvider` 注入 Database（Controller / Debug 不直接访问）  
-**18 张核心表**：
+**19 张核心表**：
 
 - **单词学习**：words、word_meanings、word_audio、example_sentences、example_audio、word_relations
-- **语法学习**：grammars, grammar_examples
-- **用户进度**：study_words、study_grammars, study_logs、daily_stats、users、app_state
+- **语法学习**：grammars、grammar_meanings、grammar_examples
+- **用户进度**：study_words、study_grammars、study_logs、daily_stats、users、app_state
 - **假名学习**：kana_letters、kana_audio、kana_examples、kana_learning_state、kana_stroke_order
 
 ## AI 助手必须遵守的规则
@@ -37,6 +37,9 @@ inclusion: always
 | example_sentences   | id   | 例句（1:N）          | idx_examples_word_id                                                |
 | example_audio       | id   | 例句音频（1:N）      | -                                                                   |
 | word_relations      | id   | 语义关联词           | idx_word_relations_word_id，idx_word_relations_related_word_id      |
+| grammars            | id   | 语法条目             | -                                                                   |
+| grammar_meanings    | id   | 语法义项（1:N）      | idx_grammar_meanings_grammar_id                                     |
+| grammar_examples    | id   | 语法例句（1:N）      | idx_grammar_examples_meaning_id                                     |
 | study_words         | id   | 每个单词的学习进度   | idx_study_schedule (user_id, user_state, next_review_at)            |
 | study_logs          | id   | 学习日志             | idx_logs_word (user_id, word_id, created_at)                        |
 | daily_stats         | id   | 每日汇总统计         | UNIQUE(user_id, date)                                               |
@@ -440,32 +443,52 @@ CREATE TABLE kana_stroke_order (
 
 ## 语法学习相关表
 
+> 语法采用三层结构：`grammars`（语法条目）→ `grammar_meanings`（义项，含接续/意思/提示）→ `grammar_examples`（例句）。
+> 一条语法可以有多个义项，每个义项可以有多条例句。
+
 ### grammars
 
 ```sql
 CREATE TABLE grammars (
     id           INTEGER PRIMARY KEY,
-    title        TEXT NOT NULL,                     -- 语法标题 (如 〜に関して)
-    meaning      TEXT,                              -- 含义
-    connection   TEXT,                              -- 接续 (如 名詞 + に関して)
+    title        TEXT NOT NULL,                     -- 语法标题 (如 ~ていきます/てきます)
     jlpt_level   TEXT,                              -- JLPT 等级
-    tags         TEXT,                              -- 标签 (词性、分类等)
     created_at   INTEGER,
     updated_at   INTEGER
 );
+```
+
+### grammar_meanings
+
+**作用**：语法的义项（一条语法可以有多个义项，每个义项有自己的接续、含义和提示）
+
+```sql
+CREATE TABLE grammar_meanings (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    grammar_id   INTEGER NOT NULL REFERENCES grammars(id) ON DELETE CASCADE,
+    sort_order   INTEGER NOT NULL DEFAULT 1,        -- 义项排序
+    connection   TEXT,                              -- 接续 (如 动-て+いきます)
+    meaning      TEXT,                              -- 含义 (如 ……过去; ……过来)
+    tip          TEXT                               -- 提示说明
+);
+
+CREATE INDEX idx_grammar_meanings_grammar_id ON grammar_meanings (grammar_id);
 ```
 
 ### grammar_examples
 
 ```sql
 CREATE TABLE grammar_examples (
-    id           INTEGER PRIMARY KEY,
-    grammar_id   INTEGER NOT NULL REFERENCES grammars(id),
-    sentence     TEXT,                              -- 日文例句
-    translation  TEXT,                              -- 中文翻译
-    audio_url    TEXT,                              -- 音频路径
-    created_at   INTEGER
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    meaning_id      INTEGER NOT NULL REFERENCES grammar_meanings(id) ON DELETE CASCADE,
+    sort_order      INTEGER NOT NULL DEFAULT 1,     -- 例句排序
+    sentence        TEXT,                           -- 日文例句
+    translation     TEXT,                           -- 中文翻译
+    is_tip_example  INTEGER DEFAULT 0,              -- 0=义项例句, 1=提示中的例句
+    audio_url       TEXT                            -- 音频路径
 );
+
+CREATE INDEX idx_grammar_examples_meaning_id ON grammar_examples (meaning_id);
 ```
 
 ### study_grammars
@@ -513,7 +536,7 @@ users (1) ──< (N) daily_stats
 ### 语法学习模块
 
 ```
-grammars (1) ──< (N) grammar_examples
+grammars (1) ──< (N) grammar_meanings (1) ──< (N) grammar_examples
          (1) ──< (N) study_grammars (N) >── (1) users
 ```
 

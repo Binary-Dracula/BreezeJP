@@ -81,36 +81,53 @@ class _GrammarListPageState extends ConsumerState<GrammarListPage>
       return const Center(child: Text('没有找到语法'));
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: state.grammars.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final grammar = state.grammars[index];
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
+    final count =
+        state.levelCounts[state.selectedLevel] ?? state.grammars.length;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '共 $count 条',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          child: ListTile(
-            title: Text(
-              grammar.title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              grammar.meaning ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: () {
-              // Navigate to Learning Page with this grammar
-              context.push('/grammar/learn/${grammar.id}');
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            itemCount: state.grammars.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final grammar = state.grammars[index];
+              return Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: ListTile(
+                  title: Text(
+                    grammar.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  onTap: () {
+                    context.push('/grammar/learn/${grammar.id}');
+                  },
+                ),
+              );
             },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
