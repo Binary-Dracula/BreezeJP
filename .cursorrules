@@ -1,9 +1,9 @@
 # Cursor Rules & Preferences - BreezeJP
 
 ## 1. 语言偏好 (Language Preference)
-- **请务必使用**中文 (Chinese)** 回答所有问题和进行交流。
-- **请务必使用中文编写各种文档
-- 代码注释使用中文。
+- **无论情况如何，请务必且只能使用**简体中文 (Simplified Chinese)** 回答用户的所有问题和进行任何交流。
+- **请务必使用简体中文编写各种文档、计划和报告。
+- 代码注释使用简体中文。
 
 ## 2. 技术栈 (Tech Stack)
 - **Framework**: Flutter 3.38.1

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/custom_ruby_text.dart';
 import '../../../data/models/grammar_detail.dart';
 import '../../../data/models/grammar_meaning.dart';
 import '../../../data/models/grammar_example.dart';
@@ -154,13 +155,9 @@ class GrammarCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            example.sentence ?? '',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              height: 1.6,
-                            ),
+                          child: JapaneseSentence(
+                            text: example.sentence ?? '',
+                            fontSize: 16,
                           ),
                         ),
                         if (example.audioUrl != null &&
