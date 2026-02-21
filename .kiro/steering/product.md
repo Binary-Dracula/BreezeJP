@@ -119,6 +119,51 @@ ORDER BY updated_at DESC
 
 ---
 
+#### 2️⃣ 语法本（Grammar Book）
+
+展示用户已学习和已掌握的语法，提供快速状态切换与回顾能力。
+
+##### 入口
+
+* 首页 Tools Grid「语法本」卡片
+* 路由：`/grammar-book`
+
+##### 页面结构
+
+* **统计摘要**：展示学习中 / 已掌握的语法数量
+* **TabBar 切换**：「学习中」与「已掌握」两个分页
+* **搜索**：支持按语法标题搜索过滤
+* **列表项**：语法标题、JLPT 等级、状态切换按钮
+
+##### 用户操作
+
+| 操作     | 当前状态 | 目标状态 | 含义             |
+| -------- | -------- | -------- | ---------------- |
+| 标记掌握 | learning | mastered | 确认已掌握该语法 |
+| 恢复学习 | mastered | learning | 重新进入学习队列 |
+
+##### 数据来源（只读）
+
+```text
+study_grammars
+  INNER JOIN grammars
+WHERE
+  user_id = current
+  AND learning_status IN (learning, mastered)
+ORDER BY updated_at DESC
+```
+
+##### 写操作
+
+* 状态变更复用 `GrammarCommand`（`markAsMastered` / `restoreToLearning`）
+
+##### 约束
+
+* 分页加载，每页 20 条
+* 点击列表项可跳转到 `/grammar/learn/:grammarId` 查看语法详情
+
+---
+
 ## 五、Header（顶部区域）
 
 展示内容：

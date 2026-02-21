@@ -174,4 +174,40 @@ class GrammarCommand {
     await _repo.saveStudyGrammar(updated);
     logger.info('Grammar mastered: $grammarId');
   }
+
+  /// 恢复学习（mastered -> learning）
+  Future<void> restoreToLearning(int userId, int grammarId) async {
+    final existing = await _repo.getStudyGrammar(userId, grammarId);
+    if (existing == null) {
+      logger.warning('Grammar study state not found for restore: $grammarId');
+      return;
+    }
+
+    if (existing.learningStatus != LearningStatus.mastered.value) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final algorithmType = AlgorithmType.fsrs;
+    final output = _algorithmService.calculate(
+      algorithmType: algorithmType,
+      input: SRSInput.initial(ReviewRating.good),
+    );
+
+    final updated = existing.copyWith(
+      learningStatus: LearningStatus.learning.value,
+      nextReviewAt: output.nextReviewAt,
+      lastReviewedAt: now,
+      interval: output.interval,
+      easeFactor: output.easeFactor,
+      stability: output.stability,
+      difficulty: output.difficulty,
+      streak: 1,
+      totalReviews: existing.totalReviews + 1,
+      updatedAt: now,
+    );
+
+    await _repo.saveStudyGrammar(updated);
+    logger.info('Grammar restored to learning: $grammarId');
+  }
 }

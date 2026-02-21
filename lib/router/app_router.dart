@@ -13,6 +13,7 @@ import '../debug/pages/debug_placeholder_page.dart';
 import 'app_route_observer.dart';
 import '../features/grammar/pages/grammar_list_page.dart';
 import '../features/grammar/pages/grammar_learning_page.dart';
+import '../features/grammar_book/pages/grammar_book_page.dart';
 
 /// 应用路由配置
 final appRouter = GoRouter(
@@ -107,6 +108,13 @@ final appRouter = GoRouter(
         final id = int.tryParse(idStr ?? '') ?? 0;
         return GrammarLearningPage(grammarId: id);
       },
+    ),
+
+    // Grammar Book
+    GoRoute(
+      path: '/grammar-book',
+      name: 'grammar-book',
+      builder: (context, state) => const GrammarBookPage(),
     ),
   ],
 );

@@ -128,7 +128,7 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
                     ref.read(grammarControllerProvider.notifier).addToReview();
                   },
                   icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('加入复习'),
+                  label: const Text('加入学习'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5C8DFF),
                     foregroundColor: Colors.white,
@@ -139,7 +139,7 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
                   ),
                 ),
               ),
-            ] else ...[
+              const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
@@ -148,10 +148,50 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
                         .markAsMastered();
                   },
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('已掌握'),
+                  label: const Text('直接掌握'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF34D399),
                     side: const BorderSide(color: Color(0xFF34D399)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ] else if (status == LearningStatus.learning) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ref
+                        .read(grammarControllerProvider.notifier)
+                        .markAsMastered();
+                  },
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('标记为已掌握'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF34D399),
+                    side: const BorderSide(color: Color(0xFF34D399)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ] else if (status == LearningStatus.mastered) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ref
+                        .read(grammarControllerProvider.notifier)
+                        .restoreToLearning();
+                  },
+                  icon: const Icon(Icons.replay_rounded),
+                  label: const Text('恢复学习'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF5C8DFF),
+                    side: const BorderSide(color: Color(0xFF5C8DFF)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

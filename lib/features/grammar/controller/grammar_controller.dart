@@ -139,6 +139,16 @@ class GrammarController extends Notifier<GrammarState> {
     await _refreshCurrentState();
   }
 
+  /// 恢复学习 (Mastered -> Learning)
+  Future<void> restoreToLearning() async {
+    final currentStr = state.currentGrammarDetail;
+    if (currentStr == null) return;
+
+    final userId = await _ensureUserId();
+    await _grammarCommand.restoreToLearning(userId, currentStr.grammar.id);
+    await _refreshCurrentState();
+  }
+
   Future<void> _refreshCurrentState() async {
     final currentIndex = state.currentIndex;
     final currentItem = state.studyQueue[currentIndex];

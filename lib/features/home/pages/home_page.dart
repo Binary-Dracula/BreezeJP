@@ -190,23 +190,23 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
           children: [
             Expanded(
               child: _PrimaryActionCard(
-                title: '学习新单词',
-                subtitle: isNewUser ? '开始学习你的第一个单词' : '继续探索新词',
-                colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
-                icon: Icons.bolt_rounded,
-                onTap: () => context.push('/initial-choice'),
-                accentText: l10n.startLearning,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _PrimaryActionCard(
                 title: '学习五十音图',
                 subtitle: '从基础发音开始打好根基',
                 colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
                 icon: Icons.grid_view_rounded,
                 onTap: () => context.push('/kana-chart'),
                 accentText: '进入',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _PrimaryActionCard(
+                title: '学习新单词',
+                subtitle: isNewUser ? '开始学习你的第一个单词' : '继续探索新词',
+                colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
+                icon: Icons.bolt_rounded,
+                onTap: () => context.push('/initial-choice'),
+                accentText: l10n.startLearning,
               ),
             ),
           ],
@@ -378,18 +378,18 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         onTap: () => context.push('/vocabulary-book'),
       ),
       _ToolItem(
+        icon: Icons.segment_rounded,
+        title: '语法本',
+        subtitle: '查看学习中和已掌握的语法',
+        gradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+        onTap: () => context.push('/grammar-book'),
+      ),
+      _ToolItem(
         icon: Icons.bar_chart_rounded,
         title: l10n.detailedStats,
         subtitle: l10n.detailedStatsSubtitle,
         gradient: const [Color(0xFF14B8A6), Color(0xFF0D9488)],
         onTap: () => context.push('/statistics'),
-      ),
-      _ToolItem(
-        icon: Icons.extension_rounded,
-        title: '更多工具',
-        subtitle: '预留未来功能',
-        gradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-        onTap: () {},
       ),
     ];
 
