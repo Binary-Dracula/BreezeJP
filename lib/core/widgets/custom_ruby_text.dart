@@ -70,11 +70,11 @@ class JapaneseSentence extends StatelessWidget {
     final List<RubyTextData> result = [];
     int index = 0;
 
-    // 正则：匹配 <b>...</b> 或 汉字+[ruby]
+    // 正则：匹配 <b>...</b> 或 汉字/数字/字母/片假名+[ruby]
     // 汉字范围包含：CJK统一汉字 + 々（重复符号）
     final pattern = RegExp(
       r'<b>(.*?)<\/b>' // group1: bold text
-      r'|([\u4e00-\u9fff\u3005]+)\[([^\]]+)\]', // group2: 汉字+々, group3: ruby
+      r'|([\u4e00-\u9fff\u3005a-zA-Z0-9０-９Ａ-Ｚａ-ｚ\u30A0-\u30FF]+)\[([^\]]+)\]', // group2: 汉字+组合, group3: ruby
       dotAll: true,
     );
 

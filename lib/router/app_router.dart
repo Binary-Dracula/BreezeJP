@@ -6,6 +6,8 @@ import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
 import '../features/learn/pages/learn_page.dart';
 import '../features/kana/chart/pages/kana_chart_page.dart';
+import '../features/article/pages/article_list_page.dart';
+import '../features/article/pages/article_detail_page.dart';
 import '../features/word_review/pages/word_review_page.dart';
 import '../features/vocabulary_book/pages/vocabulary_book_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
@@ -58,7 +60,8 @@ final appRouter = GoRouter(
       name: 'kana-chart',
       builder: (context, state) => const KanaChartPage(),
     ),
-    // 复习五十音图页面
+    // ----------------------------------------------------------------------
+    // Word Detail
     GoRoute(
       path: '/matching_page',
       name: 'matching_page',
@@ -90,6 +93,20 @@ final appRouter = GoRouter(
       path: '/statistics',
       name: 'statistics',
       builder: (context, state) => const StatisticsPage(),
+    ),
+
+    // Reading Mode / Shadowing
+    GoRoute(
+      path: '/article-list',
+      name: 'article-list',
+      builder: (context, state) => const ArticleListPage(),
+    ),
+    GoRoute(
+      path: '/article-detail/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id'] ?? '';
+        return ArticleDetailPage(articleId: id);
+      },
     ),
 
     // Grammar List

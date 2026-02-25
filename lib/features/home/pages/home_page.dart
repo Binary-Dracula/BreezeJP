@@ -385,6 +385,13 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         onTap: () => context.push('/grammar-book'),
       ),
       _ToolItem(
+        icon: Icons.menu_book_rounded,
+        title: '阅读模式',
+        subtitle: '沉浸式日语文章阅读与听力',
+        gradient: const [Color(0xFFEC4899), Color(0xFFDB2777)],
+        onTap: () => context.push('/article-list'),
+      ),
+      _ToolItem(
         icon: Icons.bar_chart_rounded,
         title: l10n.detailedStats,
         subtitle: l10n.detailedStatsSubtitle,
