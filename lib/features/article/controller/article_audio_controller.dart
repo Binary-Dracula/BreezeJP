@@ -183,11 +183,6 @@ class ArticleAudioController extends Notifier<ArticleState> {
     if (index < 0 || index >= state.article.items.length) return;
     state = state.copyWith(activeIndex: index);
 
-    // 用户主动点击句子时，取消打断状态（视为有意行为）
-    if (state.userInterruptedScroll) {
-      state = state.copyWith(userInterruptedScroll: false);
-    }
-
     final targetMs = state.article.items[index].startMs;
     try {
       await _audioPlayer.seek(Duration(milliseconds: targetMs));
@@ -205,9 +200,6 @@ class ArticleAudioController extends Notifier<ArticleState> {
       final newIndex = _findIndexForPosition(targetMs);
       if (newIndex != -1) {
         state = state.copyWith(activeIndex: newIndex);
-        if (state.userInterruptedScroll) {
-          state = state.copyWith(userInterruptedScroll: false);
-        }
       }
       if (!_audioPlayer.playing) {
         await _audioPlayer.play();
