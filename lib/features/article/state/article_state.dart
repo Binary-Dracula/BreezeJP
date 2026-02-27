@@ -12,7 +12,7 @@ abstract class ArticleState with _$ArticleState {
     @Default(true) bool showFurigana,
     @Default(true) bool showTranslation,
 
-    // 听力/循环相关状态
+    // 音频播放相关状态
     @Default(false) bool isPlaying,
     @Default(1.0) double currentSpeed,
     @Default(0) int currentPositionMs,
@@ -20,11 +20,7 @@ abstract class ArticleState with _$ArticleState {
     // 当前高亮的句子 Index
     @Default(-1) int activeIndex,
 
-    // 用户是否打断了自动循环/滚动 (UserScrollNotification 滑动列表)
+    // 用户是否打断了自动滚动
     @Default(false) bool userInterruptedScroll,
-
-    // 是否正在录音
-    @Default(false) bool isRecording,
-    @Default(0) int recordedDurationMs,
   }) = _ArticleState;
 }

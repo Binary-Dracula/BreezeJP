@@ -1,5 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import 'article_word.dart';
+
 part 'article_item.g.dart';
 
 @JsonSerializable(explicitToJson: true)
@@ -13,12 +15,17 @@ class ArticleItem {
   final int endMs;
   final int index;
 
+  /// Kuromoji 分词后的词列表
+  @JsonKey(defaultValue: [])
+  final List<ArticleWord> words;
+
   ArticleItem({
     required this.text,
     required this.translation,
     required this.startMs,
     required this.endMs,
     required this.index,
+    this.words = const [],
   });
 
   factory ArticleItem.fromJson(Map<String, dynamic> json) =>
@@ -47,6 +54,6 @@ class ArticleItem {
 
   @override
   String toString() {
-    return 'ArticleItem{text: $text, translation: $translation, startMs: $startMs, endMs: $endMs, index: $index}';
+    return 'ArticleItem{text: $text, translation: $translation, startMs: $startMs, endMs: $endMs, index: $index, words: ${words.length}}';
   }
 }

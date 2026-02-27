@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ruby_text/ruby_text.dart';
 
 import '../../../core/utils/furigana_parser.dart';
-import 'package:ruby_text/ruby_text.dart';
 import '../../../data/models/article/article_item.dart';
+import '../../../data/models/article/article_word.dart';
 import '../controller/article_audio_controller.dart';
 
+// ----------------------------------------------------------------------
+// 文章句子组件（Wrap 布局 + 独立 ruby_text）
+// ----------------------------------------------------------------------
 class ArticleTextItem extends ConsumerWidget {
   final ArticleItem item;
   final bool isHighlight;
@@ -20,110 +24,327 @@ class ArticleTextItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(articleAudioProvider);
+    final notifier = ref.read(articleAudioProvider.notifier);
     final showFurigana = state.showFurigana;
     final showTranslation = state.showTranslation;
 
-    final rubyDataList = FuriganaParser.parse(item.text);
-
-    // 字体样式设置
-    double baseFontSize = 18.0;
-    Color textColor = isHighlight
+    // 基础样式
+    const double baseFontSize = 18.0;
+    const double rubyFontSize = 9.0;
+    final Color textColor = isHighlight
         ? Colors.black
         : Colors.black87.withValues(alpha: 0.85);
-    FontWeight fontWeight = isHighlight ? FontWeight.w600 : FontWeight.normal;
 
-    // 判断是否包含假名注音
-    final hasFurigana = rubyDataList.any((d) => d.ruby != null);
-
-    Widget textWidget;
-
-    if (hasFurigana) {
-      // 有假名 → 使用 RubyText 渲染注音
-      textWidget = RubyText(
-        rubyDataList,
-        style: TextStyle(
+    // 构建每个 word 的 widget 列表
+    final wordWidgets = <Widget>[];
+    for (int i = 0; i < item.words.length; i++) {
+      final word = item.words[i];
+      wordWidgets.add(
+        _WordRubyWidget(
+          word: word,
           fontSize: baseFontSize,
-          fontWeight: fontWeight,
-          color: textColor,
-          height: 2.0,
-          letterSpacing: 0.5,
-        ),
-        rubyStyle: TextStyle(
-          fontSize: baseFontSize * 0.5,
-          color: showFurigana
-              ? textColor.withValues(alpha: 0.8)
-              : Colors.transparent,
-        ),
-        textAlign: TextAlign.left,
-      );
-    } else {
-      // 无假名 → 使用普通 Text，自然左对齐
-      final plainText = rubyDataList.map((d) => d.text).join();
-      textWidget = Text(
-        plainText,
-        textAlign: TextAlign.left,
-        style: TextStyle(
-          fontSize: baseFontSize,
-          fontWeight: fontWeight,
-          color: textColor,
-          height: 2.0,
-          letterSpacing: 0.5,
+          rubyFontSize: rubyFontSize,
+          textColor: textColor,
+          showFurigana: showFurigana,
+          onLongPress: word.isPunctuation
+              ? null
+              : () {
+                  HapticFeedback.mediumImpact();
+                  notifier.pauseAudio();
+                  _showWordDetailSheet(context, word);
+                },
         ),
       );
     }
 
     // 翻译文本
-    String translationText = item.translation;
-    if (translationText.isEmpty) {
-      translationText = "(暂无翻译数据，这是 Demo 占位符帮助观察两行排版。)";
+    final translationText = item.translation.isNotEmpty ? item.translation : '';
+
+    // 日文文本 widget：优先用 words（新数据），否则 fallback 到 item.text（旧数据）
+    Widget japaneseTextWidget;
+    if (item.words.isNotEmpty) {
+      // 新数据：Wrap 布局 + 独立 ruby_text
+      japaneseTextWidget = Wrap(
+        spacing: 0,
+        runSpacing: 0,
+        children: wordWidgets,
+      );
+    } else {
+      // 旧数据 fallback：使用 FuriganaParser 解析 item.text
+      final rubyDataList = FuriganaParser.parse(item.text);
+      japaneseTextWidget = RubyText(
+        rubyDataList,
+        style: TextStyle(
+          fontSize: baseFontSize,
+          color: textColor,
+          height: 2.0,
+          letterSpacing: 0.5,
+        ),
+        rubyStyle: TextStyle(
+          fontSize: rubyFontSize,
+          color: showFurigana
+              ? textColor.withValues(alpha: 0.7)
+              : Colors.transparent,
+        ),
+        textAlign: TextAlign.left,
+      );
     }
 
+    // 句子内容
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        textWidget,
-        const SizedBox(height: 2),
-        Opacity(
-          opacity: showTranslation ? 1.0 : 0.0,
-          child: Text(
-            translationText,
-            style: TextStyle(
-              fontSize: 14.0,
-              color: Colors.black54,
-              height: 1.5,
+        japaneseTextWidget,
+        if (translationText.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Opacity(
+            opacity: showTranslation ? 1.0 : 0.0,
+            child: Text(
+              translationText,
+              style: const TextStyle(
+                fontSize: 14.0,
+                color: Colors.black54,
+                height: 1.5,
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
 
-    // 统一 padding，高亮只改变背景样式，不改变尺寸
+    // 统一 padding + 高亮背景（不改变高度）
     content = Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: isHighlight
           ? BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: const Color(0xFFFFF8E7),
+              borderRadius: BorderRadius.circular(12),
             )
           : null,
       child: content,
     );
 
+    // 句子级别手势：点击跳转到该句
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        final notifier = ref.read(articleAudioProvider.notifier);
         notifier.setActiveIndex(item.index);
       },
       child: content,
+    );
+  }
+
+  /// 长按单词 → 弹出半屏词详情（下滑消失）
+  void _showWordDetailSheet(BuildContext context, ArticleWord word) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFFDFBF7),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.45,
+          minChildSize: 0.15,
+          maxChildSize: 0.7,
+          expand: false,
+          snap: true,
+          snapSizes: const [0.15, 0.45],
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 拖拽手柄
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: Colors.black12,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      // 表层形式（大字）
+                      Text(
+                        word.surfaceForm,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      if (word.furigana.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          word.furigana,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      const Divider(height: 1),
+                      const SizedBox(height: 16),
+                      // 词性信息
+                      if (word.pos.isNotEmpty && word.pos != '*')
+                        _DetailRow(label: '词性', value: word.pos),
+                      if (word.posDetail1.isNotEmpty && word.posDetail1 != '*')
+                        _DetailRow(label: '词性细分', value: word.posDetail1),
+                      if (word.basicForm.isNotEmpty &&
+                          word.basicForm != '*' &&
+                          word.basicForm != word.surfaceForm)
+                        _DetailRow(label: '基本形', value: word.basicForm),
+                      if (word.reading != null && word.reading!.isNotEmpty)
+                        _DetailRow(label: '读音', value: word.reading!),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// ----------------------------------------------------------------------
+// 单个 word 的 Ruby Widget
+// ----------------------------------------------------------------------
+class _WordRubyWidget extends StatelessWidget {
+  final ArticleWord word;
+  final double fontSize;
+  final double rubyFontSize;
+  final Color textColor;
+  final bool showFurigana;
+  final VoidCallback? onLongPress;
+  final Color? backgroundColor;
+
+  const _WordRubyWidget({
+    required this.word,
+    required this.fontSize,
+    required this.rubyFontSize,
+    required this.textColor,
+    required this.showFurigana,
+    this.onLongPress,
+    this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // 解析 ruby_text 格式生成 RubyTextData 列表
+    final rubyDataList = FuriganaParser.parse(word.rubyText);
+
+    // 设置样式
+    final textStyle = TextStyle(
+      fontSize: fontSize,
+      color: textColor,
+      height: 1.2,
+    );
+
+    final rubyStyle = TextStyle(
+      fontSize: rubyFontSize,
+      color: showFurigana && word.hasKanji
+          ? textColor.withValues(alpha: 0.7)
+          : Colors.transparent,
+      height: 1.1,
+    );
+
+    // 为每个 RubyTextData 设置样式
+    // 对于没有 ruby 注音的纯假名词，添加透明占位 ruby，确保所有词纵向高度一致（底部对齐）
+    final styledRubyData = rubyDataList.map((data) {
+      final hasRuby = data.ruby != null && data.ruby!.isNotEmpty;
+      return RubyTextData(
+        data.text,
+        ruby: hasRuby ? data.ruby : data.text,
+        style: textStyle,
+        rubyStyle: hasRuby
+            ? rubyStyle
+            : TextStyle(
+                fontSize: rubyFontSize,
+                color: Colors.transparent,
+                height: 1.1,
+              ),
+      );
+    }).toList();
+
+    Widget rubyWidget = RubyText(
+      styledRubyData,
+      style: textStyle,
+      rubyStyle: rubyStyle,
+    );
+
+    // 背景色容器（预留词性着色，不改变高度）
+    if (backgroundColor != null) {
+      rubyWidget = Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: rubyWidget,
+      );
+    }
+
+    // 标点符号不包裹 GestureDetector
+    if (word.isPunctuation || onLongPress == null) {
+      return rubyWidget;
+    }
+
+    // 使用 GestureDetector 接管长按手势，阻止事件冒泡到父级 Wrap
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: onLongPress,
+      child: rubyWidget,
+    );
+  }
+}
+
+// ----------------------------------------------------------------------
+// 词详情行
+// ----------------------------------------------------------------------
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

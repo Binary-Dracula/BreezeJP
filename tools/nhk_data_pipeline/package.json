@@ -1,0 +1,15 @@
+{
+  "name": "nhk_data_pipeline",
+  "version": "1.0.0",
+  "description": "这个工具集用于从 NHK NEWS WEB EASY 获取最新的原汁原味新闻（带注音）以及对应配音录音，并通过 `faster-whisper` 等算法完美强行对齐（Forced Alignment），生成直接供 App 消费的 `[start_ms, end_ms]` 高精度数据。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "kuromoji": "^0.1.2"
+  }
+}

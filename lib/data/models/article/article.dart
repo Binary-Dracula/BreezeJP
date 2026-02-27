@@ -17,14 +17,8 @@ class Article {
   @JsonKey(name: 'audio_uri')
   final String? audioUri;
 
-  @JsonKey(name: 'audio_size')
-  final int audioSize;
-
   @JsonKey(name: 'duration_ms')
   final int durationMs;
-
-  @JsonKey(name: 'has_sync_data')
-  final bool hasSyncData;
 
   /// List of split sentences that make up the article content
   final List<ArticleItem> items;
@@ -34,9 +28,7 @@ class Article {
     required this.title,
     this.localAudioPath,
     this.audioUri,
-    this.audioSize = 0,
     this.durationMs = 0,
-    this.hasSyncData = false,
     required this.items,
   });
 
@@ -54,9 +46,7 @@ class Article {
           title == other.title &&
           localAudioPath == other.localAudioPath &&
           audioUri == other.audioUri &&
-          audioSize == other.audioSize &&
           durationMs == other.durationMs &&
-          hasSyncData == other.hasSyncData &&
           _listEquals(items, other.items);
 
   @override
@@ -65,9 +55,7 @@ class Article {
       title.hashCode ^
       localAudioPath.hashCode ^
       audioUri.hashCode ^
-      audioSize.hashCode ^
       durationMs.hashCode ^
-      hasSyncData.hashCode ^
       Object.hashAll(items);
 
   bool _listEquals(List<ArticleItem> a, List<ArticleItem> b) {
@@ -80,6 +68,6 @@ class Article {
 
   @override
   String toString() {
-    return 'Article{id: $id, title: $title, localAudioPath: $localAudioPath, audioUri: $audioUri, audioSize: $audioSize, durationMs: $durationMs, hasSyncData: $hasSyncData, items: $items}';
+    return 'Article{id: $id, title: $title, localAudioPath: $localAudioPath, audioUri: $audioUri, durationMs: $durationMs, items: $items}';
   }
 }

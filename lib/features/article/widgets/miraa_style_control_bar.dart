@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controller/article_audio_controller.dart';
 import 'package:flutter/services.dart';
 
-/// 底部工具栏（非悬浮，作为 Column 的一部分固定在底部）
+/// 底部工具栏（精简版：进度条 + 核心控制按钮）
 class MiraaStyleControlBar extends ConsumerStatefulWidget {
   const MiraaStyleControlBar({super.key});
 
@@ -108,7 +108,6 @@ class _MiraaStyleControlBarState extends ConsumerState<MiraaStyleControlBar>
                 ),
               ),
             ),
-
             // 操控按钮行
             Padding(
               padding: const EdgeInsets.only(bottom: 8, left: 20, right: 20),

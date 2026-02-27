@@ -19,7 +19,6 @@ class ArticleDetailPage extends ConsumerStatefulWidget {
 }
 
 class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
-  // 缓存 notifier 引用，确保 dispose 时仍可访问
   late final ArticleAudioController _audioController;
 
   @override
@@ -47,14 +46,10 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
         scrolledUnderElevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
-      // 使用 Column 布局：文章区域自然在工具栏之上，无重叠
       body: const Column(
         children: [
-          // 文章滚动区域（Expanded 占满工具栏以上的全部空间）
           Expanded(child: _ArticleScrollView()),
-          // 底部分割线
           Divider(height: 1, thickness: 0.5, color: Color(0xFFE2E8F0)),
-          // 底部工具栏（固定在底部，不悬浮）
           MiraaStyleControlBar(),
         ],
       ),
@@ -63,7 +58,22 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
 }
 
 // ----------------------------------------------------------------------
-// 滚动视图组件
+// 滚动状态机
+// ----------------------------------------------------------------------
+/// 滚动行为的三种状态
+enum _ScrollMode {
+  /// 音频驱动自动滚动，自动跟踪高亮句
+  autoTracking,
+
+  /// 用户手动滚动中断，不再自动滚动
+  userInterrupted,
+
+  /// 用户点击"回到当前"后，正在回归自动跟踪
+  resuming,
+}
+
+// ----------------------------------------------------------------------
+// 滚动视图组件（使用状态机管理滚动行为）
 // ----------------------------------------------------------------------
 class _ArticleScrollView extends ConsumerStatefulWidget {
   const _ArticleScrollView();
@@ -76,6 +86,11 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
+
+  /// 当前滚动状态
+  _ScrollMode _scrollMode = _ScrollMode.autoTracking;
+
+  /// 自动滚动队列
   _AutoScrollRequest? _pendingScrollRequest;
   bool _isAutoScrolling = false;
   bool _isDrainScheduled = false;
@@ -89,67 +104,85 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
   /// 恢复自动滚动时更积极回归阅读位
   static const double _resumeThreshold = 0.02;
 
-  /// 视口边界容差，避免浮点误差导致误判
+  /// 视口边界容差
   static const double _visibilityTolerance = 0.01;
+
+  /// 状态机：切换到自动跟踪
+  void _transitionToAutoTracking() {
+    _scrollMode = _ScrollMode.autoTracking;
+    ref.read(articleAudioProvider.notifier).setUserInterruptedScroll(false);
+  }
+
+  /// 状态机：切换到用户中断
+  void _transitionToUserInterrupted() {
+    if (_scrollMode == _ScrollMode.userInterrupted) return;
+    _scrollMode = _ScrollMode.userInterrupted;
+    ref.read(articleAudioProvider.notifier).setUserInterruptedScroll(true);
+  }
+
+  /// 状态机：切换到恢复中
+  void _transitionToResuming() {
+    _scrollMode = _ScrollMode.resuming;
+    ref.read(articleAudioProvider.notifier).setUserInterruptedScroll(false);
+    // 触发回归滚动
+    final currentIndex = ref.read(articleAudioProvider).activeIndex;
+    if (currentIndex != -1) {
+      _enqueueAutoScroll(
+        _AutoScrollRequest(
+          targetIndex: currentIndex,
+          forceRecenter: true,
+          isResume: true,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(articleAudioProvider);
 
-    // ── 监听器 ────────────────────────────────────────
-    // 1. activeIndex 变化 → 自动滚动 + 触感
+    // 监听 activeIndex 变化 → 自动滚动 + 触感
     ref.listen<int>(articleAudioProvider.select((s) => s.activeIndex), (
       previous,
       next,
     ) {
-      final currentState = ref.read(articleAudioProvider);
       if (previous != next &&
           next != -1 &&
-          !currentState.userInterruptedScroll) {
+          _scrollMode != _ScrollMode.userInterrupted) {
         HapticFeedback.lightImpact();
       }
       _enqueueAutoScroll(_AutoScrollRequest(targetIndex: next));
     });
 
-    // 2. 用户取消打断 → 主动回归当前句子
+    // 监听 userInterruptedScroll → 状态机转换
     ref.listen<bool>(
       articleAudioProvider.select((s) => s.userInterruptedScroll),
       (previous, next) {
+        // 外部（如点击"回到当前"按钮）将 userInterrupted 设为 false
         if (previous == true && next == false) {
-          final currentIndex = ref.read(articleAudioProvider).activeIndex;
-          if (currentIndex != -1) {
-            _enqueueAutoScroll(
-              _AutoScrollRequest(
-                targetIndex: currentIndex,
-                forceRecenter: true,
-                isResume: true,
-              ),
-            );
-          }
+          _transitionToResuming();
         }
       },
     );
 
-    // ── 视图 ─────────────────────────────────────────
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
-        // 仅用户手势驱动的滚动才打断自动滚动
-        if (_isUserDrivenScroll(notification) && !state.userInterruptedScroll) {
-          ref
-              .read(articleAudioProvider.notifier)
-              .setUserInterruptedScroll(true);
+        // 仅用户手势驱动的滚动才打断自动模式
+        if (_isUserDrivenScroll(notification) &&
+            _scrollMode == _ScrollMode.autoTracking) {
+          _transitionToUserInterrupted();
         }
         return false;
       },
       child: ScrollablePositionedList.builder(
         itemScrollController: _itemScrollController,
         itemPositionsListener: _itemPositionsListener,
-        physics: const ClampingScrollPhysics(), // 禁止 iOS 弹性回弹
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.only(
           left: 24.0,
           right: 24.0,
           top: 24.0,
-          bottom: 24.0, // 简单安全距离即可，工具栏已在布局之外
+          bottom: 24.0,
         ),
         itemCount: state.article.items.length,
         itemBuilder: (context, index) {
@@ -192,8 +225,8 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
     _pendingScrollRequest = null;
     if (request == null) return;
 
-    final currentState = ref.read(articleAudioProvider);
-    if (currentState.userInterruptedScroll) {
+    // 用户中断状态下，不自动滚动
+    if (_scrollMode == _ScrollMode.userInterrupted) {
       return;
     }
 
@@ -245,9 +278,11 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
     final bool isLastAtBottom =
         lastPos != null && lastPos.itemTrailingEdge <= 1 + _visibilityTolerance;
 
-    // activeIndex = -1 表示播放完成，自动模式下平滑回到顶部
+    // activeIndex = -1 表示播放完成，自动回到顶部
     if (request.targetIndex == -1) {
-      if (state.userInterruptedScroll || isFirstAtTop) return null;
+      if (_scrollMode == _ScrollMode.userInterrupted || isFirstAtTop) {
+        return null;
+      }
       return _ScrollPlan(
         index: 0,
         alignment: 0.0,
@@ -260,7 +295,7 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
       );
     }
 
-    // 首条：只允许向上归位，不为了黄金位向下拉
+    // 首条
     if (request.targetIndex == 0) {
       if (isFirstAtTop) return null;
       return _ScrollPlan(
@@ -275,7 +310,7 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
       );
     }
 
-    // 末条：只允许滚到底，不再回拉
+    // 末条
     if (request.targetIndex == lastIndex) {
       if (isLastAtBottom) return null;
       return _ScrollPlan(
@@ -292,7 +327,7 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
 
     final idealAlignment = _idealAlignmentFor(request.targetIndex);
 
-    // 目标不在视口，直接按理想位滚入
+    // 目标不在视口
     if (targetPos == null) {
       return _ScrollPlan(
         index: request.targetIndex,
@@ -388,8 +423,13 @@ class _ArticleScrollViewState extends ConsumerState<_ArticleScrollView> {
         curve: Curves.easeInOutCubic,
         alignment: plan.alignment,
       );
+
+      // 滚动完成后，如果处于恢复中状态，切换回自动跟踪
+      if (_scrollMode == _ScrollMode.resuming) {
+        _transitionToAutoTracking();
+      }
     } catch (_) {
-      // 列表重建或页面销毁时，scrollTo 可能中断
+      // 列表重建或页面销毁时可能中断
     } finally {
       _isAutoScrolling = false;
       if (mounted && _pendingScrollRequest != null) {

@@ -1,36 +1,27 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
 
+import '../../../core/utils/app_logger.dart';
 import '../../../data/models/article/article.dart';
 import '../../../data/models/article/article_item.dart';
 import '../../../data/queries/article_query_provider.dart';
 import '../state/article_state.dart';
 
 // ----------------------------------------------------------------------
-// Audio Controller
+// Audio Controller（精简版：仅保留核心播放功能）
 // ----------------------------------------------------------------------
 class ArticleAudioController extends Notifier<ArticleState> {
   late AudioPlayer _audioPlayer;
-  late AudioRecorder _audioRecorder;
   StreamSubscription? _positionSubscription;
   StreamSubscription? _playerStateSubscription;
-  Timer? _shadowingLoopTimer;
-  Timer? _recordingTimer;
-  DateTime? _recordingStartTime;
-  String? _lastRecordedPath;
 
   @override
   ArticleState build() {
     _audioPlayer = AudioPlayer();
-    _audioRecorder = AudioRecorder();
 
-    // 监听销毁（当 provider 被 invalidate 时）
     ref.onDispose(() {
-      debugPrint('[ArticleAudio] onDispose: 释放音频资源');
+      logger.info('[ArticleAudio] onDispose: 释放音频资源');
       _cleanup();
     });
 
@@ -38,10 +29,10 @@ class ArticleAudioController extends Notifier<ArticleState> {
     return ArticleState(
       article: Article(
         id: 'placeholder',
-        title: '选择文章中...',
+        title: '',
         items: [
           ArticleItem(
-            text: '请选择一篇文章开始阅读',
+            text: '',
             translation: '',
             startMs: 0,
             endMs: 1000,
@@ -54,9 +45,8 @@ class ArticleAudioController extends Notifier<ArticleState> {
 
   /// 页面退出时主动调用：停止播放并释放资源
   void disposeAudio() {
-    debugPrint('[ArticleAudio] disposeAudio: 页面退出，停止并释放');
+    logger.info('[ArticleAudio] disposeAudio: 页面退出，停止并释放');
     _cleanup();
-    // 重新触发 provider 重建，确保下次进入获得全新实例
     ref.invalidateSelf();
   }
 
@@ -66,25 +56,18 @@ class ArticleAudioController extends Notifier<ArticleState> {
     _positionSubscription = null;
     _playerStateSubscription?.cancel();
     _playerStateSubscription = null;
-    _shadowingLoopTimer?.cancel();
-    _recordingTimer?.cancel();
     _audioPlayer.stop();
     _audioPlayer.dispose();
-    _audioRecorder.dispose();
   }
 
   /// 初始化特定文章
   Future<void> initArticle(String articleId) async {
     try {
       state = state.copyWith(
-        article: Article(
-          id: articleId,
-          title: '加载中...',
-          items: state.article.items,
-        ),
+        article: Article(id: articleId, title: '', items: state.article.items),
       );
 
-      // 通过 ArticleQuery 获取数据 (符合架构规范)
+      // 通过 ArticleQuery 获取数据
       final articleQuery = ref.read(articleQueryProvider);
       final article = await articleQuery.getArticleById(articleId);
 
@@ -94,9 +77,9 @@ class ArticleAudioController extends Notifier<ArticleState> {
 
       state = state.copyWith(article: article);
 
-      // 设置音频源（直接使用打包的本地音频）
+      // 设置音频源
       await _audioPlayer.setAsset('assets/mock/${article.id}.mp3');
-      debugPrint('Audio asset loaded successfully for ${article.id}');
+      logger.info('[ArticleAudio] 音频加载成功: ${article.id}');
 
       // 监听播放状态
       _playerStateSubscription?.cancel();
@@ -123,23 +106,24 @@ class ArticleAudioController extends Notifier<ArticleState> {
         final positionMs = position.inMilliseconds;
         state = state.copyWith(currentPositionMs: positionMs);
 
-        // 寻找当前进度匹配的句子 Index
-        final newIndex = _findIndexForPosition(positionMs);
+        final items = state.article.items;
+        if (items.isEmpty) return;
 
+        // 常规匹配：寻找 positionMs 落在哪个句子区间
+        final newIndex = _findIndexForPosition(positionMs);
         if (newIndex != -1 && newIndex != state.activeIndex) {
           state = state.copyWith(activeIndex: newIndex);
         }
       });
     } catch (e, st) {
-      debugPrint('Audio Init Error: $e');
-      debugPrint(st.toString());
+      logger.error('[ArticleAudio] 初始化失败', e, st);
       state = state.copyWith(
         article: Article(
           id: 'error',
-          title: '加载失败',
+          title: '',
           items: [
             ArticleItem(
-              text: '发生错误：$e',
+              text: '$e',
               translation: '',
               startMs: 0,
               endMs: 9999,
@@ -151,7 +135,7 @@ class ArticleAudioController extends Notifier<ArticleState> {
     }
   }
 
-  // 查找当前时间戳落在哪个句子区间
+  /// 查找当前时间戳落在哪个句子区间
   int _findIndexForPosition(int positionMs) {
     final items = state.article.items;
     if (items.isEmpty) return -1;
@@ -165,35 +149,27 @@ class ArticleAudioController extends Notifier<ArticleState> {
     return -1;
   }
 
-  // --- 状态变更方法 ---
-
-  void toggleFurigana() {
-    state = state.copyWith(showFurigana: !state.showFurigana);
-  }
-
-  void toggleTranslation() {
-    state = state.copyWith(showTranslation: !state.showTranslation);
-  }
-
-  void setUserInterruptedScroll(bool interrupted) {
-    state = state.copyWith(userInterruptedScroll: interrupted);
-  }
-
-  void setActiveIndex(int index) async {
-    if (index < 0 || index >= state.article.items.length) return;
-    state = state.copyWith(activeIndex: index);
-
-    final targetMs = state.article.items[index].startMs;
-    try {
-      await _audioPlayer.seek(Duration(milliseconds: targetMs));
-      if (!_audioPlayer.playing) {
-        await _audioPlayer.play();
-      }
-    } catch (e) {
-      debugPrint('Seek Error: $e');
+  /// 暂停音频播放（供长按等交互调用）
+  void pauseAudio() {
+    if (_audioPlayer.playing) {
+      _audioPlayer.pause();
     }
   }
 
+  /// 切换播放/暂停
+  void togglePlayPause() async {
+    try {
+      if (_audioPlayer.playing) {
+        await _audioPlayer.pause();
+      } else {
+        await _audioPlayer.play();
+      }
+    } catch (e, st) {
+      logger.error('[ArticleAudio] 播放切换失败', e, st);
+    }
+  }
+
+  /// 跳转到指定毫秒位置
   void seekToPosition(int targetMs) async {
     try {
       await _audioPlayer.seek(Duration(milliseconds: targetMs));
@@ -204,39 +180,43 @@ class ArticleAudioController extends Notifier<ArticleState> {
       if (!_audioPlayer.playing) {
         await _audioPlayer.play();
       }
-    } catch (e) {
-      debugPrint('Seek Error: $e');
+    } catch (e, st) {
+      logger.error('[ArticleAudio] Seek 失败', e, st);
     }
   }
 
-  void togglePlayPause() async {
+  /// 设置当前活跃句子并跳转音频
+  void setActiveIndex(int index) async {
+    if (index < 0 || index >= state.article.items.length) return;
+    state = state.copyWith(activeIndex: index);
+
+    final targetMs = state.article.items[index].startMs;
     try {
-      if (_audioPlayer.playing) {
-        await _audioPlayer.pause();
-      } else {
+      await _audioPlayer.seek(Duration(milliseconds: targetMs));
+      if (!_audioPlayer.playing) {
         await _audioPlayer.play();
       }
-    } catch (e) {
-      debugPrint('Playback Error: $e');
+    } catch (e, st) {
+      logger.error('[ArticleAudio] setActiveIndex Seek 失败', e, st);
     }
   }
 
-  void seekToPreviousSentence() {
-    final newIndex = state.activeIndex - 1;
-    if (newIndex >= 0) {
-      setActiveIndex(newIndex);
-    } else {
-      _audioPlayer.seek(Duration.zero);
-    }
+  /// 设置用户是否打断了自动滚动
+  void setUserInterruptedScroll(bool interrupted) {
+    state = state.copyWith(userInterruptedScroll: interrupted);
   }
 
-  void seekToNextSentence() {
-    final newIndex = state.activeIndex + 1;
-    if (newIndex < state.article.items.length) {
-      setActiveIndex(newIndex);
-    }
+  /// 切换假名显示
+  void toggleFurigana() {
+    state = state.copyWith(showFurigana: !state.showFurigana);
   }
 
+  /// 切换翻译显示
+  void toggleTranslation() {
+    state = state.copyWith(showTranslation: !state.showTranslation);
+  }
+
+  /// 切换播放速度
   void toggleSpeed() {
     double nextSpeed = 1.0;
     if (state.currentSpeed == 0.75) {
@@ -251,54 +231,9 @@ class ArticleAudioController extends Notifier<ArticleState> {
     _audioPlayer.setSpeed(nextSpeed);
     state = state.copyWith(currentSpeed: nextSpeed);
   }
-
-  Future<void> startRecording() async {
-    try {
-      if (await _audioRecorder.hasPermission()) {
-        await _audioPlayer.pause();
-        _shadowingLoopTimer?.cancel();
-
-        final directory = await getApplicationDocumentsDirectory();
-        final path = '${directory.path}/shadowing_record.m4a';
-
-        await _audioRecorder.start(
-          const RecordConfig(encoder: AudioEncoder.aacLc),
-          path: path,
-        );
-
-        state = state.copyWith(isRecording: true, recordedDurationMs: 0);
-        _recordingStartTime = DateTime.now();
-
-        _recordingTimer?.cancel();
-        _recordingTimer = Timer.periodic(const Duration(milliseconds: 100), (
-          timer,
-        ) {
-          if (_recordingStartTime != null) {
-            final ms = DateTime.now()
-                .difference(_recordingStartTime!)
-                .inMilliseconds;
-            state = state.copyWith(recordedDurationMs: ms);
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Recording Start Error: $e');
-    }
-  }
-
-  Future<void> stopRecording() async {
-    try {
-      _recordingTimer?.cancel();
-      final path = await _audioRecorder.stop();
-      _lastRecordedPath = path;
-      state = state.copyWith(isRecording: false);
-    } catch (e) {
-      debugPrint('Recording Stop Error: $e');
-    }
-  }
 }
 
-// Provider for the ArticleAudioController
+// Provider
 final articleAudioProvider =
     NotifierProvider<ArticleAudioController, ArticleState>(
       ArticleAudioController.new,
