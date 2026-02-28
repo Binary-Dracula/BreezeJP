@@ -46,12 +46,17 @@ python scripts/align.py
 echo ""
 
 # ===== 步骤 3: Kuromoji 分词 =====
-echo "━━━ 步骤 3/4: Kuromoji 分词处理 ━━━"
+echo "━━━ 步骤 3/5: Kuromoji 分词处理 ━━━"
 node scripts/process_all.js
 echo ""
 
-# ===== 步骤 4: 部署到 App =====
-echo "━━━ 步骤 4/4: 部署到 App Assets ━━━"
+# ===== 步骤 4: 机器翻译 (可选) =====
+echo "━━━ 步骤 4/5: 机器翻译 (ZhipuAI) ━━━"
+python scripts/translate_json.py
+echo ""
+
+# ===== 步骤 5: 部署到 App =====
+echo "━━━ 步骤 5/5: 部署到 App Assets ━━━"
 node scripts/convert_to_mock.js
 
 # 复制音频文件到 mock 目录

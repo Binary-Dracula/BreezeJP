@@ -1,11 +1,11 @@
 import json
 import os
 import sys
+import re
 from zhipuai import ZhipuAI
 
 # 配置
-# 读取系统环境变量中的 ZHIPU_API_KEY，需要用户在终端中先 export ZHIPU_API_KEY="xxx"
-API_KEY = os.environ.get("243e26744481482186691b9637ba792c.b68wDovIzyhgFd3T")
+API_KEY = os.environ.get("ZHIPU_API_KEY", "243e26744481482186691b9637ba792c.b68wDovIzyhgFd3T")
 
 prompt_template = """你是一个专业日语新闻翻译专家。请将以下日语新闻短句翻译为自然、流畅的简体中文。
 要求：
@@ -33,54 +33,98 @@ def translate_item(client, text):
         print(f"翻译失败: {text} -> {e}")
         return ""
 
-def main():
-    if not API_KEY:
-        print("错误：未检测到 ZHIPU_API_KEY 环境变量。请先运行 export ZHIPU_API_KEY='你的密钥'")
-        sys.exit(1)
-
-    if len(sys.argv) < 2:
-        print("使用方法: python translate_json.py <输入json路径>")
-        sys.exit(1)
-
-    input_path = sys.argv[1]
-    output_path = input_path.replace(".json", "_translated.json")
-
-    print(f"正在读取 {input_path} ...")
-    with open(input_path, "r", encoding="utf-8") as f:
+def process_article(article_dir, client):
+    """处理单篇文章的翻译"""
+    processed_path = os.path.join(article_dir, 'processed.json')
+    if not os.path.exists(processed_path):
+        return False, 0
+    
+    with open(processed_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
+        
+    sentences = data.get('sentences', [])
+    if not sentences:
+        return False, 0
+        
+    article_id = data.get('id', 'unknown')
+    total = len(sentences)
+    translated_count = 0
+    
+    # 检查是否需要翻译（全部都有 translation 的就跳过）
+    needs_translation = False
+    for s in sentences:
+        # 如果 sentence 原文本来就为空，不翻译
+        jap_text = s.get('clean_text', '') or s.get('original_text_with_ruby', '')
+        if jap_text and not s.get('translation'):
+            needs_translation = True
+            break
+            
+    if not needs_translation:
+        print(f"  ⏭️ {article_id}: 所有句子已有翻译，跳过")
+        return True, 0
+        
+    print(f"  🔄 翻译 {article_id}: {total} 句")
+    
+    for i, s in enumerate(sentences):
+        jap_text = s.get('clean_text', '') or s.get('original_text_with_ruby', '')
+        if not jap_text or s.get('translation'):
+            continue
+            
+        # 清理注音方括号，比如：国会[こっかい]で -> 国会で
+        clean_jap_text = re.sub(r'\[.*?\]', '', jap_text)
+        
+        zh_trans = translate_item(client, clean_jap_text)
+        if zh_trans:
+            s['translation'] = zh_trans
+            translated_count += 1
+            print(f"    [{i+1}/{total}] {zh_trans}")
+            
+    # 只在有翻译更新时才写回文件
+    if translated_count > 0:
+        with open(processed_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"  ✅ -> {processed_path} (新增翻译: {translated_count} 句)")
+        
+    return True, translated_count
+
+def main():
+    print("🚀 中文机器翻译处理（批量）")
+    if not API_KEY:
+        print("⚠️ 警告：未检测到 ZHIPU_API_KEY 环境变量，跳过翻译步骤。")
+        print("   如果需要翻译，请先执行: export ZHIPU_API_KEY='你的密钥'")
+        sys.exit(0) # Not an error, just skip
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    pipeline_dir = os.path.dirname(script_dir)
+    data_dir = os.path.join(pipeline_dir, "data")
+    
+    if not os.path.exists(data_dir):
+        print(f"❌ 数据目录不存在: {data_dir}")
+        sys.exit(1)
+        
+    article_dirs = []
+    for name in sorted(os.listdir(data_dir)):
+        d = os.path.join(data_dir, name)
+        if os.path.isdir(d) and os.path.exists(os.path.join(d, 'processed.json')):
+            article_dirs.append(d)
+            
+    print(f"📂 发现 {len(article_dirs)} 篇文章，准备检查并翻译\n")
+    if not article_dirs:
+        print("⚠️ 未找到任何文章数据")
+        return
 
     client = ZhipuAI(api_key=API_KEY)
-    total_items = sum(len(article.get("items", [])) for article in data)
-    current_idx = 0
-
-    print(f"总计找到 {total_items} 句话待翻译。开始请求 Zhipu API...")
-
-    for article in data:
-        items = article.get("items", [])
-        for item in items:
-            current_idx += 1
-            jap_text = item.get("text", "")
+    
+    success_articles = 0
+    total_translated = 0
+    
+    for d in article_dirs:
+        success, count = process_article(d, client)
+        if success:
+            success_articles += 1
+            total_translated += count
             
-            # 如果已经有翻译，或者原文为空，跳过
-            if item.get("translation") or not jap_text:
-                continue
-
-            # NHK原文中带有 注音的方括号，比如：国会[こっかい]で
-            # 翻译时最好去掉注音，只留汉字让 AI 更好理解
-            import re
-            clean_jap_text = re.sub(r'\[.*?\]', '', jap_text)
-            
-            print(f"[{current_idx}/{total_items}] 正在翻译: {clean_jap_text[:20]}...")
-            zh_trans = translate_item(client, clean_jap_text)
-            
-            if zh_trans:
-                item["translation"] = zh_trans
-                print(f"    --> {zh_trans}")
-
-    print(f"翻译完成！正在写入 {output_path} ...")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print("写入成功！")
+    print(f"\n🎉 翻译处理完成！总计新增翻译句子数: {total_translated}")
 
 if __name__ == "__main__":
     main()
