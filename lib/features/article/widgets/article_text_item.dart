@@ -7,6 +7,7 @@ import '../../../core/utils/furigana_parser.dart';
 import '../../../data/models/article/article_item.dart';
 import '../../../data/models/article/article_word.dart';
 import '../controller/article_audio_controller.dart';
+import '../state/article_state.dart';
 
 // ----------------------------------------------------------------------
 // 文章句子组件（Wrap 布局 + 独立 ruby_text）
@@ -25,8 +26,12 @@ class ArticleTextItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(articleAudioProvider);
     final notifier = ref.read(articleAudioProvider.notifier);
-    final showFurigana = state.showFurigana;
-    final showTranslation = state.showTranslation;
+    final showFurigana =
+        state.displayMode == ArticleDisplayMode.all ||
+        state.displayMode == ArticleDisplayMode.furiganaOnly;
+    final showTranslation =
+        state.displayMode == ArticleDisplayMode.all ||
+        state.displayMode == ArticleDisplayMode.translationOnly;
 
     // 基础样式
     const double baseFontSize = 18.0;
@@ -262,14 +267,16 @@ class _WordRubyWidget extends StatelessWidget {
     );
 
     // 为每个 RubyTextData 设置样式
-    // 对于没有 ruby 注音的纯假名词，添加透明占位 ruby，确保所有词纵向高度一致（底部对齐）
+    // 对于没有 ruby 注音的纯假名片段，添加透明占位 ruby，确保所有词纵向高度一致（底部对齐）
+    // 注意：即使整个 word 含有汉字，其中的纯假名片段（如「考え方」中的「え」）
+    // 也必须使用透明 ruby，避免假名上方错误显示假名注音
     final styledRubyData = rubyDataList.map((data) {
       final hasRuby = data.ruby != null && data.ruby!.isNotEmpty;
       return RubyTextData(
         data.text,
         ruby: hasRuby ? data.ruby : data.text,
         style: textStyle,
-        rubyStyle: hasRuby
+        rubyStyle: hasRuby && showFurigana && word.hasKanji
             ? rubyStyle
             : TextStyle(
                 fontSize: rubyFontSize,
@@ -279,11 +286,10 @@ class _WordRubyWidget extends StatelessWidget {
       );
     }).toList();
 
-    Widget rubyWidget = RubyText(
-      styledRubyData,
-      style: textStyle,
-      rubyStyle: rubyStyle,
-    );
+    // 不在 RubyText widget 上设置全局 rubyStyle！
+    // 因为 ruby_text 包的 copyWith 会用它覆盖所有 per-item 的 rubyStyle，
+    // 导致纯假名片段的透明色被全局可见色覆盖。
+    Widget rubyWidget = RubyText(styledRubyData, style: textStyle);
 
     // 背景色容器（预留词性着色，不改变高度）
     if (backgroundColor != null) {

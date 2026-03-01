@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controller/article_audio_controller.dart';
+import '../state/article_state.dart';
 import 'package:flutter/services.dart';
 
 /// 底部工具栏（精简版：进度条 + 核心控制按钮）
@@ -143,39 +144,17 @@ class _MiraaStyleControlBarState extends ConsumerState<MiraaStyleControlBar>
                     ),
                   ),
 
-                  // 翻译开关
+                  // 显示模式轮转（假名+翻译 / 仅假名 / 仅翻译）
                   IconButton(
                     icon: Icon(
-                      state.showTranslation
-                          ? Icons.subtitles
-                          : Icons.subtitles_off,
-                      color: state.showTranslation
-                          ? Colors.black87
-                          : Colors.black38,
+                      _displayModeIcon(state.displayMode),
+                      color: Colors.black87,
                       size: 24,
                     ),
-                    tooltip: '翻译',
+                    tooltip: _displayModeTooltip(state.displayMode),
                     onPressed: () {
                       HapticFeedback.lightImpact();
-                      notifier.toggleTranslation();
-                    },
-                  ),
-
-                  // 假名开关
-                  IconButton(
-                    icon: Icon(
-                      state.showFurigana
-                          ? Icons.translate
-                          : Icons.translate_outlined,
-                      color: state.showFurigana
-                          ? Colors.black87
-                          : Colors.black38,
-                      size: 24,
-                    ),
-                    tooltip: '注音',
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      notifier.toggleFurigana();
+                      notifier.toggleDisplayMode();
                     },
                   ),
 
@@ -229,5 +208,25 @@ class _MiraaStyleControlBarState extends ConsumerState<MiraaStyleControlBar>
         ),
       ),
     );
+  }
+
+  /// 根据当前显示模式返回对应图标
+  IconData _displayModeIcon(ArticleDisplayMode mode) {
+    return switch (mode) {
+      ArticleDisplayMode.all => Icons.visibility,
+      ArticleDisplayMode.furiganaOnly => Icons.translate,
+      ArticleDisplayMode.translationOnly => Icons.subtitles,
+      ArticleDisplayMode.none => Icons.visibility_off,
+    };
+  }
+
+  /// 根据当前显示模式返回对应提示文本
+  String _displayModeTooltip(ArticleDisplayMode mode) {
+    return switch (mode) {
+      ArticleDisplayMode.all => '假名+翻译',
+      ArticleDisplayMode.furiganaOnly => '仅假名',
+      ArticleDisplayMode.translationOnly => '仅翻译',
+      ArticleDisplayMode.none => '全部隐藏',
+    };
   }
 }

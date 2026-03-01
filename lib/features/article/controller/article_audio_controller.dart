@@ -206,14 +206,15 @@ class ArticleAudioController extends Notifier<ArticleState> {
     state = state.copyWith(userInterruptedScroll: interrupted);
   }
 
-  /// 切换假名显示
-  void toggleFurigana() {
-    state = state.copyWith(showFurigana: !state.showFurigana);
-  }
-
-  /// 切换翻译显示
-  void toggleTranslation() {
-    state = state.copyWith(showTranslation: !state.showTranslation);
+  /// 切换显示模式（四态轮转：全部 → 仅假名 → 仅翻译 → 全隐藏）
+  void toggleDisplayMode() {
+    final nextMode = switch (state.displayMode) {
+      ArticleDisplayMode.all => ArticleDisplayMode.furiganaOnly,
+      ArticleDisplayMode.furiganaOnly => ArticleDisplayMode.translationOnly,
+      ArticleDisplayMode.translationOnly => ArticleDisplayMode.none,
+      ArticleDisplayMode.none => ArticleDisplayMode.all,
+    };
+    state = state.copyWith(displayMode: nextMode);
   }
 
   /// 切换播放速度
