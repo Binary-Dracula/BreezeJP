@@ -35,9 +35,12 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 - 使用 `browser_subagent` 工具
 - Task Prompt: "Navigate to any NHK Easy News article page. Click the '聞く' (listen) button to start audio playback. Monitor network requests for URLs containing `hdnts=` or requests to `mediatoken.web.nhk`. Return the complete hdnts token string (format: `exp=...~acl=...~hmac=...`)."
 
-## 步骤 4: 运行爬虫
-
 ## 步骤 4: 一键执行管道
+
+如果需要机器翻译日语新闻，请先在终端配置智谱大模型 API Key（可选）：
+```bash
+export ZHIPU_API_KEY="你的_API_KEY"
+```
 
 ```bash
 # Cwd: tools/nhk_data_pipeline
@@ -45,16 +48,17 @@ bash scripts/run_pipeline.sh --hdnts "<hdnts_token>"
 ```
 
 该脚本自动串联执行以下全部步骤：
-1. **爬虫**：抓取文本 + 下载音频 → `data/{id}/raw.json` + `output/{id}/{id}.mp3`
+1. **爬虫**：抓取文本 + 下载音频 → `data/{id}/raw.json` + `data/{id}/{id}.mp3`
 2. **音频对齐**：faster-whisper + Needleman-Wunsch → `data/{id}/aligned.json`（生成 `start_ms` / `end_ms`）
 3. **Kuromoji 分词**：合并对齐数据 + 分词 → `data/{id}/processed.json`
-4. **部署到 App**：合并为 `assets/mock/test_output.json` + 复制 mp3
+4. **机器翻译** (可选)：调用 ZhipuAI 翻译每一句 → 更新进 `data/{id}/processed.json`
+5. **部署到 App**：合并为 `assets/mock/test_output.json` + 复制 mp3
 
 脚本结束后会自动进行数据完整性检查。
 
 ## 步骤 5: 通知用户
 
-告知用户数据已下载、对齐、处理并注入 App 的 mock 数据文件。
+告知用户数据已下载、对齐、翻译、处理并注入 App 的 mock 数据文件。
 
 ---
 
