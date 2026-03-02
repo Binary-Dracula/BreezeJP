@@ -19,6 +19,9 @@ enum ArticleDisplayMode {
   none,
 }
 
+/// 文章交互模式：普通听读、AB 循环听
+enum ArticleMode { normal, abLoop }
+
 @freezed
 abstract class ArticleState with _$ArticleState {
   const factory ArticleState({
@@ -26,6 +29,9 @@ abstract class ArticleState with _$ArticleState {
 
     /// 假名/翻译显示模式
     @Default(ArticleDisplayMode.all) ArticleDisplayMode displayMode,
+
+    /// 当前的交互模式
+    @Default(ArticleMode.normal) ArticleMode currentMode,
 
     // 音频播放相关状态
     @Default(false) bool isPlaying,
@@ -37,5 +43,11 @@ abstract class ArticleState with _$ArticleState {
 
     // 用户是否打断了自动滚动
     @Default(false) bool userInterruptedScroll,
+
+    // --- AB 循环听相关状态 ---
+    int? loopStartIdx, // A 句索引
+    int? loopEndIdx, // B 句索引
+    @Default(3) int targetLoopCount, // 目标循环次数 (默认 3 次)
+    @Default(0) int currentLoopCount, // 当前已完成循环次数
   }) = _ArticleState;
 }

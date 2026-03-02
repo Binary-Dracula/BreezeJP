@@ -130,13 +130,75 @@ class ArticleTextItem extends ConsumerWidget {
       child: content,
     );
 
-    // 句子级别手势：点击跳转到该句
+    // 检查是否显示 A/B 角标
+    Widget finalContent = content;
+    if (state.currentMode == ArticleMode.abLoop) {
+      final bool isA = state.loopStartIdx == item.index;
+      final bool isB = state.loopEndIdx == item.index;
+
+      if (isA || isB) {
+        String badgeText;
+        Color badgeColor;
+        double badgeWidth;
+
+        if (isA && isB) {
+          badgeText = 'A/B';
+          badgeColor = Colors.purple; // 组合色或紫色
+          badgeWidth = 32;
+        } else if (isA) {
+          badgeText = 'A';
+          badgeColor = Colors.green;
+          badgeWidth = 20;
+        } else {
+          badgeText = 'B';
+          badgeColor = Colors.red;
+          badgeWidth = 20;
+        }
+
+        finalContent = Stack(
+          clipBehavior: Clip.none,
+          children: [
+            content,
+            Positioned(
+              right: 6,
+              top: 2,
+              child: Container(
+                width: badgeWidth,
+                height: 20,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: badgeColor,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  badgeText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+    }
+
+    // 句子级别手势：点击触发控制器统一路由逻辑
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        notifier.setActiveIndex(item.index);
+        notifier.onSentenceTap(item.index);
       },
-      child: content,
+      child: finalContent,
     );
   }
 

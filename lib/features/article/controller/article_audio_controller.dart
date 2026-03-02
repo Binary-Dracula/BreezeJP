@@ -100,7 +100,7 @@ class ArticleAudioController extends Notifier<ArticleState> {
         }
       });
 
-      // 监听进度，执行心跳对齐（高光跟踪）
+      // 监听进度，执行心跳对齐（高光跟踪）和 AB 循环边界拦截
       _positionSubscription?.cancel();
       _positionSubscription = _audioPlayer.positionStream.listen((position) {
         final positionMs = position.inMilliseconds;
@@ -109,10 +109,37 @@ class ArticleAudioController extends Notifier<ArticleState> {
         final items = state.article.items;
         if (items.isEmpty) return;
 
-        // 常规匹配：寻找 positionMs 落在哪个句子区间
+        // --- 常规匹配：寻找 positionMs 落在哪个句子区间 ---
         final newIndex = _findIndexForPosition(positionMs);
         if (newIndex != -1 && newIndex != state.activeIndex) {
           state = state.copyWith(activeIndex: newIndex);
+        }
+
+        // --- AB 循环拦截逻辑 ---
+        if (state.currentMode == ArticleMode.abLoop &&
+            state.loopStartIdx != null &&
+            state.loopEndIdx != null) {
+          final loopEndMs = items[state.loopEndIdx!].endMs;
+
+          // 如果进度超过了 B 句的结束时间 (加 50ms 容差避免误判)
+          if (positionMs >= loopEndMs - 50) {
+            final nextCount = state.currentLoopCount + 1;
+
+            if (nextCount >= state.targetLoopCount) {
+              // 达到目标次数：暂停，并重置计数器 (允许用户再次点击播放重新开始)
+              _audioPlayer.pause();
+              _audioPlayer.seek(
+                Duration(milliseconds: items[state.loopStartIdx!].startMs),
+              );
+              state = state.copyWith(currentLoopCount: 0, isPlaying: false);
+            } else {
+              // 未达到目标次数：递增计数，跳回 A 句开头继续播
+              state = state.copyWith(currentLoopCount: nextCount);
+              _audioPlayer.seek(
+                Duration(milliseconds: items[state.loopStartIdx!].startMs),
+              );
+            }
+          }
         }
       });
     } catch (e, st) {
@@ -185,11 +212,52 @@ class ArticleAudioController extends Notifier<ArticleState> {
     }
   }
 
-  /// 设置当前活跃句子并跳转音频
-  void setActiveIndex(int index) async {
-    if (index < 0 || index >= state.article.items.length) return;
-    state = state.copyWith(activeIndex: index);
+  /// 切换交互模式并在切换时执行完全重置 (Hard Reset)
+  void setMode(ArticleMode newMode) async {
+    if (state.currentMode == newMode) return;
 
+    // 强制暂停音频
+    if (_audioPlayer.playing) {
+      await _audioPlayer.pause();
+    }
+    // 进度回退到文章开头
+    await _audioPlayer.seek(Duration.zero);
+
+    // 清空所有状态
+    state = state.copyWith(
+      currentMode: newMode,
+      activeIndex: -1,
+      currentPositionMs: 0,
+      isPlaying: false,
+      loopStartIdx: null,
+      loopEndIdx: null,
+      currentLoopCount: 0,
+      userInterruptedScroll: false,
+    );
+  }
+
+  /// 设置目标循环次数 (1-10)
+  void setTargetLoopCount(int count) {
+    if (count < 1 || count > 10) return;
+    state = state.copyWith(targetLoopCount: count);
+  }
+
+  /// 点击句子时的统一路由逻辑
+  void onSentenceTap(int index) async {
+    if (index < 0 || index >= state.article.items.length) return;
+
+    if (state.currentMode == ArticleMode.normal) {
+      // Normal 模式：直接跳转播放
+      _seekAndPlayIndex(index);
+    } else if (state.currentMode == ArticleMode.abLoop) {
+      // AB Loop 模式：选择 A/B 句
+      _handleAbSelection(index);
+    }
+  }
+
+  /// 内部方法：执行实际的跳转和播放
+  void _seekAndPlayIndex(int index) async {
+    state = state.copyWith(activeIndex: index);
     final targetMs = state.article.items[index].startMs;
     try {
       await _audioPlayer.seek(Duration(milliseconds: targetMs));
@@ -197,8 +265,62 @@ class ArticleAudioController extends Notifier<ArticleState> {
         await _audioPlayer.play();
       }
     } catch (e, st) {
-      logger.error('[ArticleAudio] setActiveIndex Seek 失败', e, st);
+      logger.error('[ArticleAudio] _seekAndPlayIndex Seek 失败', e, st);
     }
+  }
+
+  /// 内部方法：处理 A/B 选择逻辑
+  void _handleAbSelection(int index) {
+    // 情况 1: 都有 (A 和 B 已就绪) -> 直接中断循环，清空全场，设该句为新 A
+    if (state.loopStartIdx != null && state.loopEndIdx != null) {
+      if (_audioPlayer.playing) _audioPlayer.pause();
+      state = state.copyWith(
+        loopStartIdx: index,
+        loopEndIdx: null,
+        currentLoopCount: 0,
+        isPlaying: false,
+      );
+      return;
+    }
+
+    // 情况 2: 无 A (初始状态) -> 选为 A
+    if (state.loopStartIdx == null) {
+      state = state.copyWith(loopStartIdx: index);
+      return;
+    }
+
+    // 情况 3: 有 A 无 B -> 选为 B，并开始循环播放
+    if (state.loopEndIdx == null) {
+      int start = state.loopStartIdx!;
+      int end = index;
+
+      // 自动纠偏：确保 A 始终 <= B
+      if (start > end) {
+        final temp = start;
+        start = end;
+        end = temp;
+      }
+
+      state = state.copyWith(
+        loopStartIdx: start,
+        loopEndIdx: end,
+        currentLoopCount: 0,
+      );
+
+      // 开始这第一轮的循环播放 (跳到 A句开头)
+      _seekAndPlayIndex(start);
+    }
+  }
+
+  /// 设置当前活跃句子并跳转音频 (保留旧方法名以兼容其他调用，如上/下一句)
+  void setActiveIndex(int index) async {
+    if (state.currentMode == ArticleMode.abLoop) {
+      // 在 AB 循环模式下，外部可能也会调用 setActiveIndex（例如底部控制栏），
+      // 为了安全，强制干预为 onSentenceTap 的选取行为或忽略。
+      // 作为备用，不作独立处理
+      return;
+    }
+    _seekAndPlayIndex(index);
   }
 
   /// 设置用户是否打断了自动滚动
