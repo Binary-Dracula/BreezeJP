@@ -53,9 +53,11 @@ class AudioService {
 
       // 判断是 URL 还是本地资源
       if (source.startsWith('http://') || source.startsWith('https://')) {
-        // 在线音频
+        // 在线音频：对 URL 进行 percent-encoding 以兼容 Android ExoPlayer
+        // Android 的 OkHttp 不会自动编码非 ASCII 字符（如日文汉字），导致 404
+        final encodedUrl = _encodeUrl(source);
         await _player.setUrl(
-          source,
+          encodedUrl,
           headers: {'X-Breeze-Token': 'BreezeJP-2026-Secret-V1'},
         );
       } else {
@@ -172,6 +174,18 @@ class AudioService {
         errorMessage: '释放音频服务失败: ${e.toString()}',
       );
     }
+  }
+
+  /// 对 URL 中的非 ASCII 字符进行 percent-encoding
+  /// 保留 scheme、host、路径分隔符（/），只编码路径段中的非 ASCII 字符
+  String _encodeUrl(String url) {
+    final uri = Uri.parse(url);
+    // 对每个路径段单独编码
+    final encodedSegments = uri.pathSegments.map(
+      (segment) => Uri.encodeComponent(segment),
+    );
+    final encodedPath = '/${encodedSegments.join('/')}';
+    return uri.replace(path: encodedPath).toString();
   }
 }
 
