@@ -11,10 +11,20 @@ import '../state/article_state.dart';
 // ----------------------------------------------------------------------
 // Audio Controller（精简版：仅保留核心播放功能）
 // ----------------------------------------------------------------------
+
+/// AB 循环每轮之间的停顿时长（毫秒），方便后期调整
+const int kLoopPauseMs = 2000;
+
 class ArticleAudioController extends Notifier<ArticleState> {
   late AudioPlayer _audioPlayer;
   StreamSubscription? _positionSubscription;
   StreamSubscription? _playerStateSubscription;
+
+  /// AB 循环间隔停顿的计时器
+  Timer? _loopPauseTimer;
+
+  /// 是否正处于循环间隔停顿中（防止 positionStream 重复触发）
+  bool _isLoopPausing = false;
 
   @override
   ArticleState build() {
@@ -52,6 +62,9 @@ class ArticleAudioController extends Notifier<ArticleState> {
 
   /// 内部清理方法
   void _cleanup() {
+    _loopPauseTimer?.cancel();
+    _loopPauseTimer = null;
+    _isLoopPausing = false;
     _positionSubscription?.cancel();
     _positionSubscription = null;
     _playerStateSubscription?.cancel();
@@ -118,11 +131,12 @@ class ArticleAudioController extends Notifier<ArticleState> {
         // --- AB 循环拦截逻辑 ---
         if (state.currentMode == ArticleMode.abLoop &&
             state.loopStartIdx != null &&
-            state.loopEndIdx != null) {
+            state.loopEndIdx != null &&
+            !_isLoopPausing) {
           final loopEndMs = items[state.loopEndIdx!].endMs;
 
-          // 如果进度超过了 B 句的结束时间 (加 50ms 容差避免误判)
-          if (positionMs >= loopEndMs - 50) {
+          // 如果进度已到达或超过 B 句的结束时间
+          if (positionMs >= loopEndMs) {
             final nextCount = state.currentLoopCount + 1;
 
             if (nextCount >= state.targetLoopCount) {
@@ -133,11 +147,28 @@ class ArticleAudioController extends Notifier<ArticleState> {
               );
               state = state.copyWith(currentLoopCount: 0, isPlaying: false);
             } else {
-              // 未达到目标次数：递增计数，跳回 A 句开头继续播
-              state = state.copyWith(currentLoopCount: nextCount);
-              _audioPlayer.seek(
-                Duration(milliseconds: items[state.loopStartIdx!].startMs),
+              // 未达到目标次数：先暂停，等待间隔后再跳回 A 句开头继续播
+              _audioPlayer.pause();
+              state = state.copyWith(
+                currentLoopCount: nextCount,
+                isPlaying: false,
               );
+              _isLoopPausing = true;
+              _loopPauseTimer?.cancel();
+              _loopPauseTimer = Timer(Duration(milliseconds: kLoopPauseMs), () {
+                _isLoopPausing = false;
+                // 再次检查是否仍然处于 abLoop 模式（用户可能在等待期间切换了模式）
+                if (state.currentMode == ArticleMode.abLoop &&
+                    state.loopStartIdx != null) {
+                  _audioPlayer.seek(
+                    Duration(
+                      milliseconds:
+                          state.article.items[state.loopStartIdx!].startMs,
+                    ),
+                  );
+                  _audioPlayer.play();
+                }
+              });
             }
           }
         }
@@ -215,6 +246,11 @@ class ArticleAudioController extends Notifier<ArticleState> {
   /// 切换交互模式并在切换时执行完全重置 (Hard Reset)
   void setMode(ArticleMode newMode) async {
     if (state.currentMode == newMode) return;
+
+    // 取消任何正在进行的循环停顿计时
+    _loopPauseTimer?.cancel();
+    _loopPauseTimer = null;
+    _isLoopPausing = false;
 
     // 强制暂停音频
     if (_audioPlayer.playing) {
