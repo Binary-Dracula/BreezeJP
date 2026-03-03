@@ -179,13 +179,7 @@ class AudioService {
   /// 对 URL 中的非 ASCII 字符进行 percent-encoding
   /// 保留 scheme、host、路径分隔符（/），只编码路径段中的非 ASCII 字符
   String _encodeUrl(String url) {
-    final uri = Uri.parse(url);
-    // 对每个路径段单独编码
-    final encodedSegments = uri.pathSegments.map(
-      (segment) => Uri.encodeComponent(segment),
-    );
-    final encodedPath = '/${encodedSegments.join('/')}';
-    return uri.replace(path: encodedPath).toString();
+    return Uri.encodeFull(url);
   }
 }
 
