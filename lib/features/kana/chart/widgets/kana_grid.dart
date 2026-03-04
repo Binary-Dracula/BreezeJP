@@ -392,20 +392,32 @@ class KanaGrid extends ConsumerWidget {
   }) {
     final displayText = kana.letter.kanaChar;
 
-    final isLearned = kana.isMastered;
+    final isMastered = kana.isMastered;
+    final isLearning = kana.isLearning;
+
+    // 确定颜色配置
+    Color bgColor = Colors.white;
+    Color borderColor = Colors.grey.shade200;
+    Color textColor = Colors.black87;
+    Color romajiColor = Colors.grey;
+
+    if (isMastered) {
+      bgColor = Theme.of(context).primaryColor.withValues(alpha: 0.1);
+      borderColor = Theme.of(context).primaryColor.withValues(alpha: 0.3);
+      textColor = Theme.of(context).primaryColor;
+      romajiColor = Theme.of(context).primaryColor.withValues(alpha: 0.7);
+    } else if (isLearning) {
+      bgColor = Colors.orange.withValues(alpha: 0.1);
+      borderColor = Colors.orange.withValues(alpha: 0.3);
+      textColor = Colors.orange.shade700;
+      romajiColor = Colors.orange.shade700;
+    }
 
     final cell = Container(
       decoration: BoxDecoration(
-        color: isLearned
-            ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-            : Colors.white,
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isLearned
-              ? Theme.of(context).primaryColor.withValues(alpha: 0.3)
-              : Colors.grey.shade200,
-          width: 1,
-        ),
+        border: Border.all(color: borderColor, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -423,21 +435,14 @@ class KanaGrid extends ConsumerWidget {
             style: TextStyle(
               fontSize: size != null ? 28 : 24,
               fontWeight: FontWeight.w500,
-              color: isLearned
-                  ? Theme.of(context).primaryColor
-                  : Colors.black87,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 2),
           // 罗马音
           Text(
             kana.letter.romaji,
-            style: TextStyle(
-              fontSize: 10,
-              color: isLearned
-                  ? Theme.of(context).primaryColor.withValues(alpha: 0.7)
-                  : Colors.grey,
-            ),
+            style: TextStyle(fontSize: 10, color: romajiColor),
           ),
         ],
       ),
