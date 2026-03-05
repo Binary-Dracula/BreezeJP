@@ -3,3 +3,5 @@ beautifulsoup4
 faster-whisper
 mutagen
 zhipuai
+sudachipy
+sudachidict_core

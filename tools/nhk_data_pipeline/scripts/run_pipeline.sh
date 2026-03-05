@@ -1,6 +1,6 @@
 #!/bin/bash
 # run_pipeline.sh - NHK 数据管道一键执行脚本
-# 用法: ./run_pipeline.sh --hdnts "<hdnts_token>"
+# 用法: ./run_pipeline.sh --hdnts "<hdnts_token>" [--tokenizer kuromoji|sudachi] [--sudachi-mode A|B|C]
 
 set -e
 
@@ -16,10 +16,20 @@ echo ""
 
 # 解析参数
 HDNTS_TOKEN=""
+TOKENIZER="kuromoji"
+SUDACHI_MODE="B"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --hdnts)
             HDNTS_TOKEN="$2"
+            shift 2
+            ;;
+        --tokenizer)
+            TOKENIZER="$2"
+            shift 2
+            ;;
+        --sudachi-mode)
+            SUDACHI_MODE="$2"
             shift 2
             ;;
         *)
@@ -27,6 +37,12 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+echo "分词器: $TOKENIZER"
+if [ "$TOKENIZER" = "sudachi" ]; then
+    echo "Sudachi 模式: Mode $SUDACHI_MODE"
+fi
+echo ""
 
 # ===== 步骤 1: 爬虫 =====
 echo "━━━ 步骤 1/4: 爬虫 (文本 + 音频下载) ━━━"
@@ -45,9 +61,14 @@ echo "━━━ 步骤 2/4: 音频对齐 (faster-whisper) ━━━"
 python scripts/align.py
 echo ""
 
-# ===== 步骤 3: Kuromoji 分词 =====
-echo "━━━ 步骤 3/5: Kuromoji 分词处理 ━━━"
-node scripts/process_all.js
+# ===== 步骤 3: 分词处理 =====
+if [ "$TOKENIZER" = "sudachi" ]; then
+    echo "━━━ 步骤 3/5: Sudachi 分词处理 (Mode $SUDACHI_MODE) ━━━"
+    python scripts/process_all_sudachi.py --mode "$SUDACHI_MODE"
+else
+    echo "━━━ 步骤 3/5: Kuromoji 分词处理 ━━━"
+    node scripts/process_all.js
+fi
 echo ""
 
 # ===== 步骤 4: 机器翻译 (可选) =====

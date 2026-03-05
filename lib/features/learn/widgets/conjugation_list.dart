@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../../data/models/word_conjugation.dart';
 
 class ConjugationList extends StatelessWidget {
@@ -47,43 +46,32 @@ class ConjugationList extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final item = conjugations[index];
-              return InkWell(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: item.conjugatedWord));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${item.conjugatedWord} 已复制'),
-                      duration: const Duration(milliseconds: 500),
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        item.typeNameCn ?? item.typeNameJa ?? '未知',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                      ),
                     ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 12.0,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          item.typeNameCn ?? item.typeNameJa ?? '未知',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.hintColor,
-                          ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        item.conjugatedWord,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          item.conjugatedWord,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             },
