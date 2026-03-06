@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/custom_ruby_text.dart';
 import '../../../data/models/grammar_detail.dart';
 import '../../../data/models/grammar_meaning.dart';
 import '../../../data/models/grammar_example.dart';
+import '../../../services/audio_play_controller_provider.dart';
+import '../../../services/audio_play_controller.dart';
+import '../../../services/audio_play_state.dart';
 import '../../learn/widgets/audio_play_button.dart';
 
-class GrammarCard extends StatelessWidget {
+class GrammarCard extends ConsumerWidget {
   final GrammarDetail detail;
 
   const GrammarCard({super.key, required this.detail});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -20,7 +24,7 @@ class GrammarCard extends StatelessWidget {
           _buildHeader(context),
           const SizedBox(height: 16),
           ...detail.meanings.map(
-            (meaning) => _buildMeaningSection(context, meaning),
+            (meaning) => _buildMeaningSection(context, ref, meaning),
           ),
         ],
       ),
@@ -59,7 +63,11 @@ class GrammarCard extends StatelessWidget {
   }
 
   /// 渲染单个义项（接续 + 含义 + 例句 + 提示 + 提示例句）
-  Widget _buildMeaningSection(BuildContext context, GrammarMeaning meaning) {
+  Widget _buildMeaningSection(
+    BuildContext context,
+    WidgetRef ref,
+    GrammarMeaning meaning,
+  ) {
     // 分离义项例句和提示例句
     final regularExamples = meaning.examples
         .where((e) => !e.isTipExample)
@@ -101,7 +109,7 @@ class GrammarCard extends StatelessWidget {
 
           // 义项例句
           if (regularExamples.isNotEmpty)
-            _buildExampleList(context, regularExamples),
+            _buildExampleList(context, ref, regularExamples),
 
           // 提示
           if (meaning.tip != null && meaning.tip!.isNotEmpty) ...[
@@ -118,7 +126,7 @@ class GrammarCard extends StatelessWidget {
                   // 提示中的例句
                   if (tipExamples.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    _buildExampleList(context, tipExamples),
+                    _buildExampleList(context, ref, tipExamples),
                   ],
                 ],
               ),
@@ -135,8 +143,12 @@ class GrammarCard extends StatelessWidget {
 
   Widget _buildExampleList(
     BuildContext context,
+    WidgetRef ref,
     List<GrammarExample> examples,
   ) {
+    final audioStatus = ref.watch(audioPlayControllerProvider);
+    final controller = ref.read(audioPlayControllerProvider.notifier);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: examples
@@ -160,12 +172,20 @@ class GrammarCard extends StatelessWidget {
                             fontSize: 16,
                           ),
                         ),
+                        // 播放按钮: 优先使用音频 URL, 否则使用 TTS
                         if (example.audioUrl != null &&
                             example.audioUrl!.isNotEmpty)
                           AudioPlayButton(
                             audioSource: example.audioUrl!,
                             size: 24,
                             color: Colors.blue,
+                          )
+                        else if (example.sentence != null &&
+                            example.sentence!.isNotEmpty)
+                          _buildTtsPlayButton(
+                            example.sentence!,
+                            audioStatus,
+                            controller,
                           ),
                       ],
                     ),
@@ -186,6 +206,37 @@ class GrammarCard extends StatelessWidget {
             ),
           )
           .toList(),
+    );
+  }
+
+  /// 构建 TTS 播放按钮
+  Widget _buildTtsPlayButton(
+    String text,
+    AudioPlayStatus audioStatus,
+    AudioPlayController controller,
+  ) {
+    final ttsSource = 'tts://$text';
+    final isPlaying = audioStatus.isPlaying(ttsSource);
+    final isLoading = audioStatus.isLoading(ttsSource);
+
+    return IconButton(
+      icon: isLoading
+          ? const SizedBox(
+              width: 19,
+              height: 19,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.blue,
+              ),
+            )
+          : Icon(
+              isPlaying ? Icons.stop_circle : Icons.play_circle,
+              size: 24,
+              color: Colors.blue,
+            ),
+      onPressed: isLoading ? null : () => controller.toggleTts(text),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
     );
   }
 

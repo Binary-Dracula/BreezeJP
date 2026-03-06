@@ -13,6 +13,7 @@ PODS:
   - sqflite_darwin (0.0.4):
     - Flutter
     - FlutterMacOS
+  - VoicevoxCore (0.16.4)
 
 DEPENDENCIES:
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
@@ -21,6 +22,7 @@ DEPENDENCIES:
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - record_ios (from `.symlinks/plugins/record_ios/ios`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
+  - VoicevoxCore (from `.`)
 
 EXTERNAL SOURCES:
   audio_session:
@@ -35,6 +37,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/record_ios/ios"
   sqflite_darwin:
     :path: ".symlinks/plugins/sqflite_darwin/darwin"
+  VoicevoxCore:
+    :path: "."
 
 SPEC CHECKSUMS:
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
@@ -43,7 +47,8 @@ SPEC CHECKSUMS:
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   record_ios: 412daca2350b228e698fffcd08f1f94ceb1e3844
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
+  VoicevoxCore: 79bfed2f6d588e282762d56e76129b5417782147
 
-PODFILE CHECKSUM: 4f1c12611da7338d21589c0b2ecd6bd20b109694
+PODFILE CHECKSUM: aa684933d29ed4beb5cc6232ba9d00cffef13548
 
 COCOAPODS: 1.16.2

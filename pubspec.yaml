@@ -43,6 +43,9 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   record: ^6.2.0
   ruby_text: ^3.0.3
+  # TTS
+  voicevox_core: ^0.1.0
+  ffi: ^2.1.2
 
 dev_dependencies:
   flutter_test:
@@ -62,3 +65,5 @@ flutter:
     - assets/audio/examples/
     - assets/audio/kana/
     - assets/mock/
+    - assets/tts/voicevox/dict/
+    - assets/tts/voicevox/model/
