@@ -47,7 +47,7 @@ SPEC CHECKSUMS:
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   record_ios: 412daca2350b228e698fffcd08f1f94ceb1e3844
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
-  VoicevoxCore: 79bfed2f6d588e282762d56e76129b5417782147
+  VoicevoxCore: fe5bd71a8697f414e8102891739248132d6fe72e
 
 PODFILE CHECKSUM: aa684933d29ed4beb5cc6232ba9d00cffef13548
 

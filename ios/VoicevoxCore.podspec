@@ -7,5 +7,10 @@ Pod::Spec.new do |s|
   s.author       = 'VOICEVOX'
   s.source       = { :path => '.' }
   s.ios.deployment_target = '13.0'
-  s.vendored_frameworks = 'voicevox_core.xcframework'
+  # voicevox_core.framework 链接 @rpath/voicevox_onnxruntime.framework/voicevox_onnxruntime
+  # Runner.debug.dylib 链接 @rpath/onnxruntime.framework/onnxruntime
+  # 两者 Bundle ID 不同，不会冲突
+  s.vendored_frameworks = 'voicevox_core.xcframework',
+                          'voicevox_onnxruntime.xcframework',
+                          'onnxruntime.xcframework'
 end

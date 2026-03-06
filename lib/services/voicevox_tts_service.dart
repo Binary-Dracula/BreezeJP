@@ -101,7 +101,7 @@ class VoicevoxTtsService implements TtsService {
   }
 
   @override
-  Future<Uint8List> synthesize(String text, {int styleId = 0}) async {
+  Future<Uint8List> synthesize(String text, {int styleId = 4}) async {
     if (!_isInitialized || _synthesizer == null) {
       await initialize();
     }
@@ -340,7 +340,12 @@ class VoicevoxTtsService implements TtsService {
 
       if (loadResult != 0) {
         final errorMsg = voicevoxErrorResultToMessage(loadResult);
-        throw Exception('加载语音模型到 Synthesizer 失败 (code=$loadResult): $errorMsg');
+        final modelFile2 = File(modelPath);
+        final fileSize = modelFile2.existsSync() ? modelFile2.lengthSync() : 0;
+        throw Exception(
+          '加载语音模型到 Synthesizer 失败 (code=$loadResult): $errorMsg\n'
+          '路径: $modelPath, 大小: $fileSize bytes',
+        );
       }
     } finally {
       calloc.free(outModel);
