@@ -6,20 +6,20 @@ import '../models/grammar_example.dart';
 class GrammarExampleRepository {
   Future<Database> get _db async => await AppDatabase.instance.database;
 
-  /// 获取某义项的所有例句（按 sort_order 排序）
-  Future<List<GrammarExample>> getExamplesByMeaningId(int meaningId) async {
+  /// 获取某语法的所有例句（按 sort_order 排序）
+  Future<List<GrammarExample>> getExamplesByGrammarId(int grammarId) async {
     try {
       final db = await _db;
       final results = await db.query(
         'grammar_examples',
-        where: 'meaning_id = ?',
-        whereArgs: [meaningId],
+        where: 'grammar_id = ?',
+        whereArgs: [grammarId],
         orderBy: 'sort_order ASC',
       );
 
       logger.dbQuery(
         table: 'grammar_examples',
-        where: 'meaning_id = $meaningId',
+        where: 'grammar_id = $grammarId',
         resultCount: results.length,
       );
 
@@ -35,25 +35,25 @@ class GrammarExampleRepository {
     }
   }
 
-  /// 批量获取多个义项的例句（减少 N+1 查询）
-  Future<Map<int, List<GrammarExample>>> getExamplesByMeaningIds(
-    List<int> meaningIds,
+  /// 批量获取多个语法的例句
+  Future<Map<int, List<GrammarExample>>> getExamplesByGrammarIds(
+    List<int> grammarIds,
   ) async {
-    if (meaningIds.isEmpty) return {};
+    if (grammarIds.isEmpty) return {};
     try {
       final db = await _db;
-      final placeholders = List.filled(meaningIds.length, '?').join(',');
+      final placeholders = List.filled(grammarIds.length, '?').join(',');
       final results = await db.query(
         'grammar_examples',
-        where: 'meaning_id IN ($placeholders)',
-        whereArgs: meaningIds,
-        orderBy: 'meaning_id ASC, sort_order ASC',
+        where: 'grammar_id IN ($placeholders)',
+        whereArgs: grammarIds,
+        orderBy: 'grammar_id ASC, sort_order ASC',
       );
 
       final Map<int, List<GrammarExample>> grouped = {};
       for (final map in results) {
         final example = GrammarExample.fromMap(map);
-        grouped.putIfAbsent(example.meaningId, () => []).add(example);
+        grouped.putIfAbsent(example.grammarId, () => []).add(example);
       }
       return grouped;
     } catch (e, stackTrace) {

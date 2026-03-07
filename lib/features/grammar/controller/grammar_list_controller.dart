@@ -13,8 +13,8 @@ class GrammarListController extends Notifier<GrammarListState> {
   GrammarListState build() {
     return const GrammarListState(
       isLoading: true,
-      selectedLevel: 'N5',
-    ); // Default to N5
+      selectedLevel: 'n5',
+    ); // Default to n5
   }
 
   GrammarReadQueries get _queries => ref.read(grammarReadQueriesProvider);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/custom_ruby_text.dart';
 import '../../../data/models/grammar_detail.dart';
 import '../../../data/models/grammar_meaning.dart';
+import '../../../data/models/grammar_context.dart';
 import '../../../data/models/grammar_example.dart';
 import '../../../services/audio_play_controller_provider.dart';
 import '../../../services/audio_play_controller.dart';
@@ -23,9 +24,29 @@ class GrammarCard extends ConsumerWidget {
         children: [
           _buildHeader(context),
           const SizedBox(height: 16),
+          // 渲染义项与接续
           ...detail.meanings.map(
             (meaning) => _buildMeaningSection(context, ref, meaning),
           ),
+          // 渲染场景与限制条件
+          ...detail.contexts.map(
+            (contextData) => _buildContextSection(context, ref, contextData),
+          ),
+          // 渲染例句列表
+          if (detail.examples.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                '例句',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            _buildExampleList(context, ref, detail.examples),
+          ],
         ],
       ),
     );
@@ -62,80 +83,118 @@ class GrammarCard extends ConsumerWidget {
     );
   }
 
-  /// 渲染单个义项（接续 + 含义 + 例句 + 提示 + 提示例句）
+  /// 渲染单个义项（含义 + 接续）
   Widget _buildMeaningSection(
     BuildContext context,
     WidgetRef ref,
     GrammarMeaning meaning,
   ) {
-    // 分离义项例句和提示例句
-    final regularExamples = meaning.examples
-        .where((e) => !e.isTipExample)
-        .toList();
-    final tipExamples = meaning.examples.where((e) => e.isTipExample).toList();
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 接续
-          if (meaning.connection != null && meaning.connection!.isNotEmpty)
-            _SectionCard(
-              title: '接续',
-              content: Text(
-                meaning.connection!,
-                style: const TextStyle(fontSize: 16, height: 1.5),
-              ),
-              icon: Icons.link_rounded,
-              color: Colors.orange,
-            ),
-          if (meaning.connection != null && meaning.connection!.isNotEmpty)
-            const SizedBox(height: 12),
-
-          // 含义
-          if (meaning.meaning != null && meaning.meaning!.isNotEmpty)
+          // 含义 (只展示中文)
+          if (meaning.definitionCn != null && meaning.definitionCn!.isNotEmpty)
             _SectionCard(
               title: '含义',
               content: Text(
-                meaning.meaning!,
+                meaning.definitionCn!,
                 style: const TextStyle(fontSize: 16, height: 1.5),
               ),
               icon: Icons.menu_book_rounded,
               color: Colors.blue,
             ),
-          if (meaning.meaning != null && meaning.meaning!.isNotEmpty)
+          if (meaning.definitionCn != null && meaning.definitionCn!.isNotEmpty)
             const SizedBox(height: 12),
 
-          // 义项例句
-          if (regularExamples.isNotEmpty)
-            _buildExampleList(context, ref, regularExamples),
-
-          // 提示
-          if (meaning.tip != null && meaning.tip!.isNotEmpty) ...[
+          // 接续 (只展示中文)
+          if (meaning.howToUseCn != null && meaning.howToUseCn!.isNotEmpty)
+            _SectionCard(
+              title: '接续',
+              content: Text(
+                meaning.howToUseCn!,
+                style: const TextStyle(fontSize: 16, height: 1.5),
+              ),
+              icon: Icons.link_rounded,
+              color: Colors.orange,
+            ),
+          if (meaning.howToUseCn != null && meaning.howToUseCn!.isNotEmpty)
             const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  /// 渲染场景提示与限制
+  Widget _buildContextSection(
+    BuildContext context,
+    WidgetRef ref,
+    GrammarContext contextData,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 提示 (只展示中文)
+          if (contextData.whenToUseCn != null &&
+              contextData.whenToUseCn!.isNotEmpty)
             _SectionCard(
               title: '提示',
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    meaning.tip!,
-                    style: const TextStyle(fontSize: 16, height: 1.5),
-                  ),
-                  // 提示中的例句
-                  if (tipExamples.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _buildExampleList(context, ref, tipExamples),
-                  ],
-                ],
+              content: Text(
+                contextData.whenToUseCn!,
+                style: const TextStyle(fontSize: 16, height: 1.5),
               ),
               icon: Icons.tips_and_updates_rounded,
               color: Colors.amber.shade700,
             ),
-          ],
+          if (contextData.whenToUseCn != null &&
+              contextData.whenToUseCn!.isNotEmpty)
+            const SizedBox(height: 12),
 
-          const Divider(height: 32),
+          // 限制条件数组 (只展示中文)
+          if (contextData.limitations.isNotEmpty) ...[
+            _SectionCard(
+              title: '格式与限制',
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: contextData.limitations
+                    .map(
+                      (limit) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '•',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                limit,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              icon: Icons.rule_rounded,
+              color: Colors.redAccent,
+            ),
+            const SizedBox(height: 12),
+          ],
         ],
       ),
     );
@@ -189,10 +248,10 @@ class GrammarCard extends ConsumerWidget {
                           ),
                       ],
                     ),
-                    if (example.translation != null) ...[
+                    if (example.translationCn != null) ...[
                       const Divider(height: 24),
                       Text(
-                        example.translation!,
+                        example.translationCn!,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey.shade600,

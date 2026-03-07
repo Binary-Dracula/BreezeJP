@@ -14,7 +14,7 @@ class GrammarListPage extends ConsumerStatefulWidget {
 class _GrammarListPageState extends ConsumerState<GrammarListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<String> _levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
+  final List<String> _levels = ['n5', 'n4', 'n3', 'n2', 'n1'];
 
   @override
   void initState() {
@@ -61,7 +61,7 @@ class _GrammarListPageState extends ConsumerState<GrammarListPage>
           labelColor: const Color(0xFF5C8DFF),
           unselectedLabelColor: Colors.grey,
           indicatorColor: const Color(0xFF5C8DFF),
-          tabs: _levels.map((l) => Tab(text: l)).toList(),
+          tabs: _levels.map((l) => Tab(text: l.toUpperCase())).toList(),
         ),
       ),
       body: _buildBody(state),

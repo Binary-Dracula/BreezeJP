@@ -1,30 +1,30 @@
 class GrammarExample {
   final int id;
-  final int meaningId;
+  final int grammarId;
   final int sortOrder;
   final String? sentence;
-  final String? translation;
-  final bool isTipExample;
+  final String? translationCn;
+  final String? translationEn;
   final String? audioUrl;
 
   GrammarExample({
     required this.id,
-    required this.meaningId,
+    required this.grammarId,
     required this.sortOrder,
     this.sentence,
-    this.translation,
-    this.isTipExample = false,
+    this.translationCn,
+    this.translationEn,
     this.audioUrl,
   });
 
   factory GrammarExample.fromMap(Map<String, dynamic> map) {
     return GrammarExample(
       id: map['id'] as int,
-      meaningId: map['meaning_id'] as int,
+      grammarId: map['grammar_id'] as int,
       sortOrder: map['sort_order'] as int? ?? 1,
       sentence: map['sentence'] as String?,
-      translation: map['translation'] as String?,
-      isTipExample: (map['is_tip_example'] as int? ?? 0) == 1,
+      translationCn: map['translation_cn'] as String?,
+      translationEn: map['translation_en'] as String?,
       audioUrl: map['audio_url'] as String?,
     );
   }
@@ -32,31 +32,31 @@ class GrammarExample {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'meaning_id': meaningId,
+      'grammar_id': grammarId,
       'sort_order': sortOrder,
       'sentence': sentence,
-      'translation': translation,
-      'is_tip_example': isTipExample ? 1 : 0,
+      'translation_cn': translationCn,
+      'translation_en': translationEn,
       'audio_url': audioUrl,
     };
   }
 
   GrammarExample copyWith({
     int? id,
-    int? meaningId,
+    int? grammarId,
     int? sortOrder,
     String? sentence,
-    String? translation,
-    bool? isTipExample,
+    String? translationCn,
+    String? translationEn,
     String? audioUrl,
   }) {
     return GrammarExample(
       id: id ?? this.id,
-      meaningId: meaningId ?? this.meaningId,
+      grammarId: grammarId ?? this.grammarId,
       sortOrder: sortOrder ?? this.sortOrder,
       sentence: sentence ?? this.sentence,
-      translation: translation ?? this.translation,
-      isTipExample: isTipExample ?? this.isTipExample,
+      translationCn: translationCn ?? this.translationCn,
+      translationEn: translationEn ?? this.translationEn,
       audioUrl: audioUrl ?? this.audioUrl,
     );
   }

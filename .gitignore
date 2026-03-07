@@ -144,3 +144,11 @@ tools/nhk_data_pipeline/venv/
 tools/nhk_data_pipeline/node_modules/
 tools/nhk_data_pipeline/data/
 tools/nhk_data_pipeline/output/
+
+# Data Crawler ignores
+scripts/data_crawler/venv/
+scripts/data_crawler/__pycache__/
+scripts/data_crawler/*.json
+scripts/data_crawler/*.jsonl
+scripts/data_crawler/*.log
+scripts/data_crawler/*.html

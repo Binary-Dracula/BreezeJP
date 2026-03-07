@@ -8,6 +8,7 @@ import '../models/grammar_detail.dart';
 
 import '../repositories/grammar_example_repository_provider.dart';
 import '../repositories/grammar_meaning_repository_provider.dart';
+import '../repositories/grammar_context_repository_provider.dart';
 import '../repositories/grammar_repository_provider.dart';
 import '../repositories/study_grammar_repository_provider.dart';
 
@@ -27,6 +28,7 @@ class GrammarReadQueries {
     try {
       final grammarRepo = ref.read(grammarRepositoryProvider);
       final meaningRepo = ref.read(grammarMeaningRepositoryProvider);
+      final contextRepo = ref.read(grammarContextRepositoryProvider);
       final exampleRepo = ref.read(grammarExampleRepositoryProvider);
       final studyRepo = ref.read(studyGrammarRepositoryProvider);
 
@@ -37,14 +39,11 @@ class GrammarReadQueries {
       // 2. 获取所有义项
       final meanings = await meaningRepo.getMeaningsByGrammarId(grammarId);
 
-      // 3. 批量获取所有义项的例句（避免 N+1）
-      final meaningIds = meanings.map((m) => m.id).toList();
-      final examplesMap = await exampleRepo.getExamplesByMeaningIds(meaningIds);
+      // 3. 获取所有场景提示
+      final contexts = await contextRepo.getContextsByGrammarId(grammarId);
 
-      // 4. 将例句填充到对应义项中
-      final meaningsWithExamples = meanings.map((m) {
-        return m.copyWith(examples: examplesMap[m.id] ?? []);
-      }).toList();
+      // 4. 获取所有例句 (现在直接根据 grammarId 挂载)
+      final examples = await exampleRepo.getExamplesByGrammarId(grammarId);
 
       // 5. 获取用户学习状态
       final studyState = await studyRepo.getStudyGrammar(userId, grammarId);
@@ -54,7 +53,9 @@ class GrammarReadQueries {
 
       return GrammarDetail(
         grammar: grammar,
-        meanings: meaningsWithExamples,
+        meanings: meanings,
+        contexts: contexts,
+        examples: examples,
         userState: status,
       );
     } catch (e, stackTrace) {
