@@ -19,7 +19,15 @@ class _GrammarListPageState extends ConsumerState<GrammarListPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _levels.length, vsync: this);
+    // 从 Provider 读取当前的 Level，确定初始 Tab 索引
+    final currentLevel = ref.read(grammarListControllerProvider).selectedLevel;
+    final initialIndex = _levels.indexOf(currentLevel ?? 'n5');
+
+    _tabController = TabController(
+      length: _levels.length,
+      vsync: this,
+      initialIndex: initialIndex >= 0 ? initialIndex : 0,
+    );
     _tabController.addListener(_onTabChanged);
 
     // Initial load
