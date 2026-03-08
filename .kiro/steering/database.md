@@ -11,7 +11,7 @@ inclusion: always
 **19 张核心表**：
 
 - **单词学习**：words、word_meanings、word_audio、example_sentences、example_audio、word_relations
-- **语法学习**：grammars、grammar_meanings、grammar_examples
+- **语法学习**：grammars、grammar_meanings、grammar_contexts、grammar_examples
 - **用户进度**：study_words、study_grammars、study_logs、daily_stats、users、app_state
 - **假名学习**：kana_letters、kana_audio、kana_examples、kana_learning_state、kana_stroke_order
 
@@ -39,7 +39,8 @@ inclusion: always
 | word_relations      | id   | 语义关联词           | idx_word_relations_word_id，idx_word_relations_related_word_id      |
 | grammars            | id   | 语法条目             | -                                                                   |
 | grammar_meanings    | id   | 语法义项（1:N）      | idx_grammar_meanings_grammar_id                                     |
-| grammar_examples    | id   | 语法例句（1:N）      | idx_grammar_examples_meaning_id                                     |
+| grammar_contexts    | id   | 语法场景限制（1:N）  | -                                                                   |
+| grammar_examples    | id   | 语法例句（1:N）      | idx_grammar_examples_grammar_id                                     |
 | study_words         | id   | 每个单词的学习进度   | idx_study_schedule (user_id, user_state, next_review_at)            |
 | study_logs          | id   | 学习日志             | idx_logs_word (user_id, word_id, created_at)                        |
 | daily_stats         | id   | 每日汇总统计         | UNIQUE(user_id, date)                                               |
@@ -443,52 +444,70 @@ CREATE TABLE kana_stroke_order (
 
 ## 语法学习相关表
 
-> 语法采用三层结构：`grammars`（语法条目）→ `grammar_meanings`（义项，含接续/意思/提示）→ `grammar_examples`（例句）。
-> 一条语法可以有多个义项，每个义项可以有多条例句。
+> 语法采用四层基础数据结构 + 一层学习状态：`grammars`（语法条目）→ `grammar_meanings`（义项）/ `grammar_contexts`（场景/限制）→ `grammar_examples`（例句）。
+> 一条语法可以有多个义项、多个场景描述和多条例句。
 
 ### grammars
 
 ```sql
 CREATE TABLE grammars (
-    id           INTEGER PRIMARY KEY,
-    title        TEXT NOT NULL,                     -- 语法标题 (如 ~ていきます/てきます)
-    jlpt_level   TEXT,                              -- JLPT 等级
-    created_at   INTEGER,
-    updated_at   INTEGER
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    title            TEXT NOT NULL,                     -- 语法标题 (如 ~ていきます/てきます)
+    jlpt_level       TEXT,                              -- JLPT 等级 (n1-n5)
+    usage_frequency  INTEGER DEFAULT 0,                 -- 使用频率/重要度
+    created_at       INTEGER DEFAULT (strftime('%s', 'now')),
+    updated_at       INTEGER DEFAULT (strftime('%s', 'now'))
 );
 ```
 
 ### grammar_meanings
 
-**作用**：语法的义项（一条语法可以有多个义项，每个义项有自己的接续、含义和提示）
+**作用**：语法的义项（一条语法可以有多个义项，包含中英文定义和接续方法）
 
 ```sql
 CREATE TABLE grammar_meanings (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    grammar_id   INTEGER NOT NULL REFERENCES grammars(id) ON DELETE CASCADE,
-    sort_order   INTEGER NOT NULL DEFAULT 1,        -- 义项排序
-    connection   TEXT,                              -- 接续 (如 动-て+いきます)
-    meaning      TEXT,                              -- 含义 (如 ……过去; ……过来)
-    tip          TEXT                               -- 提示说明
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    grammar_id    INTEGER NOT NULL REFERENCES grammars(id) ON DELETE CASCADE,
+    definition_cn TEXT NOT NULL,                     -- 中文定义
+    definition_en TEXT,                              -- 英文定义
+    how_to_use_cn TEXT,                              -- 中文接续用法
+    how_to_use_en TEXT,                              -- 英文接续用法
+    sort_order    INTEGER NOT NULL DEFAULT 1         -- 排序
 );
 
 CREATE INDEX idx_grammar_meanings_grammar_id ON grammar_meanings (grammar_id);
 ```
 
+### grammar_contexts
+
+**作用**：语法的使用场景提示与限制（JSON 存储）
+
+```sql
+CREATE TABLE grammar_contexts (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    grammar_id       INTEGER NOT NULL REFERENCES grammars(id) ON DELETE CASCADE,
+    when_to_use_cn   TEXT,                           -- 使用时机(中)
+    when_to_use_en   TEXT,                           -- 使用时机(英)
+    limitations_json TEXT                            -- 限制条件 JSON 列表
+);
+```
+
 ### grammar_examples
+
+**作用**：语法关联的例句（直接关联语法主表 ID）
 
 ```sql
 CREATE TABLE grammar_examples (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    meaning_id      INTEGER NOT NULL REFERENCES grammar_meanings(id) ON DELETE CASCADE,
-    sort_order      INTEGER NOT NULL DEFAULT 1,     -- 例句排序
-    sentence        TEXT,                           -- 日文例句
-    translation     TEXT,                           -- 中文翻译
-    is_tip_example  INTEGER DEFAULT 0,              -- 0=义项例句, 1=提示中的例句
-    audio_url       TEXT                            -- 音频路径
+    grammar_id      INTEGER NOT NULL REFERENCES grammars(id) ON DELETE CASCADE,
+    sentence        TEXT NOT NULL,                  -- 日文例句（含 ruby 括号）
+    translation_cn  TEXT,                           -- 中文翻译
+    translation_en  TEXT,                           -- 英文翻译
+    audio_url       TEXT,                           -- 音频路径
+    sort_order      INTEGER NOT NULL DEFAULT 1      -- 排序
 );
 
-CREATE INDEX idx_grammar_examples_meaning_id ON grammar_examples (meaning_id);
+CREATE INDEX idx_grammar_examples_grammar_id ON grammar_examples (grammar_id);
 ```
 
 ### study_grammars
@@ -536,7 +555,9 @@ users (1) ──< (N) daily_stats
 ### 语法学习模块
 
 ```
-grammars (1) ──< (N) grammar_meanings (1) ──< (N) grammar_examples
+grammars (1) ──< (N) grammar_meanings
+         (1) ──< (N) grammar_contexts
+         (1) ──< (N) grammar_examples
          (1) ──< (N) study_grammars (N) >── (1) users
 ```
 
