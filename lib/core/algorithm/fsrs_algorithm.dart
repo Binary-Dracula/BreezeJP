@@ -132,9 +132,23 @@ class FSRSAlgorithm implements SRSAlgorithm {
     // 限制 S
     nextS = max(0.1, nextS); // 最小 0.1 天
 
+    DateTime nextReviewAt;
+    double finalInterval;
+
+    if (input.rating == ReviewRating.again) {
+      finalInterval = _calculateInterval(nextS);
+      nextReviewAt = _calculateNextReview(nextS);
+    } else {
+      // 核心修正：任何成功的复习（Hard/Good/Easy）
+      // 必须确保存留到“明天”以后，防止因为 Stability 增长缓慢导致卡在当天。
+      final sBasedInterval = _calculateInterval(nextS);
+      finalInterval = max(1.0, sBasedInterval);
+      nextReviewAt = DateTime.now().add(Duration(days: finalInterval.round()));
+    }
+
     return SRSOutput(
-      nextReviewAt: _calculateNextReview(nextS),
-      interval: _calculateInterval(nextS),
+      nextReviewAt: nextReviewAt,
+      interval: finalInterval,
       easeFactor: 0,
       stability: nextS,
       difficulty: nextD,

@@ -237,6 +237,48 @@ class WordReadQueries {
     }
   }
 
+  /// 随机获取带主释义的单词列表项（用于生成复习干扰项）
+  Future<List<WordListItem>> getRandomWordListItems({
+    required int limit,
+    List<int>? excludeIds,
+  }) async {
+    try {
+      final db = _db;
+      final whereClause = excludeIds != null && excludeIds.isNotEmpty
+          ? 'WHERE w.id NOT IN (${excludeIds.join(',')})'
+          : '';
+
+      final sql =
+          '''
+        SELECT 
+          w.*,
+          wm.meaning_cn as primary_meaning
+        FROM words w
+        LEFT JOIN word_meanings wm ON w.id = wm.word_id AND wm.definition_order = 1
+        $whereClause
+        ORDER BY RANDOM()
+        LIMIT $limit
+      ''';
+
+      final results = await db.rawQuery(sql);
+
+      return results.map((row) {
+        return WordListItem(
+          word: Word.fromMap(row),
+          primaryMeaning: row['primary_meaning'] as String?,
+        );
+      }).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'words + word_meanings (random)',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 获取未学习的单词（用于预加载）
   Future<List<Word>> getUnlearnedWords({
     required int userId,

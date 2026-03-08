@@ -22,7 +22,6 @@ final wordReviewControllerProvider =
     );
 
 class WordReviewController extends Notifier<WordReviewState> {
-  int? _userId;
   final Set<int> _mistakeWordIds = {};
 
   ActiveUserCommand get _activeUserCommand =>
@@ -39,11 +38,6 @@ class WordReviewController extends Notifier<WordReviewState> {
     final ensured = await _activeUserCommand.ensureActiveUser();
     final user = await _activeUserQuery.getActiveUser();
     return user ?? ensured;
-  }
-
-  Future<int> _ensureUserId() async {
-    _userId ??= (await _getActiveUser()).id;
-    return _userId!;
   }
 
   void _setSessionBootstrapState({
@@ -106,15 +100,11 @@ class WordReviewController extends Notifier<WordReviewState> {
     final item = state.currentItem;
     if (item == null) return;
 
-    // 我们目前复用之前的一些工具函数，给出一个非常粗糙但普适的四选一干扰项生成：
-    // 如果是选意思，就取另外三个词的意思
-    // 如果是选假名/拼写，就取另外三个词的假名/拼写
-
-    final allItems = state.items;
-    final otherItems = allItems
-        .where((i) => i.studyWord.wordId != item.studyWord.wordId)
-        .toList();
-    otherItems.shuffle();
+    // 修正：干扰项从“表内所有数据”随机获取，而非仅从本次复习队列中获取
+    final distractors = await _wordReadQueries.getRandomWordListItems(
+      limit: 3,
+      excludeIds: [item.studyWord.wordId],
+    );
 
     final options = <String>[];
     String correctOption = '';
@@ -123,24 +113,44 @@ class WordReviewController extends Notifier<WordReviewState> {
       case WordReviewQuestionType.meaningToWord:
       case WordReviewQuestionType.audioToWord:
       case WordReviewQuestionType.readingToWord:
-        // 这些其实都可以归为：用给定的线索，去选择该单词的本体 (word)
         correctOption = item.wordDetail.word.word;
         options.add(correctOption);
-        for (var i = 0; i < 3 && i < otherItems.length; i++) {
-          options.add(otherItems[i].wordDetail.word.word);
+        for (final d in distractors) {
+          options.add(d.word.word);
         }
         break;
       case WordReviewQuestionType.wordToMeaning:
-        // 给出日文，选择中文意思
         correctOption = item.meaning ?? 'Unknown';
         options.add(correctOption);
-        for (var i = 0; i < 3 && i < otherItems.length; i++) {
-          final m = otherItems[i].meaning;
+        for (final d in distractors) {
+          final m = d.primaryMeaning;
           if (m != null && m.isNotEmpty && !options.contains(m)) {
             options.add(m);
           }
         }
         break;
+    }
+
+    // 如果因为某些原因（比如释义缺失）导致选项不足4个，可以考虑从 otherItems 补齐或直接返回
+    // 但全库随机基本能保证 3 个干扰项存在。
+    if (options.length < 4) {
+      final allItems = state.items;
+      final otherItems = allItems
+          .where((i) => i.studyWord.wordId != item.studyWord.wordId)
+          .toList();
+      otherItems.shuffle();
+      for (final o in otherItems) {
+        if (options.length >= 4) break;
+        String val = '';
+        if (item.questionType == WordReviewQuestionType.wordToMeaning) {
+          val = o.meaning ?? '';
+        } else {
+          val = o.wordDetail.word.word;
+        }
+        if (val.isNotEmpty && !options.contains(val)) {
+          options.add(val);
+        }
+      }
     }
 
     options.shuffle();

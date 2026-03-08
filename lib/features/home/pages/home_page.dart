@@ -258,7 +258,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
                     : '还没有需要复习的假名',
                 icon: Icons.translate_rounded,
                 color: const Color(0xFF22C55E),
-                onTap: () => context.pushNamed('matching_page'),
+                onTap: () => context.pushNamed('kana-review'),
               ),
             ),
           ],

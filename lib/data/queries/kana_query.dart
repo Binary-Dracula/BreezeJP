@@ -456,6 +456,22 @@ class KanaQuery {
     }
   }
 
+  /// 获取所有假名字母列表（用于生成干扰项）
+  Future<List<KanaLetter>> getAllKanaLetters() async {
+    try {
+      final results = await _db.query('kana_letters');
+      return results.map((map) => KanaLetter.fromMap(map)).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'kana_letters (all)',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 返回用户对指定 Kana 的学习状态，若不存在则返回 null。
   Future<KanaLearningState?> getKanaLearningState(
     int userId,

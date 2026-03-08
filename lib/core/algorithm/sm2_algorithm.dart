@@ -50,13 +50,19 @@ class SM2Algorithm implements SRSAlgorithm {
       // - 首次复习后（reviews=0）：interval = 1 天
       // - 第二次复习后（reviews=1）：interval = 6 天
       // - 后续复习：interval = previous × EF
+      // 修正：如果 previous interval 是 0 (来自 Again)，则强制设为 1，防止计算结果永远为 0
+      final effectiveInterval = input.interval <= 0 ? 1.0 : input.interval;
+
       if (input.reviews == 0) {
         newInterval = 1; // 首次复习后 1 天
       } else if (input.reviews == 1) {
         newInterval = 6; // 第二次复习后 6 天
       } else {
-        newInterval = (input.interval * input.easeFactor).roundToDouble();
+        newInterval = (effectiveInterval * input.easeFactor).roundToDouble();
       }
+
+      // 额外保护：成功的复习至少间隔 1 天，确保不会在当天重复出现
+      if (newInterval < 1) newInterval = 1;
 
       // 更新 Ease Factor
       // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))

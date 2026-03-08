@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:breeze_jp/features/kana/review/pages/matching_page.dart';
+import 'package:breeze_jp/features/kana/review/pages/kana_review_page.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/pages/splash_page.dart';
 import '../features/home/pages/home_page.dart';
@@ -64,9 +64,9 @@ final appRouter = GoRouter(
     // ----------------------------------------------------------------------
     // Word Detail
     GoRoute(
-      path: '/matching_page',
-      name: 'matching_page',
-      builder: (context, state) => const MatchingPage(),
+      path: '/kana-review',
+      name: 'kana-review',
+      builder: (context, state) => const KanaReviewPage(),
     ),
     // 复习单词页面
     GoRoute(

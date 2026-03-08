@@ -354,7 +354,7 @@
   "@wordReviewFinished": {
     "description": "单词复习完成提示"
   },
-  "wordReviewTitleWordMeaning": "单词 → 释义（配对）",
+  "wordReviewTitleWordMeaning": "单词 → 释义",
   "@wordReviewTitleWordMeaning": {
     "description": "单词复习题型标题-单词到释义"
   },
@@ -362,7 +362,7 @@
   "@wordReviewSubtitleWordMeaning": {
     "description": "单词复习题型说明-单词到释义"
   },
-  "wordReviewTitleMeaningWord": "释义 → 单词（配对）",
+  "wordReviewTitleMeaningWord": "释义 → 单词",
   "@wordReviewTitleMeaningWord": {
     "description": "单词复习题型标题-释义到单词"
   },
@@ -370,7 +370,7 @@
   "@wordReviewSubtitleMeaningWord": {
     "description": "单词复习题型说明-释义到单词"
   },
-  "wordReviewTitleAudioWord": "听音辨单词（配对）",
+  "wordReviewTitleAudioWord": "听音辨单词",
   "@wordReviewTitleAudioWord": {
     "description": "单词复习题型标题-听音到单词"
   },
@@ -378,7 +378,7 @@
   "@wordReviewSubtitleAudioWord": {
     "description": "单词复习题型说明-听音到单词"
   },
-  "wordReviewTitleReadingWord": "读音 → 单词（配对）",
+  "wordReviewTitleReadingWord": "读音 → 单词",
   "@wordReviewTitleReadingWord": {
     "description": "单词复习题型标题-读音到单词"
   },

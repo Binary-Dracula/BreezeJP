@@ -1,6 +1,15 @@
 import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/kana_letter.dart';
 
+enum ReviewQuestionType {
+  hiraganaToRomaji, // 看平假名选罗马音
+  romajiToHiragana, // 看罗马音选平假名
+  katakanaToRomaji, // 看片假名选罗马音
+  romajiToKatakana, // 看罗马音选片假名
+  hiraganaToKatakana, // 看平假名选片假名
+  katakanaToHiragana, // 看片假名选平假名
+}
+
 /// 读音回忆模式的复习条目
 class ReviewKanaItem {
   final KanaLetter kanaLetter;
@@ -19,5 +28,3 @@ class ReviewKanaItem {
     this.counterpartLetter,
   });
 }
-
-enum ReviewQuestionType { recall, audio, switchMode }
