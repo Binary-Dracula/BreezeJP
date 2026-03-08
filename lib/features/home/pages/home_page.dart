@@ -154,7 +154,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         ),
         IconButton(
           onPressed: () {
-            // TODO: 跳转设置页
+            context.push('/settings');
           },
           icon: const Icon(Icons.settings_outlined),
           color: Colors.grey.shade800,

@@ -14,6 +14,13 @@ class AlgorithmService {
   final _sm2 = SM2Algorithm();
   final _fsrs = FSRSAlgorithm();
 
+  // 内存态的首选算法配置
+  AlgorithmType _preferredAlgorithm = AlgorithmType.sm2;
+
+  void setPreferredAlgorithm(AlgorithmType type) {
+    _preferredAlgorithm = type;
+  }
+
   /// 计算下一次复习状态
   /// [algorithmType] 指定使用的算法类型
   /// [input] 当前状态输入
@@ -39,8 +46,8 @@ class AlgorithmService {
     return output;
   }
 
-  /// 获取默认算法 (免费版默认 SM-2)
-  AlgorithmType get defaultAlgorithm => AlgorithmType.sm2;
+  /// 获取当前实际激活的默认算法
+  AlgorithmType get defaultAlgorithm => _preferredAlgorithm;
 
   /// 检查是否支持该算法 (预留给付费逻辑)
   bool isAlgorithmSupported(AlgorithmType type, {bool isPremium = false}) {

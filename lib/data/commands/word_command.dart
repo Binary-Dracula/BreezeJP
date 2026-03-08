@@ -325,11 +325,22 @@ class WordCommand {
   }) async {
     final existing = await _repo.getStudyWord(userId, wordId);
     final algorithmType = _algorithmService.defaultAlgorithm;
-    final output = _algorithmService.calculate(
-      algorithmType: algorithmType,
-      input: SRSInput.initial(ReviewRating.good),
-    );
+
+    // 不再调用 _algorithmService.calculate 预推演未来时间
+    // 强制新单词必须尽早/立刻进行首次复习
     final now = DateTime.now();
+    // 给予1分钟缓冲，或者直接等于now皆可
+    final firstReviewTime = now.add(const Duration(minutes: 1));
+
+    // 生成一个假的初始 output 用于后续如果真的需要传参
+    final output = SRSOutput(
+      nextReviewAt: firstReviewTime,
+      interval: 0,
+      easeFactor: AppConstants.defaultEaseFactor,
+      stability: 0,
+      difficulty: 0,
+    );
+
     final context = _LearningEntryContext(
       now: now,
       algorithmType: algorithmType,

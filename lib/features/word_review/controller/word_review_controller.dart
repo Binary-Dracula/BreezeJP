@@ -22,16 +22,8 @@ final wordReviewControllerProvider =
     );
 
 class WordReviewController extends Notifier<WordReviewState> {
-  static const int _windowSize = 4;
-
   int? _userId;
-  bool _isResolvingSelection = false;
   final Set<int> _mistakeWordIds = {};
-
-  List<WordReviewItem> _wordToMeaningGroup = [];
-  List<WordReviewItem> _meaningToWordGroup = [];
-  List<WordReviewItem> _audioToWordGroup = [];
-  List<WordReviewItem> _readingToWordGroup = [];
 
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
@@ -54,14 +46,6 @@ class WordReviewController extends Notifier<WordReviewState> {
     return _userId!;
   }
 
-  void _clearTypeGroups() {
-    _wordToMeaningGroup = [];
-    _meaningToWordGroup = [];
-    _audioToWordGroup = [];
-    _readingToWordGroup = [];
-    _mistakeWordIds.clear();
-  }
-
   void _setSessionBootstrapState({
     required bool isLoading,
     required bool isEmpty,
@@ -69,13 +53,11 @@ class WordReviewController extends Notifier<WordReviewState> {
     state = state.copyWith(
       isLoading: isLoading,
       isEmpty: isEmpty,
-      resetCurrentQuestionType: true,
-      activePairs: const [],
-      remainingItems: const [],
-      rightOptions: const [],
-      selectedLeftIndex: null,
-      selectedRightIndex: null,
-      isGroupFinished: false,
+      items: const [],
+      currentIndex: 0,
+      currentPhase: ReviewCardPhase.testing,
+      hasMistakeOnCurrent: false,
+      currentOptions: const [],
       isAllFinished: false,
       error: null,
     );
@@ -91,380 +73,178 @@ class WordReviewController extends Notifier<WordReviewState> {
 
       final items = await _composeReviewItems(dueStates);
       if (items.isEmpty) {
-        _clearTypeGroups();
         _setSessionBootstrapState(isLoading: false, isEmpty: true);
-        logger.info('No due words for matching review.');
+        logger.info('No due words for review.');
         return;
       }
 
-      logger.info('Start word matching review: ${items.length} items');
-      await startReview(items);
-    } catch (e, stackTrace) {
-      logger.error('Start word matching review failed', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
+      logger.info('Start single card review: ${items.length} items');
 
-  Future<void> startReview(List<WordReviewItem> reviewList) async {
-    final wordToMeaning = <WordReviewItem>[];
-    final meaningToWord = <WordReviewItem>[];
-    final audioToWord = <WordReviewItem>[];
-    final readingToWord = <WordReviewItem>[];
-
-    for (final item in reviewList) {
-      switch (item.questionType) {
-        case WordReviewQuestionType.wordToMeaning:
-          wordToMeaning.add(item);
-          break;
-        case WordReviewQuestionType.meaningToWord:
-          meaningToWord.add(item);
-          break;
-        case WordReviewQuestionType.audioToWord:
-          audioToWord.add(item);
-          break;
-        case WordReviewQuestionType.readingToWord:
-          readingToWord.add(item);
-          break;
-      }
-    }
-
-    _wordToMeaningGroup = wordToMeaning;
-    _meaningToWordGroup = meaningToWord;
-    _audioToWordGroup = audioToWord;
-    _readingToWordGroup = readingToWord;
-
-    _setSessionBootstrapState(isLoading: true, isEmpty: false);
-
-    try {
-      await startNextGroup();
-      state = state.copyWith(isLoading: false);
-    } catch (e, stackTrace) {
-      logger.error('Start next word review group failed', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> startGroup(
-    WordReviewQuestionType type,
-    List<WordReviewItem> groupItems,
-  ) async {
-    if (groupItems.isEmpty) {
-      await startNextGroup();
-      return;
-    }
-
-    state = state.copyWith(
-      isLoading: true,
-      isEmpty: false,
-      currentQuestionType: type,
-      activePairs: const [],
-      remainingItems: const [],
-      rightOptions: const [],
-      selectedLeftIndex: null,
-      selectedRightIndex: null,
-      isGroupFinished: false,
-      error: null,
-    );
-
-    try {
-      final split = _buildInitialPairs(groupItems);
-      final activePairs = split.activePairs;
-      final remaining = split.remainingItems;
-
-      if (activePairs.isEmpty && remaining.isEmpty) {
-        await startNextGroup();
-        return;
-      }
-
-      final rightOptions = _buildShuffledRightOptions(activePairs);
+      // 打乱顺序
+      items.shuffle();
 
       state = state.copyWith(
         isLoading: false,
-        activePairs: activePairs,
-        remainingItems: remaining,
-        rightOptions: rightOptions,
-        selectedLeftIndex: null,
-        selectedRightIndex: null,
-        isGroupFinished: false,
+        isEmpty: false,
+        items: items,
+        currentIndex: 0,
+        currentPhase: ReviewCardPhase.testing,
+        hasMistakeOnCurrent: false,
+        isAllFinished: false,
         error: null,
       );
+
+      await _prepareCurrentCardOptions();
     } catch (e, stackTrace) {
-      logger.error('Build word matching group failed', e, stackTrace);
+      logger.error('Start word review failed', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  Future<void> selectLeft(int index) async {
-    if (_isResolvingSelection) return;
-    if (index < 0 || index >= state.activePairs.length) return;
-    if (state.activePairs[index].isMatched) return;
+  /// 为当前卡片生成客观测试用的选项（例如四选一的意思或假名）
+  Future<void> _prepareCurrentCardOptions() async {
+    final item = state.currentItem;
+    if (item == null) return;
 
-    final next = state.selectedLeftIndex == index ? null : index;
-    state = state.copyWith(selectedLeftIndex: next, error: null);
-    await _tryResolveSelection();
-  }
+    // 我们目前复用之前的一些工具函数，给出一个非常粗糙但普适的四选一干扰项生成：
+    // 如果是选意思，就取另外三个词的意思
+    // 如果是选假名/拼写，就取另外三个词的假名/拼写
 
-  Future<void> selectRight(int rightIndex) async {
-    if (_isResolvingSelection) return;
-    if (rightIndex < 0 || rightIndex >= state.rightOptions.length) return;
+    final allItems = state.items;
+    final otherItems = allItems
+        .where((i) => i.studyWord.wordId != item.studyWord.wordId)
+        .toList();
+    otherItems.shuffle();
 
-    final option = state.rightOptions[rightIndex];
-    if (option.pairIndex < 0 || option.pairIndex >= state.activePairs.length) {
-      return;
-    }
-    if (state.activePairs[option.pairIndex].isMatched) return;
+    final options = <String>[];
+    String correctOption = '';
 
-    final next = state.selectedRightIndex == rightIndex ? null : rightIndex;
-    state = state.copyWith(selectedRightIndex: next, error: null);
-    await _tryResolveSelection();
-  }
-
-  Future<void> _tryResolveSelection() async {
-    if (_isResolvingSelection) return;
-
-    final selectedLeftIndex = state.selectedLeftIndex;
-    final selectedRightIndex = state.selectedRightIndex;
-    if (selectedLeftIndex == null || selectedRightIndex == null) return;
-
-    if (selectedLeftIndex < 0 ||
-        selectedLeftIndex >= state.activePairs.length) {
-      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
-      return;
-    }
-    if (selectedRightIndex < 0 ||
-        selectedRightIndex >= state.rightOptions.length) {
-      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
-      return;
-    }
-
-    final rightPairIndex = state.rightOptions[selectedRightIndex].pairIndex;
-    if (rightPairIndex < 0 || rightPairIndex >= state.activePairs.length) {
-      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
-      return;
+    switch (item.questionType) {
+      case WordReviewQuestionType.meaningToWord:
+      case WordReviewQuestionType.audioToWord:
+      case WordReviewQuestionType.readingToWord:
+        // 这些其实都可以归为：用给定的线索，去选择该单词的本体 (word)
+        correctOption = item.wordDetail.word.word;
+        options.add(correctOption);
+        for (var i = 0; i < 3 && i < otherItems.length; i++) {
+          options.add(otherItems[i].wordDetail.word.word);
+        }
+        break;
+      case WordReviewQuestionType.wordToMeaning:
+        // 给出日文，选择中文意思
+        correctOption = item.meaning ?? 'Unknown';
+        options.add(correctOption);
+        for (var i = 0; i < 3 && i < otherItems.length; i++) {
+          final m = otherItems[i].meaning;
+          if (m != null && m.isNotEmpty && !options.contains(m)) {
+            options.add(m);
+          }
+        }
+        break;
     }
 
-    final pair = state.activePairs[selectedLeftIndex];
-    if (pair.isMatched) {
-      state = state.copyWith(selectedLeftIndex: null, selectedRightIndex: null);
-      return;
-    }
-
-    final isCorrect = selectedLeftIndex == rightPairIndex;
-    if (!isCorrect) {
-      _mistakeWordIds.add(pair.item.studyWord.wordId);
-      _isResolvingSelection = true;
-      try {
-        await Future.delayed(const Duration(milliseconds: 420));
-        state = state.copyWith(
-          selectedLeftIndex: null,
-          selectedRightIndex: null,
-          error: null,
-        );
-      } finally {
-        _isResolvingSelection = false;
-      }
-      return;
-    }
-
-    _isResolvingSelection = true;
-    try {
-      await _handleCorrectMatch(pairIndex: selectedLeftIndex, pair: pair);
-    } catch (e, stackTrace) {
-      logger.error('Handle word match success failed', e, stackTrace);
-      state = state.copyWith(error: e.toString());
-    } finally {
-      _isResolvingSelection = false;
-    }
-  }
-
-  Future<void> _handleCorrectMatch({
-    required int pairIndex,
-    required WordReviewPair pair,
-  }) async {
-    final activePairs = List<WordReviewPair>.from(state.activePairs);
-    if (pairIndex < 0 || pairIndex >= activePairs.length) return;
-
-    final hadMistake = await _applyReviewResult(pair.item);
-
-    final remaining = List<WordReviewItem>.from(state.remainingItems);
-    if (hadMistake) {
-      remaining.add(pair.item);
-    }
-
-    if (remaining.isNotEmpty) {
-      activePairs.removeAt(pairIndex);
-      final nextItem = remaining.removeAt(0);
-      activePairs.insert(pairIndex, _pairForItem(nextItem));
-
-      state = state.copyWith(
-        activePairs: activePairs,
-        remainingItems: remaining,
-        rightOptions: _buildShuffledRightOptions(activePairs),
-        selectedLeftIndex: null,
-        selectedRightIndex: null,
-        error: null,
-      );
-      return;
-    }
-
-    final current = activePairs[pairIndex];
-    activePairs[pairIndex] = WordReviewPair(
-      item: current.item,
-      left: current.left,
-      right: current.right,
-      isMatched: true,
-    );
-
-    state = state.copyWith(
-      activePairs: activePairs,
-      selectedLeftIndex: null,
-      selectedRightIndex: null,
-      error: null,
-    );
-
-    if (remaining.isEmpty && activePairs.every((p) => p.isMatched)) {
-      state = state.copyWith(isGroupFinished: true);
-      await startNextGroup();
-    }
-  }
-
-  ({List<WordReviewPair> activePairs, List<WordReviewItem> remainingItems})
-  _buildInitialPairs(List<WordReviewItem> groupItems) {
-    final activePairs = <WordReviewPair>[];
-    final remaining = <WordReviewItem>[];
-
-    for (final item in groupItems) {
-      final pair = _pairForItem(item);
-      final left = pair.left.trim();
-      final right = pair.right.trim();
-      final leftOk =
-          item.questionType == WordReviewQuestionType.audioToWord ||
-          left.isNotEmpty;
-
-      if (!leftOk || right.isEmpty) {
-        logger.warning(
-          'Skip invalid word review item: wordId=${item.studyWord.wordId}'
-          ' type=${item.questionType.name}',
-        );
-        continue;
-      }
-
-      if (activePairs.length < _windowSize) {
-        activePairs.add(pair);
-      } else {
-        remaining.add(item);
-      }
-    }
-
-    if (activePairs.isEmpty) {
-      return (activePairs: const [], remainingItems: const []);
-    }
-
-    return (activePairs: activePairs, remainingItems: remaining);
-  }
-
-  WordReviewPair _pairForItem(WordReviewItem item) {
-    return WordReviewPair(
-      item: item,
-      left: _leftValueForItem(item),
-      right: _rightValueForItem(item),
-      isMatched: false,
-    );
-  }
-
-  List<WordReviewOption> _buildShuffledRightOptions(
-    List<WordReviewPair> activePairs,
-  ) {
-    final options = <WordReviewOption>[
-      for (var i = 0; i < activePairs.length; i++)
-        WordReviewOption(pairIndex: i, value: activePairs[i].right),
-    ];
     options.shuffle();
-    return options;
+    state = state.copyWith(currentOptions: options);
   }
 
-  Future<void> startNextGroup() async {
-    WordReviewQuestionType? nextType;
-    List<WordReviewItem> nextItems = [];
+  /// 用户在阶段一（客观测试）中选择了某个选项
+  Future<void> submitObjectiveAnswer(String selectedOption) async {
+    final item = state.currentItem;
+    if (item == null || state.currentPhase != ReviewCardPhase.testing) return;
 
-    if (state.currentQuestionType == null) {
-      if (_wordToMeaningGroup.isNotEmpty) {
-        nextType = WordReviewQuestionType.wordToMeaning;
-        nextItems = _wordToMeaningGroup;
-        _wordToMeaningGroup = [];
-      } else if (_meaningToWordGroup.isNotEmpty) {
-        nextType = WordReviewQuestionType.meaningToWord;
-        nextItems = _meaningToWordGroup;
-        _meaningToWordGroup = [];
-      } else if (_audioToWordGroup.isNotEmpty) {
-        nextType = WordReviewQuestionType.audioToWord;
-        nextItems = _audioToWordGroup;
-        _audioToWordGroup = [];
-      } else if (_readingToWordGroup.isNotEmpty) {
-        nextType = WordReviewQuestionType.readingToWord;
-        nextItems = _readingToWordGroup;
-        _readingToWordGroup = [];
-      }
+    String correctOption = '';
+    switch (item.questionType) {
+      case WordReviewQuestionType.meaningToWord:
+      case WordReviewQuestionType.audioToWord:
+      case WordReviewQuestionType.readingToWord:
+        correctOption = item.wordDetail.word.word;
+        break;
+      case WordReviewQuestionType.wordToMeaning:
+        correctOption = item.meaning ?? 'Unknown';
+        break;
+    }
+
+    final isCorrect = selectedOption == correctOption;
+
+    if (isCorrect) {
+      // 进入阶段二：客观验证通过，展现详细信息以及主观评分按钮
+      state = state.copyWith(currentPhase: ReviewCardPhase.grading);
     } else {
-      switch (state.currentQuestionType!) {
-        case WordReviewQuestionType.wordToMeaning:
-          if (_meaningToWordGroup.isNotEmpty) {
-            nextType = WordReviewQuestionType.meaningToWord;
-            nextItems = _meaningToWordGroup;
-            _meaningToWordGroup = [];
-          } else if (_audioToWordGroup.isNotEmpty) {
-            nextType = WordReviewQuestionType.audioToWord;
-            nextItems = _audioToWordGroup;
-            _audioToWordGroup = [];
-          } else if (_readingToWordGroup.isNotEmpty) {
-            nextType = WordReviewQuestionType.readingToWord;
-            nextItems = _readingToWordGroup;
-            _readingToWordGroup = [];
-          }
-          break;
-        case WordReviewQuestionType.meaningToWord:
-          if (_audioToWordGroup.isNotEmpty) {
-            nextType = WordReviewQuestionType.audioToWord;
-            nextItems = _audioToWordGroup;
-            _audioToWordGroup = [];
-          } else if (_readingToWordGroup.isNotEmpty) {
-            nextType = WordReviewQuestionType.readingToWord;
-            nextItems = _readingToWordGroup;
-            _readingToWordGroup = [];
-          }
-          break;
-        case WordReviewQuestionType.audioToWord:
-          if (_readingToWordGroup.isNotEmpty) {
-            nextType = WordReviewQuestionType.readingToWord;
-            nextItems = _readingToWordGroup;
-            _readingToWordGroup = [];
-          }
-          break;
-        case WordReviewQuestionType.readingToWord:
-          break;
+      // 答错处理
+      // 记录这词这遍错了，必须进入再次复习队列，并且当即向算法发射一次 Again (1)
+      if (!state.hasMistakeOnCurrent) {
+        state = state.copyWith(hasMistakeOnCurrent: true);
+        _mistakeWordIds.add(item.studyWord.wordId);
+
+        try {
+          // 直接下放 Again 评价罚分
+          await _wordCommand.onWordReviewed(
+            userId: item.studyWord.userId,
+            wordId: item.studyWord.wordId,
+            rating: ReviewRating.again,
+          );
+        } catch (e, stackTrace) {
+          logger.error('Failed to log again rating', e, stackTrace);
+        }
       }
+      // 此处可以不立即切走，让前端摇晃或标红，用户必须去点一个跳过或者蒙对才能过
+    }
+  }
+
+  /// 用户在阶段二（主观评价）点击了 Hard/Good/Easy
+  Future<void> submitSubjectiveRating(ReviewRating selectedRating) async {
+    final item = state.currentItem;
+    if (item == null || state.currentPhase != ReviewCardPhase.grading) return;
+
+    // 如果这个词刚才已经粗心答错过被发配为 Again 了，理论上这里再选 Easy 也救不回来。
+    // 但是如果用户就是不小心点错，他如果在阶段二选了某值，我们应重新覆盖一次或者直接忽略。
+    // 按标准 SRS：一次卡片周期如果发生了 Lapse(错)，这卡片就是 lapsed。
+    // 如果 hasMistakeOnCurrent == false，说明他一次答对，正常吃下这个选的评分。
+    try {
+      if (!state.hasMistakeOnCurrent) {
+        await _wordCommand.onWordReviewed(
+          userId: item.studyWord.userId,
+          wordId: item.studyWord.wordId,
+          rating: selectedRating,
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.error('Failed to log rating', e, stackTrace);
     }
 
-    if (nextType == null || nextItems.isEmpty) {
-      await finishAll();
-      return;
+    await _goToNextCard();
+  }
+
+  Future<void> _goToNextCard() async {
+    // 如果当前词错了，我们需要把它重新塞回队列末尾（或者错题集中）强制重做
+    final items = List<WordReviewItem>.from(state.items);
+    if (state.hasMistakeOnCurrent) {
+      final currentItem = items[state.currentIndex];
+      items.add(currentItem); // 直接追加到队尾
     }
 
-    await startGroup(nextType, nextItems);
+    final nextIndex = state.currentIndex + 1;
+    if (nextIndex >= items.length) {
+      // 没有任何剩余卡片
+      state = state.copyWith(
+        isAllFinished: true,
+        items: items,
+        currentIndex: nextIndex,
+      );
+    } else {
+      // 继续下一张
+      state = state.copyWith(
+        items: items,
+        currentIndex: nextIndex,
+        currentPhase: ReviewCardPhase.testing,
+        hasMistakeOnCurrent: false,
+      );
+      await _prepareCurrentCardOptions();
+    }
   }
 
   Future<void> finishAll() async {
-    state = state.copyWith(
-      isLoading: false,
-      isAllFinished: true,
-      isGroupFinished: true,
-      activePairs: const [],
-      remainingItems: const [],
-      rightOptions: const [],
-      resetCurrentQuestionType: true,
-      selectedLeftIndex: null,
-      selectedRightIndex: null,
-    );
+    state = state.copyWith(isLoading: false, isAllFinished: true);
   }
 
   Future<List<WordReviewItem>> _composeReviewItems(
@@ -590,41 +370,6 @@ class WordReviewController extends Notifier<WordReviewState> {
       }
     }
     return available.first;
-  }
-
-  Future<bool> _applyReviewResult(WordReviewItem item) async {
-    final hadMistake = _mistakeWordIds.remove(item.studyWord.wordId);
-    final rating = hadMistake ? ReviewRating.again : ReviewRating.good;
-    await _wordCommand.onWordReviewed(
-      userId: item.studyWord.userId,
-      wordId: item.studyWord.wordId,
-      rating: rating,
-    );
-    return hadMistake;
-  }
-
-  String _leftValueForItem(WordReviewItem item) {
-    switch (item.questionType) {
-      case WordReviewQuestionType.wordToMeaning:
-        return item.wordDetail.word.word;
-      case WordReviewQuestionType.meaningToWord:
-        return item.meaning ?? '';
-      case WordReviewQuestionType.audioToWord:
-        return '';
-      case WordReviewQuestionType.readingToWord:
-        return item.reading ?? '';
-    }
-  }
-
-  String _rightValueForItem(WordReviewItem item) {
-    switch (item.questionType) {
-      case WordReviewQuestionType.wordToMeaning:
-        return item.meaning ?? '';
-      case WordReviewQuestionType.meaningToWord:
-      case WordReviewQuestionType.audioToWord:
-      case WordReviewQuestionType.readingToWord:
-        return item.wordDetail.word.word;
-    }
   }
 
   Future<void> endSession() async {

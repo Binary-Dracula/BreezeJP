@@ -13,6 +13,7 @@ import '../features/vocabulary_book/pages/vocabulary_book_page.dart';
 import '../features/statistics/pages/statistics_page.dart';
 import '../debug/pages/debug_placeholder_page.dart';
 import 'app_route_observer.dart';
+import '../features/settings/pages/settings_page.dart';
 import '../features/grammar/pages/grammar_list_page.dart';
 import '../features/grammar/pages/grammar_learning_page.dart';
 import '../features/grammar_book/pages/grammar_book_page.dart';
@@ -132,6 +133,13 @@ final appRouter = GoRouter(
       path: '/grammar-book',
       name: 'grammar-book',
       builder: (context, state) => const GrammarBookPage(),
+    ),
+
+    // Settings
+    GoRoute(
+      path: '/settings',
+      name: 'settings',
+      builder: (context, state) => const SettingsPage(),
     ),
   ],
 );

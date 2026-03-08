@@ -57,8 +57,15 @@ class _LearnPageState extends ConsumerState<LearnPage>
       }
     });
 
-    return WillPopScope(
-      onWillPop: _handlePop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _handlePop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
       child: Scaffold(
         body: SafeArea(
           child: Column(

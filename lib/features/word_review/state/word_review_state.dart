@@ -2,25 +2,9 @@ import 'package:flutter/foundation.dart';
 
 import 'word_review_item.dart';
 
-class WordReviewPair {
-  WordReviewItem item;
-  String left;
-  String right;
-  bool isMatched;
-
-  WordReviewPair({
-    required this.item,
-    required this.left,
-    required this.right,
-    this.isMatched = false,
-  });
-}
-
-class WordReviewOption {
-  int pairIndex;
-  String value;
-
-  WordReviewOption({required this.pairIndex, required this.value});
+enum ReviewCardPhase {
+  testing, // 阶段一：客观答题
+  grading, // 阶段二：主观评价 (Hard / Good / Easy)
 }
 
 @immutable
@@ -29,62 +13,67 @@ class WordReviewState {
 
   final bool isLoading;
   final bool isEmpty;
-  final WordReviewQuestionType? currentQuestionType;
-  final List<WordReviewPair> activePairs;
-  final List<WordReviewItem> remainingItems;
-  final List<WordReviewOption> rightOptions;
-  final int? selectedLeftIndex;
-  final int? selectedRightIndex;
-  final bool isGroupFinished;
+
+  // 复习队列与进度
+  final List<WordReviewItem> items;
+  final int currentIndex;
+
+  // 当前卡片的状态
+  final ReviewCardPhase currentPhase;
+  final bool hasMistakeOnCurrent; // 客观题是否已经答错过（决定该题打入 Again）
+
+  // 客观题的备选项 (由于要支持不同的题型，这里做一层通用抽象：文字选项)
+  // 如果是复杂的题型，可能需要具体页面去获取，但这里为了快速改造，我们保留通用的 option list
+  final List<String> currentOptions;
+
   final bool isAllFinished;
   final String? error;
 
   const WordReviewState({
     this.isLoading = false,
     this.isEmpty = false,
-    this.currentQuestionType,
-    this.activePairs = const [],
-    this.remainingItems = const [],
-    this.rightOptions = const [],
-    this.selectedLeftIndex,
-    this.selectedRightIndex,
-    this.isGroupFinished = false,
+    this.items = const [],
+    this.currentIndex = 0,
+    this.currentPhase = ReviewCardPhase.testing,
+    this.hasMistakeOnCurrent = false,
+    this.currentOptions = const [],
     this.isAllFinished = false,
     this.error,
   });
 
+  WordReviewItem? get currentItem {
+    if (items.isEmpty || currentIndex < 0 || currentIndex >= items.length) {
+      return null;
+    }
+    return items[currentIndex];
+  }
+
+  double get progress {
+    if (items.isEmpty) return 1.0;
+    return currentIndex / items.length;
+  }
+
   WordReviewState copyWith({
     bool? isLoading,
     bool? isEmpty,
-    WordReviewQuestionType? currentQuestionType,
-    bool resetCurrentQuestionType = false,
-    List<WordReviewPair>? activePairs,
-    List<WordReviewItem>? remainingItems,
-    List<WordReviewOption>? rightOptions,
-    Object? selectedLeftIndex = _unset,
-    Object? selectedRightIndex = _unset,
-    bool? isGroupFinished,
+    List<WordReviewItem>? items,
+    int? currentIndex,
+    ReviewCardPhase? currentPhase,
+    bool? hasMistakeOnCurrent,
+    List<String>? currentOptions,
     bool? isAllFinished,
-    String? error,
+    Object? error = _unset,
   }) {
     return WordReviewState(
       isLoading: isLoading ?? this.isLoading,
       isEmpty: isEmpty ?? this.isEmpty,
-      currentQuestionType: resetCurrentQuestionType
-          ? null
-          : (currentQuestionType ?? this.currentQuestionType),
-      activePairs: activePairs ?? this.activePairs,
-      remainingItems: remainingItems ?? this.remainingItems,
-      rightOptions: rightOptions ?? this.rightOptions,
-      selectedLeftIndex: selectedLeftIndex == _unset
-          ? this.selectedLeftIndex
-          : selectedLeftIndex as int?,
-      selectedRightIndex: selectedRightIndex == _unset
-          ? this.selectedRightIndex
-          : selectedRightIndex as int?,
-      isGroupFinished: isGroupFinished ?? this.isGroupFinished,
+      items: items ?? this.items,
+      currentIndex: currentIndex ?? this.currentIndex,
+      currentPhase: currentPhase ?? this.currentPhase,
+      hasMistakeOnCurrent: hasMistakeOnCurrent ?? this.hasMistakeOnCurrent,
+      currentOptions: currentOptions ?? this.currentOptions,
       isAllFinished: isAllFinished ?? this.isAllFinished,
-      error: error,
+      error: error == _unset ? this.error : (error as String?),
     );
   }
 }

@@ -42,7 +42,7 @@ class ConjugationList extends StatelessWidget {
             separatorBuilder: (context, index) => Divider(
               height: 1,
               thickness: 0.5,
-              color: borderColor.withOpacity(0.5),
+              color: borderColor.withValues(alpha: 0.5),
             ),
             itemBuilder: (context, index) {
               final item = conjugations[index];
