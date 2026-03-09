@@ -541,7 +541,7 @@ abstract class AppLocalizations {
   /// 单词复习题型标题-单词到释义
   ///
   /// In zh, this message translates to:
-  /// **'单词 → 释义（配对）'**
+  /// **'单词 → 释义'**
   String get wordReviewTitleWordMeaning;
 
   /// 单词复习题型说明-单词到释义
@@ -553,7 +553,7 @@ abstract class AppLocalizations {
   /// 单词复习题型标题-释义到单词
   ///
   /// In zh, this message translates to:
-  /// **'释义 → 单词（配对）'**
+  /// **'释义 → 单词'**
   String get wordReviewTitleMeaningWord;
 
   /// 单词复习题型说明-释义到单词
@@ -565,7 +565,7 @@ abstract class AppLocalizations {
   /// 单词复习题型标题-听音到单词
   ///
   /// In zh, this message translates to:
-  /// **'听音辨单词（配对）'**
+  /// **'听音辨单词'**
   String get wordReviewTitleAudioWord;
 
   /// 单词复习题型说明-听音到单词
@@ -577,7 +577,7 @@ abstract class AppLocalizations {
   /// 单词复习题型标题-读音到单词
   ///
   /// In zh, this message translates to:
-  /// **'读音 → 单词（配对）'**
+  /// **'读音 → 单词'**
   String get wordReviewTitleReadingWord;
 
   /// 单词复习题型说明-读音到单词

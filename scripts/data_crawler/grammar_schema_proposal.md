@@ -53,16 +53,15 @@
 ### 4. `grammar_examples` (例句表)
 保存中、英、日三语例句。
 
-| 字段名           | 类型                                | 说明                                                                 |
-| :--------------- | :---------------------------------- | :------------------------------------------------------------------- |
-| `id`             | `INTEGER PRIMARY KEY AUTOINCREMENT` | 例句唯一标识 (自增)                                                  |
-| `grammar_id`     | `INTEGER NOT NULL`                  | 关联语法 ID (便于直接提取该语法下的所有例句)                         |
-| `meaning_id`     | `INTEGER`                           | 关联语义 ID (可选：如果以后想要实现“例句严格挂载在某一个特定含义下”) |
-| `sort_order`     | `INTEGER DEFAULT 1`                 | 展示顺序                                                             |
-| `sentence`       | `TEXT`                              | 日文例句内容 (需转换为 Ruby 注音格式，如 漢字[かんじ])               |
-| `translation_cn` | `TEXT`                              | 中文翻译                                                             |
-| `translation_en` | `TEXT`                              | 英文翻译对照                                                         |
-| `audio_url`      | `TEXT`                              | 预留未来扩展发音的音频URL字段                                        |
+| 字段名           | 类型                                | 说明                                                   |
+| :--------------- | :---------------------------------- | :----------------------------------------------------- |
+| `id`             | `INTEGER PRIMARY KEY AUTOINCREMENT` | 例句唯一标识 (自增)                                    |
+| `grammar_id`     | `INTEGER NOT NULL`                  | 关联语法 ID (便于直接提取该语法下的所有例句)           |
+| `sort_order`     | `INTEGER DEFAULT 1`                 | 展示顺序                                               |
+| `sentence`       | `TEXT`                              | 日文例句内容 (需转换为 Ruby 注音格式，如 漢字[かんじ]) |
+| `translation_cn` | `TEXT`                              | 中文翻译                                               |
+| `translation_en` | `TEXT`                              | 英文翻译对照                                           |
+| `audio_url`      | `TEXT`                              | 预留未来扩展发音的音频URL字段                          |
 
 ---
 

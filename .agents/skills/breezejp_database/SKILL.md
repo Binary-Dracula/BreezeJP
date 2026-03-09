@@ -46,7 +46,7 @@ description: BreezeJP 项目的 SQLite 数据库模式、实体关系、表结�
 
 ### 【D. 语法学习模块】(Grammar Layer)
 - **主表**：`grammars`
-- **层级分支**：一条语法产生多种义项 `grammar_meanings`（含中英文释义与接续），独立存储使用场景 `grammar_contexts`（含 limitations JSON），以及挂载在语法下的例句 `grammar_examples`。
+- **层级分支**：一条语法产生多种义项 `grammar_meanings`（含中英文释义与接续），独立存储使用场景 `grammar_contexts`，以及挂载在语法下的例句 `grammar_examples`。
 - **状态管理表**：`study_grammars`。使用 SRS (FSRS) 原理处理学习进度安排。
 
 ## 4. 实体关系

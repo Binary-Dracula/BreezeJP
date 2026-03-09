@@ -47,8 +47,7 @@ def init_db(conn):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             grammar_id INTEGER NOT NULL REFERENCES grammars(id),
             when_to_use_cn TEXT,
-            when_to_use_en TEXT,
-            limitations_json TEXT
+            when_to_use_en TEXT
         );
     """)
     
@@ -58,7 +57,6 @@ def init_db(conn):
         CREATE TABLE grammar_examples (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             grammar_id INTEGER NOT NULL REFERENCES grammars(id),
-            meaning_id INTEGER,
             sort_order INTEGER DEFAULT 1,
             sentence TEXT,
             translation_cn TEXT,
@@ -147,14 +145,11 @@ def import_data(conn):
         when_cn = _to_str(item.get('context_cn'))
         when_en = _to_str(item.get('context_en'))
         
-        limitations = item.get('limitations')
-        lim_json = json.dumps(limitations, ensure_ascii=False) if limitations else None
-        
-        if when_cn or when_en or lim_json:
+        if when_cn or when_en:
             cursor.execute("""
-                INSERT INTO grammar_contexts (grammar_id, when_to_use_cn, when_to_use_en, limitations_json)
-                VALUES (?, ?, ?, ?)
-            """, (grammar_id, when_cn, when_en, lim_json))
+                INSERT INTO grammar_contexts (grammar_id, when_to_use_cn, when_to_use_en)
+                VALUES (?, ?, ?)
+            """, (grammar_id, when_cn, when_en))
             context_count += 1
             
         # Insert examples

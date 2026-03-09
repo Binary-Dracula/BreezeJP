@@ -73,7 +73,6 @@ class GrammarContext {
       'grammar_id': grammarId,
       'when_to_use_cn': whenToUseCn,
       'when_to_use_en': whenToUseEn,
-      'limitations_json': limitations.isEmpty ? null : jsonEncode(limitations),
     };
   }
 
