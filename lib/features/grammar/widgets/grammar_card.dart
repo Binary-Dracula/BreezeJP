@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/widgets/custom_ruby_text.dart';
 import '../../../data/models/grammar_detail.dart';
 import '../../../data/models/grammar_meaning.dart';
 import '../../../data/models/grammar_context.dart';
 import '../../../data/models/grammar_example.dart';
-import '../../../services/audio_play_controller_provider.dart';
-import '../../../services/audio_play_controller.dart';
-import '../../../services/audio_play_state.dart';
-import '../../learn/widgets/audio_play_button.dart';
+import '../../../core/widgets/common_example_item.dart';
 
 class GrammarCard extends ConsumerWidget {
   final GrammarDetail detail;
@@ -33,20 +29,8 @@ class GrammarCard extends ConsumerWidget {
             (contextData) => _buildContextSection(context, ref, contextData),
           ),
           // 渲染例句列表
-          if (detail.examples.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text(
-                '例句',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
+          if (detail.examples.isNotEmpty)
             _buildExampleList(context, ref, detail.examples),
-          ],
         ],
       ),
     );
@@ -205,97 +189,51 @@ class GrammarCard extends ConsumerWidget {
     WidgetRef ref,
     List<GrammarExample> examples,
   ) {
-    final audioStatus = ref.watch(audioPlayControllerProvider);
-    final controller = ref.read(audioPlayControllerProvider.notifier);
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: examples
-          .map(
-            (example) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: JapaneseSentence(
-                            text: example.sentence ?? '',
-                            fontSize: 16,
-                          ),
-                        ),
-                        // 播放按钮: 优先使用音频 URL, 否则使用 TTS
-                        if (example.audioUrl != null &&
-                            example.audioUrl!.isNotEmpty)
-                          AudioPlayButton(
-                            audioSource: example.audioUrl!,
-                            size: 24,
-                            color: Colors.blue,
-                          )
-                        else if (example.sentence != null &&
-                            example.sentence!.isNotEmpty)
-                          _buildTtsPlayButton(
-                            example.sentence!,
-                            audioStatus,
-                            controller,
-                          ),
-                      ],
-                    ),
-                    if (example.translationCn != null) ...[
-                      const Divider(height: 24),
-                      Text(
-                        example.translationCn!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ],
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.format_quote_rounded, size: 20, color: primaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  '例句',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
+              ],
             ),
-          )
-          .toList(),
-    );
-  }
-
-  /// 构建 TTS 播放按钮
-  Widget _buildTtsPlayButton(
-    String text,
-    AudioPlayStatus audioStatus,
-    AudioPlayController controller,
-  ) {
-    final ttsSource = 'tts://$text';
-    final isPlaying = audioStatus.isPlaying(ttsSource);
-    final isLoading = audioStatus.isLoading(ttsSource);
-
-    return IconButton(
-      icon: isLoading
-          ? const SizedBox(
-              width: 19,
-              height: 19,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.blue,
-              ),
-            )
-          : Icon(
-              isPlaying ? Icons.stop_circle : Icons.play_circle,
-              size: 24,
-              color: Colors.blue,
-            ),
-      onPressed: isLoading ? null : () => controller.toggleTts(text),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            const SizedBox(height: 16),
+            ...List.generate(examples.length, (index) {
+              final example = examples[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == examples.length - 1 ? 0 : 20,
+                ),
+                child: CommonExampleItem(
+                  order: index + 1,
+                  primaryColor: primaryColor,
+                  data: ExampleDisplayData(
+                    japanese: example.sentence ?? '',
+                    translation: example.translationCn,
+                    audioSource: example.audioUrl,
+                    ttsText: example.sentence,
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 

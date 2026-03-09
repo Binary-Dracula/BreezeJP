@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_example_item.dart';
 import '../../../data/models/word_detail.dart';
-import 'example_item.dart';
 
 /// 例句区
 /// 包含多个例句条目
@@ -42,15 +42,28 @@ class WordExamplesSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ...List.generate(
-              examples.length,
-              (index) => Padding(
+            ...List.generate(examples.length, (index) {
+              final ex = examples[index];
+              final sentence = ex.sentence;
+              final audio = ex.audio;
+              final audioSource = audio?.audioUrl ?? audio?.audioFilename;
+
+              return Padding(
                 padding: EdgeInsets.only(
-                  bottom: index == examples.length - 1 ? 0 : 12,
+                  bottom: index == examples.length - 1 ? 0 : 16,
                 ),
-                child: ExampleItem(example: examples[index], order: index + 1),
-              ),
-            ),
+                child: CommonExampleItem(
+                  order: index + 1,
+                  data: ExampleDisplayData(
+                    japanese: sentence.sentenceFurigana?.isNotEmpty == true
+                        ? sentence.sentenceFurigana!
+                        : sentence.sentenceJp,
+                    translation: sentence.translationCn,
+                    audioSource: audioSource,
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),
