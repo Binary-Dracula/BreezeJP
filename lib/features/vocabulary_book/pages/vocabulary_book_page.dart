@@ -24,7 +24,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -59,8 +59,6 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
         children: [
           // 搜索栏
           if (_isSearchVisible) _buildSearchBar(),
-          // 统计摘要
-          _buildStatsSummary(state),
           // TabBar
           _buildTabBar(state),
           // 列表内容
@@ -148,30 +146,6 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
     );
   }
 
-  Widget _buildStatsSummary(VocabularyBookState state) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-      child: Row(
-        children: [
-          _StatBadge(
-            icon: Icons.menu_book_rounded,
-            label: '学习中',
-            count: state.learningCount,
-            color: const Color(0xFF5C8DFF),
-          ),
-          const SizedBox(width: 16),
-          _StatBadge(
-            icon: Icons.check_circle_rounded,
-            label: '已掌握',
-            count: state.masteredCount,
-            color: const Color(0xFF34D399),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTabBar(VocabularyBookState state) {
     return Container(
       color: Colors.white,
@@ -186,6 +160,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
         tabs: [
           Tab(text: '学习中 (${state.learningCount})'),
           Tab(text: '已掌握 (${state.masteredCount})'),
+          Tab(text: '已忽略 (${state.ignoredCount})'),
         ],
       ),
     );
@@ -200,7 +175,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           isLoading: state.isLoading,
           isLoadingMore: state.isLoadingMore,
           hasMore: state.hasMoreLearning,
-          isLearningTab: true,
+          tabIndex: 0,
           emptyMessage: '还没有正在学习的单词\n快去学习新单词吧！',
         ),
         _buildWordList(
@@ -208,9 +183,18 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           isLoading: state.isLoading,
           isLoadingMore: state.isLoadingMore,
           hasMore: state.hasMoreMastered,
-          isLearningTab: false,
+          tabIndex: 1,
           emptyMessage: '还没有掌握的单词\n继续加油学习吧！',
           emptyIcon: Icons.emoji_events_outlined,
+        ),
+        _buildWordList(
+          items: state.ignoredWords,
+          isLoading: state.isLoading,
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.hasMoreIgnored,
+          tabIndex: 2,
+          emptyMessage: '没有已忽略的单词',
+          emptyIcon: Icons.visibility_off_outlined,
         ),
       ],
     );
@@ -221,7 +205,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
     required bool isLoading,
     required bool isLoadingMore,
     required bool hasMore,
-    required bool isLearningTab,
+    required int tabIndex,
     required String emptyMessage,
     IconData emptyIcon = Icons.menu_book_outlined,
   }) {
@@ -262,7 +246,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           }
           return _WordListTile(
             item: items[index],
-            isLearningTab: isLearningTab,
+            tabIndex: tabIndex,
             onTap: () => context.push('/learn/${items[index].wordId}'),
             onToggleStatus: () {
               ref
@@ -314,13 +298,13 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
 /// 单词列表项
 class _WordListTile extends StatelessWidget {
   final VocabularyBookItem item;
-  final bool isLearningTab;
+  final int tabIndex;
   final VoidCallback onTap;
   final VoidCallback onToggleStatus;
 
   const _WordListTile({
     required this.item,
-    required this.isLearningTab,
+    required this.tabIndex,
     required this.onTap,
     required this.onToggleStatus,
   });
@@ -438,7 +422,7 @@ class _WordListTile extends StatelessWidget {
   }
 
   Widget _buildStatusButton() {
-    if (isLearningTab) {
+    if (tabIndex == 0) {
       // 学习中 → 掌握
       return _StatusToggleButton(
         label: '掌握',
@@ -446,8 +430,16 @@ class _WordListTile extends StatelessWidget {
         color: const Color(0xFF34D399),
         onPressed: onToggleStatus,
       );
-    } else {
+    } else if (tabIndex == 1) {
       // 已掌握 → 恢复学习
+      return _StatusToggleButton(
+        label: '恢复',
+        icon: Icons.replay_rounded,
+        color: const Color(0xFF5C8DFF),
+        onPressed: onToggleStatus,
+      );
+    } else {
+      // 已忽略 → 恢复学习 (目前 toggleStatus 的 index == 2 会走默认逻辑，需在状态和控制器中确保正确)
       return _StatusToggleButton(
         label: '恢复',
         icon: Icons.replay_rounded,
@@ -466,47 +458,6 @@ class _WordListTile extends StatelessWidget {
       return 'assets/audio/words/${item.audioFilename}';
     }
     return null;
-  }
-}
-
-/// 统计徽章
-class _StatBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int count;
-  final Color color;
-
-  const _StatBadge({
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            '$label $count',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

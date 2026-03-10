@@ -95,6 +95,7 @@ class VocabularyBookQuery {
         userId,
         LearningStatus.learning.value,
         LearningStatus.mastered.value,
+        LearningStatus.ignored.value,
       ];
       var searchClause = '';
 
@@ -113,7 +114,7 @@ class VocabularyBookQuery {
         INNER JOIN words w ON sw.word_id = w.id
         LEFT JOIN word_meanings wm ON w.id = wm.word_id AND wm.definition_order = 1
         WHERE sw.user_id = ?
-          AND sw.user_state IN (?, ?)
+          AND sw.user_state IN (?, ?, ?)
           $searchClause
         GROUP BY sw.user_state
       ''';
@@ -129,6 +130,7 @@ class VocabularyBookQuery {
       final counts = <LearningStatus, int>{
         LearningStatus.learning: 0,
         LearningStatus.mastered: 0,
+        LearningStatus.ignored: 0,
       };
 
       for (final row in results) {

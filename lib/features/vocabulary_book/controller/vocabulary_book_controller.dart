@@ -5,6 +5,7 @@ import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
 import '../../../data/commands/word_command.dart';
+import '../../../data/models/read/vocabulary_book_item.dart';
 import '../../../data/models/user.dart';
 import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
@@ -70,25 +71,36 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
           offset: 0,
           searchQuery: searchQuery,
         ),
+        _query.getVocabularyBookItems(
+          userId: userId,
+          status: LearningStatus.ignored,
+          limit: _kPageSize,
+          offset: 0,
+          searchQuery: searchQuery,
+        ),
         _query.getStatusCounts(userId: userId, searchQuery: searchQuery),
       ]);
 
-      final learningWords = results[0] as List;
-      final masteredWords = results[1] as List;
-      final counts = results[2] as Map<LearningStatus, int>;
+      final learningWords = results[0] as List<VocabularyBookItem>;
+      final masteredWords = results[1] as List<VocabularyBookItem>;
+      final ignoredWords = results[2] as List<VocabularyBookItem>;
+      final counts = results[3] as Map<LearningStatus, int>;
 
       state = state.copyWith(
         isLoading: false,
         learningWords: List.from(learningWords),
         masteredWords: List.from(masteredWords),
+        ignoredWords: List.from(ignoredWords),
         learningCount: counts[LearningStatus.learning] ?? 0,
         masteredCount: counts[LearningStatus.mastered] ?? 0,
+        ignoredCount: counts[LearningStatus.ignored] ?? 0,
         hasMoreLearning: learningWords.length >= _kPageSize,
         hasMoreMastered: masteredWords.length >= _kPageSize,
+        hasMoreIgnored: ignoredWords.length >= _kPageSize,
       );
 
       logger.debug(
-        '单词本加载完成: 学习中=${learningWords.length}, 已掌握=${masteredWords.length}',
+        '单词本加载完成: 学习中=${learningWords.length}, 已掌握=${masteredWords.length}, 已忽略=${ignoredWords.length}',
       );
     } catch (e, stackTrace) {
       logger.error('单词本加载失败', e, stackTrace);
@@ -120,11 +132,17 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
           learningWords: [...state.learningWords, ...moreItems],
           hasMoreLearning: moreItems.length >= _kPageSize,
         );
-      } else {
+      } else if (state.currentTabIndex == 1) {
         state = state.copyWith(
           isLoadingMore: false,
           masteredWords: [...state.masteredWords, ...moreItems],
           hasMoreMastered: moreItems.length >= _kPageSize,
+        );
+      } else {
+        state = state.copyWith(
+          isLoadingMore: false,
+          ignoredWords: [...state.ignoredWords, ...moreItems],
+          hasMoreIgnored: moreItems.length >= _kPageSize,
         );
       }
 
