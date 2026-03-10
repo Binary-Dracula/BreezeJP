@@ -57,8 +57,9 @@ inclusion: always
 
 **定义回顾（冻结）**
 
-* 今日学习 = 当天产生的 `firstLearn` 行为数
+* 今日学习 = 当天产生的 `firstLearn` 行为数（异步事件驱动）
 * 今日复习 = 当天产生的 `review` 行为数
+* 今日假名 = 当天发生的 `kanaReview` 或 `markMastered(kana)` 行为数
 * **与当前状态无关**
 
 #### Checklist
@@ -67,6 +68,7 @@ inclusion: always
 
   * `new_learned_count`
   * `review_count`
+  * `unique_kana_reviewed_count`
 * [ ] 是否 **完全没有**：
 
   * 从 logs 回放计算“今日”
@@ -138,9 +140,9 @@ inclusion: always
   * `applyTimeOnlyDelta`
 
     * 只更新 `total_time_ms`
-  * `applyLearningDelta`
+  * `applyLearningDelta / applySession`
 
-    * 只更新 `new_learned_count / review_count`
+    * 负责更新 `new_learned_count / review_count / unique_kana_reviewed_count`
     * **不更新** `total_time_ms`
 * [ ] 是否不存在以下反模式：
 

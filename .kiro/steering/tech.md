@@ -24,19 +24,19 @@ inclusion: always
 
 ## 二、核心依赖说明
 
-| 类别 | 包名 | 工程用途 |
-|----|----|--------|
-| 状态管理 | flutter_riverpod ^3.0.3 | Feature Controller / State 管理 |
-| 数据库 | sqflite ^2.3.3 | 本地 SQLite |
-| 路由 | go_router ^17.0.0 | 声明式路由 |
-| 音频 | just_audio ^0.10.5 | 音频播放（由 AudioService 统一封装） |
-| UI | ruby_text ^3.0.3 | 日文假名注音 |
-| 动画 | flutter_animate ^4.5.0 | 声明式动画 |
-| 手势 | gesture_x_detector ^1.1.1 | 高级手势识别 |
-| 工具 | kana_kit ^2.1.1 | 假名 / 罗马音转换 |
-| 网络 | dio ^5.7.0 | HTTP 客户端 |
-| 日志 | logger ^2.5.0 | 统一日志封装 |
-| 国际化 | intl ^0.20.2 | 多语言支持 |
+| 类别     | 包名                    | 工程用途                             |
+| -------- | ----------------------- | ------------------------------------ |
+| 状态管理 | flutter_riverpod ^3.0.3 | Feature Controller / State 管理      |
+| 数据库   | sqflite ^2.3.3          | 本地 SQLite                          |
+| 路由     | go_router ^17.0.0       | 声明式路由                           |
+| 音频     | just_audio ^0.10.5      | 音频播放（由 AudioService 统一封装） |
+| UI       | ruby_text ^3.0.3        | 日文假名注音                         |
+| 性能     | fl_chart ^1.1.1         | 统计图表绘制 (Statistics)            |
+| 动画     | flutter_animate ^4.5.0  | 声明式动画                           |
+| 工具     | kana_kit ^2.1.1         | 假名 / 罗马音转换                    |
+| 网络     | dio ^5.7.0              | HTTP 客户端                          |
+| 日志     | logger ^2.5.0           | 统一日志封装                         |
+| 国际化   | intl ^0.20.2            | 多语言支持                           |
 
 > 依赖选择目标：**可维护性优先于“新”与“炫”**
 
@@ -66,17 +66,17 @@ Database
 
 ## 四、层级职责与工程约束
 
-| 层级 | 工程职责 | 明确禁止 |
-|----|--------|--------|
-| **View** | UI 渲染、交互 | 统计计算、DB / Repository |
-| **Controller** | 流程编排、状态调度 | Repository / DB |
-| **Command** | 写行为入口、副作用触发 | 返回 Map / SQL |
-| **Query** | 只读查询 | 写操作 |
-| **Analytics** | 聚合统计（只读） | 写操作 |
-| **Repository** | 单表 CRUD | join / 统计 / 业务判断 |
-| **Model** | 数据结构 | 行为逻辑 |
-| **State** | 不可变状态 | 可变字段 |
-| **External** | 外部 API / SDK | 本地持久化 |
+| 层级           | 工程职责               | 明确禁止                  |
+| -------------- | ---------------------- | ------------------------- |
+| **View**       | UI 渲染、交互          | 统计计算、DB / Repository |
+| **Controller** | 流程编排、状态调度     | Repository / DB           |
+| **Command**    | 写行为入口、副作用触发 | 返回 Map / SQL            |
+| **Query**      | 只读查询               | 写操作                    |
+| **Analytics**  | 聚合统计（只读）       | 写操作                    |
+| **Repository** | 单表 CRUD              | join / 统计 / 业务判断    |
+| **Model**      | 数据结构               | 行为逻辑                  |
+| **State**      | 不可变状态             | 可变字段                  |
+| **External**   | 外部 API / SDK         | 本地持久化                |
 
 ---
 
@@ -84,11 +84,11 @@ Database
 
 ### 写入路径分类（工程视角）
 
-| 写入类型 | 责任组件 | 是否经 Session |
-|--------|---------|---------------|
-| 状态写入 | WordCommand / KanaCommand | ❌ |
-| 行为日志 | 对应 Command | ❌ |
-| 统计写入 | Session / DailyStatCommand | ✅ / ❌ |
+| 写入类型 | 责任组件                        | 是否经 Session |
+| -------- | ------------------------------- | -------------- |
+| 状态写入 | `WordCommand / KanaCommand`     | ❌              |
+| 行为日志 | `StudyLogCommand / WordCommand` | ❌              |
+| 统计聚合 | `DailyStatCommand / Session`    | ✅              |
 
 > 技术层 **只声明写路径**
 > 写入语义由 `freeze.md` 冻结
@@ -130,13 +130,13 @@ SessionStatPolicy
 
 ## 七、命名规范
 
-| 类型 | 规范 | 示例 |
-|----|----|----|
-| 文件名 | snake_case | `word_repository.dart` |
-| 类名 | PascalCase | `WordRepository` |
-| 方法 / 变量 | camelCase | `getWordById()` |
-| 数据库列 | snake_case | `created_at` |
-| 常量 | lowerCamelCase | `defaultEaseFactor` |
+| 类型        | 规范           | 示例                   |
+| ----------- | -------------- | ---------------------- |
+| 文件名      | snake_case     | `word_repository.dart` |
+| 类名        | PascalCase     | `WordRepository`       |
+| 方法 / 变量 | camelCase      | `getWordById()`        |
+| 数据库列    | snake_case     | `created_at`           |
+| 常量        | lowerCamelCase | `defaultEaseFactor`    |
 
 ---
 
@@ -160,7 +160,7 @@ lib/features/{feature}/
 * Read DTO：`lib/data/models/read/{dto}.dart`
 * Repository：`lib/data/repositories/{entity}_repository.dart`
 * Query：`lib/data/queries/{entity}_query.dart`
-* Analytics：`lib/data/analytics/{entity}_analytics.dart`
+* Analytics：聚合统计查询 (物理位置与 Query 统合)
 * Command：`lib/data/commands/{entity}_command.dart`
 * External：`lib/data/external/{name}_client.dart`
 
@@ -206,7 +206,7 @@ final dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
 
 ## 十三、Riverpod 使用规范
 
-| Provider           | 用途                                       |
+| Provider           | 用途                                     |
 | ------------------ | ---------------------------------------- |
 | `NotifierProvider` | Feature Controller                       |
 | `Provider`         | Command / Query / Analytics / Repository |
@@ -216,7 +216,8 @@ final dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
 ## 十四、UI / UX 工程规范
 
 * 假名注音统一使用 `ruby_text`
-* 音频统一通过 `AudioService`
+* 音频播放统一通过 `AudioService`
+* 间隔记忆算法统一通过 `AlgorithmService` (支持 SM-2 / FSRS)
 * 遵循 `flutter_lints`
 * 使用 `dart format`
 

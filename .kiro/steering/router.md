@@ -125,17 +125,24 @@ if (wordIdStr == null) {
 
 ## 五、当前路由结构（与代码一致）
 
-| 路由               | 页面                   | 模块                       | 参数     |
-| ------------------ | ---------------------- | -------------------------- | -------- |
-| `/splash`          | `SplashPage`           | `features/splash`          | 无       |
-| `/home`            | `HomePage`             | `features/home`            | 无       |
-| `/initial-choice`  | `InitialChoicePage`    | `features/learn`           | 无       |
-| `/learn/:wordId`   | `LearnPage`            | `features/learn`           | `wordId` |
-| `/kana-chart`      | `KanaChartPage`        | `features/kana/chart`      | 无       |
-| `/matching_page`   | `MatchingPage`         | `features/kana/review`     | 无       |
-| `/word-review`     | `WordReviewPage`       | `features/word_review`     | 无       |
-| `/vocabulary-book` | `VocabularyBookPage`   | `features/vocabulary_book` | 无       |
-| `/debug`           | `DebugPlaceholderPage` | `debug/pages`              | 无       |
+| 路由                  | 页面                   | 模块                       | 参数     |
+| --------------------- | ---------------------- | -------------------------- | -------- |
+| `/splash`             | `SplashPage`           | `features/splash`          | 无       |
+| `/home`               | `HomePage`             | `features/home`            | 无       |
+| `/initial-choice`     | `InitialChoicePage`    | `features/learn`           | 无       |
+| `/learn/:wordId`      | `LearnPage`            | `features/learn`           | `wordId` |
+| `/kana-chart`         | `KanaChartPage`        | `features/kana/chart`      | 无       |
+| `/kana-review`        | `KanaReviewPage`       | `features/kana/review`     | 无       |
+| `/word-review`        | `WordReviewPage`       | `features/word_review`     | 无       |
+| `/vocabulary-book`    | `VocabularyBookPage`   | `features/vocabulary_book` | 无       |
+| `/statistics`         | `StatisticsPage`       | `features/statistics`      | 无       |
+| `/article-list`       | `ArticleListPage`      | `features/article`         | 无       |
+| `/article-detail/:id` | `ArticleDetailPage`    | `features/article`         | `id`     |
+| `/grammar/list`       | `GrammarListPage`      | `features/grammar`         | 无       |
+| `/grammar/learn/:id`  | `GrammarLearningPage`  | `features/grammar`         | `id`     |
+| `/grammar-book`       | `GrammarBookPage`      | `features/grammar_book`    | 无       |
+| `/settings`           | `SettingsPage`         | `features/settings`        | 无       |
+| `/debug`              | `DebugPlaceholderPage` | `debug/pages`              | 无       |
 
 ---
 

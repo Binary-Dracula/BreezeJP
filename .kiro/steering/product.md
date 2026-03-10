@@ -81,10 +81,9 @@ Dashboard 的职责是 **调度与入口**，而非任务管理。
 
 ##### 页面结构
 
-* **统计摘要**：展示学习中 / 已掌握的单词数量
-* **TabBar 切换**：「学习中」与「已掌握」两个分页
-* **搜索**：支持按单词、假名、释义搜索过滤
-* **列表项**：单词、假名、释义、JLPT 等级、播放音频按钮、状态切换按钮
+*   **TabBar 切换**：集成统计计数的「学习中」、「已掌握」与「已忽略」三个分页
+*   **搜索**：支持按单词、假名、释义搜索过滤
+*   **列表项**：单词、假名、释义、JLPT 等级、播放音频按钮、状态切换按钮（如：“加入复习”、“已掌握”、“恢复”、“忽略”）
 
 ##### 用户操作
 
@@ -92,6 +91,8 @@ Dashboard 的职责是 **调度与入口**，而非任务管理。
 | -------- | -------- | -------- | ---------------- |
 | 标记掌握 | learning | mastered | 确认已掌握该单词 |
 | 恢复学习 | mastered | learning | 重新加入复习队列 |
+| 恢复学习 | ignored  | learning | 重新加入复习队列 |
+| 忽略单词 | ANY      | ignored  | 暂不学习该单词   |
 
 ##### 数据来源（只读）
 
@@ -102,7 +103,7 @@ study_words
   LEFT JOIN word_audio
 WHERE
   user_id = current
-  AND user_state IN (learning, mastered)
+  AND user_state IN (learning, mastered, ignored)
 ORDER BY updated_at DESC
 ```
 
@@ -130,10 +131,9 @@ ORDER BY updated_at DESC
 
 ##### 页面结构
 
-* **统计摘要**：展示学习中 / 已掌握的语法数量
-* **TabBar 切换**：「学习中」与「已掌握」两个分页
-* **搜索**：支持按语法标题搜索过滤
-* **列表项**：语法标题、JLPT 等级、状态切换按钮
+*   **TabBar 切换**：集成统计计数的「学习中」、「已掌握」与「已忽略」三个分页
+*   **搜索**：支持按语法标题搜索过滤
+*   **列表项**：语法标题、JLPT 等级、状态切换按钮
 
 ##### 用户操作
 
@@ -141,6 +141,8 @@ ORDER BY updated_at DESC
 | -------- | -------- | -------- | ---------------- |
 | 标记掌握 | learning | mastered | 确认已掌握该语法 |
 | 恢复学习 | mastered | learning | 重新进入学习队列 |
+| 恢复学习 | ignored  | learning | 重新进入学习队列 |
+| 忽略语法 | ANY      | ignored  | 暂不学习该语法   |
 
 ##### 数据来源（只读）
 
@@ -149,7 +151,7 @@ study_grammars
   INNER JOIN grammars
 WHERE
   user_id = current
-  AND learning_status IN (learning, mastered)
+  AND learning_status IN (learning, mastered, ignored)
 ORDER BY updated_at DESC
 ```
 
@@ -252,8 +254,13 @@ WHERE
 #### 行为特征
 
 * 入口始终可点击
-* 队列为空时展示提示文案
-* Dashboard 不干预复习顺序或算法
+#### 拼写练习（MeaningToSpelling）交互规范
+
+*   **错误反馈**：拼写错误时，错误的方框背景变为红色（不展示弹窗提示）。
+*   **输入逻辑**：
+    *   点击乱序假名：按从左到右顺序填入空的方框。
+    *   满框逻辑：方框填满后点击新假名，则清空所有方框，从第一个重新填入。
+    *   点击方框：删除该方框内的假名，后续方框不前移。
 
 ---
 
@@ -344,7 +351,6 @@ Stats Card **仅用于展示结果**。
     *   例句发音
 4.  **Morphology（变形）[NEW]**
     *   展示动词 / 形容词的常见变形（如 te-form, ta-form, nai-form 等）
-    *   点击可复制变形后的单词
     *   **数据来源**：`word_conjugations` + `conjugation_types`
 5.  **Action Bar**
     *   根据入口不同展示不同操作（学习 / 掌握 / 忽略 / 下一个）

@@ -29,11 +29,13 @@ inclusion: always
 
 View → Controller
 ├─→ Query        (Read-only)
-├─→ Analytics   (Read-only Aggregation)
-└─→ Command     (Write / Side Effects)
-↓
+├─→ Analytics   (Read-only Aggregation, Physical: lib/data/queries)
+├─→ Command     (Write / Side Effects)
+│   └─→ DomainEventBus (Async Event Propagation)
+└─→ Services    (Infrastructure: Audio/TTS/Algorithm)
+    ↓
 Repository (Single-table CRUD)
-↓
+    ↓
 Database
 
 ```
@@ -48,17 +50,18 @@ Database
 
 ## 二、各层职责与禁止项（结构级冻结）
 
-| Layer          | 工程职责                                   | 明确禁止                       |
-| -------------- | ------------------------------------------ | ------------------------------ |
-| **View**       | UI 渲染、用户交互                          | 访问 Repository / DB、统计推导 |
-| **Controller** | 调度流程、调用 Command / Query / Analytics | 直接访问 Repository / DB       |
-| **Command**    | 写行为入口、状态变更、副作用触发           | 返回 Map / SQL 原始结构        |
-| **Query**      | 只读查询（detail / list / join）           | 写操作                         |
-| **Analytics**  | 聚合统计（只读）                           | 写操作                         |
-| **Repository** | 单表 CRUD、一致性保证                      | join / 统计 / 业务语义         |
-| **Model**      | 数据结构定义                               | 行为 / 业务逻辑                |
-| **State**      | 不可变状态容器                             | 可变字段                       |
-| **External**   | 外部 API / SDK                             | 本地持久化 / 业务裁决          |
+| Layer          | 工程职责                                   | 明确禁止                           |
+| -------------- | ------------------------------------------ | ---------------------------------- |
+| **View**       | UI 渲染、用户交互                          | 访问 Repository / DB、统计推导     |
+| **Controller** | 调度流程、调用 Command / Query / Analytics | 直接访问 Repository / DB           |
+| **Command**    | 写行为入口、状态变更、副作用触发           | 返回 Map / SQL 原始结构            |
+| **Query**      | 只读查询（detail / list / join）           | 写操作                             |
+| **Analytics**  | 聚合统计（只读，物理位置与 Query 统合）    | 写操作                             |
+| **Repository** | 单表 CRUD、一致性保证                      | join / 统计 / 业务逻辑（禁止下沉） |
+| **Model**      | 数据结构定义                               | 行为 / 业务逻辑                    |
+| **State**      | 不可变状态容器                             | 可变字段                           |
+| **External**   | 外部 API / SDK                             | 本地持久化 / 业务裁决              |
+| **EventBus**   | 领域事件分发（物理位置: lib/core/domain）  | 承载重型业务逻辑                   |
 
 ---
 
@@ -106,11 +109,11 @@ Database
 
 Command 是**唯一写入口**，但写入路径在结构上是**正交的**：
 
-| 写入类型 | 责任组件                      | 是否经 Session |
-| -------- | ----------------------------- | -------------- |
-| 状态写入 | `WordCommand / KanaCommand`   | ❌              |
-| 行为日志 | `WordCommand / ReviewCommand` | ❌              |
-| 统计聚合 | `Session / DailyStatCommand`  | ✅              |
+| 写入类型 | 责任组件                        | 是否经 Session |
+| -------- | ------------------------------- | -------------- |
+| 状态写入 | `WordCommand / KanaCommand`     | ❌              |
+| 行为日志 | `StudyLogCommand / WordCommand` | ❌              |
+| 统计聚合 | `DailyStatCommand / Session`    | ✅              |
 
 > 结构层只声明「谁写」，不声明「何时写」  
 > 具体语义由 freeze.md 冻结

@@ -19,7 +19,7 @@ inclusion: always
 本规则适用于：
 
 *   **单词（Word）学习**：完整遵循 Event-based + State-based 模型
-*   **假名（Kana）学习**：目前仅遵循 State-based 模型（`kana_learning_state`），**暂不计入 `study_logs`**
+*   **假名（Kana）学习**：遵循 State-based 模型，且复习行为已计入 `daily_stats.unique_kana_reviewed_count`
 *   Dashboard / Home 页面统计
 *   成就系统（若有）
 *   周报 / 月报 / 学习总结（若有）
@@ -109,6 +109,8 @@ study_logs.log_type = firstLearn
 COUNT(study_logs)
 WHERE log_type = firstLearn
   AND created_at = today
+
+> 注：为了查询性能，该指标在 `firstLearn` 写入时会异步同步至 `daily_stats.new_learned_count`。
 ```
 
 ### 重要声明

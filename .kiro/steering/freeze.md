@@ -29,7 +29,7 @@ inclusion: always
 * ❌ **禁止** 因“写起来更顺 / 少写一层 / 图方便”而调整架构
 * ❌ **禁止** 以状态推导事件，或以事件反推状态
 * ❌ **禁止** 混用 state-based 与 event-based 统计模型
-* ❌ **禁止** 为“统一形式”而强行合并不同业务模型
+* ✅ **允许** 为“代码复用与类型安全”而统一基础常量（如 `LearningStatus`）
 * ✅ **仅允许** 因“新增明确业务能力”而扩展架构
 * 🔁 **任何架构级变更**，必须遵循：
   1. 先修改 steering / freeze 文档
@@ -143,7 +143,7 @@ inclusion: always
 
 * [x] Word：firstLearn **只允许在“加入复习”入口写入**
 * [x] Word：state 与 event 完全解耦
-* [x] Kana：独立 SRS，不写 event (study_logs) / stats (daily_stats)
+* [x] Kana：独立 SRS，技术上支持 `daily_stats` 字段，但业务侧 **暂不激活事件上报** (study_logs/daily_stats)。
 * [x] Command 不以 state 推导 event
 * [x] Command 不以 event 反写 state（除非明确冻结规则允许）
 
@@ -172,14 +172,12 @@ inclusion: always
 
 ### 1️⃣ 模型定位（裁决）
 
-### 1️⃣ 模型定位（裁决）
-
 Kana 为 **技能熟练度与记忆模型**。
 
 *   ✅ **独立 SRS 系统**：拥有独立的复习调度（next_review_at / stability / difficulty）
 *   ❌ 不产生 `firstLearn` 事件（不计入今日新学）
-*   ❌ 不写 `study_logs`（无 event 记录）
-*   ❌ 不与 Word 学习模型同构（表结构独立）
+*   ❌ 不写 `study_logs`（目前业务层无 event 记录）
+*   ⚠️ `daily_stats` 预留 `unique_kana_reviewed_count` 字段，但业务逻辑中 **禁止主动调用** 除非文档更新。
 
 ---
 
@@ -190,20 +188,17 @@ Kana 为 **技能熟练度与记忆模型**。
   * 每个 `(user_id, kana_id)` **只能存在一条记录**
   * 不允许历史记录
 
-#### 状态枚举（冻结）
+#### 状态枚举
 
-```text
-learning
-mastered
-````
+> 实现层面已与 Word 统合使用 `LearningStatus` 枚举。
 
-❌ 明确禁止出现：
+*   `learning`
+*   `mastered`
 
-* seen
-* ignored
-* restore
-* joinLearning
-* 显式 review 状态 (使用 learning + SRS 数据代替)
+❌ 业务层面禁止使用：
+
+*   `seen` (假名点击即学，无曝光概念)
+*   `ignored`
 
 ---
 
