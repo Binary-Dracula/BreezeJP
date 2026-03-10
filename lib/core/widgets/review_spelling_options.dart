@@ -38,26 +38,21 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
       setState(() {
         _isWrong = true;
       });
-      _onShakeError();
     }
   }
 
-  void _onShakeError() {
-    // 此处可以加入震动动画或 HapticFeedback
-    // HapticFeedback.heavyImpact();
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() {
-          _isWrong = false;
-          _selectedIndices.clear();
-        });
-      }
-    });
-  }
-
   void _handleTapOption(int index) {
-    if (_selectedIndices.length >= _targetLength) return;
     if (_selectedIndices.contains(index)) return; // 已经上槽了
+
+    // 如果方框已经填满，再次点击新的假名，则清空重新从第一个方框开始填
+    if (_selectedIndices.length >= _targetLength) {
+      setState(() {
+        _selectedIndices.clear();
+        _isWrong = false;
+        _selectedIndices.add(index);
+      });
+      return;
+    }
 
     setState(() {
       _selectedIndices.add(index);
@@ -94,16 +89,6 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.hasMistake || _isWrong)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 16.0),
-            child: Text(
-              '拼写错误，请重试',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-          ),
-
         // 目标槽位区域 (下划线/方块)
         _buildSlotsArea(),
 
@@ -117,6 +102,8 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
 
   Widget _buildSlotsArea() {
     final length = _targetLength;
+    final correctChars = widget.correctSpelling.split('');
+
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 12,
@@ -124,7 +111,12 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
       children: List.generate(length, (index) {
         final hasChar = index < _selectedIndices.length;
         final char = hasChar ? widget.options[_selectedIndices[index]] : '';
-        final isErrorState = _isWrong;
+        final expectedChar = index < correctChars.length
+            ? correctChars[index]
+            : '';
+
+        // 只有整体判错(_isWrong)且当前格子被填入且跟正确答案对应的字不同，才会标红
+        final isThisBoxWrong = _isWrong && hasChar && char != expectedChar;
 
         return GestureDetector(
           onTap: hasChar ? () => _handleTapSlot(index) : null,
@@ -134,14 +126,14 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: hasChar
-                  ? (isErrorState
+                  ? (isThisBoxWrong
                         ? Colors.red[50]
-                        : const Color(0xFF6C63FF).withOpacity(0.1))
+                        : const Color(0xFF6C63FF).withValues(alpha: 0.1))
                   : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: hasChar
-                    ? (isErrorState ? Colors.red : const Color(0xFF6C63FF))
+                    ? (isThisBoxWrong ? Colors.red : const Color(0xFF6C63FF))
                     : Colors.grey[300]!,
                 width: hasChar ? 2 : 1.5,
               ),
@@ -151,7 +143,7 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isErrorState ? Colors.red : const Color(0xFF2D3142),
+                color: isThisBoxWrong ? Colors.red : const Color(0xFF2D3142),
               ),
             ),
           ),
@@ -184,7 +176,7 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
                   ? []
                   : [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
