@@ -58,8 +58,6 @@ class _GrammarBookPageState extends ConsumerState<GrammarBookPage>
         children: [
           // 搜索栏
           if (_isSearchVisible) _buildSearchBar(),
-          // 统计摘要
-          _buildStatsSummary(state),
           // TabBar
           _buildTabBar(state),
           // 列表内容
@@ -141,30 +139,6 @@ class _GrammarBookPageState extends ConsumerState<GrammarBookPage>
         onChanged: (value) {
           ref.read(grammarBookControllerProvider.notifier).search(value);
         },
-      ),
-    );
-  }
-
-  Widget _buildStatsSummary(GrammarBookState state) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-      child: Row(
-        children: [
-          _StatBadge(
-            icon: Icons.menu_book_rounded,
-            label: '学习中',
-            count: state.learningCount,
-            color: const Color(0xFF5C8DFF),
-          ),
-          const SizedBox(width: 16),
-          _StatBadge(
-            icon: Icons.check_circle_rounded,
-            label: '已掌握',
-            count: state.masteredCount,
-            color: const Color(0xFF34D399),
-          ),
-        ],
       ),
     );
   }
@@ -412,47 +386,6 @@ class _GrammarListTile extends StatelessWidget {
         onPressed: onToggleStatus,
       );
     }
-  }
-}
-
-/// 统计徽章
-class _StatBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int count;
-  final Color color;
-
-  const _StatBadge({
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            '$label $count',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
