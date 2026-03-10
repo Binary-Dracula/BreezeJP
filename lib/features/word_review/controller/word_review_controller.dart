@@ -13,6 +13,8 @@ import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/queries/study_word_query.dart';
 import '../../../data/queries/word_read_queries.dart';
+import 'dart:math' as math;
+
 import '../state/word_review_item.dart';
 import '../state/word_review_state.dart';
 
@@ -110,16 +112,95 @@ class WordReviewController extends Notifier<WordReviewState> {
     String correctOption = '';
 
     switch (item.questionType) {
-      case WordReviewQuestionType.meaningToWord:
-      case WordReviewQuestionType.audioToWord:
-      case WordReviewQuestionType.readingToWord:
-        correctOption = item.wordDetail.word.word;
-        options.add(correctOption);
-        for (final d in distractors) {
-          options.add(d.word.word);
+      case WordReviewQuestionType.meaningToSpelling:
+        // 拼写题型不需要四个整词选项，而是把该单词自身的正确读音（例如：あたらしい）
+        // 拆解成一个个假名，并混入一定量的干扰假名（如包含浊音、拗音的混淆项），
+        // 最终在 UI 层生成一个“乱序的单字候选列表”。因此在这里给出一个标识即可，或者在此生成乱序集合。
+        // 这里生成当前单词所有正确的假名词块，再从库里随机抽取几个常见假名作为干扰
+        final correctReading = item.reading ?? '';
+        final chars = correctReading.split('');
+        options.addAll(chars);
+        // 加入一些随机假名干扰项
+        final distractorsChars = [
+          'あ',
+          'い',
+          'う',
+          'え',
+          'お',
+          'か',
+          'き',
+          'く',
+          'け',
+          'こ',
+          'が',
+          'ぎ',
+          'ぐ',
+          'げ',
+          'ご',
+          'さ',
+          'し',
+          'す',
+          'せ',
+          'そ',
+          'ざ',
+          'じ',
+          'ず',
+          'ぜ',
+          'ぞ',
+          'た',
+          'ち',
+          'つ',
+          'て',
+          'と',
+          'だ',
+          'ぢ',
+          'づ',
+          'で',
+          'ど',
+          'な',
+          'に',
+          'ぬ',
+          'ね',
+          'の',
+          'は',
+          'ひ',
+          'ふ',
+          'へ',
+          'ほ',
+          'ば',
+          'び',
+          'ぶ',
+          'べ',
+          'ぼ',
+          'ぱ',
+          'ぴ',
+          'ぷ',
+          'ぺ',
+          'ぽ',
+          'ま',
+          'み',
+          'む',
+          'め',
+          'も',
+          'や',
+          'ゆ',
+          'よ',
+          'ら',
+          'り',
+          'る',
+          'れ',
+          'ろ',
+          'わ',
+          'を',
+          'ん',
+        ];
+        distractorsChars.shuffle();
+        for (var i = 0; i < 4; i++) {
+          options.add(distractorsChars[i]);
         }
         break;
       case WordReviewQuestionType.wordToMeaning:
+      case WordReviewQuestionType.audioToMeaning:
         correctOption = item.meaning ?? 'Unknown';
         options.add(correctOption);
         for (final d in distractors) {
@@ -129,11 +210,21 @@ class WordReviewController extends Notifier<WordReviewState> {
           }
         }
         break;
+      case WordReviewQuestionType.kanjiToReading:
+        correctOption = item.reading ?? '';
+        options.add(correctOption);
+        for (final d in distractors) {
+          final r = d.word.furigana?.trim() ?? d.word.romaji?.trim() ?? '';
+          if (r.isNotEmpty && !options.contains(r)) {
+            options.add(r);
+          }
+        }
+        break;
     }
 
-    // 如果因为某些原因（比如释义缺失）导致选项不足4个，可以考虑从 otherItems 补齐或直接返回
-    // 但全库随机基本能保证 3 个干扰项存在。
-    if (options.length < 4) {
+    // 补足选项不足的逻辑 (如果不涉及 options 生成的题型可以跳过)
+    if (item.questionType != WordReviewQuestionType.meaningToSpelling &&
+        options.length < 4) {
       final allItems = state.items;
       final otherItems = allItems
           .where((i) => i.studyWord.wordId != item.studyWord.wordId)
@@ -142,10 +233,11 @@ class WordReviewController extends Notifier<WordReviewState> {
       for (final o in otherItems) {
         if (options.length >= 4) break;
         String val = '';
-        if (item.questionType == WordReviewQuestionType.wordToMeaning) {
+        if (item.questionType == WordReviewQuestionType.wordToMeaning ||
+            item.questionType == WordReviewQuestionType.audioToMeaning) {
           val = o.meaning ?? '';
-        } else {
-          val = o.wordDetail.word.word;
+        } else if (item.questionType == WordReviewQuestionType.kanjiToReading) {
+          val = o.reading ?? '';
         }
         if (val.isNotEmpty && !options.contains(val)) {
           options.add(val);
@@ -164,13 +256,13 @@ class WordReviewController extends Notifier<WordReviewState> {
 
     String correctOption = '';
     switch (item.questionType) {
-      case WordReviewQuestionType.meaningToWord:
-      case WordReviewQuestionType.audioToWord:
-      case WordReviewQuestionType.readingToWord:
-        correctOption = item.wordDetail.word.word;
-        break;
       case WordReviewQuestionType.wordToMeaning:
+      case WordReviewQuestionType.audioToMeaning:
         correctOption = item.meaning ?? 'Unknown';
+        break;
+      case WordReviewQuestionType.kanjiToReading:
+      case WordReviewQuestionType.meaningToSpelling:
+        correctOption = item.reading ?? '';
         break;
     }
 
@@ -288,7 +380,8 @@ class WordReviewController extends Notifier<WordReviewState> {
       }
 
       final questionType = _chooseQuestionType(
-        studyWord.wordId,
+        studyWord,
+        detail.word.word,
         availableTypes,
       );
 
@@ -351,35 +444,47 @@ class WordReviewController extends Notifier<WordReviewState> {
     final available = <WordReviewQuestionType>{};
     if (meaning != null && meaning.isNotEmpty) {
       available.add(WordReviewQuestionType.wordToMeaning);
-      available.add(WordReviewQuestionType.meaningToWord);
+      available.add(WordReviewQuestionType.meaningToSpelling);
     }
-    if (audioSource != null && audioSource.isNotEmpty) {
-      available.add(WordReviewQuestionType.audioToWord);
+    if (audioSource != null &&
+        audioSource.isNotEmpty &&
+        meaning != null &&
+        meaning.isNotEmpty) {
+      available.add(WordReviewQuestionType.audioToMeaning);
     }
     if (reading != null && reading.isNotEmpty) {
-      available.add(WordReviewQuestionType.readingToWord);
+      available.add(WordReviewQuestionType.kanjiToReading);
     }
     return available;
   }
 
   WordReviewQuestionType _chooseQuestionType(
-    int wordId,
+    StudyWord studyWord,
+    String wordStr,
     Set<WordReviewQuestionType> available,
   ) {
-    const order = [
-      WordReviewQuestionType.wordToMeaning,
-      WordReviewQuestionType.meaningToWord,
-      WordReviewQuestionType.audioToWord,
-      WordReviewQuestionType.readingToWord,
-    ];
-    final startIndex = wordId % order.length;
-    for (var i = 0; i < order.length; i++) {
-      final type = order[(startIndex + i) % order.length];
-      if (available.contains(type)) {
-        return type;
+    final isNew = studyWord.totalReviews == 0 || studyWord.isNew;
+    final r = math.Random().nextDouble();
+
+    if (isNew) {
+      if (r < 0.7 && available.contains(WordReviewQuestionType.wordToMeaning)) {
+        return WordReviewQuestionType.wordToMeaning;
       }
+      if (available.contains(WordReviewQuestionType.audioToMeaning)) {
+        return WordReviewQuestionType.audioToMeaning;
+      }
+      return WordReviewQuestionType.wordToMeaning;
+    } else {
+      if (r < 0.4 &&
+          available.contains(WordReviewQuestionType.kanjiToReading) &&
+          RegExp(r'[\u4e00-\u9faf]').hasMatch(wordStr)) {
+        return WordReviewQuestionType.kanjiToReading;
+      }
+      if (available.contains(WordReviewQuestionType.meaningToSpelling)) {
+        return WordReviewQuestionType.meaningToSpelling;
+      }
+      return available.first;
     }
-    return available.first;
   }
 
   Future<void> endSession() async {

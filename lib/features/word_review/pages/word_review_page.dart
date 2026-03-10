@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/tracking/page_duration_tracking_mixin.dart';
+import '../../../core/widgets/review_spelling_options.dart';
 import '../../../core/widgets/review_widgets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/audio_service_provider.dart';
@@ -116,13 +117,24 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
                 _buildQuestionCard(item, state.currentPhase, l10n),
                 const SizedBox(height: 60),
                 if (state.currentPhase == ReviewCardPhase.testing)
-                  ReviewObjectiveListOptions(
-                    options: state.currentOptions,
-                    hasMistake: state.hasMistakeOnCurrent,
-                    onSelect: (option) => ref
-                        .read(wordReviewControllerProvider.notifier)
-                        .submitObjectiveAnswer(option),
-                  )
+                  if (item.questionType ==
+                      WordReviewQuestionType.meaningToSpelling)
+                    ReviewSpellingOptions(
+                      options: state.currentOptions,
+                      correctSpelling: item.reading ?? '',
+                      hasMistake: state.hasMistakeOnCurrent,
+                      onSelect: (option) => ref
+                          .read(wordReviewControllerProvider.notifier)
+                          .submitObjectiveAnswer(option),
+                    )
+                  else
+                    ReviewObjectiveListOptions(
+                      options: state.currentOptions,
+                      hasMistake: state.hasMistakeOnCurrent,
+                      onSelect: (option) => ref
+                          .read(wordReviewControllerProvider.notifier)
+                          .submitObjectiveAnswer(option),
+                    )
                 else
                   ReviewSubjectiveRatings(
                     onRate: (rating) => ref
@@ -146,7 +158,7 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
     Widget titleWidget;
 
     switch (item.questionType) {
-      case WordReviewQuestionType.meaningToWord:
+      case WordReviewQuestionType.meaningToSpelling:
         titleWidget = Text(
           item.meaning ?? '',
           textAlign: TextAlign.center,
@@ -157,7 +169,7 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
           ),
         );
         break;
-      case WordReviewQuestionType.audioToWord:
+      case WordReviewQuestionType.audioToMeaning:
         titleWidget = IconButton(
           iconSize: 64,
           color: const Color(0xFF6C63FF),
@@ -170,11 +182,11 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
           },
         );
         break;
-      case WordReviewQuestionType.readingToWord:
+      case WordReviewQuestionType.kanjiToReading:
         titleWidget = Text(
-          item.reading ?? '',
+          item.wordDetail.word.word,
           style: const TextStyle(
-            fontSize: 32,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
             color: Color(0xFF2D3142),
           ),
@@ -200,7 +212,7 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -254,8 +266,8 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
 String _titleForType(WordReviewQuestionType type, AppLocalizations l10n) {
   return switch (type) {
     WordReviewQuestionType.wordToMeaning => l10n.wordReviewTitleWordMeaning,
-    WordReviewQuestionType.meaningToWord => l10n.wordReviewTitleMeaningWord,
-    WordReviewQuestionType.audioToWord => l10n.wordReviewTitleAudioWord,
-    WordReviewQuestionType.readingToWord => l10n.wordReviewTitleReadingWord,
+    WordReviewQuestionType.meaningToSpelling => l10n.wordReviewTitleMeaningWord,
+    WordReviewQuestionType.audioToMeaning => l10n.wordReviewTitleAudioWord,
+    WordReviewQuestionType.kanjiToReading => l10n.wordReviewTitleReadingWord,
   };
 }
