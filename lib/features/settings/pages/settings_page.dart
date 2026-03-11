@@ -126,6 +126,86 @@ class SettingsPage extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.timer_outlined,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '首次复习时间安排',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                '新学单词多久后进行初次检测',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final currentInterval = ref.watch(firstReviewIntervalProvider);
+                            final intervals = [5, 10, 15, 20, 25, 30];
+
+                            return DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: intervals.contains(currentInterval) ? currentInterval : 10,
+                                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                                elevation: 0,
+                                dropdownColor: Colors.white,
+                                alignment: Alignment.centerRight,
+                                items: intervals.map((int value) {
+                                  return DropdownMenuItem<int>(
+                                    value: value,
+                                    child: Text(
+                                      '$value 分钟',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (int? newValue) {
+                                  if (newValue != null) {
+                                    ref.read(firstReviewIntervalProvider.notifier).setInterval(newValue);
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),

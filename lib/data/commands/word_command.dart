@@ -4,6 +4,7 @@ import '../../core/algorithm/algorithm_service_provider.dart';
 import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
+import '../../core/providers/preferences_provider.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/log_formatter.dart';
 import 'daily_stat_command.dart';
@@ -330,9 +331,9 @@ class WordCommand {
 
     // 不再调用 _algorithmService.calculate 预推演未来时间
     // 强制新单词必须尽早/立刻进行首次复习
+    final delayMinutes = ref.read(firstReviewIntervalProvider);
     final now = DateTime.now();
-    // 给予1分钟缓冲，或者直接等于now皆可
-    final firstReviewTime = now.add(const Duration(minutes: 1));
+    final firstReviewTime = now.add(Duration(minutes: delayMinutes));
 
     // 生成一个假的初始 output 用于后续如果真的需要传参
     final output = SRSOutput(

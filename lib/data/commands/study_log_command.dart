@@ -47,7 +47,7 @@ class StudyLogCommand {
     );
 
     final id = await _repo.insert(log);
-    
+
     if (updateDailyStat) {
       await _dailyStatCommand.applyLearningDelta(
         userId: userId,
