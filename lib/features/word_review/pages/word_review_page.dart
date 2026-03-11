@@ -5,7 +5,11 @@ import '../../../core/tracking/page_duration_tracking_mixin.dart';
 import '../../../core/widgets/review_spelling_options.dart';
 import '../../../core/widgets/review_widgets.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../data/models/word_detail.dart';
 import '../../../services/audio_service_provider.dart';
+import '../../learn/widgets/word_examples_section.dart';
+import '../../learn/widgets/word_header.dart';
+import '../../learn/widgets/word_meanings_section.dart';
 import '../controller/word_review_controller.dart';
 import '../state/word_review_item.dart';
 import '../state/word_review_state.dart';
@@ -130,7 +134,7 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
                   else
                     ReviewObjectiveListOptions(
                       options: state.currentOptions,
-                      hasMistake: state.hasMistakeOnCurrent,
+                      correctOption: _getCorrectOption(item),
                       onSelect: (option) => ref
                           .read(wordReviewControllerProvider.notifier)
                           .submitObjectiveAnswer(option),
@@ -204,57 +208,132 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
         break;
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            subTitle,
-            style: TextStyle(color: Colors.grey[500], fontSize: 16),
-          ),
-          const SizedBox(height: 24),
-          titleWidget,
-          if (phase == ReviewCardPhase.grading) ...[
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 24),
-            Text(
-              item.wordDetail.word.word,
-              style: const TextStyle(
-                fontSize: 32,
-                color: Color(0xFF6C63FF),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (item.reading != null && item.reading!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                item.reading!,
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
-            const SizedBox(height: 12),
-            Text(
-              item.meaning ?? '',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-          ],
-        ],
-      ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                subTitle,
+                style: TextStyle(color: Colors.grey[500], fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              titleWidget,
+              if (phase == ReviewCardPhase.grading) ...[
+                const SizedBox(height: 32),
+                const Divider(),
+                const SizedBox(height: 24),
+                Text(
+                  item.wordDetail.word.word,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    color: Color(0xFF6C63FF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (item.reading != null && item.reading!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    item.reading!,
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Text(
+                  item.meaning ?? '',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.grey),
+            onPressed: () => _showWordDetailSheet(context, item.wordDetail),
+          ),
+        ),
+      ],
     );
+  }
+
+  void _showWordDetailSheet(BuildContext context, WordDetail wordDetail) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFFDFBF7),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          snap: true,
+          snapSizes: const [0.6, 0.9],
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 拖拽手柄
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.black12,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      WordHeader(wordDetail: wordDetail),
+                      WordMeaningsSection(meanings: wordDetail.meanings),
+                      WordExamplesSection(examples: wordDetail.examples),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _getCorrectOption(WordReviewItem item) {
+    switch (item.questionType) {
+      case WordReviewQuestionType.wordToMeaning:
+      case WordReviewQuestionType.audioToMeaning:
+        return item.meaning ?? 'Unknown';
+      case WordReviewQuestionType.kanjiToReading:
+      case WordReviewQuestionType.meaningToSpelling:
+        return item.reading ?? '';
+    }
   }
 
   Future<bool> _handlePop() async {

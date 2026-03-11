@@ -21,16 +21,22 @@ class ReviewSpellingOptions extends StatefulWidget {
 
 class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
   // 当前放置到槽位内的选中的索引列表
-  final List<int> _selectedIndices = [];
+  late List<int?> _selectedIndices;
   bool _isWrong = false;
 
   int get _targetLength => widget.correctSpelling.split('').length;
 
   @override
+  void initState() {
+    super.initState();
+    _selectedIndices = List.filled(_targetLength, null);
+  }
+
+  @override
   void didUpdateWidget(covariant ReviewSpellingOptions oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.correctSpelling != widget.correctSpelling) {
-      _selectedIndices.clear();
+      _selectedIndices = List.filled(_targetLength, null);
       _isWrong = false;
     }
     if (widget.hasMistake && !oldWidget.hasMistake) {
@@ -45,25 +51,35 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
     if (_selectedIndices.contains(index)) return; // 已经上槽了
 
     // 如果方框已经填满，再次点击新的假名，则清空重新从第一个方框开始填
-    if (_selectedIndices.length >= _targetLength) {
+    if (!_selectedIndices.contains(null)) {
       setState(() {
-        _selectedIndices.clear();
+        _selectedIndices = List.filled(_targetLength, null);
         _isWrong = false;
-        _selectedIndices.add(index);
+        _selectedIndices[0] = index;
       });
       return;
     }
 
     setState(() {
-      _selectedIndices.add(index);
+      final emptyIndex = _selectedIndices.indexOf(null);
+      if (emptyIndex != -1) {
+        _selectedIndices[emptyIndex] = index;
+      }
       _isWrong = false; // 清除错误状态
     });
 
-    if (_selectedIndices.length == _targetLength) {
+    if (!_selectedIndices.contains(null)) {
       // 填满了，自动触发验证
       final currentAnswer = _selectedIndices
-          .map((i) => widget.options[i])
+          .map((i) => widget.options[i!])
           .join('');
+      
+      if (currentAnswer != widget.correctSpelling) {
+        setState(() {
+          _isWrong = true;
+        });
+      }
+
       // 延迟一点让用户看到字放上去了
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
@@ -73,10 +89,10 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
     }
   }
 
-  void _handleTapSlot(int indexWithinSelected) {
+  void _handleTapSlot(int slotIndex) {
     // 允许用户点击已上槽的字母把它拿下来
     setState(() {
-      _selectedIndices.removeAt(indexWithinSelected);
+      _selectedIndices[slotIndex] = null;
       _isWrong = false;
     });
   }
@@ -109,8 +125,9 @@ class _ReviewSpellingOptionsState extends State<ReviewSpellingOptions> {
       spacing: 12,
       runSpacing: 12,
       children: List.generate(length, (index) {
-        final hasChar = index < _selectedIndices.length;
-        final char = hasChar ? widget.options[_selectedIndices[index]] : '';
+        final optionIndex = _selectedIndices[index];
+        final hasChar = optionIndex != null;
+        final char = hasChar ? widget.options[optionIndex] : '';
         final expectedChar = index < correctChars.length
             ? correctChars[index]
             : '';

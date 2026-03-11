@@ -18,7 +18,6 @@ class StudyLogCommand {
   StudyLogRepository get _repo => ref.read(studyLogRepositoryProvider);
   DailyStatCommand get _dailyStatCommand => ref.read(dailyStatCommandProvider);
 
-  /// 记录复习
   Future<int> logReview({
     required int userId,
     required int wordId,
@@ -29,6 +28,7 @@ class StudyLogCommand {
     int algorithm = 1,
     double? fsrsStabilityAfter,
     double? fsrsDifficultyAfter,
+    bool updateDailyStat = true,
   }) async {
     final log = StudyLog(
       id: 0,
@@ -47,11 +47,14 @@ class StudyLogCommand {
     );
 
     final id = await _repo.insert(log);
-    await _dailyStatCommand.applyLearningDelta(
-      userId: userId,
-      learnedDelta: 0,
-      reviewedDelta: 1,
-    );
+    
+    if (updateDailyStat) {
+      await _dailyStatCommand.applyLearningDelta(
+        userId: userId,
+        learnedDelta: 0,
+        reviewedDelta: 1,
+      );
+    }
 
     return id;
   }

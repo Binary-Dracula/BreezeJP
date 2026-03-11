@@ -87,6 +87,7 @@ class _KanaReviewPageState extends ConsumerState<KanaReviewPage> {
                 if (state.currentPhase == ReviewCardPhase.testing)
                   ReviewObjectiveOptions(
                     options: state.currentOptions,
+                    correctOption: _getCorrectOption(item),
                     onSelect: (option) => ref
                         .read(kanaReviewControllerProvider.notifier)
                         .submitObjectiveAnswer(option),
@@ -186,5 +187,19 @@ class _KanaReviewPageState extends ConsumerState<KanaReviewPage> {
         ],
       ),
     );
+  }
+
+  String _getCorrectOption(ReviewKanaItem item) {
+    switch (item.questionType) {
+      case ReviewQuestionType.hiraganaToRomaji:
+      case ReviewQuestionType.katakanaToRomaji:
+        return item.kanaLetter.romaji;
+      case ReviewQuestionType.romajiToHiragana:
+      case ReviewQuestionType.romajiToKatakana:
+        return item.kanaLetter.kanaChar;
+      case ReviewQuestionType.hiraganaToKatakana:
+      case ReviewQuestionType.katakanaToHiragana:
+        return item.counterpartLetter?.kanaChar ?? item.kanaLetter.kanaChar;
+    }
   }
 }

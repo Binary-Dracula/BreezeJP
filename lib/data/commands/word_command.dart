@@ -238,6 +238,7 @@ class WordCommand {
     required int wordId,
     required ReviewRating rating,
     AlgorithmType? algorithmType,
+    bool updateDailyStat = true,
   }) async {
     final existing = await _repo.getStudyWord(userId, wordId);
     if (existing == null) {
@@ -314,6 +315,7 @@ class WordCommand {
       algorithm: AlgorithmService.getAlgorithmValue(resolvedAlgorithm),
       fsrsStabilityAfter: output.stability,
       fsrsDifficultyAfter: output.difficulty,
+      updateDailyStat: updateDailyStat,
     );
   }
 

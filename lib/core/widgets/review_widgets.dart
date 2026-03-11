@@ -43,15 +43,46 @@ class ReviewProgressBar extends StatelessWidget {
 }
 
 /// 客观题选项区域（网格）
-class ReviewObjectiveOptions extends StatelessWidget {
+class ReviewObjectiveOptions extends StatefulWidget {
   final List<String> options;
+  final String correctOption;
   final ValueChanged<String> onSelect;
 
   const ReviewObjectiveOptions({
     super.key,
     required this.options,
+    required this.correctOption,
     required this.onSelect,
   });
+
+  @override
+  State<ReviewObjectiveOptions> createState() => _ReviewObjectiveOptionsState();
+}
+
+class _ReviewObjectiveOptionsState extends State<ReviewObjectiveOptions> {
+  String? _wrongOption;
+
+  @override
+  void didUpdateWidget(covariant ReviewObjectiveOptions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.correctOption != widget.correctOption ||
+        oldWidget.options != widget.options) {
+      _wrongOption = null;
+    }
+  }
+
+  void _handleSelect(String option) {
+    if (option == widget.correctOption) {
+      widget.onSelect(option);
+    } else {
+      if (_wrongOption != option) {
+        setState(() {
+          _wrongOption = option;
+        });
+        widget.onSelect(option);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,20 +95,24 @@ class ReviewObjectiveOptions extends StatelessWidget {
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
-      itemCount: options.length,
+      itemCount: widget.options.length,
       itemBuilder: (context, index) {
-        final option = options[index];
+        final option = widget.options[index];
+        final isWrong = _wrongOption == option;
         return ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF2D3142),
+            backgroundColor: isWrong ? Colors.red[50] : Colors.white,
+            foregroundColor: isWrong ? Colors.red : const Color(0xFF2D3142),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.grey[200]!),
+              side: BorderSide(
+                color: isWrong ? Colors.red : Colors.grey[200]!,
+                width: isWrong ? 2.0 : 1.0,
+              ),
             ),
           ),
-          onPressed: () => onSelect(option),
+          onPressed: () => _handleSelect(option),
           child: Text(
             option,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
@@ -90,62 +125,83 @@ class ReviewObjectiveOptions extends StatelessWidget {
 }
 
 /// 客观题选项区域（垂直列表选项框：适合内容较长的单词形式）
-class ReviewObjectiveListOptions extends StatelessWidget {
+class ReviewObjectiveListOptions extends StatefulWidget {
   final List<String> options;
-  final bool hasMistake;
+  final String correctOption;
   final ValueChanged<String> onSelect;
 
   const ReviewObjectiveListOptions({
     super.key,
     required this.options,
-    required this.hasMistake,
+    required this.correctOption,
     required this.onSelect,
   });
 
   @override
+  State<ReviewObjectiveListOptions> createState() =>
+      _ReviewObjectiveListOptionsState();
+}
+
+class _ReviewObjectiveListOptionsState
+    extends State<ReviewObjectiveListOptions> {
+  String? _wrongOption;
+
+  @override
+  void didUpdateWidget(covariant ReviewObjectiveListOptions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.correctOption != widget.correctOption ||
+        oldWidget.options != widget.options) {
+      _wrongOption = null;
+    }
+  }
+
+  void _handleSelect(String option) {
+    if (option == widget.correctOption) {
+      widget.onSelect(option);
+    } else {
+      if (_wrongOption != option) {
+        setState(() {
+          _wrongOption = option;
+        });
+        widget.onSelect(option);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (options.isEmpty) return const SizedBox.shrink();
+    if (widget.options.isEmpty) return const SizedBox.shrink();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (hasMistake)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 16.0),
+      children: widget.options.map((opt) {
+        final isWrong = _wrongOption == opt;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isWrong ? Colors.red[50] : Colors.white,
+              foregroundColor: isWrong ? Colors.red : const Color(0xFF2D3142),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: isWrong ? Colors.red : Colors.grey[200]!,
+                  width: isWrong ? 2.0 : 1.0,
+                ),
+              ),
+            ),
+            onPressed: () => _handleSelect(opt),
             child: Text(
-              '回答错误，请再试一次',
+              opt,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
-        ...options.map(
-          (opt) => Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF2D3142),
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey[200]!),
-                ),
-              ),
-              onPressed: () => onSelect(opt),
-              child: Text(
-                opt,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      ],
+        );
+      }).toList(),
     );
   }
 }

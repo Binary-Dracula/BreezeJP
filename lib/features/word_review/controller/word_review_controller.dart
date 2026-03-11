@@ -284,6 +284,7 @@ class WordReviewController extends Notifier<WordReviewState> {
             userId: item.studyWord.userId,
             wordId: item.studyWord.wordId,
             rating: ReviewRating.again,
+            updateDailyStat: false,
           );
         } catch (e, stackTrace) {
           logger.error('Failed to log again rating', e, stackTrace);
