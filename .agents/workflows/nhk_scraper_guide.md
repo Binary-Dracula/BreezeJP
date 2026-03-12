@@ -50,7 +50,7 @@ bash scripts/run_pipeline.sh --hdnts "<hdnts_token>"
 该脚本自动串联执行以下全部步骤：
 1. **爬虫**：抓取文本 + 下载音频 → `data/{id}/raw.json` + `data/{id}/{id}.mp3`
 2. **音频对齐**：faster-whisper + Needleman-Wunsch → `data/{id}/aligned.json`（生成 `start_ms` / `end_ms`）
-3. **Kuromoji 分词**：合并对齐数据 + 分词 → `data/{id}/processed.json`
+3. **Sudachi 分词**：合并对齐数据 + 分词 → `data/{id}/processed.json`（默认使用 Mode B）
 4. **机器翻译** (可选)：调用 ZhipuAI 翻译每一句 → 更新进 `data/{id}/processed.json`
 5. **部署到 App**：合并为 `assets/mock/test_output.json` + 复制 mp3
 
@@ -71,7 +71,7 @@ data/{article_id}/
 ├── raw.json            ← 爬虫原始数据（以句子为单位）
 ├── {article_id}.mp3    ← 音频文件
 ├── aligned.json        ← 音频对齐数据（由 align.py 生成）
-└── processed.json      ← Kuromoji 处理后的最终数据
+└── processed.json      ← Sudachi 处理后的最终数据
 ```
 
 ### raw.json 格式
@@ -80,6 +80,7 @@ data/{article_id}/
 {
   "id": "ne2026022011579",
   "title": "高市[たかいち]総理大臣[そうりだいじん]　これからどんな政治[せいじ]をするか考[かんが]え方[かた]を話[はな]した",
+  "clean_title": "高市総理大臣　これからどんな政治をするか考え方を話した",
   "time": "2026-02-20T15:30:00+09:00",
   "audio_uri": "output/ne2026022011579/ne2026022011579.mp3",
   "sentences": [
@@ -90,6 +91,7 @@ data/{article_id}/
 ```
 
 - `sentences`: 按句号（。）拆分的句子数组，每句带 `[假名]` 注音
+- `clean_title`: 网页原始纯净标题（不含假名注音）
 - `time`: 文章发布时间，从 NHK API 的 `news_prearranged_time` 获取
 
 ### processed.json 格式
@@ -97,30 +99,34 @@ data/{article_id}/
 ```json
 {
   "id": "ne2026022011579",
-  "title": "...",
+  "title": "高市[たかいち]総理大臣[そうりだいじん]　これからどんな政治[せいじ]をするか考[かんが]え方[かた]を话[はな]した",
+  "clean_title": "高市総理大臣　これからどんな政治をするか考え方を話した",
   "time": "2026-02-20T15:30:00+09:00",
   "audio_uri": "output/ne2026022011579/ne2026022011579.mp3",
+  "tokenizer": "sudachi",
   "sentences": [
     {
-      "original_text_with_ruby": "高市[たかいち]総理大臣[そうりだいじん]が、...",
-      "clean_text": "高市総理大臣が、...",
+      "original_text_with_ruby": "高市[たかいち]総理大臣[そうりだいじん]　これからどんな政治[せいじ]をするか考[かんが]え方[かた]を话[はな]した",
+      "clean_text": "高市総理大臣　これからどんな政治をするか考え方を話した",
       "translation": "",
       "start_ms": 859,
       "end_ms": 8180,
       "index": 0,
       "words": [
         {
-          "word_id": 1509690,
-          "word_type": "KNOWN",
-          "word_position": 1,
           "surface_form": "高市",
           "pos": "名詞",
           "pos_detail_1": "固有名詞",
+          "pos_detail_2": "人名",
+          "pos_detail_3": "姓",
+          "conjugated_type": "*",
+          "conjugated_form": "*",
           "basic_form": "高市",
           "reading": "タカイチ",
           "pronunciation": "タカイチ",
           "furigana": "たかいち",
-          "ruby_text": "高市[たかいち]"
+          "ruby_text": "高市[たかいち]",
+          "normalized_form": "高市"
         }
       ]
     }
@@ -130,4 +136,4 @@ data/{article_id}/
 
 - `sentences` 数量与 `raw.json` **严格一致**
 - `start_ms` / `end_ms`: 来自 `aligned.json`（无对齐数据时为 null）
-- `words`: Kuromoji 分词结果，含 `ruby_text` 注音格式
+- `words`: Sudachi 分词结果，含 `ruby_text` 注音格式及 `normalized_form`

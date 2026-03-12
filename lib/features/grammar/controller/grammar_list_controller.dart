@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/queries/grammar_read_queries.dart';
 import '../state/grammar_list_state.dart';
 
@@ -22,7 +23,11 @@ class GrammarListController extends Notifier<GrammarListState> {
   Future<void> loadGrammars() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      final activeUserQuery = ref.read(activeUserQueryProvider);
+      final userId = await activeUserQuery.getActiveUserId();
+
       final grammars = await _queries.getGrammarList(
+        userId: userId,
         jlptLevel: state.selectedLevel,
       );
 

@@ -174,6 +174,7 @@ function processArticle(articleDir, tokenizer) {
     const processedData = {
         id: rawData.id,
         title: rawData.title,
+        clean_title: rawData.clean_title || "",
         time: rawData.time,
         audio_uri: rawData.audio_uri,
         sentences: processedSentences

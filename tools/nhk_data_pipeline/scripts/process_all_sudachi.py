@@ -254,6 +254,7 @@ def process_article(article_dir: str, tokenizer, split_mode) -> bool:
     processed_data = {
         'id': raw_data['id'],
         'title': raw_data.get('title', ''),
+        'clean_title': raw_data.get('clean_title', ''),
         'time': raw_data.get('time', ''),
         'audio_uri': raw_data.get('audio_uri', ''),
         'tokenizer': 'sudachi',

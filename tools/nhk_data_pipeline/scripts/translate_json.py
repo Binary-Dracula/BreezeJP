@@ -2,6 +2,8 @@ import json
 import os
 import sys
 import re
+import time
+import random
 from zhipuai import ZhipuAI
 
 # 配置
@@ -17,21 +19,35 @@ prompt_template = """你是一个专业日语新闻翻译专家。请将以下�
 {text}
 """
 
-def translate_item(client, text):
+def translate_item(client, text, max_retries=3):
     if not text.strip():
         return ""
-    try:
-        response = client.chat.completions.create(
-            model="glm-4-flash", # 使用性价比较高的模型
-            messages=[
-                {"role": "user", "content": prompt_template.format(text=text)}
-            ],
-            temperature=0.1, # 降低随机性，确保翻译准确
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"翻译失败: {text} -> {e}")
-        return ""
+    
+    for attempt in range(max_retries):
+        try:
+            # 基础延迟，避免瞬间高频
+            time.sleep(0.5 + random.random() * 0.5) 
+            
+            response = client.chat.completions.create(
+                model="glm-4-flash", # 使用性价比较高的模型
+                messages=[
+                    {"role": "user", "content": prompt_template.format(text=text)}
+                ],
+                temperature=0.1, # 降低随机性，确保翻译准确
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            error_str = str(e)
+            if "1302" in error_str or "rate limit" in error_str.lower():
+                # 速率限制错误，进行指数退避
+                wait_time = (2 ** attempt) + random.random()
+                print(f"    ⚠️ 触发速率限制，正在重试 ({attempt + 1}/{max_retries})，等待 {wait_time:.1f}s...")
+                time.sleep(wait_time)
+                continue
+            
+            print(f"翻译失败: {text} -> {e}")
+            return ""
+    return ""
 
 def process_article(article_dir, client):
     """处理单篇文章的翻译"""

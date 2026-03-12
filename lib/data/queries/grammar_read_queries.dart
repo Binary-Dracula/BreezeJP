@@ -94,25 +94,60 @@ class GrammarReadQueries {
 
   /// 获取语法列表 (可分页，可过滤 JLPT)
   Future<List<Grammar>> getGrammarList({
+    int? userId,
     String? jlptLevel,
     int? limit,
     int? offset,
   }) async {
     try {
       final db = _db;
-      final whereClause = jlptLevel != null ? 'jlpt_level = ?' : null;
-      final whereArgs = jlptLevel != null ? [jlptLevel] : null;
+      
+      if (userId == null) {
+        final whereClause = jlptLevel != null ? 'jlpt_level = ?' : null;
+        final whereArgs = jlptLevel != null ? [jlptLevel] : null;
 
-      final results = await db.query(
-        'grammars',
-        where: whereClause,
-        whereArgs: whereArgs,
-        orderBy: 'id ASC',
-        limit: limit,
-        offset: offset,
-      );
+        final results = await db.query(
+          'grammars',
+          where: whereClause,
+          whereArgs: whereArgs,
+          orderBy: 'id ASC',
+          limit: limit,
+          offset: offset,
+        );
 
-      return results.map((map) => Grammar.fromMap(map)).toList();
+        return results.map((map) => Grammar.fromMap(map)).toList();
+      }
+
+      // 需要带上学习状态
+      final args = <Object>[userId];
+      var whereClause = '';
+      if (jlptLevel != null) {
+        whereClause = 'WHERE g.jlpt_level = ?';
+        args.add(jlptLevel);
+      }
+
+      final sql = '''
+        SELECT g.*, sg.learning_status
+        FROM grammars g
+        LEFT JOIN study_grammars sg ON g.id = sg.grammar_id AND sg.user_id = ?
+        $whereClause
+        ORDER BY g.id ASC
+        LIMIT ? OFFSET ?
+      ''';
+      
+      args.add(limit ?? 1000); // 默认足够大的 limit
+      args.add(offset ?? 0);
+
+      final results = await db.rawQuery(sql, args);
+
+      return results.map((map) {
+        final grammar = Grammar.fromMap(map);
+        final statusValue = map['learning_status'] as int?;
+        final status = statusValue != null 
+            ? LearningStatus.fromValue(statusValue) 
+            : null;
+        return grammar.copyWith(userState: status);
+      }).toList();
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',

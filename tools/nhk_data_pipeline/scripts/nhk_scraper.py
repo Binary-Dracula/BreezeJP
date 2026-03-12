@@ -14,7 +14,7 @@ NEWS_LIST_URL = f"{BASE_URL}news-list.json"
 
 # 授权 Token (从浏览器抓取，有时效性)
 # 如果失效，需要重新从浏览器获取 z_at cookie
-Z_AT_TOKEN = "eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImtpZC1hdXRoei1hYzEtcHJkLTAxIn0.eyJzdWIiOiIwOWJkMjgwMC1lZjI2LTQwYzMtOTA0NC01ZjQ0NDg2N2IyNjYiLCJpc3MiOiJodHRwczovL3IuYXV0aHouYWMxLm5oayIsImFjdGl2YXRlZEJ5Ijoic2VsZi1hY3RpdmF0ZWQiLCJjbGllbnRfaWQiOiIxMzExNjg5NDQ0MCIsImxpY2Vuc2VUeXBlIjoiMiIsInByb2ZpbGVUeXBlIjoiYW5vbnltb3VzIiwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInByb2ZpbGVJZCI6IjA5YmQyODAwLWVmMjYtNDBjMy05MDQ0LTVmNDQ0ODY3YjI2NiIsInNjb3BlIjoiZ2V0Om5ld3MgZ2V0OnR2IiwiZXhwIjoxNzcyMjM1MTkwLCJpYXQiOjE3NzIyMDYzOTAsImVudGl0eSI6ImhvdXNlaG9sZCIsImp0aSI6IjBjVG83RUp6YWE3SUJ5b3NmcTZLRnhBU2FET1BPX0h3MUQxaGx2dkU4ZTgifQ.Ji1SKWkS2As8Q8IoALus5E_ySUC90OpawQiS5HCNhWfZFJfsiW0Jg9AwXfjjpoVPvFpj0HjbmkXPELQ1UwcosQ"
+Z_AT_TOKEN = "eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImtpZC1hdXRoei1hYzEtcHJkLTAxIn0.eyJzdWIiOiIyMjA3MjExOS1mOWJlLTRlMDUtOTlhZi0wNWJhMTgyZjY0ZTkiLCJpc3MiOiJodHRwczovL2EuYXV0aHouYWMxLm5oayIsImFjdGl2YXRlZEJ5Ijoic2VsZi1hY3RpdmF0ZWQiLCJjbGllbnRfaWQiOiIyOTM3ODU4NDExOCIsImxpY2Vuc2VUeXBlIjoiMCIsInByb2ZpbGVUeXBlIjoiYWJyb2FkIiwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInByb2ZpbGVJZCI6IjIyMDcyMTE5LWY5YmUtNGUwNS05OWFmLTA1YmExODJmNjRlOSIsInNjb3BlIjoiZ2V0Om5ld3MgZ2V0OnR2IiwiZXhwIjoxNzczMzQ5NTQxLCJpYXQiOjE3NzMzMjA3NDEsImVudGl0eSI6Im5vbmUgaG91c2Vob2xkIiwianRpIjoiZmpRRWNpcWFmVDZ6TzQwdXhPdUhmUzE1Q01Db0NoX28xS3FraHpSeHFhVSJ9.Y3yl16PujMdn5xY7_ahi2nZ-26axvvw6E7yeFq92N1aHnVmwlTRbe62jlLhliJU6pW676oCrSw-nKTOYrDwd9w"
 
 # 文件保存目录
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -220,8 +220,10 @@ def process_article(news_item, media_token):
         return
 
     # 解析标题
-    title_element = soup.select_one("h1.article-main__title")
+    title_element = soup.select_one("h1.article-title")
     title_furigana = parse_furigana(title_element) or news_item.get("title")
+    # 移除 [假名] 得到纯净标题
+    clean_title = re.sub(r'\[.*?\]', '', title_furigana)
 
     # 解析正文段落，然后按句号拆分为句子
     body_element = soup.select_one("#js-article-body")
@@ -252,6 +254,7 @@ def process_article(news_item, media_token):
     article_data = {
         "id": news_id,
         "title": title_furigana,
+        "clean_title": clean_title,
         "time": article_time,
         "audio_uri": relative_audio_uri,
         "sentences": sentences
@@ -273,7 +276,7 @@ def main():
     if not news_list:
         print("⚠️ 无法获取列表，使用测试数据运行...")
         news_list = [
-            {"news_id": "ne2026022011579", "title": "高市総理大臣...", "news_prearranged_time": "2026-02-20T15:30:00+09:00", "news_easy_voice_uri": "ne2026022011579_EIqPYPjRzbruIPe6yXQ4WDDIpeQQjt8C7C4SsMM2.m4a"},
+            {"news_id": "ne2026022011579", "title": "高市総理大臣　これからどんな政治をするか考え方を話した", "news_prearranged_time": "2026-02-20T15:30:00+09:00", "news_easy_voice_uri": "ne2026022011579_EIqPYPjRzbruIPe6yXQ4WDDIpeQQjt8C7C4SsMM2.m4a"},
         ]
         test_list = news_list[:3]
     else:

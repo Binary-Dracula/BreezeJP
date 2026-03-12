@@ -1,3 +1,5 @@
+import '../../core/constants/learning_status.dart';
+
 class Grammar {
   final int id;
   final String title;
@@ -5,6 +7,7 @@ class Grammar {
   final int usageFrequency;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final LearningStatus? userState;
 
   Grammar({
     required this.id,
@@ -13,6 +16,7 @@ class Grammar {
     this.usageFrequency = 0,
     required this.createdAt,
     required this.updatedAt,
+    this.userState,
   });
 
   factory Grammar.fromMap(Map<String, dynamic> map) {
@@ -48,6 +52,7 @@ class Grammar {
     int? usageFrequency,
     DateTime? createdAt,
     DateTime? updatedAt,
+    LearningStatus? userState,
   }) {
     return Grammar(
       id: id ?? this.id,
@@ -56,6 +61,7 @@ class Grammar {
       usageFrequency: usageFrequency ?? this.usageFrequency,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      userState: userState ?? this.userState,
     );
   }
 }

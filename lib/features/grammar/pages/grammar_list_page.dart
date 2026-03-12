@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/learning_status.dart';
 import '../controller/grammar_list_controller.dart';
 import '../state/grammar_list_state.dart';
 
@@ -115,18 +116,43 @@ class _GrammarListPageState extends ConsumerState<GrammarListPage>
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final grammar = state.grammars[index];
+              final isMastered = grammar.userState == LearningStatus.mastered;
+              final isLearning = grammar.userState == LearningStatus.learning;
+
+              Color bgColor = Colors.white;
+              Color borderColor = Colors.grey.shade200;
+
+              if (isMastered) {
+                bgColor = Theme.of(context).primaryColor.withValues(alpha: 0.1);
+                borderColor = Theme.of(context).primaryColor.withValues(alpha: 0.3);
+              } else if (isLearning) {
+                bgColor = Colors.orange.withValues(alpha: 0.1);
+                borderColor = Colors.orange.withValues(alpha: 0.3);
+              }
+
               return Card(
                 elevation: 0,
+                color: bgColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
+                  side: BorderSide(color: borderColor),
                 ),
                 child: ListTile(
                   title: Text(
                     grammar.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isMastered
+                          ? Theme.of(context).primaryColor
+                          : (isLearning ? Colors.orange.shade800 : Colors.black87),
+                    ),
                   ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    color: isMastered
+                        ? Theme.of(context).primaryColor.withValues(alpha: 0.7)
+                        : (isLearning ? Colors.orange.shade400 : Colors.grey),
+                  ),
                   onTap: () {
                     context.push('/grammar/learn/${grammar.id}');
                   },
