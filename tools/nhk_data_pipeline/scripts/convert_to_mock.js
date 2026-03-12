@@ -27,6 +27,7 @@ for (const dirName of articleDirs) {
     const article = {
         id: processed.id,
         title: processed.title,
+        clean_title: processed.clean_title || '',
         time: processed.time || null,
         audio_uri: processed.audio_uri || '',
         duration_ms: 0,
