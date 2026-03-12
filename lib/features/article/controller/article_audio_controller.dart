@@ -40,6 +40,7 @@ class ArticleAudioController extends Notifier<ArticleState> {
       article: Article(
         id: 'placeholder',
         title: '',
+        cleanTitle: '',
         items: [
           ArticleItem(
             text: '',
@@ -77,7 +78,12 @@ class ArticleAudioController extends Notifier<ArticleState> {
   Future<void> initArticle(String articleId) async {
     try {
       state = state.copyWith(
-        article: Article(id: articleId, title: '', items: state.article.items),
+        article: Article(
+          id: articleId,
+          title: '',
+          cleanTitle: '',
+          items: state.article.items,
+        ),
       );
 
       // 通过 ArticleQuery 获取数据
@@ -179,6 +185,7 @@ class ArticleAudioController extends Notifier<ArticleState> {
         article: Article(
           id: 'error',
           title: '',
+          cleanTitle: '',
           items: [
             ArticleItem(
               text: '$e',

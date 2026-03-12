@@ -9,6 +9,9 @@ class Article {
   final String id;
   final String title;
 
+  @JsonKey(name: 'clean_title')
+  final String cleanTitle;
+
   /// The local path to the audio file if available. e.g "output/ne2026/ne2026.mp3"
   @JsonKey(name: 'local_audio_path')
   final String? localAudioPath;
@@ -26,6 +29,7 @@ class Article {
   Article({
     required this.id,
     required this.title,
+    required this.cleanTitle,
     this.localAudioPath,
     this.audioUri,
     this.durationMs = 0,

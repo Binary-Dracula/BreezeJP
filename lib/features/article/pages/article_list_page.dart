@@ -79,7 +79,7 @@ class ArticleListPage extends ConsumerWidget {
       itemBuilder: (context, index) {
         final article = state.articles[index];
         return _ArticleCard(
-          title: article.title,
+          title: article.cleanTitle,
           subtitle: 'NHK Easy News - 精选日语文章',
           onTap: () => context.push('/article-detail/${article.id}'),
         );
