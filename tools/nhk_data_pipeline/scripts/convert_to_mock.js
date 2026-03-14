@@ -17,7 +17,18 @@ const articleDirs = fs.readdirSync(DATA_DIR)
 
 console.log(`📂 发现 ${articleDirs.length} 篇已处理文章`);
 
-const articles = [];
+let existingArticles = [];
+if (fs.existsSync(OUTPUT_PATH)) {
+    try {
+        existingArticles = JSON.parse(fs.readFileSync(OUTPUT_PATH, 'utf8'));
+        console.log(`📝 读取到已存在的 ${existingArticles.length} 篇文章`);
+    } catch (e) {
+        console.warn(`⚠️ 无法解析已有的 test_output.json，将创建新文件。`);
+    }
+}
+
+let updatedCount = 0;
+let addedCount = 0;
 
 for (const dirName of articleDirs) {
     const processedPath = path.join(DATA_DIR, dirName, 'processed.json');
@@ -53,9 +64,25 @@ for (const dirName of articleDirs) {
         if (lastEnd) article.duration_ms = lastEnd;
     }
 
-    articles.push(article);
+    // 更新或追加
+    const existingIndex = existingArticles.findIndex(a => a.id === article.id);
+    if (existingIndex >= 0) {
+        existingArticles[existingIndex] = article;
+        updatedCount++;
+    } else {
+        existingArticles.push(article);
+        addedCount++;
+    }
+
     console.log(`  ✅ ${processed.id}: ${article.items.length} 句, ${article.items.reduce((n, i) => n + i.words.length, 0)} 词`);
 }
 
-fs.writeFileSync(OUTPUT_PATH, JSON.stringify(articles, null, 2), 'utf8');
-console.log(`\n🎉 转换完成：${articles.length} 篇文章 → ${OUTPUT_PATH}`);
+// 按照 time 降序排序
+existingArticles.sort((a, b) => {
+    const timeA = new Date(a.time || 0).getTime();
+    const timeB = new Date(b.time || 0).getTime();
+    return timeB - timeA;
+});
+
+fs.writeFileSync(OUTPUT_PATH, JSON.stringify(existingArticles, null, 2), 'utf8');
+console.log(`\n🎉 转换完成：新增 ${addedCount} 篇，更新 ${updatedCount} 篇。总计 ${existingArticles.length} 篇文章 → ${OUTPUT_PATH}`);

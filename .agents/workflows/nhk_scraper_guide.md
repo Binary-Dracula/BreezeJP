@@ -19,9 +19,11 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 
 ## 步骤 1: 获取 z_at Token
 
-- **不要要求用户手动获取 Token**
+> [!IMPORTANT]
+> **严禁**：不要要求用户手动获取 Token，也不要尝试自己用代码请求，必须单单使用 `browser_subagent`。
+
 - 使用 `browser_subagent` 工具
-- Task Prompt: "Navigate to `https://news.web.nhk/news/easy/`. Open the network tab or run javascript to extract the value of the `z_at` cookie. Return the exact JWT string value of the `z_at` cookie."
+- Task Prompt: "Navigate to `https://news.web.nhk/news/easy/`. Open the network tab or use document.cookie in javascript to extract the value of the `z_at` cookie. Return ONLY the exact JWT string value of the `z_at` cookie. Do not return anything else."
 
 ## 步骤 2: 更新爬虫脚本
 
@@ -32,8 +34,13 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 > [!IMPORTANT]
 > `mediatoken.web.nhk` 域名在 Python/curl 环境下可能无法解析。必须通过浏览器获取 `hdnts` Token。
 
+> [!WARNING]
+> **严禁以下行为**：
+> 1. 绝对不要尝试自己编写 Python/Node.js 脚本去解析 m3u8 或下载 mp3 音频！NHK 有防盗链和分片机制，你的脚本会失败。所有的音频下载必须交给下文步骤 4 的现成管道脚本统一处理。
+> 2. 不要自行拼接或臆造 mp3 URL。
+
 - 使用 `browser_subagent` 工具
-- Task Prompt: "Navigate to any NHK Easy News article page. Click the '聞く' (listen) button to start audio playback. Monitor network requests for URLs containing `hdnts=` or requests to `mediatoken.web.nhk`. Return the complete hdnts token string (format: `exp=...~acl=...~hmac=...`)."
+- Task Prompt: "Navigate to any NHK Easy News article page. Click the '聞く' (listen) button to start audio playback. Wait 3 seconds for the audio stream to start loading. Open the network tab and monitor network requests for URLs containing `hdnts=` or requests to `mediatoken.web.nhk` (or use executing javascript to capture XHR/fetch requests or monitor media source urls). You are looking for a string matching the pattern `exp=...~acl=...~hmac=...`. Return ONLY the complete hdnts token string. Do not include quotes or surrounding text."
 
 ## 步骤 4: 一键执行管道
 
@@ -41,6 +48,9 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 ```bash
 export ZHIPU_API_KEY="你的_API_KEY"
 ```
+
+> [!WARNING]
+> 执行脚本时，必须严格使用以下命令格式，特别是 `--hdnts` 后面的 token **必须用双引号 `""` 包裹**，否则 bash 会因为包含 `~` 或 `=` 等特殊字符而报错。绝对不要试图自行编写任何其他的抓取或下载逻辑。
 
 ```bash
 # Cwd: tools/nhk_data_pipeline
@@ -52,7 +62,7 @@ bash scripts/run_pipeline.sh --hdnts "<hdnts_token>"
 2. **音频对齐**：faster-whisper + Needleman-Wunsch → `data/{id}/aligned.json`（生成 `start_ms` / `end_ms`）
 3. **Sudachi 分词**：合并对齐数据 + 分词 → `data/{id}/processed.json`（默认使用 Mode B）
 4. **机器翻译** (可选)：调用 ZhipuAI 翻译每一句 → 更新进 `data/{id}/processed.json`
-5. **部署到 App**：合并为 `assets/mock/test_output.json` + 复制 mp3
+5. **部署到 App**：增量合并更新至 `assets/mock/test_output.json`（新抓取的新闻会自动追加，原有的保留，按时间降序排列） + 复制 mp3
 
 脚本结束后会自动进行数据完整性检查。
 
