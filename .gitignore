@@ -152,3 +152,6 @@ scripts/data_crawler/*.json
 scripts/data_crawler/*.jsonl
 scripts/data_crawler/*.log
 scripts/data_crawler/*.html
+# Build artifacts
+release/
+*.aab
