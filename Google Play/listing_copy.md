@@ -8,12 +8,12 @@
 
 ---
 
-## 1. App 标题 (Title) - Max 50 chars
+## 1. App 标题 (Title) - 中文 30 / English 30 chars
 - **中文**: 微风日语 - 听 NHK 新闻学日语 (测试版)
-- **English**: BreezeJP - Learn Japanese via NHK News (Beta)
+- **English**: BreezeJP: Learn Japanese Beta
 
 ## 2. 简短说明 (Short Description)
-**限制 / Limits**: 中文 40 字 (Max 40 chars) / English 80 字符 (Max 80 chars)
+**限制 / Limits**: 中文 80 字 (Max 80 chars) / English 80 字符 (Max 80 chars)
 - **中文**: 每日更新 NHK Easy News，支持离线语音和全注音，轻松提升听力与阅读。
 - **English**: Daily NHK News with offline neural TTS and precision Furigana. Build fluently.
 
@@ -21,6 +21,7 @@
 
 ### 中文内容 (Chinese)
 **【重要提示：应用目前处于公开测试阶段】**
+**【多语言说明：目前应用界面仅支持中文】**
 
 微风日语 —— 专为效率与纯净而生的离线日语新闻学习神器。
 
@@ -65,6 +66,7 @@
 
 ### English Content (English)
 **[NOTICE: This application is currently in Open Beta]**
+**[Language Support: Currently, the app interface only supports Chinese]**
 
 BreezeJP — The Ultimate Offline Japanese News Learning Tool built for efficiency and focus.
 
