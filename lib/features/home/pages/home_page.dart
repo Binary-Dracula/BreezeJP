@@ -398,6 +398,13 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         gradient: const [Color(0xFF14B8A6), Color(0xFF0D9488)],
         onTap: () => context.push('/statistics'),
       ),
+      _ToolItem(
+        icon: Icons.library_books_rounded,
+        title: l10n.referenceTitle,
+        subtitle: '数字、时间、日期等常识',
+        gradient: const [Color(0xFF6366F1), Color(0xFF4F46E5)],
+        onTap: () => context.push('/reference'),
+      ),
     ];
 
     return Container(

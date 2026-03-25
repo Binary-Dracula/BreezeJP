@@ -486,6 +486,25 @@
   "kanaStrokeTryAgain": "再试一次",
   "@kanaStrokeTryAgain": {
     "description": "提示重试描红"
+  },
+  "referenceTitle": "基础知识速查",
+  "@referenceTitle": {
+    "description": "速查页面标题"
+  },
+  "referenceTabNumbers": "数字",
+  "@referenceTabNumbers": {
+    "description": "速查页数字Tab"
+  },
+  "referenceTabDates": "日期/月份",
+  "@referenceTabDates": {
+    "description": "速查页日期Tab"
+  },
+  "referenceTabTime": "时间",
+  "@referenceTabTime": {
+    "description": "速查页时间Tab"
+  },
+  "referenceTabCounters": "量词",
+  "@referenceTabCounters": {
+    "description": "速查页量词Tab"
   }
-
 }

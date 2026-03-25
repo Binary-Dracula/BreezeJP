@@ -17,6 +17,7 @@ import '../features/settings/pages/settings_page.dart';
 import '../features/grammar/pages/grammar_list_page.dart';
 import '../features/grammar/pages/grammar_learning_page.dart';
 import '../features/grammar_book/pages/grammar_book_page.dart';
+import '../features/reference/presentation/reference_screen.dart';
 
 /// 应用路由配置
 final appRouter = GoRouter(
@@ -140,6 +141,13 @@ final appRouter = GoRouter(
       path: '/settings',
       name: 'settings',
       builder: (context, state) => const SettingsPage(),
+    ),
+
+    // Reference
+    GoRoute(
+      path: '/reference',
+      name: 'reference',
+      builder: (context, state) => const ReferenceScreen(),
     ),
   ],
 );

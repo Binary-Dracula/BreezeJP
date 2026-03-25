@@ -705,6 +705,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'再试一次'**
   String get kanaStrokeTryAgain;
+
+  /// 速查页面标题
+  ///
+  /// In zh, this message translates to:
+  /// **'基础知识速查'**
+  String get referenceTitle;
+
+  /// 速查页数字Tab
+  ///
+  /// In zh, this message translates to:
+  /// **'数字'**
+  String get referenceTabNumbers;
+
+  /// 速查页日期Tab
+  ///
+  /// In zh, this message translates to:
+  /// **'日期/月份'**
+  String get referenceTabDates;
+
+  /// 速查页时间Tab
+  ///
+  /// In zh, this message translates to:
+  /// **'时间'**
+  String get referenceTabTime;
+
+  /// 速查页量词Tab
+  ///
+  /// In zh, this message translates to:
+  /// **'量词'**
+  String get referenceTabCounters;
 }
 
 class _AppLocalizationsDelegate

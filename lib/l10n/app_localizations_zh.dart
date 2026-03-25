@@ -341,4 +341,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get kanaStrokeTryAgain => '再试一次';
+
+  @override
+  String get referenceTitle => '基础知识速查';
+
+  @override
+  String get referenceTabNumbers => '数字';
+
+  @override
+  String get referenceTabDates => '日期/月份';
+
+  @override
+  String get referenceTabTime => '时间';
+
+  @override
+  String get referenceTabCounters => '量词';
 }
