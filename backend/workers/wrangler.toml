@@ -1,0 +1,40 @@
+name = "breezejp-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+workers_dev = false
+
+# ==============================
+# 自定义域名
+# ==============================
+routes = [
+  { pattern = "api.binary-dracula.com", custom_domain = true }
+]
+
+# ==============================
+# KV 命名空间（缓存新闻列表）
+# ==============================
+[[kv_namespaces]]
+binding = "CACHE"
+id = "64c3fc6531704dc297fcee7bf70d6e85"
+
+# ==============================
+# R2 存储桶（音频文件）
+# ==============================
+[[r2_buckets]]
+binding = "AUDIO_BUCKET"
+bucket_name = "breeze-jp"
+
+# ==============================
+# 环境变量（非敏感）
+# ==============================
+[vars]
+SUPABASE_URL = "https://eecfrzvutrhftwvyebpq.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_7ExzQJlbMRqWIOuzMzRdQQ_fdtFBGdf"
+CACHE_TTL_ARTICLES = "3600"    # 列表缓存 1 小时（秒）
+CACHE_TTL_DETAIL = "86400"     # 详情缓存 24 小时（秒）
+
+# 敏感变量通过 `wrangler secret put` 命令单独设置：
+# - SUPABASE_SERVICE_KEY  (sb_secret_...)
+# - JWT_SECRET            (从 Supabase Dashboard → Settings → API → JWT Secret 获取)
