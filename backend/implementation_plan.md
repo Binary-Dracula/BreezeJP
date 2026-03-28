@@ -66,13 +66,12 @@ graph TB
 
 | 登录方式 | 优先级 | Supabase 免费支持 |
 |----------|--------|-------------------|
-| 匿名登录 (Anonymous) | P0 | ✅ 内置 |
+| 邮箱密码 | P0 | ✅ 内置 |
 | Google 登录 | P1 | ✅ OAuth Provider |
 | Apple 登录 | P1 | ✅ OAuth Provider（iOS 必须提供） |
-| 邮箱密码 | P2 | ✅ 内置 |
 
 > [!IMPORTANT]
-> **推荐优先实现匿名登录 + Google/Apple**。匿名登录让用户零门槛使用 App，后续可绑定第三方账号升级为正式用户，用户数据无缝迁移。
+> **防刷策略**：对于五十音图、本地单词、语法等无需后端的**纯本地功能**，向所有用户**免登录开发**（游客模式）。对于任何**需要调用后端 API 的云端功能**（无论是拉新闻还是保存生词），全部设置网关拦截，**强制要求合法账号注册/登录**。这种策略能在不影响用户早期体验的前提下，利用真实的身份验证最大程度上遏制机器爬虫恶意刷走免费 CF 流量额度。
 
 ### 2.2 认证流程
 
@@ -82,19 +81,21 @@ sequenceDiagram
     participant CF as CF Workers
     participant Auth as Supabase Auth
 
-    Note over App: 首次启动
-    App->>Auth: 匿名注册 (signUp anonymous)
-    Auth-->>App: JWT access_token + refresh_token
+    Note over App: 体验本地功能 (免登录)
+    App->>App: 浏览五十音图、本地数据等
 
-    Note over App: 后续请求
-    App->>CF: API 请求 (Bearer JWT)
-    CF->>Auth: 验证 JWT (JWKS)
-    Auth-->>CF: 用户信息
+    Note over App: 使用云端功能 (如拉取新闻/同步)
+    App->>App: 检查 supabase.auth.currentSession
+    App-->>User: 拦截并提示“需登录后使用”
+    
+    Note over App: 用户注册/登录
+    User->>Auth: signUp / signInWithPassword
+    Auth-->>App: 返回真实用户 JWT
+    
+    Note over App: 访问云端 API
+    App->>CF: 请求 API (带着 Bearer JWT)
+    CF->>Auth: 验证 JWT (通过 JWKS 公钥)
     CF-->>App: 数据响应
-
-    Note over App: 绑定社交账号
-    App->>Auth: linkIdentity(Google/Apple)
-    Auth-->>App: 更新后的 JWT
 ```
 
 ### 2.3 Flutter 客户端集成
@@ -105,8 +106,8 @@ sequenceDiagram
 // 依赖: supabase_flutter: ^2.x
 final supabase = Supabase.instance.client;
 
-// 匿名登录
-await supabase.auth.signInAnonymously();
+// 邮箱密码注册
+await supabase.auth.signUp(email: '...', password: '...');
 
 // Google 登录
 await supabase.auth.signInWithOAuth(OAuthProvider.google);
@@ -130,6 +131,32 @@ async function verifyJWT(request, env) {
   return payload.sub; // user_id
 }
 ```
+
+### 2.5 客户端登录全流程设计（可选登录与拦截）
+
+整体策略：**“显式入口，按需阻断”**。尊重用户意愿，不产生冗余后台数据。同时保证未登录用户能无障碍浏览公共新闻内容。
+
+#### 场景 1：启动应用与选择（Splash -> Login）
+1. App 启动展现 Splash 页面，检查本地是否有合法的 Supabase Session。
+2. **如果有 Session**：直接进入主页 (Home)。
+3. **如果无 Session**：进入 **Login 登录选择页**。
+   - 登录页提供：① 邮箱/密码登录入口 ② 前往注册页面按钮 ③ **“先去逛逛 / 游客进入”**按钮。
+
+#### 场景 2：游客模式（体验本地功能）
+1. 用户点击“先去逛逛”，进入 App 主页。
+2. 此时 `supabase.auth.currentSession` 为 `null`。
+3. **本地功能放行**：对于五十音图、语法查阅、已下载的本地资源，用户可顺畅完成核心学习体验，无需与网络进行任何通讯。
+4. **云端功能拦截**：当用户尝试点击“每日新闻”、“云端单词库同步”等所有需要后台通讯的按钮时，App 端直接进行拦截并弹窗提示：“保护服务器资源，获取实时云端数据需登录您的账号以验证身份”。点击确认后跳转登录页。
+
+#### 场景 3：主动注册 / 登录
+1. 用户在被拦截后，或者主动进入设置页面，来到登录/注册页。
+2. 用户在注册页输入邮箱和密码，调用 `supabase.auth.signUp()` 正常注册真实账号。
+3. 注册成功后，获得包含 `user_id` 的正式 Session，界面刷新，所有限制功能解锁。
+
+#### 场景 4：登出逻辑
+1. 用户在设置中点击“退出登录”。
+2. App 清除当前用户的 Session (`supabase.auth.signOut()`)。
+3. App 跳转回主页并将状态退化为游客模式，或者直接把用户踢回 Login 页面。
 
 ---
 
@@ -205,14 +232,17 @@ sequenceDiagram
 
 ## 四、REST API 设计 (Cloudflare Workers)
 
-### 4.1 端点设计
+### 4.1 端点设计与权限防刷策略
 
-| 方法 | 路径 | 认证 | 描述 |
+| 方法 | 路径 | 权限要求 | 描述 |
 |------|------|------|------|
-| `GET` | `/api/v1/articles` | ✅ | 获取新闻列表（支持增量） |
-| `GET` | `/api/v1/articles/:id` | ✅ | 获取新闻详情（含分词） |
-| `GET` | `/api/v1/audio/:id` | ✅ | 获取音频文件（代理 R2） |
-| `GET` | `/api/v1/health` | ❌ | 健康检查 |
+| `GET` | `/api/v1/articles` | 🔴 **强校验 JWT** | 获取新闻列表（支持增量） |
+| `GET` | `/api/v1/articles/:id` | 🔴 **强校验 JWT** | 获取新闻详情（含分词） |
+| `GET` | `/api/v1/audio/:id` | 🔴 **强校验 JWT** | 获取音频文件（代理 R2） |
+| `GET` | `/api/v1/health` | 🟢 公开 | 仅验证系统存活状态 |
+
+> [!IMPORTANT]
+> **API 全面防护**：任何涉及到流量消耗、计算资源消耗（如查询新闻、读取外部音频等）的 API 都受到严格的 JWT 身份验证保护。非已登录真实用户（含伪造请求的爬虫）一律在 Cloudflare Worker 的前置门卫被拦截并返回 `401 Unauthorized`，彻底杜绝数据被刷与免费配额被耗尽的风险。
 
 ### 4.2 API 详细定义
 
@@ -380,7 +410,7 @@ nhk_scraper.py → align.py → process_all_sudachi.py → translate_json.py
                     (本地 mock 保留)              (线上数据)
 ```
 
-### 5.2 新增 `upload_to_backend.py`
+### 5.2 新增 [upload_to_backend.py](file:///Users/summer/work/money/breeze_jp/tools/nhk_data_pipeline/scripts/upload_to_backend.py)
 
 脚本功能：
 1. 扫描 `data/{id}/processed.json`，与 Supabase DB 比对，只上传新增/修改的
@@ -544,7 +574,7 @@ NHK 会定期下线旧新闻。需要支持软删除标记：
 2. 创建 Cloudflare Workers 项目
 3. 实现 JWT 验证中间件
 4. 实现新闻列表/详情 API
-5. 编写 `upload_to_backend.py` 数据上传脚本
+5. 编写 [upload_to_backend.py](file:///Users/summer/work/money/breeze_jp/tools/nhk_data_pipeline/scripts/upload_to_backend.py) 数据上传脚本
 
 ### 阶段二：Flutter 客户端集成（预计 2-3 天）
 1. 集成 `supabase_flutter`，实现匿名登录
