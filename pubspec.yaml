@@ -1,6 +1,6 @@
 name: breeze_jp
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.1
 
 environment:
@@ -47,6 +47,8 @@ dependencies:
   voicevox_core: ^0.1.0
   ffi: ^2.1.2
   shared_preferences: ^2.5.4
+  # Supabase 认证
+  supabase_flutter: ^2.8.0
 
 dev_dependencies:
   flutter_test:
@@ -71,8 +73,6 @@ flutter:
   generate: true
   assets:
     - assets/database/breeze_jp.sqlite
-    - assets/audio/words/
-    - assets/audio/examples/
     - assets/audio/kana/
     - assets/mock/
     - assets/tts/voicevox/dict/

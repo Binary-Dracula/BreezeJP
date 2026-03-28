@@ -31,7 +31,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     // 监听初始化完成状态，自动跳转
     ref.listen(splashControllerProvider, (previous, next) {
       if (next.isInitialized) {
-        context.go('/home');
+        context.go(next.hasSession ? '/home' : '/login');
       }
     });
 

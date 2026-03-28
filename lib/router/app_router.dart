@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:breeze_jp/features/kana/review/pages/kana_review_page.dart';
 import 'package:go_router/go_router.dart';
+import '../features/auth/pages/login_page.dart';
+import '../features/auth/pages/register_page.dart';
 import '../features/splash/pages/splash_page.dart';
 import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
@@ -29,6 +31,20 @@ final appRouter = GoRouter(
       path: '/splash',
       name: 'splash',
       builder: (context, state) => const SplashPage(),
+    ),
+
+    // 登录页面
+    GoRoute(
+      path: '/login',
+      name: 'login',
+      builder: (context, state) => const LoginPage(),
+    ),
+
+    // 注册页面
+    GoRoute(
+      path: '/register',
+      name: 'register',
+      builder: (context, state) => const RegisterPage(),
     ),
 
     // 主页面

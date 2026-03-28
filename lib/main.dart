@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'l10n/app_localizations.dart';
 import 'router/app_router.dart';
 
@@ -9,6 +10,12 @@ import 'core/providers/preferences_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://eecfrzvutrhftwvyebpq.supabase.co',
+    anonKey: 'sb_publishable_7ExzQJlbMRqWIOuzMzRdQQ_fdtFBGdf',
+  );
+
   final prefs = await SharedPreferences.getInstance();
 
   runApp(

@@ -1,25 +1,14 @@
 /// API 端点常量
 /// 集中管理所有 API 路径
 class ApiEndpoints {
-  // 基础 URL（根据实际情况修改）
-  static const String baseUrl = 'https://api.example.com';
+  // 基础 URL
+  static const String baseUrl = 'https://api.binary-dracula.com';
 
-  // 示例：单词相关 API
-  static const String words = '/words';
-  static const String wordDetail = '/words/{id}';
-  static const String wordsByLevel = '/words/level/{level}';
-
-  // 示例：用户相关 API
-  static const String login = '/auth/login';
-  static const String register = '/auth/register';
-  static const String profile = '/user/profile';
-
-  // 示例：学习记录 API
-  static const String learningProgress = '/learning/progress';
-  static const String reviewRecords = '/learning/reviews';
-
-  // 示例：音频下载 API
-  static const String audioDownload = '/audio/{filename}';
+  // 新闻相关 API
+  static const String articles = '/api/v1/articles';
+  static const String articleDetail = '/api/v1/articles/{id}';
+  static const String audio = '/api/v1/audio/{id}';
+  static const String health = '/api/v1/health';
 
   /// 替换路径参数
   /// 例如: replaceParams('/words/{id}', {'id': '123'}) => '/words/123'

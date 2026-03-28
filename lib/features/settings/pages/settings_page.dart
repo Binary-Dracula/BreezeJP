@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/algorithm/srs_types.dart';
 import '../../../core/providers/preferences_provider.dart';
+import '../../../core/auth/auth_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -10,6 +12,8 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentAlgorithm = ref.watch(algorithmTypeProvider);
+    final currentUser = ref.watch(currentUserProvider);
+    final isLoggedIn = currentUser != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
@@ -24,6 +28,106 @@ class SettingsPage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── 账号区域 ──
+              const Text(
+                '账号',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isLoggedIn
+                              ? [
+                                  const Color(0xFF1E88E5),
+                                  const Color(0xFF1565C0),
+                                ]
+                              : [
+                                  const Color(0xFF90A4AE),
+                                  const Color(0xFF607D8B),
+                                ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isLoggedIn
+                            ? Icons.person_rounded
+                            : Icons.person_outline_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isLoggedIn ? currentUser.email ?? '已登录' : '游客模式',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isLoggedIn ? '点击退出登录' : '登录后可使用云端功能',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isLoggedIn)
+                      TextButton(
+                        onPressed: () async {
+                          await ref.read(authServiceProvider).signOut();
+                          if (context.mounted) context.go('/login');
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red.shade400,
+                        ),
+                        child: const Text('退出登录'),
+                      )
+                    else
+                      TextButton(
+                        onPressed: () => context.go('/login'),
+                        child: const Text('前往登录'),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               const Text(
                 '系统偏好',
                 style: TextStyle(
@@ -172,13 +276,20 @@ class SettingsPage extends ConsumerWidget {
                         ),
                         Consumer(
                           builder: (context, ref, _) {
-                            final currentInterval = ref.watch(firstReviewIntervalProvider);
+                            final currentInterval = ref.watch(
+                              firstReviewIntervalProvider,
+                            );
                             final intervals = [5, 10, 15, 20, 25, 30];
 
                             return DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
-                                value: intervals.contains(currentInterval) ? currentInterval : 10,
-                                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                                value: intervals.contains(currentInterval)
+                                    ? currentInterval
+                                    : 10,
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: Colors.grey,
+                                ),
                                 elevation: 0,
                                 dropdownColor: Colors.white,
                                 alignment: Alignment.centerRight,
@@ -197,7 +308,11 @@ class SettingsPage extends ConsumerWidget {
                                 }).toList(),
                                 onChanged: (int? newValue) {
                                   if (newValue != null) {
-                                    ref.read(firstReviewIntervalProvider.notifier).setInterval(newValue);
+                                    ref
+                                        .read(
+                                          firstReviewIntervalProvider.notifier,
+                                        )
+                                        .setInterval(newValue);
                                   }
                                 },
                               ),

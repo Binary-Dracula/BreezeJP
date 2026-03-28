@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 import '../utils/app_logger.dart';
 import '../utils/l10n_utils.dart';
 import 'api_endpoints.dart';
@@ -37,9 +38,11 @@ class DioClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // 请求前处理（例如：添加 token）
-          // final token = await getToken();
-          // options.headers['Authorization'] = 'Bearer $token';
+          // 注入 JWT token（已登录时自动携带 Bearer 认证头）
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+          }
 
           // 记录请求日志
           logger.network(
