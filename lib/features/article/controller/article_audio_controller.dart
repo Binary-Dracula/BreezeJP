@@ -133,8 +133,9 @@ class ArticleAudioController extends Notifier<ArticleState> {
       ) {
         state = state.copyWith(isPlaying: playerState.playing);
 
-        // 播放完成，重置到初始状态
-        if (playerState.processingState == ProcessingState.completed) {
+        // 播放完成，重置到初始状态（abLoop 模式由 positionStream 自行拦截，不在此处干预）
+        if (playerState.processingState == ProcessingState.completed &&
+            state.currentMode != ArticleMode.abLoop) {
           _audioPlayer.seek(Duration.zero);
           _audioPlayer.pause();
           state = state.copyWith(
@@ -171,13 +172,16 @@ class ArticleAudioController extends Notifier<ArticleState> {
           if (positionMs >= loopEndMs) {
             final nextCount = state.currentLoopCount + 1;
 
-            if (nextCount >= state.targetLoopCount) {
-              // 达到目标次数：暂停，并重置计数器 (允许用户再次点击播放重新开始)
+            if (nextCount > state.targetLoopCount) {
+              // 达到目标次数：停止循环（先封锁 positionStream 防止竞态）
+              _isLoopPausing = true;
               _audioPlayer.pause();
               _audioPlayer.seek(
                 Duration(milliseconds: items[state.loopStartIdx!].startMs),
               );
-              state = state.copyWith(currentLoopCount: 0, isPlaying: false);
+              // 复位为 1/N，表示已完成并就绪，再次点播放即从第 1 轮开始
+              // （完成态由 _isLoopPausing==true 且 _loopPauseTimer==null 标识，与计数无关）
+              state = state.copyWith(currentLoopCount: 1, isPlaying: false);
             } else {
               // 未达到目标次数：先暂停，等待间隔后再跳回 A 句开头继续播
               _audioPlayer.pause();
@@ -188,6 +192,7 @@ class ArticleAudioController extends Notifier<ArticleState> {
               _isLoopPausing = true;
               _loopPauseTimer?.cancel();
               _loopPauseTimer = Timer(Duration(milliseconds: kLoopPauseMs), () {
+                _loopPauseTimer = null; // 自清零，用于区分「定时器仍挂起」与「循环已完成」
                 _isLoopPausing = false;
                 // 再次检查是否仍然处于 abLoop 模式（用户可能在等待期间切换了模式）
                 if (state.currentMode == ArticleMode.abLoop &&
@@ -258,7 +263,35 @@ class ArticleAudioController extends Notifier<ArticleState> {
       if (_audioPlayer.playing) {
         await _audioPlayer.pause();
       } else {
-        await _audioPlayer.play();
+        // abLoop 模式下的「系统暂停」状态（轮间等待 或 循环已完成）：
+        // _isLoopPausing == true 意味着 positionStream 拦截被封锁，
+        // 直接 play() 会导致音频越过 B 句边界脱离循环，必须特殊处理。
+        if (state.currentMode == ArticleMode.abLoop &&
+            state.loopStartIdx != null &&
+            state.loopEndIdx != null &&
+            _isLoopPausing) {
+          // _loopPauseTimer != null → 定时器仍挂起（轮间等待）
+          // _loopPauseTimer == null → 定时器已触发完毕（循环已完成 N/N）
+          final isCompleted = _loopPauseTimer == null;
+          _loopPauseTimer?.cancel();
+          _loopPauseTimer = null;
+          _isLoopPausing = false;
+
+          if (isCompleted) {
+            // 循环已完成态：计数在完成时已复位为 1，此处无需重复赋值，直接从 A 开始播
+          }
+          // 轮间等待：保留当前计数，继续播完最后一轮
+
+          await _audioPlayer.seek(
+            Duration(
+              milliseconds: state.article.items[state.loopStartIdx!].startMs,
+            ),
+          );
+          await _audioPlayer.play();
+        } else {
+          // 普通恢复：normal 模式，或 abLoop 用户手动暂停后继续
+          await _audioPlayer.play();
+        }
       }
     } catch (e, st) {
       logger.error('[ArticleAudio] 播放切换失败', e, st);
@@ -348,6 +381,9 @@ class ArticleAudioController extends Notifier<ArticleState> {
     // 情况 1: 都有 (A 和 B 已就绪) -> 直接中断循环，清空全场，设该句为新 A
     if (state.loopStartIdx != null && state.loopEndIdx != null) {
       if (_audioPlayer.playing) _audioPlayer.pause();
+      _loopPauseTimer?.cancel();
+      _loopPauseTimer = null;
+      _isLoopPausing = false;
       state = state.copyWith(
         loopStartIdx: index,
         loopEndIdx: null,
@@ -378,9 +414,13 @@ class ArticleAudioController extends Notifier<ArticleState> {
       state = state.copyWith(
         loopStartIdx: start,
         loopEndIdx: end,
-        currentLoopCount: 0,
+        currentLoopCount: 1, // 第 1 轮开始，显示 1/N
       );
 
+      // 清理上一轮遗留的定时器和暂停锁
+      _loopPauseTimer?.cancel();
+      _loopPauseTimer = null;
+      _isLoopPausing = false;
       // 开始这第一轮的循环播放 (跳到 A句开头)
       _seekAndPlayIndex(start);
     }

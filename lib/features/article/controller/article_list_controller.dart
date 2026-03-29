@@ -24,9 +24,17 @@ class ArticleListController extends Notifier<ArticleListState> {
     return const ArticleListState();
   }
 
-  /// 加载文章列表：先检查登录态，再增量同步，最后读本地缓存
+  /// 加载文章列表：本地优先。
+  ///
+  /// - 本地有数据：立即显示；后台静默同步（不刷新当次 UI）
+  /// - 本地无数据：等待同步完成后再读库显示（首次安装体验）
   Future<void> loadArticles() async {
-    state = state.copyWith(isLoading: true, error: null, needsLogin: false);
+    state = state.copyWith(
+      isLoading: true,
+      isSyncing: false,
+      error: null,
+      needsLogin: false,
+    );
 
     // 未登录：展示登录引导，不加载内容
     final isLoggedIn = ref.read(isLoggedInProvider);
@@ -35,22 +43,58 @@ class ArticleListController extends Notifier<ArticleListState> {
       return;
     }
 
-    // 增量同步
+    // 先读取本地缓存
+    try {
+      final localArticles = await ref.read(articleQueryProvider).getArticles();
+
+      // 有本地数据：立即展示，并后台静默刷新数据库（本次不刷新 UI）
+      if (localArticles.isNotEmpty) {
+        state = state.copyWith(
+          articles: localArticles,
+          isLoading: false,
+          isSyncing: false,
+          error: null,
+        );
+        _silentRefreshArticles();
+        return;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        isSyncing: false,
+        error: e.toString(),
+      );
+      return;
+    }
+
+    // 本地无数据：等待 API 同步完成后，再读取数据库展示
     try {
       state = state.copyWith(isSyncing: true);
       await ref.read(articleSyncCommandProvider).syncArticles();
-    } catch (e) {
-      // 同步失败不阻断，允许展示本地缓存
-    } finally {
-      state = state.copyWith(isSyncing: false);
-    }
-
-    // 读取本地缓存
-    try {
       final articles = await ref.read(articleQueryProvider).getArticles();
-      state = state.copyWith(articles: articles, isLoading: false);
+      state = state.copyWith(
+        articles: articles,
+        isLoading: false,
+        isSyncing: false,
+        error: null,
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        isSyncing: false,
+        error: e.toString(),
+      );
     }
+  }
+
+  /// 后台静默刷新数据库，不影响当前 UI 数据
+  void _silentRefreshArticles() {
+    Future<void>(() async {
+      try {
+        await ref.read(articleSyncCommandProvider).syncArticles();
+      } catch (_) {
+        // 静默失败：保留当前列表展示，不打断用户
+      }
+    });
   }
 }
