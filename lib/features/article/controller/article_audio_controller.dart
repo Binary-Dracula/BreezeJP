@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../../data/models/article/article.dart';
+import '../../../data/commands/article_sync_command_provider.dart';
+import '../../../data/models/article/article_detail.dart';
 import '../../../data/models/article/article_item.dart';
 import '../../../data/queries/article_query_provider.dart';
 import '../state/article_state.dart';
@@ -37,10 +40,15 @@ class ArticleAudioController extends Notifier<ArticleState> {
 
     // 初始状态
     return ArticleState(
-      article: Article(
+      article: ArticleDetail(
         id: 'placeholder',
         title: '',
         cleanTitle: '',
+        publishedAt: '',
+        audioUrl: '',
+        durationMs: 0,
+        sentenceCount: 0,
+        isArchived: false,
         items: [
           ArticleItem(
             text: '',
@@ -78,17 +86,28 @@ class ArticleAudioController extends Notifier<ArticleState> {
   Future<void> initArticle(String articleId) async {
     try {
       state = state.copyWith(
-        article: Article(
+        article: ArticleDetail(
           id: articleId,
           title: '',
           cleanTitle: '',
+          publishedAt: '',
+          audioUrl: '',
+          durationMs: 0,
+          sentenceCount: 0,
+          isArchived: false,
           items: state.article.items,
         ),
       );
 
-      // 通过 ArticleQuery 获取数据
+      // 从本地缓存获取文章详情
       final articleQuery = ref.read(articleQueryProvider);
-      final article = await articleQuery.getArticleById(articleId);
+      ArticleDetail? article = await articleQuery.getArticleById(articleId);
+
+      // 本地不存在 items 时触发远程同步
+      if (article == null || article.items.isEmpty) {
+        await ref.read(articleSyncCommandProvider).syncArticleDetail(articleId);
+        article = await articleQuery.getArticleById(articleId);
+      }
 
       if (article == null) {
         throw Exception('找不到文章: $articleId');
@@ -96,8 +115,15 @@ class ArticleAudioController extends Notifier<ArticleState> {
 
       state = state.copyWith(article: article);
 
-      // 设置音频源
-      await _audioPlayer.setAsset('assets/mock/${article.id}.mp3');
+      // 使用带 JWT 认证的远程音频 URL
+      final jwt =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final audioUrl =
+          '${ApiEndpoints.baseUrl}${ApiEndpoints.replaceParams(ApiEndpoints.audio, {'id': article.id})}';
+      await _audioPlayer.setUrl(
+        audioUrl,
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
       logger.info('[ArticleAudio] 音频加载成功: ${article.id}');
 
       // 监听播放状态
@@ -182,10 +208,15 @@ class ArticleAudioController extends Notifier<ArticleState> {
     } catch (e, st) {
       logger.error('[ArticleAudio] 初始化失败', e, st);
       state = state.copyWith(
-        article: Article(
+        article: ArticleDetail(
           id: 'error',
           title: '',
           cleanTitle: '',
+          publishedAt: '',
+          audioUrl: '',
+          durationMs: 0,
+          sentenceCount: 0,
+          isArchived: false,
           items: [
             ArticleItem(
               text: '$e',

@@ -1,27 +1,44 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
-import '../models/article/article.dart';
+import '../models/article/article_detail.dart';
+import '../models/article/article_summary.dart';
+import '../repositories/article_detail_repository.dart';
+import '../repositories/article_repository.dart';
 
-/// 文章查询服务
+/// 文章查询服务（本地 SQLite 数据源）
 class ArticleQuery {
-  final String _mockAssetPath = 'assets/mock/test_output.json';
+  ArticleQuery({
+    required ArticleRepository articleRepository,
+    required ArticleDetailRepository detailRepository,
+  }) : _articleRepository = articleRepository,
+       _detailRepository = detailRepository;
 
-  /// 获取所有文章列表
-  Future<List<Article>> getArticles() async {
-    final jsonString = await rootBundle.loadString(_mockAssetPath);
-    final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList
-        .map((json) => Article.fromJson(json as Map<String, dynamic>))
-        .toList();
+  final ArticleRepository _articleRepository;
+  final ArticleDetailRepository _detailRepository;
+
+  /// 获取所有文章摘要列表（按发布时间降序）
+  Future<List<ArticleSummary>> getArticles() async {
+    return _articleRepository.getAllArticles();
   }
 
-  /// 根据 ID 获取单篇文章
-  Future<Article?> getArticleById(String id) async {
-    final articles = await getArticles();
-    try {
-      return articles.firstWhere((article) => article.id == id);
-    } catch (_) {
-      return null;
-    }
+  /// 根据 ID 获取文章详情（含 items）
+  ///
+  /// 如果本地已缓存 items 则直接返回，否则返回 null（调用方应触发同步）
+  Future<ArticleDetail?> getArticleById(String id) async {
+    final summary = await _articleRepository.getById(id);
+    if (summary == null) return null;
+
+    final items = await _detailRepository.getItemsByArticleId(id);
+    if (items == null) return null;
+
+    return ArticleDetail(
+      id: summary.id,
+      title: summary.title,
+      cleanTitle: summary.cleanTitle,
+      publishedAt: summary.publishedAt,
+      audioUrl: summary.audioUrl,
+      durationMs: summary.durationMs,
+      sentenceCount: summary.sentenceCount,
+      isArchived: summary.isArchived,
+      items: items,
+    );
   }
 }

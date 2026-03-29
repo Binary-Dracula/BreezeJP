@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../../data/models/article/article.dart';
+import '../../../data/models/article/article_detail.dart';
 
 part 'article_state.freezed.dart';
 
@@ -25,7 +25,7 @@ enum ArticleMode { normal, abLoop }
 @freezed
 abstract class ArticleState with _$ArticleState {
   const factory ArticleState({
-    required Article article,
+    required ArticleDetail article,
 
     /// 假名/翻译显示模式
     @Default(ArticleDisplayMode.all) ArticleDisplayMode displayMode,

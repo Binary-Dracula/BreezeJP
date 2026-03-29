@@ -36,6 +36,10 @@ class ArticleListPage extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, WidgetRef ref, state) {
+    if (state.needsLogin) {
+      return _buildLoginPrompt(context);
+    }
+
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -67,23 +71,87 @@ class ArticleListPage extends ConsumerWidget {
       );
     }
 
-    if (state.articles.isEmpty) {
+    if (state.articles.isEmpty && !state.isSyncing) {
       return const Center(
         child: Text('暂无文章', style: TextStyle(color: Color(0xFF64748B))),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: state.articles.length,
-      itemBuilder: (context, index) {
-        final article = state.articles[index];
-        return _ArticleCard(
-          title: article.cleanTitle,
-          subtitle: 'NHK Easy News - 精选日语文章',
-          onTap: () => context.push('/article-detail/${article.id}'),
-        );
-      },
+    return Column(
+      children: [
+        if (state.isSyncing)
+          const LinearProgressIndicator(
+            backgroundColor: Color(0xFFE2E8F0),
+            color: Color(0xFF6366F1),
+            minHeight: 2,
+          ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: state.articles.length,
+            itemBuilder: (context, index) {
+              final article = state.articles[index];
+              return _ArticleCard(
+                title: article.cleanTitle,
+                subtitle: 'NHK Easy News - 精选日语文章',
+                onTap: () => context.push('/article-detail/${article.id}'),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginPrompt(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.lock_outline_rounded,
+              size: 72,
+              color: Color(0xFF6366F1),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              '登录后即可阅读文章',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '文章内容需要登录才能访问，请先登录您的账号。',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => context.push('/login'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '立即登录',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

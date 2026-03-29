@@ -1,7 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/article_repository_provider.dart';
 import 'article_query.dart';
 
-/// ArticleQuery 的提供者
+/// ArticleQuery Provider
 final articleQueryProvider = Provider<ArticleQuery>((ref) {
-  return ArticleQuery();
+  return ArticleQuery(
+    articleRepository: ref.read(articleRepositoryProvider),
+    detailRepository: ref.read(articleDetailRepositoryProvider),
+  );
 });
