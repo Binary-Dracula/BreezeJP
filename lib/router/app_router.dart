@@ -3,6 +3,8 @@ import 'package:breeze_jp/features/kana/review/pages/kana_review_page.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/register_page.dart';
+import '../features/profile/pages/profile_page.dart';
+import '../features/profile/pages/change_password_page.dart';
 import '../features/splash/pages/splash_page.dart';
 import '../features/home/pages/home_page.dart';
 import '../features/learn/pages/initial_choice_page.dart';
@@ -45,6 +47,20 @@ final appRouter = GoRouter(
       path: '/register',
       name: 'register',
       builder: (context, state) => const RegisterPage(),
+    ),
+
+    // 个人资料页
+    GoRoute(
+      path: '/profile',
+      name: 'profile',
+      builder: (context, state) => const ProfilePage(),
+    ),
+
+    // 修改密码页
+    GoRoute(
+      path: '/change-password',
+      name: 'change-password',
+      builder: (context, state) => const ChangePasswordPage(),
     ),
 
     // 主页面

@@ -17,6 +17,13 @@ final currentUserProvider = Provider<User?>((ref) {
   return ref.read(authServiceProvider).currentUser;
 });
 
+/// 当前登录用户的 display_name（null = 游客或未设置）
+/// updateUser 后会触发 onAuthStateChange，自动刷新
+final displayNameProvider = Provider<String?>((ref) {
+  ref.watch(authStateChangesProvider);
+  return ref.read(authServiceProvider).displayName;
+});
+
 /// 是否已登录（便捷 bool）
 final isLoggedInProvider = Provider<bool>((ref) {
   return ref.watch(currentUserProvider) != null;

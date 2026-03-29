@@ -3,8 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controller/auth_controller.dart';
 
+/// 用户名校验规则
+/// - 2~16 字符
+/// - 只允许字母、数字、下划线、中文
+/// - 不能以下划线开头
+final _usernameRegex = RegExp(
+  r'^[a-zA-Z0-9\u4e00-\u9fff][a-zA-Z0-9_\u4e00-\u9fff]{1,15}$',
+);
+
 /// 注册页
-/// 流程：填写邮箱 + 密码 + 确认密码 → 注册 → 自动登录 → /home
+/// 流程：填写用户名 + 邮箱 + 密码 + 确认密码 → 注册 → 自动登录 → /home
 ///       已有账号 → 返回登录 ← /login
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -15,6 +23,7 @@ class RegisterPage extends ConsumerStatefulWidget {
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
@@ -23,6 +32,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -33,7 +43,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
     final success = await ref
         .read(authControllerProvider.notifier)
-        .signUp(_emailController.text, _passwordController.text);
+        .signUp(
+          _emailController.text,
+          _passwordController.text,
+          _usernameController.text,
+        );
     if (success && mounted) {
       context.go('/home');
     }
@@ -86,6 +100,32 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // 用户名（在邮箱上方）
+                      TextFormField(
+                        controller: _usernameController,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: '用户名',
+                          hintText: '2‖16 个字符，支持中英文、数字、下划线',
+                          prefixIcon: Icon(Icons.person_outline),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return '请输入用户名';
+                          if (v.trim().length < 2) return '用户名至少需要 2 个字符';
+                          if (v.trim().length > 16) return '用户名最多 16 个字符';
+                          if (!_usernameRegex.hasMatch(v.trim())) {
+                            return '只允许中英文、数字、下划线，不能以下划线开头';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
                       // 邮箱
                       TextFormField(
                         controller: _emailController,
@@ -102,7 +142,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         ),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return '请输入邮箱';
-                          if (!v.contains('@')) return '邮箱格式不正确';
+                          if (!RegExp(
+                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                          ).hasMatch(v.trim())) {
+                            return '邮箱格式不正确';
+                          }
                           return null;
                         },
                       ),

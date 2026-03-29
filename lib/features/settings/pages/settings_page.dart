@@ -13,7 +13,16 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentAlgorithm = ref.watch(algorithmTypeProvider);
     final currentUser = ref.watch(currentUserProvider);
+    final displayName = ref.watch(displayNameProvider);
+    final email = currentUser?.email ?? '';
     final isLoggedIn = currentUser != null;
+
+    final initials = isLoggedIn
+        ? ((displayName?.isNotEmpty == true)
+              ? displayName![0].toUpperCase()
+              : (email.isNotEmpty ? email[0].toUpperCase() : '?'))
+        : '?';
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
@@ -54,76 +63,62 @@ class SettingsPage extends ConsumerWidget {
                   horizontal: 16,
                   vertical: 20,
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isLoggedIn
-                              ? [
-                                  const Color(0xFF1E88E5),
-                                  const Color(0xFF1565C0),
-                                ]
-                              : [
-                                  const Color(0xFF90A4AE),
-                                  const Color(0xFF607D8B),
-                                ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        isLoggedIn
-                            ? Icons.person_rounded
-                            : Icons.person_outline_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isLoggedIn ? currentUser.email ?? '已登录' : '游客模式',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
+                child: GestureDetector(
+                  onTap: isLoggedIn ? () => context.go('/profile') : null,
+                  behavior: HitTestBehavior.translucent,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: colorScheme.primary,
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isLoggedIn ? '点击退出登录' : '登录后可使用云端功能',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (isLoggedIn)
-                      TextButton(
-                        onPressed: () async {
-                          await ref.read(authServiceProvider).signOut();
-                          if (context.mounted) context.go('/login');
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red.shade400,
                         ),
-                        child: const Text('退出登录'),
-                      )
-                    else
-                      TextButton(
-                        onPressed: () => context.go('/login'),
-                        child: const Text('前往登录'),
                       ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isLoggedIn
+                                  ? (displayName ?? currentUser.email ?? '已登录')
+                                  : '游客模式',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isLoggedIn ? '查看个人资料' : '登录后可使用云端功能',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isLoggedIn)
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.grey,
+                        )
+                      else
+                        TextButton(
+                          onPressed: () => context.go('/login'),
+                          child: const Text('前往登录'),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

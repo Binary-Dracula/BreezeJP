@@ -13,7 +13,7 @@ class AuthController extends Notifier<AuthPageState> {
 
   AuthService get _auth => ref.read(authServiceProvider);
 
-  /// 邮箱密码登录，成功返回 true，失败返回 false 并在 state.error 中保存错误信息
+  /// 邮箱密码登录，成功返回 true
   Future<bool> signIn(String email, String password) async {
     state = const AuthPageState(isLoading: true);
     try {
@@ -22,7 +22,7 @@ class AuthController extends Notifier<AuthPageState> {
         state = const AuthPageState();
         return true;
       }
-      state = AuthPageState(error: '登录失败，请重试');
+      state = const AuthPageState(error: '登录失败，请重试');
       return false;
     } catch (e) {
       state = AuthPageState(error: _friendlyError(e.toString()));
@@ -31,10 +31,14 @@ class AuthController extends Notifier<AuthPageState> {
   }
 
   /// 邮箱密码注册，成功返回 true（MVP 跳过邮件确认，注册即登录）
-  Future<bool> signUp(String email, String password) async {
+  Future<bool> signUp(String email, String password, String displayName) async {
     state = const AuthPageState(isLoading: true);
     try {
-      final response = await _auth.signUpWithEmail(email, password);
+      final response = await _auth.signUpWithEmail(
+        email,
+        password,
+        displayName,
+      );
 
       // 邮件确认已关闭时，signUp 直接返回 session
       if (response.session != null) {
@@ -43,16 +47,52 @@ class AuthController extends Notifier<AuthPageState> {
       }
 
       // Supabase 创建了 user 但未返回 session（后台"Confirm email"仍开启）
-      // 尝试自动 signIn，关闭邮件确认后此路径同样可正常登录
+      // 尝试自动 signIn
       if (response.user != null) {
         return await signIn(email, password);
       }
 
-      state = AuthPageState(error: '注册失败，请重试');
+      state = const AuthPageState(error: '注册失败，请重试');
       return false;
     } catch (e) {
       state = AuthPageState(error: _friendlyError(e.toString()));
       return false;
+    }
+  }
+
+  /// 修改用户名（display_name）
+  Future<bool> updateDisplayName(String displayName) async {
+    state = const AuthPageState(isLoading: true);
+    try {
+      await _auth.updateDisplayName(displayName);
+      state = const AuthPageState();
+      return true;
+    } catch (e) {
+      state = AuthPageState(error: _friendlyError(e.toString()));
+      return false;
+    }
+  }
+
+  /// 修改密码
+  Future<bool> updatePassword(String newPassword) async {
+    state = const AuthPageState(isLoading: true);
+    try {
+      await _auth.updatePassword(newPassword);
+      state = const AuthPageState();
+      return true;
+    } catch (e) {
+      state = AuthPageState(error: _friendlyError(e.toString()));
+      return false;
+    }
+  }
+
+  /// 退出登录
+  Future<void> signOut() async {
+    state = const AuthPageState(isLoading: true);
+    try {
+      await _auth.signOut();
+    } finally {
+      state = const AuthPageState();
     }
   }
 
@@ -64,6 +104,7 @@ class AuthController extends Notifier<AuthPageState> {
     if (raw.contains('Password should be at least')) return '密码至少需要 6 位字符';
     if (raw.contains('Unable to validate email')) return '邮箱格式不正确';
     if (raw.contains('network')) return '网络连接失败，请检查网络';
+    if (raw.contains('same password')) return '新密码不能与当前密码相同';
     return '操作失败，请稍后重试';
   }
 }

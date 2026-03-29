@@ -92,7 +92,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return '请输入邮箱';
-                          if (!v.contains('@')) return '邮箱格式不正确';
+                          if (!RegExp(
+                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                          ).hasMatch(v.trim())) {
+                            return '邮箱格式不正确';
+                          }
                           return null;
                         },
                       ),
