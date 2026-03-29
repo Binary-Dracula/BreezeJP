@@ -64,7 +64,9 @@ class SettingsPage extends ConsumerWidget {
                   vertical: 20,
                 ),
                 child: GestureDetector(
-                  onTap: isLoggedIn ? () => context.go('/profile') : null,
+                  onTap: isLoggedIn
+                      ? () => context.push('/settings/profile')
+                      : null,
                   behavior: HitTestBehavior.translucent,
                   child: Row(
                     children: [

@@ -49,13 +49,6 @@ final appRouter = GoRouter(
       builder: (context, state) => const RegisterPage(),
     ),
 
-    // 个人资料页
-    GoRoute(
-      path: '/profile',
-      name: 'profile',
-      builder: (context, state) => const ProfilePage(),
-    ),
-
     // 修改密码页
     GoRoute(
       path: '/change-password',
@@ -168,14 +161,29 @@ final appRouter = GoRouter(
       builder: (context, state) => const GrammarBookPage(),
     ),
 
-    // Settings
+    // Settings 及其子路由
     GoRoute(
       path: '/settings',
       name: 'settings',
       builder: (context, state) => const SettingsPage(),
+      routes: [
+        // 个人资料页
+        GoRoute(
+          path: 'profile',
+          name: 'profile',
+          builder: (context, state) => const ProfilePage(),
+          routes: [
+            // 修改密码页
+            GoRoute(
+              path: 'change-password',
+              name: 'profile-change-password',
+              builder: (context, state) => const ChangePasswordPage(),
+            ),
+          ],
+        ),
+      ],
     ),
 
-    // Reference
     GoRoute(
       path: '/reference',
       name: 'reference',

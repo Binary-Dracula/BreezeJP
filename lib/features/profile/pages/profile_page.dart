@@ -30,8 +30,7 @@ class ProfilePage extends ConsumerWidget {
         title: const Text('个人资料'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/settings'),
+          onPressed: () => context.pop(),
         ),
       ),
       body: SafeArea(
@@ -80,7 +79,7 @@ class ProfilePage extends ConsumerWidget {
                   _ActionRow(
                     icon: Icons.lock_outline,
                     label: '修改密码',
-                    onTap: () => context.go('/change-password'),
+                    onTap: () => context.push('change-password'),
                   ),
                 ],
               ),

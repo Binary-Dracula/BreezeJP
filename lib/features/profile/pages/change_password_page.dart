@@ -53,8 +53,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
         title: const Text('修改密码'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/profile'),
+          onPressed: () => context.pop(),
         ),
       ),
       body: SafeArea(
