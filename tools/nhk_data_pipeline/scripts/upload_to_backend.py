@@ -129,7 +129,8 @@ def upload_audio_to_r2(article_id: str, mp3_path: Path) -> str:
         ["wrangler", "r2", "object", "put",
          f"{R2_BUCKET_NAME}/{r2_key}",
          "--file", str(mp3_path),
-         "--content-type", "audio/mpeg"],
+         "--content-type", "audio/mpeg",
+         "--remote"],  # 必须加 --remote，否则 wrangler 默认写入本地模拟存储
         capture_output=True, text=True,
         cwd=PIPELINE_DIR.parent.parent / "backend" / "workers"  # 项目根 → backend/workers
     )

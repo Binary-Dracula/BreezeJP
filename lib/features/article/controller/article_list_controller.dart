@@ -14,6 +14,12 @@ final articleListControllerProvider =
 class ArticleListController extends Notifier<ArticleListState> {
   @override
   ArticleListState build() {
+    // 监听登录状态变化：用户登录后自动重新加载
+    ref.listen(isLoggedInProvider, (previous, next) {
+      if (previous != next) {
+        loadArticles();
+      }
+    });
     Future.microtask(loadArticles);
     return const ArticleListState();
   }

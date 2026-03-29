@@ -62,6 +62,17 @@ class ArticleDetail extends ArticleSummary {
   }
 
   @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ArticleDetail &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          items.length == other.items.length;
+
+  @override
+  int get hashCode => Object.hash(id, items.length);
+
+  @override
   String toString() =>
       'ArticleDetail{id: $id, title: $title, items: ${items.length}}';
 }

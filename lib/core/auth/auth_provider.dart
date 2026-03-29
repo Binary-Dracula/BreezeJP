@@ -11,8 +11,10 @@ final authStateChangesProvider = StreamProvider<AuthState>((ref) {
 });
 
 /// 当前用户（null = 游客模式）
+/// 通过监听 authStateChangesProvider 使自身在登录/登出时自动重建
 final currentUserProvider = Provider<User?>((ref) {
-  return ref.watch(authServiceProvider).currentUser;
+  ref.watch(authStateChangesProvider); // 订阅 auth 流，状态变化时触发重建
+  return ref.read(authServiceProvider).currentUser;
 });
 
 /// 是否已登录（便捷 bool）
