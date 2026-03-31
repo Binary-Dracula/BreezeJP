@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:breeze_jp/l10n/app_localizations.dart';
 
 import '../../../data/models/read/vocabulary_book_item.dart';
 import '../../learn/widgets/audio_play_button.dart';
@@ -69,6 +70,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
   }
 
   PreferredSizeWidget _buildAppBar(VocabularyBookState state) {
+    final l10n = AppLocalizations.of(context)!;
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -77,9 +79,9 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
         icon: const Icon(Icons.arrow_back_ios, size: 20),
         onPressed: () => context.pop(),
       ),
-      title: const Text(
-        '单词本',
-        style: TextStyle(
+      title: Text(
+        l10n.wordBook,
+        style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.black87,
@@ -147,6 +149,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
   }
 
   Widget _buildTabBar(VocabularyBookState state) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       color: Colors.white,
       child: TabBar(
@@ -158,9 +161,9 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
         labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         unselectedLabelStyle: const TextStyle(fontSize: 15),
         tabs: [
-          Tab(text: '学习中 (${state.learningCount})'),
-          Tab(text: '已掌握 (${state.masteredCount})'),
-          Tab(text: '已忽略 (${state.ignoredCount})'),
+          Tab(text: l10n.vocabularyBookTabLearning(state.learningCount)),
+          Tab(text: l10n.vocabularyBookTabMastered(state.masteredCount)),
+          Tab(text: l10n.vocabularyBookTabIgnored(state.ignoredCount)),
         ],
       ),
     );
@@ -176,7 +179,9 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           isLoadingMore: state.isLoadingMore,
           hasMore: state.hasMoreLearning,
           tabIndex: 0,
-          emptyMessage: '还没有正在学习的单词\n快去学习新单词吧！',
+          emptyMessage: AppLocalizations.of(
+            context,
+          )!.vocabularyBookNoLearningWords,
         ),
         _buildWordList(
           items: state.masteredWords,
@@ -184,7 +189,9 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           isLoadingMore: state.isLoadingMore,
           hasMore: state.hasMoreMastered,
           tabIndex: 1,
-          emptyMessage: '还没有掌握的单词\n继续加油学习吧！',
+          emptyMessage: AppLocalizations.of(
+            context,
+          )!.vocabularyBookNoMasteredWords,
           emptyIcon: Icons.emoji_events_outlined,
         ),
         _buildWordList(
@@ -193,7 +200,9 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           isLoadingMore: state.isLoadingMore,
           hasMore: state.hasMoreIgnored,
           tabIndex: 2,
-          emptyMessage: '没有已忽略的单词',
+          emptyMessage: AppLocalizations.of(
+            context,
+          )!.vocabularyBookNoIgnoredWords,
           emptyIcon: Icons.visibility_off_outlined,
         ),
       ],
@@ -279,7 +288,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           ElevatedButton.icon(
             onPressed: () => context.push('/initial-choice'),
             icon: const Icon(Icons.bolt_rounded, size: 18),
-            label: const Text('去学习'),
+            label: Text(AppLocalizations.of(context)!.goToLearn),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF5C8DFF),
               foregroundColor: Colors.white,
@@ -331,7 +340,7 @@ class _WordListTile extends StatelessWidget {
               // 单词信息
               Expanded(child: _buildWordInfo()),
               // 状态切换按钮
-              _buildStatusButton(),
+              _buildStatusButton(context),
             ],
           ),
         ),
@@ -421,11 +430,12 @@ class _WordListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusButton() {
+  Widget _buildStatusButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (tabIndex == 0) {
       // 学习中 → 掌握
       return _StatusToggleButton(
-        label: '掌握',
+        label: l10n.actionMaster,
         icon: Icons.check_circle_outline,
         color: const Color(0xFF34D399),
         onPressed: onToggleStatus,
@@ -433,7 +443,7 @@ class _WordListTile extends StatelessWidget {
     } else if (tabIndex == 1) {
       // 已掌握 → 恢复学习
       return _StatusToggleButton(
-        label: '恢复',
+        label: l10n.actionRestore,
         icon: Icons.replay_rounded,
         color: const Color(0xFF5C8DFF),
         onPressed: onToggleStatus,
@@ -441,7 +451,7 @@ class _WordListTile extends StatelessWidget {
     } else {
       // 已忽略 → 恢复学习 (目前 toggleStatus 的 index == 2 会走默认逻辑，需在状态和控制器中确保正确)
       return _StatusToggleButton(
-        label: '恢复',
+        label: l10n.actionRestore,
         icon: Icons.replay_rounded,
         color: const Color(0xFF5C8DFF),
         onPressed: onToggleStatus,

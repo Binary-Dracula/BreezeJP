@@ -356,4 +356,163 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get referenceTabCounters => '量词';
+
+  @override
+  String get wordActionAddToReview => '加入复习';
+
+  @override
+  String get wordActionQuickMaster => '一键掌握';
+
+  @override
+  String get wordActionIgnore => '忽略';
+
+  @override
+  String get wordActionMastered => '已掌握';
+
+  @override
+  String get wordActionRestoreLearning => '恢复学习';
+
+  @override
+  String get wordDefinition => '释义';
+
+  @override
+  String get conjugationTitle => '活用';
+
+  @override
+  String get conjugationUnknown => '未知';
+
+  @override
+  String get grammarSectionMeaning => '含义';
+
+  @override
+  String get grammarSectionUsage => '接续';
+
+  @override
+  String get grammarSectionTip => '提示';
+
+  @override
+  String get grammarSectionRestrictions => '格式与限制';
+
+  @override
+  String get vocabularyBookNoLearningWords => '还没有正在学习的单词\n快去学习新单词吧！';
+
+  @override
+  String get vocabularyBookNoMasteredWords => '还没有掌握的单词\n继续加油学习吧！';
+
+  @override
+  String get vocabularyBookNoIgnoredWords => '没有已忽略的单词';
+
+  @override
+  String vocabularyBookTabLearning(int count) {
+    return '学习中 ($count)';
+  }
+
+  @override
+  String vocabularyBookTabMastered(int count) {
+    return '已掌握 ($count)';
+  }
+
+  @override
+  String vocabularyBookTabIgnored(int count) {
+    return '已忽略 ($count)';
+  }
+
+  @override
+  String get goToLearn => '去学习';
+
+  @override
+  String get actionMaster => '掌握';
+
+  @override
+  String get actionRestore => '恢复';
+
+  @override
+  String get homeSectionLearning => '学习主入口';
+
+  @override
+  String get homeSectionReview => '复习模块';
+
+  @override
+  String get homeSectionStats => '学习统计';
+
+  @override
+  String get homeSectionTools => '工具区';
+
+  @override
+  String get homeKanaTitle => '学习五十音图';
+
+  @override
+  String get homeKanaSubtitle => '从基础发音开始打好根基';
+
+  @override
+  String get homeEnter => '进入';
+
+  @override
+  String get homeNewWordTitle => '学习新单词';
+
+  @override
+  String get homeNewWordSubtitleNewUser => '开始学习你的第一个单词';
+
+  @override
+  String get homeNewWordSubtitle => '继续探索新词';
+
+  @override
+  String get homeGrammarTitle => '学习语法';
+
+  @override
+  String get homeGrammarSubtitle => '掌握日语核心构造与句型';
+
+  @override
+  String get homeGrammarAccent => '浏览语法库';
+
+  @override
+  String get homeReviewWordTitle => '复习单词';
+
+  @override
+  String get homeReviewWordEmpty => '还没有需要复习的单词';
+
+  @override
+  String homeReviewWordCountDescription(int count) {
+    return '今日待复习：$count 个单词';
+  }
+
+  @override
+  String get homeReviewKanaTitle => '复习五十音';
+
+  @override
+  String get homeReviewKanaEmpty => '还没有需要复习的假名';
+
+  @override
+  String homeReviewKanaCountDescription(int count) {
+    return '今日待复习：$count 个假名';
+  }
+
+  @override
+  String get statsTodayLearning => '今日学习';
+
+  @override
+  String get statsTodayReview => '今日复习';
+
+  @override
+  String statsDurationMinutes(int minutes) {
+    return '$minutes分钟';
+  }
+
+  @override
+  String get statsNoActivityMessage => '今天还没有开始学习，试着学一个新单词吧';
+
+  @override
+  String get homeGrammarBookTitle => '语法本';
+
+  @override
+  String get homeGrammarBookSubtitle => '查看学习中和已掌握的语法';
+
+  @override
+  String get homeReadingTitle => '阅读模式';
+
+  @override
+  String get homeReadingSubtitle => '沉浸式日语文章阅读与听力';
+
+  @override
+  String get homeReferenceSubtitle => '数字、时间、日期等常识';
 }

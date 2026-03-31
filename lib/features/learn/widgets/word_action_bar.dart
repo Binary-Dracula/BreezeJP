@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../../../core/constants/learning_status.dart';
 
 /// 单词学习页底部操作栏
@@ -24,6 +24,7 @@ class WordActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // 伪代码：
     // switch(userState):
     //   seen -> [加入复习, 一键掌握, 忽略]
@@ -35,34 +36,55 @@ class WordActionBar extends StatelessWidget {
     if (userState == LearningStatus.seen) {
       buttons.addAll([
         _expandedButton(
-          FilledButton(onPressed: onAddToReview, child: const Text('加入复习')),
+          FilledButton(
+            onPressed: onAddToReview,
+            child: Text(l10n.wordActionAddToReview),
+          ),
         ),
         _expandedButton(
-          OutlinedButton(onPressed: onQuickMaster, child: const Text('一键掌握')),
+          OutlinedButton(
+            onPressed: onQuickMaster,
+            child: Text(l10n.wordActionQuickMaster),
+          ),
         ),
         _expandedButton(
-          OutlinedButton(onPressed: onToggleIgnored, child: const Text('忽略')),
+          OutlinedButton(
+            onPressed: onToggleIgnored,
+            child: Text(l10n.wordActionIgnore),
+          ),
         ),
       ]);
     } else if (userState == LearningStatus.learning) {
       buttons.addAll([
         _expandedButton(
-          FilledButton(onPressed: onMarkMastered, child: const Text('已掌握')),
+          FilledButton(
+            onPressed: onMarkMastered,
+            child: Text(l10n.wordActionMastered),
+          ),
         ),
         _expandedButton(
-          OutlinedButton(onPressed: onToggleIgnored, child: const Text('忽略')),
+          OutlinedButton(
+            onPressed: onToggleIgnored,
+            child: Text(l10n.wordActionIgnore),
+          ),
         ),
       ]);
     } else if (userState == LearningStatus.ignored) {
       buttons.add(
         _expandedButton(
-          FilledButton(onPressed: onToggleIgnored, child: const Text('恢复学习')),
+          FilledButton(
+            onPressed: onToggleIgnored,
+            child: Text(l10n.wordActionRestoreLearning),
+          ),
         ),
       );
     } else if (userState == LearningStatus.mastered) {
       buttons.add(
         _expandedButton(
-          FilledButton(onPressed: onRestoreLearning, child: const Text('恢复学习')),
+          FilledButton(
+            onPressed: onRestoreLearning,
+            child: Text(l10n.wordActionRestoreLearning),
+          ),
         ),
       );
     }

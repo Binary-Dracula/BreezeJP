@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../../../data/models/grammar_detail.dart';
 import '../../../data/models/grammar_meaning.dart';
 import '../../../data/models/grammar_context.dart';
@@ -81,7 +82,7 @@ class GrammarCard extends ConsumerWidget {
           // 含义 (只展示中文)
           if (meaning.definitionCn != null && meaning.definitionCn!.isNotEmpty)
             _SectionCard(
-              title: '含义',
+              title: AppLocalizations.of(context)!.grammarSectionMeaning,
               content: Text(
                 meaning.definitionCn!,
                 style: const TextStyle(fontSize: 16, height: 1.5),
@@ -95,7 +96,7 @@ class GrammarCard extends ConsumerWidget {
           // 接续 (只展示中文)
           if (meaning.howToUseCn != null && meaning.howToUseCn!.isNotEmpty)
             _SectionCard(
-              title: '接续',
+              title: AppLocalizations.of(context)!.grammarSectionUsage,
               content: Text(
                 meaning.howToUseCn!,
                 style: const TextStyle(fontSize: 16, height: 1.5),
@@ -125,7 +126,7 @@ class GrammarCard extends ConsumerWidget {
           if (contextData.whenToUseCn != null &&
               contextData.whenToUseCn!.isNotEmpty)
             _SectionCard(
-              title: '提示',
+              title: AppLocalizations.of(context)!.grammarSectionTip,
               content: Text(
                 contextData.whenToUseCn!,
                 style: const TextStyle(fontSize: 16, height: 1.5),
@@ -140,7 +141,7 @@ class GrammarCard extends ConsumerWidget {
           // 限制条件数组 (只展示中文)
           if (contextData.limitations.isNotEmpty) ...[
             _SectionCard(
-              title: '格式与限制',
+              title: AppLocalizations.of(context)!.grammarSectionRestrictions,
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: contextData.limitations
@@ -191,6 +192,7 @@ class GrammarCard extends ConsumerWidget {
   ) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       elevation: 1,
@@ -205,7 +207,7 @@ class GrammarCard extends ConsumerWidget {
                 Icon(Icons.format_quote_rounded, size: 20, color: primaryColor),
                 const SizedBox(width: 8),
                 Text(
-                  '例句',
+                  l10n.examples,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

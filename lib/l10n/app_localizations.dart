@@ -735,6 +735,300 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'量词'**
   String get referenceTabCounters;
+
+  /// 单词操作栏-加入复习按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'加入复习'**
+  String get wordActionAddToReview;
+
+  /// 单词操作栏-一键掌握按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'一键掌握'**
+  String get wordActionQuickMaster;
+
+  /// 单词操作栏-忽略按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'忽略'**
+  String get wordActionIgnore;
+
+  /// 单词操作栏-已掌握按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'已掌握'**
+  String get wordActionMastered;
+
+  /// 单词操作栏-恢复学习按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复学习'**
+  String get wordActionRestoreLearning;
+
+  /// 单词释义区标题
+  ///
+  /// In zh, this message translates to:
+  /// **'释义'**
+  String get wordDefinition;
+
+  /// 活用变形区标题
+  ///
+  /// In zh, this message translates to:
+  /// **'活用'**
+  String get conjugationTitle;
+
+  /// 活用类型未知时的占位
+  ///
+  /// In zh, this message translates to:
+  /// **'未知'**
+  String get conjugationUnknown;
+
+  /// 语法卡片-含义区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'含义'**
+  String get grammarSectionMeaning;
+
+  /// 语法卡片-接续区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'接续'**
+  String get grammarSectionUsage;
+
+  /// 语法卡片-提示区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'提示'**
+  String get grammarSectionTip;
+
+  /// 语法卡片-格式与限制区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'格式与限制'**
+  String get grammarSectionRestrictions;
+
+  /// 单词本-无学习中单词空状态
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有正在学习的单词\n快去学习新单词吧！'**
+  String get vocabularyBookNoLearningWords;
+
+  /// 单词本-无掌握单词空状态
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有掌握的单词\n继续加油学习吧！'**
+  String get vocabularyBookNoMasteredWords;
+
+  /// 单词本-无忽略单词空状态
+  ///
+  /// In zh, this message translates to:
+  /// **'没有已忽略的单词'**
+  String get vocabularyBookNoIgnoredWords;
+
+  /// 单词本-学习中 Tab 标题
+  ///
+  /// In zh, this message translates to:
+  /// **'学习中 ({count})'**
+  String vocabularyBookTabLearning(int count);
+
+  /// 单词本-已掌握 Tab 标题
+  ///
+  /// In zh, this message translates to:
+  /// **'已掌握 ({count})'**
+  String vocabularyBookTabMastered(int count);
+
+  /// 单词本-已忽略 Tab 标题
+  ///
+  /// In zh, this message translates to:
+  /// **'已忽略 ({count})'**
+  String vocabularyBookTabIgnored(int count);
+
+  /// 空状态跳转到学习按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'去学习'**
+  String get goToLearn;
+
+  /// 列表项操作-标记为掌握
+  ///
+  /// In zh, this message translates to:
+  /// **'掌握'**
+  String get actionMaster;
+
+  /// 列表项操作-恢复学习
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复'**
+  String get actionRestore;
+
+  /// 首页-学习主入口区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'学习主入口'**
+  String get homeSectionLearning;
+
+  /// 首页-复习模块区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'复习模块'**
+  String get homeSectionReview;
+
+  /// 首页-学习统计区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'学习统计'**
+  String get homeSectionStats;
+
+  /// 首页-工具区区块标题
+  ///
+  /// In zh, this message translates to:
+  /// **'工具区'**
+  String get homeSectionTools;
+
+  /// 首页-五十音图入口卡片标题
+  ///
+  /// In zh, this message translates to:
+  /// **'学习五十音图'**
+  String get homeKanaTitle;
+
+  /// 首页-五十音图入口卡片副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'从基础发音开始打好根基'**
+  String get homeKanaSubtitle;
+
+  /// 首页-卡片进入按钮文字
+  ///
+  /// In zh, this message translates to:
+  /// **'进入'**
+  String get homeEnter;
+
+  /// 首页-学习新单词卡片标题
+  ///
+  /// In zh, this message translates to:
+  /// **'学习新单词'**
+  String get homeNewWordTitle;
+
+  /// 首页-新用户学习新单词副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'开始学习你的第一个单词'**
+  String get homeNewWordSubtitleNewUser;
+
+  /// 首页-已有用户学习新单词副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'继续探索新词'**
+  String get homeNewWordSubtitle;
+
+  /// 首页-学习语法卡片标题
+  ///
+  /// In zh, this message translates to:
+  /// **'学习语法'**
+  String get homeGrammarTitle;
+
+  /// 首页-学习语法卡片副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'掌握日语核心构造与句型'**
+  String get homeGrammarSubtitle;
+
+  /// 首页-学习语法卡片动作文字
+  ///
+  /// In zh, this message translates to:
+  /// **'浏览语法库'**
+  String get homeGrammarAccent;
+
+  /// 首页-复习单词卡片标题
+  ///
+  /// In zh, this message translates to:
+  /// **'复习单词'**
+  String get homeReviewWordTitle;
+
+  /// 首页-无待复习单词提示
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有需要复习的单词'**
+  String get homeReviewWordEmpty;
+
+  /// 首页-待复习单词数量描述
+  ///
+  /// In zh, this message translates to:
+  /// **'今日待复习：{count} 个单词'**
+  String homeReviewWordCountDescription(int count);
+
+  /// 首页-复习五十音卡片标题
+  ///
+  /// In zh, this message translates to:
+  /// **'复习五十音'**
+  String get homeReviewKanaTitle;
+
+  /// 首页-无待复习假名提示
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有需要复习的假名'**
+  String get homeReviewKanaEmpty;
+
+  /// 首页-待复习假名数量描述
+  ///
+  /// In zh, this message translates to:
+  /// **'今日待复习：{count} 个假名'**
+  String homeReviewKanaCountDescription(int count);
+
+  /// 统计-今日学习标签
+  ///
+  /// In zh, this message translates to:
+  /// **'今日学习'**
+  String get statsTodayLearning;
+
+  /// 统计-今日复习标签
+  ///
+  /// In zh, this message translates to:
+  /// **'今日复习'**
+  String get statsTodayReview;
+
+  /// 统计-学习时长（分钟）
+  ///
+  /// In zh, this message translates to:
+  /// **'{minutes}分钟'**
+  String statsDurationMinutes(int minutes);
+
+  /// 统计-今日无活动提示
+  ///
+  /// In zh, this message translates to:
+  /// **'今天还没有开始学习，试着学一个新单词吧'**
+  String get statsNoActivityMessage;
+
+  /// 首页工具区-语法本标题
+  ///
+  /// In zh, this message translates to:
+  /// **'语法本'**
+  String get homeGrammarBookTitle;
+
+  /// 首页工具区-语法本副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'查看学习中和已掌握的语法'**
+  String get homeGrammarBookSubtitle;
+
+  /// 首页工具区-阅读模式标题
+  ///
+  /// In zh, this message translates to:
+  /// **'阅读模式'**
+  String get homeReadingTitle;
+
+  /// 首页工具区-阅读模式副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'沉浸式日语文章阅读与听力'**
+  String get homeReadingSubtitle;
+
+  /// 首页工具区-速查副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'数字、时间、日期等常识'**
+  String get homeReferenceSubtitle;
 }
 
 class _AppLocalizationsDelegate

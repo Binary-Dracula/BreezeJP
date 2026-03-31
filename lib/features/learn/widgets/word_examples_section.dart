@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../../../core/widgets/common_example_item.dart';
 import '../../../data/models/word_detail.dart';
 
@@ -16,6 +17,7 @@ class WordExamplesSection extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -34,7 +36,7 @@ class WordExamplesSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '例句',
+                  l10n.examples,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

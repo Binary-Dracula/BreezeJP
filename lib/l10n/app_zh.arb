@@ -506,5 +506,231 @@
   "referenceTabCounters": "量词",
   "@referenceTabCounters": {
     "description": "速查页量词Tab"
+  },
+  "wordActionAddToReview": "加入复习",
+  "@wordActionAddToReview": {
+    "description": "单词操作栏-加入复习按钮"
+  },
+  "wordActionQuickMaster": "一键掌握",
+  "@wordActionQuickMaster": {
+    "description": "单词操作栏-一键掌握按钮"
+  },
+  "wordActionIgnore": "忽略",
+  "@wordActionIgnore": {
+    "description": "单词操作栏-忽略按钮"
+  },
+  "wordActionMastered": "已掌握",
+  "@wordActionMastered": {
+    "description": "单词操作栏-已掌握按钮"
+  },
+  "wordActionRestoreLearning": "恢复学习",
+  "@wordActionRestoreLearning": {
+    "description": "单词操作栏-恢复学习按钮"
+  },
+  "wordDefinition": "释义",
+  "@wordDefinition": {
+    "description": "单词释义区标题"
+  },
+  "conjugationTitle": "活用",
+  "@conjugationTitle": {
+    "description": "活用变形区标题"
+  },
+  "conjugationUnknown": "未知",
+  "@conjugationUnknown": {
+    "description": "活用类型未知时的占位"
+  },
+  "grammarSectionMeaning": "含义",
+  "@grammarSectionMeaning": {
+    "description": "语法卡片-含义区块标题"
+  },
+  "grammarSectionUsage": "接续",
+  "@grammarSectionUsage": {
+    "description": "语法卡片-接续区块标题"
+  },
+  "grammarSectionTip": "提示",
+  "@grammarSectionTip": {
+    "description": "语法卡片-提示区块标题"
+  },
+  "grammarSectionRestrictions": "格式与限制",
+  "@grammarSectionRestrictions": {
+    "description": "语法卡片-格式与限制区块标题"
+  },
+  "vocabularyBookNoLearningWords": "还没有正在学习的单词\n快去学习新单词吧！",
+  "@vocabularyBookNoLearningWords": {
+    "description": "单词本-无学习中单词空状态"
+  },
+  "vocabularyBookNoMasteredWords": "还没有掌握的单词\n继续加油学习吧！",
+  "@vocabularyBookNoMasteredWords": {
+    "description": "单词本-无掌握单词空状态"
+  },
+  "vocabularyBookNoIgnoredWords": "没有已忽略的单词",
+  "@vocabularyBookNoIgnoredWords": {
+    "description": "单词本-无忽略单词空状态"
+  },
+  "vocabularyBookTabLearning": "学习中 ({count})",
+  "@vocabularyBookTabLearning": {
+    "description": "单词本-学习中 Tab 标题",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vocabularyBookTabMastered": "已掌握 ({count})",
+  "@vocabularyBookTabMastered": {
+    "description": "单词本-已掌握 Tab 标题",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vocabularyBookTabIgnored": "已忽略 ({count})",
+  "@vocabularyBookTabIgnored": {
+    "description": "单词本-已忽略 Tab 标题",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goToLearn": "去学习",
+  "@goToLearn": {
+    "description": "空状态跳转到学习按钮"
+  },
+  "actionMaster": "掌握",
+  "@actionMaster": {
+    "description": "列表项操作-标记为掌握"
+  },
+  "actionRestore": "恢复",
+  "@actionRestore": {
+    "description": "列表项操作-恢复学习"
+  },
+  "homeSectionLearning": "学习主入口",
+  "@homeSectionLearning": {
+    "description": "首页-学习主入口区块标题"
+  },
+  "homeSectionReview": "复习模块",
+  "@homeSectionReview": {
+    "description": "首页-复习模块区块标题"
+  },
+  "homeSectionStats": "学习统计",
+  "@homeSectionStats": {
+    "description": "首页-学习统计区块标题"
+  },
+  "homeSectionTools": "工具区",
+  "@homeSectionTools": {
+    "description": "首页-工具区区块标题"
+  },
+  "homeKanaTitle": "学习五十音图",
+  "@homeKanaTitle": {
+    "description": "首页-五十音图入口卡片标题"
+  },
+  "homeKanaSubtitle": "从基础发音开始打好根基",
+  "@homeKanaSubtitle": {
+    "description": "首页-五十音图入口卡片副标题"
+  },
+  "homeEnter": "进入",
+  "@homeEnter": {
+    "description": "首页-卡片进入按钮文字"
+  },
+  "homeNewWordTitle": "学习新单词",
+  "@homeNewWordTitle": {
+    "description": "首页-学习新单词卡片标题"
+  },
+  "homeNewWordSubtitleNewUser": "开始学习你的第一个单词",
+  "@homeNewWordSubtitleNewUser": {
+    "description": "首页-新用户学习新单词副标题"
+  },
+  "homeNewWordSubtitle": "继续探索新词",
+  "@homeNewWordSubtitle": {
+    "description": "首页-已有用户学习新单词副标题"
+  },
+  "homeGrammarTitle": "学习语法",
+  "@homeGrammarTitle": {
+    "description": "首页-学习语法卡片标题"
+  },
+  "homeGrammarSubtitle": "掌握日语核心构造与句型",
+  "@homeGrammarSubtitle": {
+    "description": "首页-学习语法卡片副标题"
+  },
+  "homeGrammarAccent": "浏览语法库",
+  "@homeGrammarAccent": {
+    "description": "首页-学习语法卡片动作文字"
+  },
+  "homeReviewWordTitle": "复习单词",
+  "@homeReviewWordTitle": {
+    "description": "首页-复习单词卡片标题"
+  },
+  "homeReviewWordEmpty": "还没有需要复习的单词",
+  "@homeReviewWordEmpty": {
+    "description": "首页-无待复习单词提示"
+  },
+  "homeReviewWordCountDescription": "今日待复习：{count} 个单词",
+  "@homeReviewWordCountDescription": {
+    "description": "首页-待复习单词数量描述",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeReviewKanaTitle": "复习五十音",
+  "@homeReviewKanaTitle": {
+    "description": "首页-复习五十音卡片标题"
+  },
+  "homeReviewKanaEmpty": "还没有需要复习的假名",
+  "@homeReviewKanaEmpty": {
+    "description": "首页-无待复习假名提示"
+  },
+  "homeReviewKanaCountDescription": "今日待复习：{count} 个假名",
+  "@homeReviewKanaCountDescription": {
+    "description": "首页-待复习假名数量描述",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statsTodayLearning": "今日学习",
+  "@statsTodayLearning": {
+    "description": "统计-今日学习标签"
+  },
+  "statsTodayReview": "今日复习",
+  "@statsTodayReview": {
+    "description": "统计-今日复习标签"
+  },
+  "statsDurationMinutes": "{minutes}分钟",
+  "@statsDurationMinutes": {
+    "description": "统计-学习时长（分钟）",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "statsNoActivityMessage": "今天还没有开始学习，试着学一个新单词吧",
+  "@statsNoActivityMessage": {
+    "description": "统计-今日无活动提示"
+  },
+  "homeGrammarBookTitle": "语法本",
+  "@homeGrammarBookTitle": {
+    "description": "首页工具区-语法本标题"
+  },
+  "homeGrammarBookSubtitle": "查看学习中和已掌握的语法",
+  "@homeGrammarBookSubtitle": {
+    "description": "首页工具区-语法本副标题"
+  },
+  "homeReadingTitle": "阅读模式",
+  "@homeReadingTitle": {
+    "description": "首页工具区-阅读模式标题"
+  },
+  "homeReadingSubtitle": "沉浸式日语文章阅读与听力",
+  "@homeReadingSubtitle": {
+    "description": "首页工具区-阅读模式副标题"
+  },
+  "homeReferenceSubtitle": "数字、时间、日期等常识",
+  "@homeReferenceSubtitle": {
+    "description": "首页工具区-速查副标题"
   }
 }

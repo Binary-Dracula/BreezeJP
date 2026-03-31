@@ -21,7 +21,10 @@ import '../features/settings/pages/settings_page.dart';
 import '../features/grammar/pages/grammar_list_page.dart';
 import '../features/grammar/pages/grammar_learning_page.dart';
 import '../features/grammar_book/pages/grammar_book_page.dart';
-import '../features/reference/presentation/reference_screen.dart';
+import '../features/kana/stroke/pages/kana_stroke_practice_page.dart';
+import '../data/models/kana_detail.dart';
+import '../features/kana/chart/state/kana_chart_state.dart';
+import '../features/reference/pages/reference_page.dart';
 
 /// 应用路由配置
 final appRouter = GoRouter(
@@ -86,6 +89,20 @@ final appRouter = GoRouter(
       path: '/kana-chart',
       name: 'kana-chart',
       builder: (context, state) => const KanaChartPage(),
+    ),
+
+    // 假名笔顺练习页面
+    GoRoute(
+      path: '/kana-stroke',
+      name: 'kana-stroke',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        return KanaStrokePracticePage(
+          kanaLetters: extra['kanaLetters'] as List<KanaLetterWithState>,
+          initialIndex: extra['initialIndex'] as int,
+          displayMode: extra['displayMode'] as KanaDisplayMode,
+        );
+      },
     ),
     // ----------------------------------------------------------------------
     // Word Detail
@@ -187,7 +204,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/reference',
       name: 'reference',
-      builder: (context, state) => const ReferenceScreen(),
+      builder: (context, state) => const ReferencePage(),
     ),
   ],
 );

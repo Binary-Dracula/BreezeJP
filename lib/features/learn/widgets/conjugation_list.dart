@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../../../../data/models/word_conjugation.dart';
 
 class ConjugationList extends StatelessWidget {
@@ -14,6 +15,7 @@ class ConjugationList extends StatelessWidget {
 
     final theme = Theme.of(context);
     final borderColor = theme.dividerColor;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -21,7 +23,7 @@ class ConjugationList extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Text(
-            '活用',
+            l10n.conjugationTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -56,7 +58,9 @@ class ConjugationList extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        item.typeNameCn ?? item.typeNameJa ?? '未知',
+                        item.typeNameCn ??
+                            item.typeNameJa ??
+                            l10n.conjugationUnknown,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.hintColor,
                         ),

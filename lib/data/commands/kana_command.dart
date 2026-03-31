@@ -7,7 +7,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/log_formatter.dart';
-import '../../domain/kana/kana_domain_event.dart';
+import '../../core/domain/kana_domain_event.dart';
 import '../models/kana_learning_state.dart';
 import '../models/study_log.dart';
 import '../repositories/kana_repository.dart';

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
-import '../domain/reference_data.dart';
-import '../domain/models.dart';
-import 'widgets/reference_card.dart';
+import '../reference_data.dart';
+import '../reference_models.dart';
+import '../widgets/reference_card.dart';
 
-class ReferenceScreen extends StatelessWidget {
-  const ReferenceScreen({super.key});
+class ReferencePage extends StatelessWidget {
+  const ReferencePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return DefaultTabController(
       length: 4,
       child: Scaffold(
@@ -62,7 +62,12 @@ class _ReferenceList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 8),
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: 8,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

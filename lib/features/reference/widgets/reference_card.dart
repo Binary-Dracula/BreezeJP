@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/models.dart';
+import '../reference_models.dart';
 
 class ReferenceCard extends StatelessWidget {
   final ReferenceItem item;
@@ -10,7 +10,7 @@ class ReferenceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // 高亮颜色，使用 error container 上的主色或 primary
-    final highlightColor = theme.colorScheme.primary; 
+    final highlightColor = theme.colorScheme.primary;
     final textColor = theme.colorScheme.onSurface;
 
     return Card(
@@ -29,7 +29,9 @@ class ReferenceCard extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                color: theme.colorScheme.secondaryContainer.withValues(
+                  alpha: 0.5,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -37,7 +39,9 @@ class ReferenceCard extends StatelessWidget {
                   item.character,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: item.isIrregular ? highlightColor : theme.colorScheme.onSecondaryContainer,
+                    color: item.isIrregular
+                        ? highlightColor
+                        : theme.colorScheme.onSecondaryContainer,
                   ),
                 ),
               ),
@@ -77,11 +81,7 @@ class ReferenceCard extends StatelessWidget {
               ),
             ),
             if (item.isIrregular)
-              Icon(
-                Icons.star_rounded,
-                color: highlightColor,
-                size: 20,
-              ),
+              Icon(Icons.star_rounded, color: highlightColor, size: 20),
           ],
         ),
       ),

@@ -95,19 +95,19 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
               children: [
                 _buildHeader(context, state.userName, l10n),
                 const SizedBox(height: 20),
-                _buildSectionTitle('学习主入口'),
+                _buildSectionTitle(l10n.homeSectionLearning),
                 const SizedBox(height: 12),
                 _buildPrimaryActions(context, l10n, isNewUser),
                 const SizedBox(height: 24),
-                _buildSectionTitle('复习模块'),
+                _buildSectionTitle(l10n.homeSectionReview),
                 const SizedBox(height: 12),
-                _buildReviewSection(context, state),
+                _buildReviewSection(context, state, l10n),
                 const SizedBox(height: 24),
-                _buildSectionTitle('学习统计'),
+                _buildSectionTitle(l10n.homeSectionStats),
                 const SizedBox(height: 12),
-                _buildStatsCard(context, state),
+                _buildStatsCard(context, state, l10n),
                 const SizedBox(height: 24),
-                _buildSectionTitle('工具区'),
+                _buildSectionTitle(l10n.homeSectionTools),
                 const SizedBox(height: 12),
                 _buildToolsGrid(context, l10n),
               ],
@@ -190,19 +190,21 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
           children: [
             Expanded(
               child: _PrimaryActionCard(
-                title: '学习五十音图',
-                subtitle: '从基础发音开始打好根基',
+                title: l10n.homeKanaTitle,
+                subtitle: l10n.homeKanaSubtitle,
                 colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
                 icon: Icons.grid_view_rounded,
                 onTap: () => context.push('/kana-chart'),
-                accentText: '进入',
+                accentText: l10n.homeEnter,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _PrimaryActionCard(
-                title: '学习新单词',
-                subtitle: isNewUser ? '开始学习你的第一个单词' : '继续探索新词',
+                title: l10n.homeNewWordTitle,
+                subtitle: isNewUser
+                    ? l10n.homeNewWordSubtitleNewUser
+                    : l10n.homeNewWordSubtitle,
                 colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
                 icon: Icons.bolt_rounded,
                 onTap: () => context.push('/initial-choice'),
@@ -213,18 +215,22 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         ),
         const SizedBox(height: 12),
         _PrimaryActionCard(
-          title: '学习语法',
-          subtitle: '掌握日语核心构造与句型',
+          title: l10n.homeGrammarTitle,
+          subtitle: l10n.homeGrammarSubtitle,
           colors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
           icon: Icons.segment_rounded,
           onTap: () => context.push('/grammar/list'),
-          accentText: '浏览语法库',
+          accentText: l10n.homeGrammarAccent,
         ),
       ],
     );
   }
 
-  Widget _buildReviewSection(BuildContext context, HomeState state) {
+  Widget _buildReviewSection(
+    BuildContext context,
+    HomeState state,
+    AppLocalizations l10n,
+  ) {
     final wordReviewCount = state.reviewCount;
     final kanaReviewCount = state.kanaReviewCount;
 
@@ -234,11 +240,11 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
           children: [
             Expanded(
               child: _ReviewCard(
-                title: '复习单词',
+                title: l10n.homeReviewWordTitle,
                 count: wordReviewCount,
                 description: wordReviewCount > 0
-                    ? '今日待复习：$wordReviewCount 个单词'
-                    : '还没有需要复习的单词',
+                    ? l10n.homeReviewWordCountDescription(wordReviewCount)
+                    : l10n.homeReviewWordEmpty,
                 icon: Icons.refresh_rounded,
                 color: const Color(0xFF2563EB),
                 onTap: () => context.pushNamed('word-review'),
@@ -251,11 +257,11 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
           children: [
             Expanded(
               child: _ReviewCard(
-                title: '复习五十音',
+                title: l10n.homeReviewKanaTitle,
                 count: kanaReviewCount,
                 description: kanaReviewCount > 0
-                    ? '今日待复习：$kanaReviewCount 个假名'
-                    : '还没有需要复习的假名',
+                    ? l10n.homeReviewKanaCountDescription(kanaReviewCount)
+                    : l10n.homeReviewKanaEmpty,
                 icon: Icons.translate_rounded,
                 color: const Color(0xFF22C55E),
                 onTap: () => context.pushNamed('kana-review'),
@@ -267,7 +273,11 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     );
   }
 
-  Widget _buildStatsCard(BuildContext context, HomeState state) {
+  Widget _buildStatsCard(
+    BuildContext context,
+    HomeState state,
+    AppLocalizations l10n,
+  ) {
     final hasActivity =
         state.newWordCount > 0 ||
         state.todayReviewCount > 0 ||
@@ -296,7 +306,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
                 child: _buildStatColumn(
                   icon: Icons.auto_awesome_rounded,
                   color: const Color(0xFF6366F1),
-                  label: '今日学习',
+                  label: l10n.statsTodayLearning,
                   value: '${state.newWordCount}',
                 ),
               ),
@@ -305,7 +315,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
                 child: _buildStatColumn(
                   icon: Icons.repeat_rounded,
                   color: const Color(0xFF14B8A6),
-                  label: '今日复习',
+                  label: l10n.statsTodayReview,
                   value: '${state.todayReviewCount}',
                 ),
               ),
@@ -314,8 +324,10 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
                 child: _buildStatColumn(
                   icon: Icons.timer_outlined,
                   color: const Color(0xFF0EA5E9),
-                  label: '今日时长',
-                  value: '${state.todayStudyDurationMinutes}分钟',
+                  label: l10n.todayDuration,
+                  value: l10n.statsDurationMinutes(
+                    state.todayStudyDurationMinutes,
+                  ),
                 ),
               ),
             ],
@@ -323,7 +335,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
           if (!hasActivity) ...[
             const SizedBox(height: 12),
             Text(
-              '今天还没有开始学习，试着学一个新单词吧',
+              l10n.statsNoActivityMessage,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
@@ -379,15 +391,15 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
       ),
       _ToolItem(
         icon: Icons.segment_rounded,
-        title: '语法本',
-        subtitle: '查看学习中和已掌握的语法',
+        title: l10n.homeGrammarBookTitle,
+        subtitle: l10n.homeGrammarBookSubtitle,
         gradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
         onTap: () => context.push('/grammar-book'),
       ),
       _ToolItem(
         icon: Icons.menu_book_rounded,
-        title: '阅读模式',
-        subtitle: '沉浸式日语文章阅读与听力',
+        title: l10n.homeReadingTitle,
+        subtitle: l10n.homeReadingSubtitle,
         gradient: const [Color(0xFFEC4899), Color(0xFFDB2777)],
         onTap: () => context.push('/article-list'),
       ),
@@ -401,7 +413,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
       _ToolItem(
         icon: Icons.library_books_rounded,
         title: l10n.referenceTitle,
-        subtitle: '数字、时间、日期等常识',
+        subtitle: l10n.homeReferenceSubtitle,
         gradient: const [Color(0xFF6366F1), Color(0xFF4F46E5)],
         onTap: () => context.push('/reference'),
       ),

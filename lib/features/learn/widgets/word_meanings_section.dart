@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:breeze_jp/l10n/app_localizations.dart';
 import '../../../data/models/word_meaning.dart';
 
 /// 释义区
@@ -15,6 +16,7 @@ class WordMeaningsSection extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -33,7 +35,7 @@ class WordMeaningsSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '释义',
+                  l10n.wordDefinition,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
