@@ -13,6 +13,7 @@ description: BreezeJP 工程级架构规范与编码准则，适用于全项目�
 
 - 无论情况如何，使用**简体中文**回答用户所有问题及进行交流。
 - 文档、计划、报告、代码注释均用**简体中文**撰写。
+- Skill 元数据命名约束：`SKILL.md` frontmatter 的 `name` 必须仅包含小写字母、数字、连字符（`-`），且必须与其所在技能目录名完全一致。
 
 ---
 
@@ -30,6 +31,13 @@ description: BreezeJP 工程级架构规范与编码准则，适用于全项目�
 | 数据文件  | `assets/database/breeze_jp.sqlite` |
 | ARB 模板  | `lib/l10n/app_zh.arb`              |
 | 生成命令  | `flutter gen-l10n`                 |
+
+---
+
+## UI 规范入口（轻量提示）
+
+- 当任务涉及 Flutter 页面开发、UI 改版、组件样式、颜色/布局规范时，优先查阅：`.agents/skills/breezejp-ui-design/SKILL.md`。
+- 若通用 UI Skill 与项目现有视觉风格冲突，以 BreezeJP UI Skill 为准。
 
 ---
 

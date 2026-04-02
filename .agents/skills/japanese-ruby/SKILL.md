@@ -1,5 +1,5 @@
 ---
-name: Japanese Ruby Generator
+name: japanese-ruby
 description: A deterministic contextual tool to convert plain Japanese text into precise Ruby (Furigana) annotated strings using Fugashi and UniDic-lite, strictly adhering to Okurigana rules.
 ---
 
@@ -34,6 +34,7 @@ You can use the script programmatically by invoking the `generate_ruby` function
 #### Requirements
 
 Before running the script, ensure the python environment has `fugashi`, `unidic-lite`, and `jaconv` installed:
+
 ```bash
 pip install fugashi unidic-lite jaconv
 ```
@@ -54,24 +55,24 @@ tagger = fugashi.Tagger()
 def generate_ruby(text):
     if not text:
         return ""
-        
+
     out = []
-    
+
     for word in tagger(text):
         orig = word.surface
-        
+
         if not re.search(r'[\u4e00-\u9fff]', orig):
             out.append(orig)
             continue
-            
+
         kana = getattr(word.feature, 'kana', None)
         if not kana:
             out.append(orig)
             continue
-            
+
         hira = jaconv.kata2hira(kana)
         orig_len, hira_len = len(orig), len(hira)
-        
+
         suffix = ""
         i = 1
         while i <= orig_len and i <= hira_len:
@@ -80,7 +81,7 @@ def generate_ruby(text):
                 i += 1
             else:
                 break
-                
+
         prefix = ""
         j, hira_start, orig_start = 0, 0, 0
         while j < (orig_len - len(suffix)) and j < (hira_len - len(suffix)):
@@ -91,14 +92,14 @@ def generate_ruby(text):
                 orig_start += 1
             else:
                 break
-                
+
         kanji_part = orig[orig_start : orig_len - len(suffix)]
         ruby_part = hira[hira_start : hira_len - len(suffix)]
-        
+
         if kanji_part and ruby_part and kanji_part != ruby_part:
             out.append(f"{prefix}{kanji_part}[{ruby_part}]{suffix}")
         else:
             out.append(orig)
-            
+
     return "".join(out)
 ```
