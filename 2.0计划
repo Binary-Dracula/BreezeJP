@@ -1,0 +1,58 @@
+BreezeJP 项目完全重构技术方案 (V2.0)
+本项目旨在通过完全重构，将 BreezeJP 从简单的单词工具升级为由 AI 驱动、支持多教材体系、具备深度学习内容的专业日语学习平台。本次更新强化了 Word ID 资源锚点逻辑、资源分发策略以及同步机制。
+
+
+1. 核心架构理念
+Word ID 绝对核心化：使用 UUID v4 作为单词的唯一标识。所有音频、图片、详情数据均通过 Word ID 进行索引，实现“一次修改，处处生效”。
+资源容器化存储：在 Cloudflare R2 中以 audio/{word_id}/ 为路径前缀，将单词主音、例句音频等所有资源聚合存储。
+云原生与零成本：
+Supabase (数据库)：存储结构化元数据与学习进度。
+Cloudflare R2 (存储)：利用其 10GB 免费空间和 0 流量费 (Egress Fee) 特性存储音频资源。
+Cloudflare Workers (API)：作为边缘缓存层，减少对数据库的直接访问。
+数据驱动 UI：底层 Schema 决定展示，通过 9 维度的 AI 结构化 JSON 提供深度学习内容。
+
+
+2. 数据库逻辑设计 (Supabase)
+2.1 基础表结构
+核心单词表 (words)：
+id (UUID): 唯一标识。
+word, reading, pitch_accent_num, jlpt_level, audio_url 等基础搜索字段。
+深度内容表 (word_details)：
+word_id (UUID): 关联主表。
+rich_content (JSONB): 存储语感辨析、助词公式、活用形、避坑指南等。
+书籍体系：
+books / lessons：教材元数据。
+lesson_word_map (关联表)：
+lesson_id, word_id
+sort_order (INT)：记录单词在课次中的原始顺序（支持通过 AI 纠正乱序抓取数据）。
+
+
+3. 资源存储与分发 (Cloudflare R2)
+3.1 路径规范
+所有资源均以 Word ID 为目录：
+
+audio/{word_id}/main.mp3：单词标准发音。
+audio/{word_id}/ex_0.mp3, audio/{word_id}/ex_1.mp3：AI 生成的例句音频。
+3.2 成本控制
+零流量费：Cloudflare R2 不收取数据流出费用，非常适合高频触发的音频学习场景。
+压缩策略：使用 ffmpeg 统一压制为 32kbps MP3，最大化 10GB 免费空间利用率。
+
+
+4. 数据生产流水线 (Python "The Factory")
+抓取与预处理：从原始源（如 MojiDic）获取乱序数据。
+AI 排序纠正：利用 AI 根据教材知识库对课内单词进行重新排序，写入 sort_order。
+深度生成：AI 生成 9 维度 JSON 文本。
+音频合成：使用 edge-tts (Nanami/Keita 语音) 生成音频。
+云端同步：先上传 R2 音频文件，成功后写入 Supabase 记录，确保原子性。
+
+
+5. 同步与客户端性能 (Flutter)
+5.1 Splash 画面同步协议
+版本检查：检查 remote_version vs local_version。
+文本同步：在 Splash 画面完成当前书籍/课次的 JSON 元数据同步（体积小，速度快）。
+资源后台化：音频文件采取“按需加载 + 本地缓存”或“后台预载”策略，不阻塞用户进入学习。
+3.2 本地缓存层
+使用 Isar 或 Hive 作为本地数据库镜像。
+缓存完整的 rich_content JSON，确保离线状态下依然具备深度学习体验。
+
+
