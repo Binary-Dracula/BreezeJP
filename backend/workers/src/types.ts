@@ -62,10 +62,72 @@ export interface ArticleDetail extends ArticleListItem {
   items: SentenceItem[];
 }
 
+// --- BreezeJP 2.0 Vocabulary System ---
+
+export interface VocabBook {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  cover_image_key?: string;
+  has_lessons: boolean;
+  word_count: number;
+}
+
+export interface VocabLesson {
+  id: string;
+  book_id: string;
+  lesson_number: number;
+  title?: string;
+  word_count: number;
+}
+
+export interface VocabWord {
+  id: string;
+  word: string;
+  reading: string;
+  romaji?: string;
+  pitch_accent?: string;
+  jlpt_level?: string;
+  part_of_speech: string;
+  transitivity?: string;
+  primary_meaning?: string;
+  has_audio: boolean;
+}
+
+export interface VocabWordDetail {
+  word_id: string;
+  rich_content: {
+    meanings: any[];
+    grammar_rules?: any[];
+    conjugations?: any;
+    kanji_components?: any[];
+    synonyms_antonyms?: any;
+    collocations?: any[];
+    common_mistakes?: any[];
+    _source_meta?: any;
+  };
+}
+
+export interface VocabExample {
+  id: string;
+  word_id: string;
+  level: string;
+  japanese: string;
+  chinese: string;
+  has_audio: boolean;
+  sort_order: number;
+}
+
+export interface VocabFullDetail extends VocabWord {
+  rich_content: VocabWordDetail['rich_content'];
+  examples: VocabExample[];
+}
+
 // API 统一响应格式
 export interface ApiResponse<T> {
   data: T;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> & { server_time?: string };
 }
 
 export interface ApiError {

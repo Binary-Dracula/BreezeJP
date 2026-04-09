@@ -10,7 +10,8 @@ import { Env } from './types';
 import { verifyAuth, unauthorizedResponse } from './middleware/auth';
 import { corsHeaders, handleOptions } from './middleware/cors';
 import { handleArticleList, handleArticleDetail } from './routes/articles';
-import { handleAudio } from './routes/audio';
+import { handleAudio, handleVocabAudio } from './routes/audio';
+import { handleBookList, handleLessonList, handleVocabWordList, handleVocabWordDetail } from './routes/vocab';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -63,7 +64,46 @@ export default {
       return handleArticleDetail(request, env, auth, articleDetailMatch[1]);
     }
 
-    // GET /api/v1/audio/:id
+    // ---- 2.0 单词系统路由 ----
+
+    // GET /api/v1/books
+    if (path === '/api/v1/books') {
+      return handleBookList(request, env, auth);
+    }
+
+    // GET /api/v1/books/:id/lessons
+    const lessonsMatch = path.match(/^\/api\/v1\/books\/([^/]+)\/lessons$/);
+    if (lessonsMatch) {
+      return handleLessonList(request, env, auth, lessonsMatch[1]);
+    }
+
+    // GET /api/v1/books/:id/words
+    const bookWordsMatch = path.match(/^\/api\/v1\/books\/([^/]+)\/words$/);
+    if (bookWordsMatch) {
+      return handleVocabWordList(request, env, auth, bookWordsMatch[1]);
+    }
+
+    // GET /api/v1/words/:id
+    const vocabDetailMatch = path.match(/^\/api\/v1\/words\/([^/]+)$/);
+    if (vocabDetailMatch) {
+      return handleVocabWordDetail(request, env, auth, vocabDetailMatch[1]);
+    }
+
+    // ---- 音频代理（兼容 1.0 与 2.0） ----
+
+    // GET /api/v1/audio/articles/:id (Legacy)
+    const articleAudioMatch = path.match(/^\/api\/v1\/audio\/articles\/([^/]+)$/);
+    if (articleAudioMatch) {
+      return handleAudio(request, env, auth, articleAudioMatch[1]);
+    }
+
+    // GET /api/v1/audio/words/:wordId/:filename (2.0)
+    const vocabAudioMatch = path.match(/^\/api\/v1\/audio\/words\/([^/]+)\/([^/]+)$/);
+    if (vocabAudioMatch) {
+      return handleVocabAudio(request, env, auth, vocabAudioMatch[1], vocabAudioMatch[2]);
+    }
+
+    // GET /api/v1/audio/:id (Strict Legacy fallback)
     const audioMatch = path.match(/^\/api\/v1\/audio\/([^/]+)$/);
     if (audioMatch) {
       return handleAudio(request, env, auth, audioMatch[1]);
