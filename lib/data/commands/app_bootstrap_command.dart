@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../db/app_database_provider.dart';
 import 'active_user_command_provider.dart';
 
-enum AppBootstrapStatus {
-  ready,
-}
+enum AppBootstrapStatus { ready }
 
 class AppBootstrapResult {
   final AppBootstrapStatus status;

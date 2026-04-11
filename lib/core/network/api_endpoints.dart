@@ -10,6 +10,10 @@ class ApiEndpoints {
   static const String audio = '/api/v1/audio/{id}';
   static const String health = '/api/v1/health';
 
+  // 词汇相关 API
+  static const String books = '/api/v1/books';
+  static const String bookNextWords = '/api/v1/books/{bookId}/next-words';
+
   /// 替换路径参数
   /// 例如: replaceParams('/words/{id}', {'id': '123'}) => '/words/123'
   static String replaceParams(String path, Map<String, dynamic> params) {

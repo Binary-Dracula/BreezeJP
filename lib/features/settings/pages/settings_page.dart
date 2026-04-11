@@ -318,6 +318,120 @@ class SettingsPage extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 32),
+                    // ── 每次学习单词数 ──
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.format_list_numbered_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '每次学习单词数',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                '每次从辞书中拉取的新词数量',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final batchSize = ref.watch(learnBatchSizeProvider);
+                        return Column(
+                          children: [
+                            SliderTheme(
+                              data: SliderThemeData(
+                                activeTrackColor: const Color(0xFF5C8DFF),
+                                inactiveTrackColor: Colors.grey.shade200,
+                                thumbColor: const Color(0xFF5C8DFF),
+                                overlayColor: const Color(
+                                  0xFF5C8DFF,
+                                ).withValues(alpha: 0.12),
+                                valueIndicatorColor: const Color(0xFF5C8DFF),
+                                showValueIndicator: ShowValueIndicator.onDrag,
+                              ),
+                              child: Slider(
+                                value: batchSize.toDouble(),
+                                min: 10,
+                                max: 50,
+                                divisions: 8,
+                                label: '$batchSize 词',
+                                onChanged: (value) {
+                                  ref
+                                      .read(learnBatchSizeProvider.notifier)
+                                      .setSize(value.round());
+                                },
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '10',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '当前: $batchSize 词',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF5C8DFF),
+                                    ),
+                                  ),
+                                  Text(
+                                    '50',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),

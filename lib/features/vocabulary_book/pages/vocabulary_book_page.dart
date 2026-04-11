@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 
 import '../../../data/models/read/vocabulary_book_item.dart';
-import '../../learn/widgets/audio_play_button.dart';
 import '../controller/vocabulary_book_controller.dart';
 import '../state/vocabulary_book_state.dart';
 
@@ -256,7 +255,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           return _WordListTile(
             item: items[index],
             tabIndex: tabIndex,
-            onTap: () => context.push('/learn/${items[index].wordId}'),
+            onTap: () {},
             onToggleStatus: () {
               ref
                   .read(vocabularyBookControllerProvider.notifier)
@@ -286,7 +285,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => context.push('/initial-choice'),
+            onPressed: () => context.pop(),
             icon: const Icon(Icons.bolt_rounded, size: 18),
             label: Text(AppLocalizations.of(context)!.goToLearn),
             style: ElevatedButton.styleFrom(
@@ -349,11 +348,10 @@ class _WordListTile extends StatelessWidget {
   }
 
   Widget _buildAudioButton() {
-    final audioSource = _resolveAudioSource();
-    return AudioPlayButton(
-      audioSource: audioSource,
+    return Icon(
+      item.hasAudio ? Icons.volume_up_rounded : Icons.volume_off_rounded,
       size: 28,
-      color: const Color(0xFF5C8DFF),
+      color: item.hasAudio ? const Color(0xFF5C8DFF) : Colors.grey.shade300,
     );
   }
 
@@ -375,11 +373,11 @@ class _WordListTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (item.furigana != null && item.furigana!.isNotEmpty) ...[
+            if (item.reading.isNotEmpty) ...[
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  '(${item.furigana})',
+                  '(${item.reading})',
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -457,17 +455,6 @@ class _WordListTile extends StatelessWidget {
         onPressed: onToggleStatus,
       );
     }
-  }
-
-  /// 解析音频来源（优先 URL，其次本地文件）
-  String? _resolveAudioSource() {
-    if (item.audioUrl != null && item.audioUrl!.isNotEmpty) {
-      return item.audioUrl;
-    }
-    if (item.audioFilename != null && item.audioFilename!.isNotEmpty) {
-      return 'assets/audio/words/${item.audioFilename}';
-    }
-    return null;
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/learning_status.dart';
+import '../../../core/providers/preferences_provider.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
@@ -11,26 +12,25 @@ import '../../../data/models/user.dart';
 import '../../../data/models/word_detail.dart';
 import '../../../data/queries/study_word_query.dart';
 import '../../../data/queries/word_read_queries.dart';
+import '../../../data/queries/vocab_remote_query_provider.dart';
+import '../../../data/repositories/word_content_repository_provider.dart';
 import '../../../data/commands/session/session_scope.dart';
 import '../../../data/commands/session/study_session_handle.dart';
 import '../../../data/commands/study_session_command_provider.dart';
 import '../state/learn_state.dart';
 
-/// 学习页控制器
-/// 管理学习页的状态和业务逻辑
+/// 学习页控制器（2.0 — 书籍顺序学习，无 island 逻辑）
 class LearnController extends Notifier<LearnState> {
-  /// 上一次学习动作时间
   DateTime? _sessionStartTime;
-
-  /// 当前用户 ID（从 app_state 表获取）
   int? _userId;
+  String? _currentBookId;
   StudySessionHandle? _session;
 
-  /// 本次 Learn Session 内，已经触发过 ensureSeen 的 wordId 集合
-  final Set<int> _seenEnsuredWordIds = {};
+  /// 本次 Session 内已 ensureSeen 的 wordId 集合
+  final Set<String> _seenEnsuredWordIds = {};
 
-  /// 本次 Learn Session 内，每个 wordId 的 getWordDetail 调用次数
-  final Map<int, int> _wordDetailLoadCount = {};
+  /// 本次 Session 内每个 wordId 的 getWordDetail 调用次数
+  final Map<String, int> _wordDetailLoadCount = {};
 
   @override
   LearnState build() {
@@ -54,47 +54,76 @@ class LearnController extends Notifier<LearnState> {
     return _userId!;
   }
 
-  /// 初始化学习（传入选中的单词 ID）
-  Future<void> initWithWord(int wordId) async {
+  /// 拉取下一批单词：API 优先，失败则 fallback 到本地缓存
+  Future<List<WordDetail>> _fetchNextBatch(String bookId, int userId) async {
+    final wordQueries = ref.read(wordReadQueriesProvider);
+    final batchSize = ref.read(learnBatchSizeProvider);
+
+    // 1. 本地 cursor（基于已学习的最大 book_sort_order）
+    final cursor = await wordQueries.getMaxLearnedSortOrder(bookId, userId);
+
+    // 2. 尝试 API 拉取
+    try {
+      final remote = ref.read(vocabRemoteQueryProvider);
+      final response = await remote.fetchNextWords(
+        bookId: bookId,
+        afterSort: cursor,
+        limit: batchSize,
+      );
+
+      if (response.words.isNotEmpty) {
+        // 3. 保存到本地 DB（words + word_details + word_examples + lesson_word_map）
+        final repo = ref.read(wordContentRepositoryProvider);
+        await repo.saveBookWordMappings(bookId, response.words);
+
+        logger.info(
+          '从 API 拉取单词: bookId=$bookId, cursor=$cursor, '
+          'count=${response.words.length}, hasMore=${response.hasMore}',
+        );
+
+        return response.words.map((w) => w.detail).toList();
+      }
+    } catch (e) {
+      logger.warning('API 拉取失败，尝试本地缓存: $e');
+    }
+
+    // 4. Fallback: 从本地缓存取
+    return wordQueries.getNextWordsInBook(
+      bookId,
+      afterSort: cursor,
+      limit: batchSize,
+      userId: userId,
+    );
+  }
+
+  /// 开始书籍学习（从当前进度之后按 book_sort_order 取词）
+  ///
+  /// 优先走 API 拉取，保存到本地后学习；网络失败时 fallback 到本地缓存。
+  Future<void> startBookLearning(String bookId) async {
     final userId = await _ensureUserId();
     await _session?.flush();
     _session = ref
         .read(studySessionCommandProvider)
         .createSession(userId: userId, scope: SessionScope.learn);
     _sessionStartTime = DateTime.now();
+    _currentBookId = bookId;
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final wordQueries = ref.read(wordReadQueriesProvider);
+      final words = await _fetchNextBatch(bookId, userId);
 
-      // 1. 获取选中单词的详情
-      final selectedWord = await _loadWordDetailWithLog(wordId);
-      if (selectedWord == null) {
-        state = state.copyWith(isLoading: false, error: '单词不存在');
+      if (words.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          pathEnded: true,
+          currentBookId: bookId,
+        );
+        logger.info('书籍学习: 没有更多新词 bookId=$bookId');
         return;
       }
 
-      // 2. 加载关联词
-      final relatedWords = await wordQueries.getRelatedWords(
-        userId: userId,
-        wordId: wordId,
-      );
-      final relatedDetails = <WordDetail>[];
-      for (final related in relatedWords) {
-        final detail = await _loadWordDetailWithLog(related.word.id);
-        if (detail != null) {
-          relatedDetails.add(detail);
-        }
-      }
-
-      // 3. 初始化学习队列（第一个岛）
-      final queueWithState = await _applyUserStates(userId, [
-        selectedWord,
-        ...relatedDetails,
-      ]);
-
-      // 4. 记录第一个岛的结束索引
-      final firstIslandEndIndex = queueWithState.length - 1;
+      // 应用用户状态
+      final queueWithState = await _applyUserStates(userId, words);
 
       state = state.copyWith(
         studyQueue: queueWithState,
@@ -102,15 +131,12 @@ class LearnController extends Notifier<LearnState> {
         learnedWordIds: {},
         isLoading: false,
         pathEnded: false,
-        islandEndIndices: [firstIslandEndIndex],
+        currentBookId: bookId,
       );
       await _onWordsLoaded(queueWithState);
 
       logger.learnSessionStart(userId: userId);
-      logger.info(
-        '学习初始化完成: 起始单词=${selectedWord.word.word}, '
-        '关联词=${relatedDetails.length}个, 首岛结束索引=$firstIslandEndIndex',
-      );
+      logger.info('书籍学习初始化: bookId=$bookId, 加载=${queueWithState.length}个词');
     } catch (e, stackTrace) {
       logger.error('学习初始化失败', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -118,107 +144,60 @@ class LearnController extends Notifier<LearnState> {
   }
 
   /// 页面切换回调
-  /// ❌ 禁止在页面滑动中产生任何 learning / firstLearn 行为
-  /// 页面滑动 ≠ 学习完成
   Future<void> onPageChanged(int newIndex) async {
-    // 更新当前索引
     state = state.copyWith(currentIndex: newIndex);
 
-    // 首次看到单词时，确保 seen 记录存在
+    // 首次看到单词时确保 seen 记录
     await _ensureSeenForCurrentWord();
 
-    // 触发触觉反馈
     HapticFeedback.lightImpact();
 
-    // 检查是否到达当前岛的末尾，触发加载下一个岛
-    if (state.isAtIslandEnd && !state.pathEnded && !state.isLoadingMore) {
-      await loadNextIsland();
+    // 接近队列末尾时自动加载更多
+    if (newIndex >= state.studyQueue.length - 3 &&
+        !state.pathEnded &&
+        !state.isLoadingMore) {
+      await loadMoreWords();
     }
 
     logger.learnWordView(
-      wordId: state.currentWordDetail?.word.id ?? 0,
+      wordId: state.currentWordDetail?.word.id ?? '',
       position: newIndex + 1,
       total: state.studyQueue.length,
     );
   }
 
-  /// 加载下一个岛（随机种子词 + 关联词）
-  Future<void> loadNextIsland() async {
+  /// 加载更多单词（按 book_sort_order 接续取下一批）
+  Future<void> loadMoreWords() async {
+    if (_currentBookId == null) return;
     state = state.copyWith(isLoadingMore: true);
 
     try {
       final userId = await _ensureUserId();
-      final wordQueries = ref.read(wordReadQueriesProvider);
+      final words = await _fetchNextBatch(_currentBookId!, userId);
 
-      // 收集队列中已有的 word ID，避免重复
-      final existingIds = state.studyQueue.map((w) => w.word.id).toList();
-
-      // 1. 随机选取新种子词（N5 优先，排除已有）
-      final seedWord = await wordQueries.getRandomUnmasteredSeedWord(
-        userId: userId,
-        excludeIds: existingIds,
-      );
-
-      if (seedWord == null) {
-        // 词库耗尽：没有更多未掌握的词
+      if (words.isEmpty) {
         state = state.copyWith(isLoadingMore: false, pathEnded: true);
-        logger.info('路径结束: 没有更多未掌握的单词');
+        logger.info('书籍学习: 没有更多新词');
         return;
       }
 
-      // 2. 加载种子词详情
-      final seedDetail = await _loadWordDetailWithLog(seedWord.id);
-      if (seedDetail == null) {
-        state = state.copyWith(isLoadingMore: false, pathEnded: true);
-        return;
-      }
+      final queueWithState = await _applyUserStates(userId, words);
 
-      // 3. 加载种子词的关联词
-      final relatedWords = await wordQueries.getRelatedWords(
-        userId: userId,
-        wordId: seedWord.id,
-      );
-      final relatedDetails = <WordDetail>[];
-      for (final related in relatedWords) {
-        final detail = await _loadWordDetailWithLog(related.word.id);
-        if (detail != null) {
-          relatedDetails.add(detail);
-        }
-      }
-
-      // 4. 组装新岛：种子词 + 关联词
-      final islandWords = await _applyUserStates(userId, [
-        seedDetail,
-        ...relatedDetails,
-      ]);
-
-      // 5. 记录新岛的结束索引
-      final newIslandEndIndex =
-          state.studyQueue.length + islandWords.length - 1;
-
-      // 6. 追加到学习队列
       state = state.copyWith(
-        studyQueue: [...state.studyQueue, ...islandWords],
+        studyQueue: [...state.studyQueue, ...queueWithState],
         isLoadingMore: false,
-        islandEndIndices: [...state.islandEndIndices, newIslandEndIndex],
       );
 
-      logger.info(
-        '新岛加载完成: 种子词=${seedWord.word}, '
-        '关联词=${relatedDetails.length}个, 岛结束索引=$newIslandEndIndex',
-      );
+      logger.info('加载更多单词: ${queueWithState.length}个');
     } catch (e, stackTrace) {
-      logger.error('加载新岛失败', e, stackTrace);
+      logger.error('加载更多单词失败', e, stackTrace);
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 
   /// 标记单词为已学习
-  Future<void> markWordAsLearned(int wordId) async {
-    // 检查是否已在 learnedWordIds 中，避免重复标记
-    if (state.learnedWordIds.contains(wordId)) {
-      return;
-    }
+  Future<void> markWordAsLearned(String wordId) async {
+    if (state.learnedWordIds.contains(wordId)) return;
 
     try {
       final userId = await _ensureUserId();
@@ -228,8 +207,7 @@ class LearnController extends Notifier<LearnState> {
               .read(studySessionCommandProvider)
               .createSession(userId: userId, scope: SessionScope.learn);
       _session ??= session;
-      final now = DateTime.now();
-      // 更新 learnedWordIds
+
       final newLearnedWordIds = {...state.learnedWordIds, wordId};
       state = state.copyWith(learnedWordIds: newLearnedWordIds);
 
@@ -261,7 +239,6 @@ class LearnController extends Notifier<LearnState> {
     logger.info('[WordUI] action=add_to_review wordId=${word.word.id}');
     final user = await _getActiveUser();
     await _wordCommand.addWordToReview(user.id, word.word.id);
-
     await _refreshCurrentWordState(word.word.id);
   }
 
@@ -273,7 +250,6 @@ class LearnController extends Notifier<LearnState> {
     logger.info('[WordUI] action=quick_master wordId=${word.word.id}');
     final user = await _getActiveUser();
     await _wordCommand.markWordAsMastered(user.id, word.word.id);
-
     await _refreshCurrentWordState(word.word.id);
   }
 
@@ -285,16 +261,14 @@ class LearnController extends Notifier<LearnState> {
     logger.info('[WordUI] action=mark_mastered wordId=${word.word.id}');
     final user = await _getActiveUser();
     await _wordCommand.markWordAsMastered(user.id, word.word.id);
-
     await _refreshCurrentWordState(word.word.id);
   }
 
   /// mastered -> seen（恢复学习）
-  Future<void> onRestoreLearningTapped(int wordId) async {
+  Future<void> onRestoreLearningTapped(String wordId) async {
     logger.info('[WordUI] action=restore_to_seen wordId=$wordId');
     final user = await _getActiveUser();
     await _wordCommand.restoreToSeen(userId: user.id, wordId: wordId);
-
     await _refreshCurrentWordState(wordId);
   }
 
@@ -306,7 +280,6 @@ class LearnController extends Notifier<LearnState> {
     logger.info('[WordUI] action=toggle_ignored wordId=${word.word.id}');
     final user = await _getActiveUser();
     await _wordCommand.toggleWordIgnored(user.id, word.word.id);
-
     await _refreshCurrentWordState(word.word.id);
   }
 
@@ -314,11 +287,12 @@ class LearnController extends Notifier<LearnState> {
   void reset() {
     _sessionStartTime = null;
     _userId = null;
+    _currentBookId = null;
     _session = null;
     state = const LearnState();
   }
 
-  Future<void> _refreshCurrentWordState(int wordId) async {
+  Future<void> _refreshCurrentWordState(String wordId) async {
     final user = await _getActiveUser();
     final updated = await _studyWordQuery.getStudyWord(user.id, wordId);
     if (updated == null) return;
@@ -337,12 +311,8 @@ class LearnController extends Notifier<LearnState> {
 
     final wordId = word.word.id;
 
-    // Session 级去重：同一个 word 只处理一次
-    if (_seenEnsuredWordIds.contains(wordId)) {
-      return;
-    }
+    if (_seenEnsuredWordIds.contains(wordId)) return;
 
-    // 仅当当前状态为 seen 才允许创建
     if (word.userState != LearningStatus.seen) {
       _seenEnsuredWordIds.add(wordId);
       return;
@@ -354,7 +324,6 @@ class LearnController extends Notifier<LearnState> {
       '[WordUI] wordId=$wordId ensure_seen triggered by page_changed',
     );
 
-    // 标记该 word 在本 session 中已 ensure
     _seenEnsuredWordIds.add(wordId);
   }
 
@@ -363,18 +332,7 @@ class LearnController extends Notifier<LearnState> {
 
     final user = await _getActiveUser();
     final firstWordId = words.first.word.id;
-
     await _wordCommand.ensureWordSeen(user.id, firstWordId);
-  }
-
-  Future<WordDetail?> _loadWordDetailWithLog(int wordId) async {
-    final count = (_wordDetailLoadCount[wordId] ?? 0) + 1;
-    _wordDetailLoadCount[wordId] = count;
-
-    logger.debug('[WordDetailLoad] session wordId=$wordId count=$count');
-
-    final wordQueries = ref.read(wordReadQueriesProvider);
-    return wordQueries.getWordDetail(wordId);
   }
 
   void _logWordDetailLoadSummary() {

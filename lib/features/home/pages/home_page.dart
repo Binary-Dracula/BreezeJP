@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 import 'package:breeze_jp/router/app_route_observer.dart';
 
+import '../../../core/providers/preferences_provider.dart';
 import '../controller/home_controller.dart';
 import '../state/home_state.dart';
 
@@ -80,7 +81,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
       );
     }
 
-    final isNewUser = state.masteredWordCount == 0 && state.streakDays == 0;
+    final isNewUser = state.masteredWordCount == 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
@@ -184,45 +185,56 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     AppLocalizations l10n,
     bool isNewUser,
   ) {
-    return Column(
-      children: [
-        Row(
+    return Consumer(
+      builder: (context, ref, _) {
+        final selectedBookId = ref.watch(selectedBookIdProvider);
+        return Column(
           children: [
-            Expanded(
-              child: _PrimaryActionCard(
-                title: l10n.homeKanaTitle,
-                subtitle: l10n.homeKanaSubtitle,
-                colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
-                icon: Icons.grid_view_rounded,
-                onTap: () => context.push('/kana-chart'),
-                accentText: l10n.homeEnter,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: _PrimaryActionCard(
+                    title: l10n.homeKanaTitle,
+                    subtitle: l10n.homeKanaSubtitle,
+                    colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
+                    icon: Icons.grid_view_rounded,
+                    onTap: () => context.push('/kana-chart'),
+                    accentText: l10n.homeEnter,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _PrimaryActionCard(
+                    title: l10n.homeNewWordTitle,
+                    subtitle: isNewUser
+                        ? l10n.homeNewWordSubtitleNewUser
+                        : l10n.homeNewWordSubtitle,
+                    colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
+                    icon: Icons.bolt_rounded,
+                    onTap: () {
+                      if (selectedBookId != null) {
+                        context.push('/learn/$selectedBookId');
+                      } else {
+                        context.push('/book-selection');
+                      }
+                    },
+                    accentText: l10n.startLearning,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _PrimaryActionCard(
-                title: l10n.homeNewWordTitle,
-                subtitle: isNewUser
-                    ? l10n.homeNewWordSubtitleNewUser
-                    : l10n.homeNewWordSubtitle,
-                colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
-                icon: Icons.bolt_rounded,
-                onTap: () => context.push('/initial-choice'),
-                accentText: l10n.startLearning,
-              ),
+            const SizedBox(height: 12),
+            _PrimaryActionCard(
+              title: l10n.homeGrammarTitle,
+              subtitle: l10n.homeGrammarSubtitle,
+              colors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+              icon: Icons.segment_rounded,
+              onTap: () => context.push('/grammar/list'),
+              accentText: l10n.homeGrammarAccent,
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        _PrimaryActionCard(
-          title: l10n.homeGrammarTitle,
-          subtitle: l10n.homeGrammarSubtitle,
-          colors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-          icon: Icons.segment_rounded,
-          onTap: () => context.push('/grammar/list'),
-          accentText: l10n.homeGrammarAccent,
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -281,7 +293,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     final hasActivity =
         state.newWordCount > 0 ||
         state.todayReviewCount > 0 ||
-        state.todayStudyDurationMinutes > 0;
+        state.masteredWordCount > 0;
 
     return Container(
       width: double.infinity,
@@ -322,12 +334,10 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
               Container(width: 1, height: 48, color: Colors.grey.shade200),
               Expanded(
                 child: _buildStatColumn(
-                  icon: Icons.timer_outlined,
+                  icon: Icons.star_rounded,
                   color: const Color(0xFF0EA5E9),
-                  label: l10n.todayDuration,
-                  value: l10n.statsDurationMinutes(
-                    state.todayStudyDurationMinutes,
-                  ),
+                  label: l10n.masteredWords,
+                  value: '${state.masteredWordCount}',
                 ),
               ),
             ],
@@ -402,13 +412,6 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         subtitle: l10n.homeReadingSubtitle,
         gradient: const [Color(0xFFEC4899), Color(0xFFDB2777)],
         onTap: () => context.push('/article-list'),
-      ),
-      _ToolItem(
-        icon: Icons.bar_chart_rounded,
-        title: l10n.detailedStats,
-        subtitle: l10n.detailedStatsSubtitle,
-        gradient: const [Color(0xFF14B8A6), Color(0xFF0D9488)],
-        onTap: () => context.push('/statistics'),
       ),
       _ToolItem(
         icon: Icons.library_books_rounded,
