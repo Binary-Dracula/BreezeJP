@@ -43,9 +43,6 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   record: ^6.2.0
   ruby_text: ^3.0.3
-  # TTS
-  voicevox_core: ^0.1.0
-  ffi: ^2.1.2
   shared_preferences: ^2.5.4
   # Supabase 认证
   supabase_flutter: ^2.8.0
@@ -75,5 +72,3 @@ flutter:
     - assets/database/breeze_jp.sqlite
     - assets/audio/kana/
     - assets/mock/
-    - assets/tts/voicevox/dict/
-    - assets/tts/voicevox/model/

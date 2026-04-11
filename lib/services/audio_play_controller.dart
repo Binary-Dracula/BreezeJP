@@ -106,51 +106,6 @@ class AudioPlayController extends Notifier<AudioPlayStatus> {
     }
   }
 
-  /// 使用 TTS 朗读文本
-  ///
-  /// 使用 `tts://{text}` 格式作为虚拟音频源标识,
-  /// 以便复用现有的状态机追踪哪个 TTS 正在播放。
-  ///
-  /// 状态流转: loading (合成中) → playing (listener 检测) → idle (listener 检测)
-  Future<void> speakTts(String text) async {
-    final audioService = ref.read(audioServiceProvider);
-    final ttsSource = 'tts://$text';
-
-    // idle → loading (显示加载中旋转图标)
-    state = AudioPlayStatus(
-      state: AudioPlayState.loading,
-      currentSource: ttsSource,
-    );
-
-    try {
-      await audioService.speakText(text);
-      // loading → playing → idle 由 _setupPlayerStateListener 自动处理
-    } catch (e) {
-      state = AudioPlayStatus(
-        state: AudioPlayState.error,
-        currentSource: ttsSource,
-        errorMessage: e.toString(),
-      );
-      logger.error('TTS 朗读失败: $text', e);
-    }
-  }
-
-  /// 切换 TTS 播放/停止
-  Future<void> toggleTts(String text) async {
-    final ttsSource = 'tts://$text';
-
-    if (state.isPlaying(ttsSource)) {
-      await stop();
-    } else {
-      // 停止上一个音频/TTS
-      if (state.state == AudioPlayState.playing ||
-          state.state == AudioPlayState.loading) {
-        await stop();
-      }
-      await speakTts(text);
-    }
-  }
-
   /// 重置状态（用于错误恢复）
   void reset() {
     state = const AudioPlayStatus(state: AudioPlayState.idle);
