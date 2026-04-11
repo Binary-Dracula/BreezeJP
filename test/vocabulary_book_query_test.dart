@@ -14,34 +14,18 @@ void main() {
   Future<void> createTestSchema(Database db) async {
     await db.execute('''
       CREATE TABLE words (
-        id INTEGER PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         word TEXT NOT NULL,
-        furigana TEXT,
+        reading TEXT,
         romaji TEXT,
         jlpt_level TEXT,
         part_of_speech TEXT,
-        pitch_accent TEXT
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE word_meanings (
-        id INTEGER PRIMARY KEY,
-        word_id INTEGER NOT NULL,
-        meaning_cn TEXT NOT NULL,
-        definition_order INTEGER DEFAULT 1,
-        notes TEXT
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE word_audio (
-        id INTEGER PRIMARY KEY,
-        word_id INTEGER NOT NULL,
-        audio_filename TEXT,
-        audio_url TEXT,
-        voice_type TEXT,
-        source TEXT
+        primary_meaning TEXT,
+        has_audio INTEGER DEFAULT 0,
+        transitivity TEXT,
+        pitch_accent TEXT,
+        created_at INTEGER,
+        updated_at INTEGER
       )
     ''');
 
@@ -49,7 +33,7 @@ void main() {
       CREATE TABLE study_words (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        word_id INTEGER NOT NULL,
+        word_id TEXT NOT NULL,
         user_state INTEGER DEFAULT 0,
         next_review_at INTEGER,
         last_reviewed_at INTEGER,
@@ -60,6 +44,9 @@ void main() {
         streak INTEGER DEFAULT 0,
         total_reviews INTEGER DEFAULT 0,
         fail_count INTEGER DEFAULT 0,
+        first_learned_at INTEGER,
+        introduced_at INTEGER,
+        source_book_id TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         UNIQUE(user_id, word_id)
@@ -68,112 +55,96 @@ void main() {
   }
 
   Future<void> insertTestData(Database db) async {
-    // Insert words
     final words = [
       {
-        'id': 1,
+        'id': 'uuid-1',
         'word': '食べる',
-        'furigana': 'たべる',
+        'reading': 'たべる',
         'romaji': 'taberu',
         'jlpt_level': 'N5',
         'part_of_speech': '動詞',
+        'primary_meaning': '吃，食用',
+        'has_audio': 1,
       },
       {
-        'id': 2,
+        'id': 'uuid-2',
         'word': '飲む',
-        'furigana': 'のむ',
+        'reading': 'のむ',
         'romaji': 'nomu',
         'jlpt_level': 'N5',
         'part_of_speech': '動詞',
+        'primary_meaning': '喝，饮用',
+        'has_audio': 1,
       },
       {
-        'id': 3,
+        'id': 'uuid-3',
         'word': '走る',
-        'furigana': 'はしる',
+        'reading': 'はしる',
         'romaji': 'hashiru',
         'jlpt_level': 'N4',
         'part_of_speech': '動詞',
+        'primary_meaning': '跑，奔跑',
+        'has_audio': 0,
       },
       {
-        'id': 4,
+        'id': 'uuid-4',
         'word': '大きい',
-        'furigana': 'おおきい',
+        'reading': 'おおきい',
         'romaji': 'ookii',
         'jlpt_level': 'N5',
         'part_of_speech': '形容詞',
+        'primary_meaning': '大的',
+        'has_audio': 0,
       },
       {
-        'id': 5,
+        'id': 'uuid-5',
         'word': '小さい',
-        'furigana': 'ちいさい',
+        'reading': 'ちいさい',
         'romaji': 'chiisai',
         'jlpt_level': 'N5',
         'part_of_speech': '形容詞',
+        'primary_meaning': '小的',
+        'has_audio': 0,
       },
     ];
     for (final w in words) {
       await db.insert('words', w);
     }
 
-    // Insert meanings
-    final meanings = [
-      {'word_id': 1, 'meaning_cn': '吃，食用', 'definition_order': 1},
-      {'word_id': 2, 'meaning_cn': '喝，饮用', 'definition_order': 1},
-      {'word_id': 3, 'meaning_cn': '跑，奔跑', 'definition_order': 1},
-      {'word_id': 4, 'meaning_cn': '大的', 'definition_order': 1},
-      {'word_id': 5, 'meaning_cn': '小的', 'definition_order': 1},
-    ];
-    for (final m in meanings) {
-      await db.insert('word_meanings', m);
-    }
-
-    // Insert audio for some words
-    await db.insert('word_audio', {
-      'word_id': 1,
-      'audio_filename': 'taberu.mp3',
-      'audio_url': 'https://example.com/taberu.mp3',
-    });
-    await db.insert('word_audio', {
-      'word_id': 2,
-      'audio_filename': 'nomu.mp3',
-      'audio_url': null,
-    });
-
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-    // Insert study_words: 3 learning, 2 mastered
     final studyWords = [
       {
         'user_id': testUserId,
-        'word_id': 1,
+        'word_id': 'uuid-1',
         'user_state': LearningStatus.learning.value,
         'updated_at': now - 100,
         'created_at': now - 1000,
       },
       {
         'user_id': testUserId,
-        'word_id': 2,
+        'word_id': 'uuid-2',
         'user_state': LearningStatus.learning.value,
         'updated_at': now - 200,
         'created_at': now - 1000,
       },
       {
         'user_id': testUserId,
-        'word_id': 3,
+        'word_id': 'uuid-3',
         'user_state': LearningStatus.learning.value,
         'updated_at': now - 300,
         'created_at': now - 1000,
       },
       {
         'user_id': testUserId,
-        'word_id': 4,
+        'word_id': 'uuid-4',
         'user_state': LearningStatus.mastered.value,
         'updated_at': now - 50,
         'created_at': now - 1000,
       },
       {
         'user_id': testUserId,
-        'word_id': 5,
+        'word_id': 'uuid-5',
         'user_state': LearningStatus.mastered.value,
         'updated_at': now - 150,
         'created_at': now - 1000,
@@ -222,7 +193,6 @@ void main() {
         status: LearningStatus.learning,
       );
 
-      // 最近更新的应该排在前面
       for (int i = 0; i < items.length - 1; i++) {
         expect(
           items[i].updatedAt.isAfter(items[i + 1].updatedAt) ||
@@ -251,7 +221,6 @@ void main() {
       );
       expect(page2.length, 1);
 
-      // 不应有重复
       final page1Ids = page1.map((i) => i.wordId).toSet();
       final page2Ids = page2.map((i) => i.wordId).toSet();
       expect(page1Ids.intersection(page2Ids), isEmpty);
@@ -276,7 +245,7 @@ void main() {
       );
 
       expect(items.length, 1);
-      expect(items.first.furigana, 'のむ');
+      expect(items.first.reading, 'のむ');
     });
 
     test('搜索过滤 - 按罗马音', () async {
@@ -318,12 +287,10 @@ void main() {
       );
 
       final taberu = items.firstWhere((i) => i.word == '食べる');
-      expect(taberu.audioFilename, 'taberu.mp3');
-      expect(taberu.audioUrl, 'https://example.com/taberu.mp3');
+      expect(taberu.hasAudio, true);
 
-      final nomu = items.firstWhere((i) => i.word == '飲む');
-      expect(nomu.audioFilename, 'nomu.mp3');
-      expect(nomu.audioUrl, isNull);
+      final hashiru = items.firstWhere((i) => i.word == '走る');
+      expect(hashiru.hasAudio, false);
     });
 
     test('包含 JLPT 和词性', () async {
@@ -355,11 +322,10 @@ void main() {
     });
 
     test('不返回其他用户的数据', () async {
-      // Insert data for another user
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       await db.insert('study_words', {
         'user_id': 999,
-        'word_id': 1,
+        'word_id': 'uuid-1',
         'user_state': LearningStatus.learning.value,
         'updated_at': now,
         'created_at': now,
@@ -370,7 +336,7 @@ void main() {
         status: LearningStatus.learning,
       );
 
-      expect(items.length, 3); // 仍然是 3，不包含用户 999 的数据
+      expect(items.length, 3);
     });
   });
 }

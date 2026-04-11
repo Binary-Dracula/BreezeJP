@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/word_detail.dart';
-import 'audio_play_button.dart';
 
-/// 单词头部信息
-/// 展示单词、假名、发音按钮以及词性/JLPT 等基础标签
+/// 单词头部信息（2.0 — 对齐新 Word 模型）
 class WordHeader extends StatelessWidget {
   final WordDetail wordDetail;
 
@@ -12,8 +10,6 @@ class WordHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final word = wordDetail.word;
-    final primaryAudio = wordDetail.primaryAudio;
-    final audioSource = primaryAudio?.audioUrl ?? primaryAudio?.audioFilename;
     final theme = Theme.of(context);
 
     return Card(
@@ -38,11 +34,11 @@ class WordHeader extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (word.furigana?.isNotEmpty == true)
+                      if (word.reading.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            word.furigana!,
+                            word.reading,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.7,
@@ -62,8 +58,6 @@ class WordHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (audioSource != null)
-                  AudioPlayButton(audioSource: audioSource, size: 40),
               ],
             ),
             const SizedBox(height: 12),
@@ -71,20 +65,25 @@ class WordHeader extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (word.partOfSpeech?.isNotEmpty == true)
+                if (word.partOfSpeech.isNotEmpty)
                   _Tag(
-                    label: word.partOfSpeech!,
+                    label: word.partOfSpeech,
                     color: theme.colorScheme.primary,
                   ),
                 if (word.pitchAccent?.isNotEmpty == true)
                   _Tag(
-                    label: '音调 ${word.pitchAccent}',
+                    label: '音調 ${word.pitchAccent}',
                     color: theme.colorScheme.secondary,
                   ),
                 if (word.jlptLevel?.isNotEmpty == true)
                   _Tag(
                     label: word.jlptLevel!.toUpperCase(),
                     color: _jlptColor(word.jlptLevel!),
+                  ),
+                if (word.transitivity?.isNotEmpty == true)
+                  _Tag(
+                    label: word.transitivity!,
+                    color: Colors.indigo,
                   ),
               ],
             ),
@@ -121,18 +120,18 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
         style: TextStyle(
+          color: color,
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: color,
         ),
       ),
     );

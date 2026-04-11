@@ -4,7 +4,6 @@ import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
 import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
-import '../../../data/queries/daily_stat_query.dart';
 import '../../../data/queries/mastered_count_query.dart';
 import '../../../data/queries/study_word_query.dart';
 import '../../../data/queries/kana_query.dart';
@@ -23,7 +22,6 @@ class HomeController extends Notifier<HomeState> {
   HomeState build() => const HomeState();
 
   StudyWordQuery get _studyWordQuery => ref.read(studyWordQueryProvider);
-  DailyStatQuery get _dailyStatQuery => ref.read(dailyStatQueryProvider);
   MasteredStateQuery get _masteredCountQuery =>
       ref.read(masteredStateQueryProvider);
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
@@ -52,20 +50,7 @@ class HomeController extends Notifier<HomeState> {
       final reviewCount = await _studyWordQuery.getDueReviewCount(userId);
       final kanaReviewCount = await _kanaQuery.countDueKanaReviews(userId);
 
-      // 3. 获取每日统计 (Streak & Duration)
-      final streakDays = await _dailyStatQuery.calculateStreak(userId);
-      final today = DateTime.now();
-      final todayStart = DateTime(today.year, today.month, today.day);
-      final todayStats = await _dailyStatQuery.getDailyStatsByDateRange(
-        userId,
-        startDate: todayStart,
-        endDate: todayStart,
-      );
-      final todayStat = todayStats.isNotEmpty ? todayStats.first : null;
-      final todayLearnedCount = todayStat?.newLearnedCount ?? 0;
-      final todayReviewCount = todayStat?.reviewCount ?? 0;
-      final todayDurationMinutes = ((todayStat?.totalTimeMs ?? 0) / 1000 / 60)
-          .round();
+      // 3. 获取已掌握数量
       final masteredWordCount = await _masteredCountQuery.getTotalMasteredCount(
         userId,
       );
@@ -74,12 +59,8 @@ class HomeController extends Notifier<HomeState> {
         isLoading: false,
         userName: userName,
         reviewCount: reviewCount,
-        newWordCount: todayLearnedCount,
-        todayReviewCount: todayReviewCount,
         kanaReviewCount: kanaReviewCount,
-        streakDays: streakDays,
         masteredWordCount: masteredWordCount,
-        todayStudyDurationMinutes: todayDurationMinutes,
         isInitialized: true,
       );
 

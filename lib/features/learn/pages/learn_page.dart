@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/tracking/page_duration_tracking_mixin.dart';
 import '../../../l10n/app_localizations.dart';
 import '../controller/learn_controller.dart';
 import '../state/learn_state.dart';
@@ -11,19 +10,17 @@ import '../widgets/word_header.dart';
 import '../widgets/word_meanings_section.dart';
 import '../widgets/conjugation_list.dart';
 
-/// 学习页面
-/// 全屏展示单词详情，支持左右滑动切换单词
+/// 学习页面（2.0 — 书籍顺序学习）
 class LearnPage extends ConsumerStatefulWidget {
-  final int initialWordId;
+  final String bookId;
 
-  const LearnPage({super.key, required this.initialWordId});
+  const LearnPage({super.key, required this.bookId});
 
   @override
   ConsumerState<LearnPage> createState() => _LearnPageState();
 }
 
-class _LearnPageState extends ConsumerState<LearnPage>
-    with PageDurationTrackingMixin<LearnPage> {
+class _LearnPageState extends ConsumerState<LearnPage> {
   late PageController _pageController;
 
   @override
@@ -31,11 +28,10 @@ class _LearnPageState extends ConsumerState<LearnPage>
     super.initState();
     _pageController = PageController();
 
-    // 页面加载时初始化学习
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(learnControllerProvider.notifier)
-          .initWithWord(widget.initialWordId);
+          .startBookLearning(widget.bookId);
     });
   }
 
@@ -70,9 +66,7 @@ class _LearnPageState extends ConsumerState<LearnPage>
         body: SafeArea(
           child: Column(
             children: [
-              // 顶部操作栏
               _buildTopBar(context, state, l10n),
-              // 内容区域
               Expanded(child: _buildContent(context, state)),
             ],
           ),
@@ -82,7 +76,6 @@ class _LearnPageState extends ConsumerState<LearnPage>
     );
   }
 
-  /// 顶部操作栏
   Widget _buildTopBar(
     BuildContext context,
     LearnState state,
@@ -95,7 +88,6 @@ class _LearnPageState extends ConsumerState<LearnPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 关闭按钮
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () async {
@@ -105,7 +97,6 @@ class _LearnPageState extends ConsumerState<LearnPage>
               }
             },
           ),
-          // 已学计数
           if (state.learnedCount > 0)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -126,7 +117,6 @@ class _LearnPageState extends ConsumerState<LearnPage>
     );
   }
 
-  /// 构建内容区域
   Widget _buildContent(BuildContext context, LearnState state) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -145,7 +135,7 @@ class _LearnPageState extends ConsumerState<LearnPage>
               onPressed: () {
                 ref
                     .read(learnControllerProvider.notifier)
-                    .initWithWord(widget.initialWordId);
+                    .startBookLearning(widget.bookId);
               },
               child: const Text('重试'),
             ),
@@ -172,9 +162,9 @@ class _LearnPageState extends ConsumerState<LearnPage>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               WordHeader(wordDetail: wordDetail),
-              WordMeaningsSection(meanings: wordDetail.meanings),
+              WordMeaningsSection(richContent: wordDetail.richContent),
               WordExamplesSection(examples: wordDetail.examples),
-              ConjugationList(conjugations: wordDetail.conjugations),
+              ConjugationList(conjugations: wordDetail.richContent.conjugations),
               if (state.isLoadingMore && index == state.studyQueue.length - 1)
                 const Padding(
                   padding: EdgeInsets.only(top: 8, bottom: 16),
@@ -215,7 +205,6 @@ class _LearnPageState extends ConsumerState<LearnPage>
     );
   }
 
-  /// 显示路径结束对话框
   void _showPathEndedDialog(BuildContext context, AppLocalizations l10n) {
     showDialog(
       context: context,
@@ -229,7 +218,7 @@ class _LearnPageState extends ConsumerState<LearnPage>
               Navigator.of(context).pop();
               ref.read(learnControllerProvider.notifier).endSession().then((_) {
                 if (context.mounted) {
-                  context.go('/initial-choice');
+                  context.pop();
                 }
               });
             },

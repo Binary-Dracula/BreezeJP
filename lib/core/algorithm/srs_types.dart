@@ -1,4 +1,60 @@
-import '../../data/models/study_log.dart';
+/// 复习评分（从 study_log.dart 迁移至此，作为算法系统的核心类型）
+enum ReviewRating {
+  /// 完全忘记
+  again(1),
+
+  /// 困难，勉强记起
+  hard(2),
+
+  /// 一般，正常记起
+  good(3),
+
+  /// 简单，轻松记起
+  easy(4);
+
+  const ReviewRating(this.value);
+
+  final int value;
+
+  /// 从数据库值创建枚举
+  static ReviewRating fromValue(int value) {
+    return ReviewRating.values.firstWhere(
+      (rating) => rating.value == value,
+      orElse: () => ReviewRating.good,
+    );
+  }
+
+  /// 获取评分描述
+  String get description {
+    switch (this) {
+      case ReviewRating.again:
+        return '忘记';
+      case ReviewRating.hard:
+        return '困难';
+      case ReviewRating.good:
+        return '一般';
+      case ReviewRating.easy:
+        return '简单';
+    }
+  }
+
+  /// 获取评分颜色（用于 UI）
+  String get colorHex {
+    switch (this) {
+      case ReviewRating.again:
+        return '#F44336';
+      case ReviewRating.hard:
+        return '#FF9800';
+      case ReviewRating.good:
+        return '#4CAF50';
+      case ReviewRating.easy:
+        return '#2196F3';
+    }
+  }
+
+  /// 是否答对（用于 SRS 计算）
+  bool get isCorrect => this != ReviewRating.again;
+}
 
 /// SRS 算法的输入状态
 class SRSInput {

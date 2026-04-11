@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
-import '../../../core/widgets/common_example_item.dart';
 import '../../../data/models/word_detail.dart';
 
-/// 例句区
-/// 包含多个例句条目
+/// 例句区（2.0 — 使用 WordExample 模型）
 class WordExamplesSection extends StatelessWidget {
-  final List<ExampleSentenceWithAudio> examples;
+  final List<WordExample> examples;
 
   const WordExamplesSection({super.key, required this.examples});
 
@@ -46,29 +44,90 @@ class WordExamplesSection extends StatelessWidget {
             const SizedBox(height: 12),
             ...List.generate(examples.length, (index) {
               final ex = examples[index];
-              final sentence = ex.sentence;
-              final audio = ex.audio;
-              final audioSource = audio?.audioUrl ?? audio?.audioFilename;
-
               return Padding(
                 padding: EdgeInsets.only(
                   bottom: index == examples.length - 1 ? 0 : 16,
                 ),
-                child: CommonExampleItem(
+                child: _ExampleItem(
                   order: index + 1,
-                  data: ExampleDisplayData(
-                    japanese: sentence.sentenceFurigana?.isNotEmpty == true
-                        ? sentence.sentenceFurigana!
-                        : sentence.sentenceJp,
-                    translation: sentence.translationCn,
-                    audioSource: audioSource,
-                  ),
+                  japanese: ex.japanese,
+                  chinese: ex.chinese,
+                  level: ex.level,
+                  theme: theme,
                 ),
               );
             }),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ExampleItem extends StatelessWidget {
+  final int order;
+  final String japanese;
+  final String chinese;
+  final String level;
+  final ThemeData theme;
+
+  const _ExampleItem({
+    required this.order,
+    required this.japanese,
+    required this.chinese,
+    required this.level,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$order',
+                style: TextStyle(
+                  color: theme.colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    japanese,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    chinese,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

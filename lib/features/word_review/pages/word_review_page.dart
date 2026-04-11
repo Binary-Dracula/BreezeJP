@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/tracking/page_duration_tracking_mixin.dart';
 import '../../../core/widgets/review_spelling_options.dart';
 import '../../../core/widgets/review_widgets.dart';
 import '../../../l10n/app_localizations.dart';
@@ -21,8 +20,7 @@ class WordReviewPage extends ConsumerStatefulWidget {
   ConsumerState<WordReviewPage> createState() => _WordReviewPageState();
 }
 
-class _WordReviewPageState extends ConsumerState<WordReviewPage>
-    with PageDurationTrackingMixin<WordReviewPage> {
+class _WordReviewPageState extends ConsumerState<WordReviewPage> {
   @override
   void initState() {
     super.initState();
@@ -312,7 +310,7 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage>
                         ),
                       ),
                       WordHeader(wordDetail: wordDetail),
-                      WordMeaningsSection(meanings: wordDetail.meanings),
+                      WordMeaningsSection(richContent: wordDetail.richContent),
                       WordExamplesSection(examples: wordDetail.examples),
                     ],
                   ),

@@ -166,7 +166,7 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
   }
 
   /// 切换单词状态（学习中 ↔ 已掌握）
-  Future<void> toggleStatus(int wordId) async {
+  Future<void> toggleStatus(String wordId) async {
     try {
       final userId = await _ensureUserId();
 

@@ -1,6 +1,6 @@
 import '../../../data/models/word_detail.dart';
 
-/// 学习页状态
+/// 学习页状态（2.0 — 书籍顺序学习，无 island 逻辑）
 class LearnState {
   /// 学习队列
   final List<WordDetail> studyQueue;
@@ -9,19 +9,19 @@ class LearnState {
   final int currentIndex;
 
   /// 已学习单词 ID 集合
-  final Set<int> learnedWordIds;
+  final Set<String> learnedWordIds;
+
+  /// 当前正在学习的书籍 ID
+  final String? currentBookId;
 
   /// 是否正在加载
   final bool isLoading;
 
-  /// 是否正在加载更多关联词
+  /// 是否正在加载更多
   final bool isLoadingMore;
 
-  /// 路径是否结束（没有更多关联词）
+  /// 路径是否结束（没有更多单词）
   final bool pathEnded;
-
-  /// 每个岛的结束索引列表
-  final List<int> islandEndIndices;
 
   /// 错误信息
   final String? error;
@@ -30,10 +30,10 @@ class LearnState {
     this.studyQueue = const [],
     this.currentIndex = 0,
     this.learnedWordIds = const {},
+    this.currentBookId,
     this.isLoading = false,
     this.isLoadingMore = false,
     this.pathEnded = false,
-    this.islandEndIndices = const [],
     this.error,
   });
 
@@ -47,33 +47,27 @@ class LearnState {
   /// 是否在队列末尾
   bool get isAtQueueEnd => currentIndex >= studyQueue.length - 1;
 
-  /// 是否到达当前岛的末尾
-  bool get isAtIslandEnd {
-    if (islandEndIndices.isEmpty) return false;
-    return islandEndIndices.contains(currentIndex);
-  }
-
   /// 队列是否为空
   bool get isEmpty => studyQueue.isEmpty;
 
   LearnState copyWith({
     List<WordDetail>? studyQueue,
     int? currentIndex,
-    Set<int>? learnedWordIds,
+    Set<String>? learnedWordIds,
+    String? currentBookId,
     bool? isLoading,
     bool? isLoadingMore,
     bool? pathEnded,
-    List<int>? islandEndIndices,
     String? error,
   }) {
     return LearnState(
       studyQueue: studyQueue ?? this.studyQueue,
       currentIndex: currentIndex ?? this.currentIndex,
       learnedWordIds: learnedWordIds ?? this.learnedWordIds,
+      currentBookId: currentBookId ?? this.currentBookId,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       pathEnded: pathEnded ?? this.pathEnded,
-      islandEndIndices: islandEndIndices ?? this.islandEndIndices,
       error: error,
     );
   }

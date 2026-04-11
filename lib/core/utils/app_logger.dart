@@ -2,7 +2,6 @@ import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
 
 import '../algorithm/srs_types.dart';
-import '../../data/models/study_log.dart';
 import 'log_category.dart';
 import 'log_formatter.dart';
 
@@ -124,7 +123,7 @@ class AppLogger {
   /// 记录单词查看
   /// Requirements: 1.2, 2.3
   void learnWordView({
-    required int wordId,
+    required Object wordId,
     required int position,
     required int total,
   }) {
@@ -136,7 +135,7 @@ class AppLogger {
   /// 记录答案提交
   /// Requirements: 1.2, 2.4
   void learnAnswerSubmit({
-    required int wordId,
+    required Object wordId,
     required String rating,
     required double newInterval,
     required double newEaseFactor,
@@ -163,7 +162,7 @@ class AppLogger {
   void stateChange({
     required String scope,
     required int userId,
-    required int itemId,
+    required Object itemId,
     required String fromState,
     required String toState,
     String? reason,
@@ -305,7 +304,7 @@ class AppLogger {
   /// 记录参数更新
   /// Requirements: 1.5, 5.3
   void algoParamsUpdate({
-    required int wordId,
+    required Object wordId,
     required Map<String, dynamic> before,
     required Map<String, dynamic> after,
   }) {
@@ -325,7 +324,7 @@ class AppLogger {
   /// 记录复习计划变更
   /// Requirements: 1.5, 5.4
   void algoScheduleChange({
-    required int wordId,
+    required Object wordId,
     required DateTime? oldSchedule,
     required DateTime newSchedule,
   }) {
@@ -342,7 +341,7 @@ class AppLogger {
   void srsUpdate({
     required String scope,
     required int userId,
-    required int itemId,
+    required Object itemId,
     required ReviewRating rating,
     required AlgorithmType algorithmType,
     required Map<String, dynamic> before,
@@ -397,11 +396,7 @@ class _TestLogPrinter extends LogPrinter {
       buffer.write(' error=${event.error}');
     }
     if (event.stackTrace != null && event.level.index >= Level.error.index) {
-      final firstLine = event.stackTrace
-          .toString()
-          .split('\n')
-          .first
-          .trim();
+      final firstLine = event.stackTrace.toString().split('\n').first.trim();
       if (firstLine.isNotEmpty) {
         buffer.write(' stack=$firstLine');
       }

@@ -92,30 +92,6 @@ class CommonExampleItem extends ConsumerWidget {
       );
     }
 
-    // 否则尝试 TTS
-    if (data.ttsText != null && data.ttsText!.isNotEmpty) {
-      final ttsSource = 'tts://${data.ttsText}';
-      final isPlaying = status.isPlaying(ttsSource);
-      final isLoading = status.isLoading(ttsSource);
-
-      return IconButton(
-        icon: isLoading
-            ? SizedBox(
-                width: 19,
-                height: 19,
-                child: CircularProgressIndicator(strokeWidth: 2, color: color),
-              )
-            : Icon(
-                isPlaying ? Icons.stop_circle : Icons.play_circle,
-                size: 28,
-                color: color,
-              ),
-        onPressed: isLoading ? null : () => controller.toggleTts(data.ttsText!),
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      );
-    }
-
     return const SizedBox(width: 32);
   }
 }

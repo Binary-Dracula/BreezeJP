@@ -7,7 +7,7 @@ import '../../../../data/commands/kana_command.dart';
 import '../../../../data/commands/kana_command_provider.dart';
 import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/kana_letter.dart';
-import '../../../../data/models/study_log.dart';
+import '../../../../core/algorithm/srs_types.dart';
 import '../../../../data/models/user.dart';
 import '../../../../data/queries/active_user_query.dart';
 import '../../../../data/queries/active_user_query_provider.dart';

@@ -14,10 +14,8 @@ class HomeState {
   // 待复习五十音数量
   final int kanaReviewCount;
 
-  // 每日统计数据
-  final int streakDays;
+  // 学习统计
   final int masteredWordCount;
-  final int todayStudyDurationMinutes;
 
   final bool isInitialized;
 
@@ -29,9 +27,7 @@ class HomeState {
     this.newWordCount = 0,
     this.todayReviewCount = 0,
     this.kanaReviewCount = 0,
-    this.streakDays = 0,
     this.masteredWordCount = 0,
-    this.todayStudyDurationMinutes = 0,
     this.isInitialized = false,
   });
 
@@ -43,9 +39,7 @@ class HomeState {
     int? newWordCount,
     int? todayReviewCount,
     int? kanaReviewCount,
-    int? streakDays,
     int? masteredWordCount,
-    int? todayStudyDurationMinutes,
     bool? isInitialized,
   }) {
     return HomeState(
@@ -56,10 +50,7 @@ class HomeState {
       newWordCount: newWordCount ?? this.newWordCount,
       todayReviewCount: todayReviewCount ?? this.todayReviewCount,
       kanaReviewCount: kanaReviewCount ?? this.kanaReviewCount,
-      streakDays: streakDays ?? this.streakDays,
       masteredWordCount: masteredWordCount ?? this.masteredWordCount,
-      todayStudyDurationMinutes:
-          todayStudyDurationMinutes ?? this.todayStudyDurationMinutes,
       isInitialized: isInitialized ?? this.isInitialized,
     );
   }

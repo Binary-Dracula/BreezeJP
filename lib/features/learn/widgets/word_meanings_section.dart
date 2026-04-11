@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
-import '../../../data/models/word_meaning.dart';
+import '../../../data/models/word_detail.dart';
 
-/// 释义区
-/// 展示单词的多个中文释义
+/// 释义区（2.0 — 使用 WordRichContent.meanings）
 class WordMeaningsSection extends StatelessWidget {
-  final List<WordMeaning> meanings;
+  final WordRichContent richContent;
 
-  const WordMeaningsSection({super.key, required this.meanings});
+  const WordMeaningsSection({super.key, required this.richContent});
 
   @override
   Widget build(BuildContext context) {
+    final meanings = richContent.meanings;
     if (meanings.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -43,9 +43,19 @@ class WordMeaningsSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ...meanings.map(
-              (meaning) => _MeaningItem(meaning: meaning, theme: theme),
-            ),
+            ...List.generate(meanings.length, (index) {
+              final m = meanings[index];
+              final meaning = m['meaning'] as String? ?? '';
+              final pos = m['part_of_speech'] as String?;
+              final notes = m['notes'] as String?;
+              return _MeaningItem(
+                order: index + 1,
+                meaning: meaning,
+                partOfSpeech: pos,
+                notes: notes,
+                theme: theme,
+              );
+            }),
           ],
         ),
       ),
@@ -54,10 +64,19 @@ class WordMeaningsSection extends StatelessWidget {
 }
 
 class _MeaningItem extends StatelessWidget {
-  final WordMeaning meaning;
+  final int order;
+  final String meaning;
+  final String? partOfSpeech;
+  final String? notes;
   final ThemeData theme;
 
-  const _MeaningItem({required this.meaning, required this.theme});
+  const _MeaningItem({
+    required this.order,
+    required this.meaning,
+    this.partOfSpeech,
+    this.notes,
+    required this.theme,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +94,7 @@ class _MeaningItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text(
-              '${meaning.definitionOrder}',
+              '$order',
               style: TextStyle(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.bold,
@@ -87,17 +106,27 @@ class _MeaningItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (partOfSpeech?.isNotEmpty == true)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      partOfSpeech!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
                 Text(
-                  meaning.meaningCn,
+                  meaning,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (meaning.notes?.isNotEmpty == true)
+                if (notes?.isNotEmpty == true)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      meaning.notes!,
+                      notes!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,

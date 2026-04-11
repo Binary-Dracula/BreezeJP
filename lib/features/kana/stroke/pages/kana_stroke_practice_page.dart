@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xml/xml.dart';
-
-import '../../../../core/tracking/page_duration_tracking_mixin.dart';
 import '../../../../core/widgets/stroke_order_animator.dart';
 import '../../../../core/constants/learning_status.dart';
 import '../../../../data/models/kana_detail.dart';
@@ -43,8 +41,8 @@ class KanaStrokePracticePage extends ConsumerStatefulWidget {
       _KanaStrokePracticePageState();
 }
 
-class _KanaStrokePracticePageState extends ConsumerState<KanaStrokePracticePage>
-    with PageDurationTrackingMixin<KanaStrokePracticePage> {
+class _KanaStrokePracticePageState
+    extends ConsumerState<KanaStrokePracticePage> {
   /// UI 状态：完整字形是否需要淡入
   bool _showFinalGlyph = false;
 
