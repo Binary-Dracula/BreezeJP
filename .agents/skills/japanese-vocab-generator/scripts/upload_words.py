@@ -7,6 +7,7 @@ import time
 import uuid
 import requests
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 project_root = Path(__file__).resolve().parent.parent.parent.parent.parent
 
@@ -24,12 +25,27 @@ if env_file.exists():
                     SUPABASE_SERVICE_KEY = parts[1].strip().strip('"\'')
 
 SUPABASE_URL = "https://eecfrzvutrhftwvyebpq.supabase.co"
+REQUEST_TIMEOUT_SECONDS = 20
+BATCH_SIZE = 200
+R2_UPLOAD_WORKERS = 8
 
 def supabase_read(table, query_params):
     headers = {"apikey": SUPABASE_SERVICE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"}
-    resp = requests.get(f"{SUPABASE_URL}/rest/v1/{table}", params=query_params, headers=headers)
-    if not resp.ok: raise Exception(f"Read from {table} failed: {resp.text}")
-    return resp.json()
+    for attempt in range(3):
+        try:
+            resp = requests.get(
+                f"{SUPABASE_URL}/rest/v1/{table}",
+                params=query_params,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            if resp.ok:
+                return resp.json()
+            print(f"  ⚠️ [DB] {table} 读取重试 ({attempt+1}/3): {resp.text}")
+        except Exception as e:
+            print(f"  ⚠️ [DB] {table} 读取异常重试 ({attempt+1}/3): {e}")
+        time.sleep(2)
+    raise Exception(f"Read from {table} failed after retries")
 
 def supabase_insert(table, data):
     headers = {
@@ -38,7 +54,12 @@ def supabase_insert(table, data):
     }
     for attempt in range(3):
         try:
-            resp = requests.post(f"{SUPABASE_URL}/rest/v1/{table}", json=data, headers=headers)
+            resp = requests.post(
+                f"{SUPABASE_URL}/rest/v1/{table}",
+                json=data,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
             if resp.ok: return
             # 处理重复主键错误
             if "23505" in resp.text:
@@ -49,6 +70,62 @@ def supabase_insert(table, data):
             print(f"  ⚠️ [DB] {table} 写入异常重试 ({attempt+1}/3): {e}")
         time.sleep(2)
     raise Exception(f"Insert to {table} failed after retries")
+
+def supabase_upsert_many(table, rows, on_conflict="id"):
+    if not rows:
+        return
+    headers = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal,resolution=merge-duplicates",
+    }
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                f"{SUPABASE_URL}/rest/v1/{table}",
+                params={"on_conflict": on_conflict},
+                json=rows,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            if resp.ok:
+                return
+            print(f"  ⚠️ [DB] {table} 批量 upsert 重试 ({attempt+1}/3): {resp.text}")
+        except Exception as e:
+            print(f"  ⚠️ [DB] {table} 批量 upsert 异常重试 ({attempt+1}/3): {e}")
+        time.sleep(2)
+    raise Exception(f"Upsert to {table} failed after retries")
+
+def supabase_insert_many(table, rows):
+    if not rows:
+        return
+    headers = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+    }
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                f"{SUPABASE_URL}/rest/v1/{table}",
+                json=rows,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            if resp.ok:
+                return
+            # 批量请求里包含重复主键时，回退到逐条写入保证幂等续传
+            if "23505" in resp.text:
+                for row in rows:
+                    supabase_insert(table, row)
+                return
+            print(f"  ⚠️ [DB] {table} 批量写入重试 ({attempt+1}/3): {resp.text}")
+        except Exception as e:
+            print(f"  ⚠️ [DB] {table} 批量写入异常重试 ({attempt+1}/3): {e}")
+        time.sleep(2)
+    raise Exception(f"Insert many to {table} failed after retries")
 
 def r2_upload(r2_path, local_file_path):
     worker_dir = project_root / "backend" / "workers"
@@ -62,6 +139,20 @@ def r2_upload(r2_path, local_file_path):
         print(f"     ⚠️ [R2] 上传重试 ({attempt+1}/3): {result.stderr}")
         time.sleep(3)
     raise Exception(f"R2 上传失败: {result.stderr}")
+
+def chunked(items, size):
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
+def fetch_existing_word_ids(word_ids):
+    existing = set()
+    for ids_batch in chunked(word_ids, BATCH_SIZE):
+        # PostgREST in 语法：in.(id1,id2,...)
+        in_filter = "in.(" + ",".join(ids_batch) + ")"
+        rows = supabase_read("words", {"select": "id", "id": in_filter})
+        for row in rows:
+            existing.add(row["id"])
+    return existing
 
 def get_deterministic_uuid(namespace_prefix, data_str):
     # 使用 NAMESPACE_DNS 作为基础，配合项目前缀生成确定性 UUID
@@ -83,95 +174,26 @@ def get_or_create_lesson(book_id, lesson_number, title):
     supabase_insert("lessons", {"id": lesson_id, "book_id": book_id, "lesson_number": lesson_number, "title": title, "word_count": 0})
     return lesson_id
 
-def process_word(ai_json, audios_dir, book_id, lesson_id, sort_order):
-    basic = ai_json.get("1_basic_info", {})
-    meta = ai_json.get("_source_meta", {})
-    
-    word_text = basic.get("word", "").strip()
-    reading_text = basic.get("reading", "").strip()
-    
-    if not word_text or not reading_text:
-        print(f"  ⚠️ 警告：单词信息不完整，跳过。内容: {basic}")
-        return
+def upload_word_audio_jobs(audio_jobs):
+    if not audio_jobs:
+        return set(), 0
 
-    # 重要：身份标识改为 word + reading
-    word_id = get_deterministic_uuid("word", f"{word_text}:{reading_text}")
-    
-    # 检查是否已存在（幂等性）
-    exists = supabase_read("words", {"id": f"eq.{word_id}"})
-    if not exists:
-        has_main_audio = False
-        # 尝试使用 moji_id 获取音频（如果有的话）
-        moji_id = meta.get("moji_word_id")
-        if moji_id:
-            audio_file = audios_dir / f"{moji_id}.mp3"
-            if audio_file.exists():
-                r2_upload(f"audio/words/{word_id}/main.mp3", audio_file)
-                has_main_audio = True
-
-        # 1. words
-        meaning = ""
-        meanings_list = ai_json.get("2_meanings_and_nuance", [])
-        if meanings_list and isinstance(meanings_list, list) and len(meanings_list) > 0:
-            meaning = meanings_list[0].get("definition", "")
-
-        supabase_insert("words", {
-            "id": word_id,
-            "word": word_text,
-            "reading": reading_text,
-            "romaji": basic.get("romaji"),
-            "pitch_accent": basic.get("pitch_accent"),
-            "jlpt_level": basic.get("jlpt_level"),
-            "part_of_speech": basic.get("part_of_speech", ""),
-            "transitivity": basic.get("transitivity"),
-            "primary_meaning": meaning,
-            "has_audio": has_main_audio
-        })
-
-        # 2. word_details
-        rich_content = {
-            "meanings": ai_json.get("2_meanings_and_nuance"),
-            "grammar_rules": ai_json.get("3_critical_grammar_rules", {}).get("associated_particles"),
-            "conjugations": ai_json.get("4_conjugations"),
-            "kanji_components": ai_json.get("5_kanji_components"),
-            "synonyms_antonyms": ai_json.get("7_synonyms_and_antonyms"),
-            "collocations": ai_json.get("8_collocations_and_phrases"),
-            "common_mistakes": ai_json.get("9_common_mistakes_and_usage_notes"),
+    success_word_ids = set()
+    failed = 0
+    with ThreadPoolExecutor(max_workers=R2_UPLOAD_WORKERS) as executor:
+        future_map = {
+            executor.submit(r2_upload, r2_path, audio_file): word_id
+            for word_id, r2_path, audio_file in audio_jobs
         }
-        if meta:
-            rich_content["_source_meta"] = meta
-            
-        supabase_insert("word_details", {
-            "word_id": word_id,
-            "rich_content": rich_content
-        })
-
-        # 3. word_examples
-        ex_order = 0
-        for ex in ai_json.get("6_example_sentences", []):
-            ex_id = get_deterministic_uuid("example", f"{word_id}:{ex_order}")
-            supabase_insert("word_examples", {
-                "id": ex_id,
-                "word_id": word_id,
-                "level": ex.get("level", "Casual"),
-                "japanese": ex.get("japanese", ""),
-                "chinese": ex.get("chinese", ""),
-                "has_audio": False,
-                "sort_order": ex_order
-            })
-            ex_order += 1
-    else:
-        print(f"  ✨ 单词 [{word_text}] 已存在，仅建立关联。")
-
-    # 4. lesson_word_map
-    map_id = get_deterministic_uuid("map", f"{book_id}:{lesson_id}:{word_id}")
-    supabase_insert("lesson_word_map", {
-        "id": map_id,
-        "book_id": book_id,
-        "lesson_id": lesson_id,
-        "word_id": word_id,
-        "sort_order": sort_order
-    })
+        for future in as_completed(future_map):
+            word_id = future_map[future]
+            try:
+                future.result()
+                success_word_ids.add(word_id)
+            except Exception as e:
+                failed += 1
+                print(f"     ⚠️ [R2] 单词音频上传失败，已降级继续: {word_id} ({e})")
+    return success_word_ids, failed
 
 def main():
     parser = argparse.ArgumentParser("Upload words to Supabase and R2")
@@ -211,10 +233,10 @@ def main():
     book_id = get_or_create_book(args.book_title)
 
     global_lesson_num = 1
-    total_uploaded = 0
+    all_records = []
 
     def traverse(node, path_titles):
-        nonlocal global_lesson_num, total_uploaded
+        nonlocal global_lesson_num
         
         if isinstance(node, dict):
             if "title" in node and "items" in node:
@@ -235,10 +257,24 @@ def main():
                         moji_id = str(child["wordId"])
                         if moji_id in ai_dict:
                             word_text = child.get('word', '')
-                            print(f"  ➜ 正在上传单词 [{word_text}] ...")
-                            process_word(ai_dict[moji_id], audios_dir, book_id, lesson_id, word_sort_order)
+                            ai_json = ai_dict[moji_id]
+                            basic = ai_json.get("1_basic_info", {})
+                            word_text = basic.get("word", "").strip() or word_text
+                            reading_text = basic.get("reading", "").strip()
+                            if not word_text or not reading_text:
+                                print(f"  ⚠️ 警告：单词信息不完整，跳过。内容: {basic}")
+                                continue
+
+                            word_id = get_deterministic_uuid("word", f"{word_text}:{reading_text}")
+                            all_records.append({
+                                "ai_json": ai_json,
+                                "word": word_text,
+                                "reading": reading_text,
+                                "word_id": word_id,
+                                "lesson_id": lesson_id,
+                                "sort_order": word_sort_order,
+                            })
                             word_sort_order += 1
-                            total_uploaded += 1
                         else:
                             print(f"  ⚠️ 跳过：在AI结果中未找到对应: {child.get('word', moji_id)}")
                     else:
@@ -249,7 +285,107 @@ def main():
                 traverse(child, path_titles)
 
     traverse(moji_tree, [])
-    print(f"\n✅ 成功！累计上传和关联了 {total_uploaded} 个单词。")
+    if not all_records:
+        print("\n⚠️ 没有可上传的数据。")
+        return
+
+    print(f"\n📦 已收集待处理记录: {len(all_records)}")
+
+    all_word_ids = [r["word_id"] for r in all_records]
+    existing_word_ids = fetch_existing_word_ids(all_word_ids)
+    new_records = [r for r in all_records if r["word_id"] not in existing_word_ids]
+    print(f"🔎 云端已存在: {len(existing_word_ids)}，新增: {len(new_records)}")
+
+    audio_jobs = []
+    for r in new_records:
+        meta = r["ai_json"].get("_source_meta", {})
+        moji_id = meta.get("moji_word_id")
+        if moji_id:
+            audio_file = audios_dir / f"{moji_id}.mp3"
+            if audio_file.exists():
+                audio_jobs.append((r["word_id"], f"audio/words/{r['word_id']}/main.mp3", audio_file))
+
+    print(f"🎧 待上传音频: {len(audio_jobs)}，并发线程: {R2_UPLOAD_WORKERS}")
+    uploaded_audio_word_ids, audio_failed = upload_word_audio_jobs(audio_jobs)
+
+    words_rows = []
+    details_rows = []
+    examples_rows = []
+    map_rows = []
+
+    for r in new_records:
+        ai_json = r["ai_json"]
+        basic = ai_json.get("1_basic_info", {})
+        meta = ai_json.get("_source_meta", {})
+        meanings_list = ai_json.get("2_meanings_and_nuance", [])
+        meaning = ""
+        if meanings_list and isinstance(meanings_list, list):
+            meaning = meanings_list[0].get("definition", "") if meanings_list else ""
+
+        words_rows.append({
+            "id": r["word_id"],
+            "word": r["word"],
+            "reading": r["reading"],
+            "romaji": basic.get("romaji"),
+            "pitch_accent": basic.get("pitch_accent"),
+            "jlpt_level": basic.get("jlpt_level"),
+            "part_of_speech": basic.get("part_of_speech", ""),
+            "transitivity": basic.get("transitivity"),
+            "primary_meaning": meaning,
+            "has_audio": r["word_id"] in uploaded_audio_word_ids,
+        })
+
+        rich_content = {
+            "meanings": ai_json.get("2_meanings_and_nuance"),
+            "grammar_rules": ai_json.get("3_critical_grammar_rules", {}).get("associated_particles"),
+            "conjugations": ai_json.get("4_conjugations"),
+            "kanji_components": ai_json.get("5_kanji_components"),
+            "synonyms_antonyms": ai_json.get("7_synonyms_and_antonyms"),
+            "collocations": ai_json.get("8_collocations_and_phrases"),
+            "common_mistakes": ai_json.get("9_common_mistakes_and_usage_notes"),
+        }
+        if meta:
+            rich_content["_source_meta"] = meta
+        details_rows.append({
+            "word_id": r["word_id"],
+            "rich_content": rich_content,
+        })
+
+        ex_order = 0
+        for ex in ai_json.get("6_example_sentences", []):
+            ex_id = get_deterministic_uuid("example", f"{r['word_id']}:{ex_order}")
+            examples_rows.append({
+                "id": ex_id,
+                "word_id": r["word_id"],
+                "level": ex.get("level", "Casual"),
+                "japanese": ex.get("japanese", ""),
+                "chinese": ex.get("chinese", ""),
+                "has_audio": False,
+                "sort_order": ex_order,
+            })
+            ex_order += 1
+
+    for r in all_records:
+        map_id = get_deterministic_uuid("map", f"{book_id}:{r['lesson_id']}:{r['word_id']}")
+        map_rows.append({
+            "id": map_id,
+            "book_id": book_id,
+            "lesson_id": r["lesson_id"],
+            "word_id": r["word_id"],
+            "sort_order": r["sort_order"],
+        })
+
+    print(f"🧱 批量写库：words={len(words_rows)}, details={len(details_rows)}, examples={len(examples_rows)}, map={len(map_rows)}")
+    for batch in chunked(words_rows, BATCH_SIZE):
+        supabase_insert_many("words", batch)
+    for batch in chunked(details_rows, BATCH_SIZE):
+        supabase_insert_many("word_details", batch)
+    for batch in chunked(examples_rows, BATCH_SIZE):
+        supabase_insert_many("word_examples", batch)
+    for batch in chunked(map_rows, BATCH_SIZE):
+        supabase_upsert_many("lesson_word_map", batch, on_conflict="id")
+
+    print(f"\n✅ 成功！累计建立关联 {len(all_records)} 条；新增单词 {len(new_records)} 条；音频成功 {len(uploaded_audio_word_ids)} 条，失败 {audio_failed} 条。")
 
 if __name__ == "__main__":
     main()
