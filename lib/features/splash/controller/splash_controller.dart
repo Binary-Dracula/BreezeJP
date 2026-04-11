@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/app_bootstrap_command.dart';
@@ -43,12 +42,10 @@ class SplashController extends Notifier<SplashState> {
 
       // 初始化完成
       if (result.status == AppBootstrapStatus.ready) {
-        final session = Supabase.instance.client.auth.currentSession;
         state = state.copyWith(
           isLoading: false,
           message: l10n.splashInitComplete,
           isInitialized: true,
-          hasSession: session != null,
         );
       }
       logger.info('[LEARN] app_init_complete: initialization successful');
