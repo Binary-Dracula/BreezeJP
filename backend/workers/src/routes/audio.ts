@@ -1,6 +1,5 @@
 // 音频代理路由
-// GET /api/v1/audio/articles/:id    - 1.0 新闻音频 (audio/audio_articles/{id}.mp3)
-// GET /api/v1/audio/words/:wordId/:filename - 2.0 单词/例句音频 (audio/words/{wordId}/{filename})
+// GET /api/v1/audio/:id - 1.0 新闻音频 (audio/audio_articles/{id}.mp3)
 
 import { Env } from '../types';
 import { AuthPayload } from '../middleware/auth';
@@ -53,20 +52,6 @@ export async function handleAudio(
   id: string
 ): Promise<Response> {
   const objectKey = `audio/audio_articles/${id}.mp3`;
-  return fetchFromR2(env, request, objectKey);
-}
-
-/**
- * GET /api/v1/audio/words/:wordId/:filename (2.0)
- */
-export async function handleVocabAudio(
-  request: Request,
-  env: Env,
-  _auth: AuthPayload,
-  wordId: string,
-  filename: string
-): Promise<Response> {
-  const objectKey = `audio/words/${wordId}/${filename}`;
   return fetchFromR2(env, request, objectKey);
 }
 

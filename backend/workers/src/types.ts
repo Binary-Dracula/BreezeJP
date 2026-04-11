@@ -12,7 +12,7 @@ export interface Env {
   CACHE_TTL_DETAIL: string;
   // 敏感变量（通过 wrangler secret put 设置）
   SUPABASE_SERVICE_KEY: string;
-  JWT_SECRET: string;
+  JWT_SECRET?: string;  // 预留，当前使用 JWKS 验证
 }
 
 // 新闻列表项（轻量）
@@ -71,14 +71,6 @@ export interface VocabBook {
   description?: string;
   cover_image_key?: string;
   has_lessons: boolean;
-  word_count: number;
-}
-
-export interface VocabLesson {
-  id: string;
-  book_id: string;
-  lesson_number: number;
-  title?: string;
   word_count: number;
 }
 

@@ -161,6 +161,10 @@ CREATE TABLE IF NOT EXISTS words (
 CREATE INDEX IF NOT EXISTS idx_words_word ON words(word);
 CREATE INDEX IF NOT EXISTS idx_words_reading ON words(reading);
 CREATE INDEX IF NOT EXISTS idx_words_jlpt ON words(jlpt_level);
+CREATE INDEX IF NOT EXISTS idx_words_updated_at ON words(updated_at);
+
+-- 约束语义：任何影响词条展示内容或书内顺序的改动都必须 bump words.updated_at
+-- 触发器已保证 UPDATE 时自动刷新；上传脚本和手动修改时同样须遵守
 
 -- 自动更新触发器
 DROP TRIGGER IF EXISTS trg_words_updated_at ON words;
@@ -239,13 +243,15 @@ CREATE TABLE IF NOT EXISTS lesson_word_map (
     book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
     lesson_id UUID REFERENCES lessons(id) ON DELETE SET NULL,
     word_id UUID NOT NULL REFERENCES words(id) ON DELETE CASCADE,
-    sort_order INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,        -- 课内排序
+    book_sort_order INTEGER NOT NULL DEFAULT 0,   -- 全书排序（跨课连续递增，用于客户端顺序取词）
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_lwm_book ON lesson_word_map(book_id);
 CREATE INDEX IF NOT EXISTS idx_lwm_lesson ON lesson_word_map(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_lwm_word ON lesson_word_map(word_id);
+CREATE INDEX IF NOT EXISTS idx_lwm_book_sort ON lesson_word_map(book_id, book_sort_order);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_lwm_unique ON lesson_word_map(book_id, COALESCE(lesson_id, '00000000-0000-0000-0000-000000000000'), word_id);
 
 -- --------------------------------------------------
