@@ -7,7 +7,7 @@ import '../commands/active_user_command.dart';
 import '../commands/active_user_command_provider.dart';
 import '../models/kana_learning_state.dart';
 import '../models/study_word.dart';
-import '../models/read/word_list_item.dart';
+import '../models/word.dart';
 import '../queries/word_read_queries.dart';
 import '../repositories/kana_repository.dart';
 import '../repositories/kana_repository_provider.dart';
@@ -72,17 +72,14 @@ class DebugSeedCommand {
     var wordUpdated = 0;
     var wordSkipped = 0;
 
-    for (final item in wordSelected) {
-      final existing = await _studyWordRepository.getStudyWord(
-        userId,
-        item.word.id,
-      );
+    for (final word in wordSelected) {
+      final existing = await _studyWordRepository.getStudyWord(userId, word.id);
 
       if (existing == null) {
         final state = StudyWord(
           id: 0,
           userId: userId,
-          wordId: item.word.id,
+          wordId: word.id,
           userState: LearningStatus.learning,
           nextReviewAt: dueAt,
           lastReviewedAt: lastReviewedAt,
@@ -130,8 +127,10 @@ class DebugSeedCommand {
     final lastReviewedAtSeconds = nowSeconds - 86400;
 
     final kanaLetters = await _kanaRepository.getAllKanaLetters();
-    final kanaSelected =
-        kanaLetters.take(perType).map((letter) => letter.id).toList();
+    final kanaSelected = kanaLetters
+        .take(perType)
+        .map((letter) => letter.id)
+        .toList();
     var kanaInserted = 0;
     var kanaUpdated = 0;
     var kanaSkipped = 0;
@@ -206,12 +205,13 @@ class DebugSeedCommand {
     return result;
   }
 
-  Future<List<WordListItem>> _getWordCandidates(int perType) async {
-    final candidates = await _wordReadQueries.getWordListItems(
+  Future<List<Word>> _getWordCandidates(int perType) async {
+    final candidates = await _wordReadQueries.searchWords(
+      keyword: '',
       limit: perType * 5,
     );
     return candidates
-        .where((item) => (item.primaryMeaning ?? '').trim().isNotEmpty)
+        .where((w) => (w.primaryMeaning ?? '').trim().isNotEmpty)
         .toList();
   }
 }

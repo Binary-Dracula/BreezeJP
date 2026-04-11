@@ -3,86 +3,77 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../core/utils/app_logger.dart';
 import '../db/app_database_provider.dart';
-import '../models/read/word_list_item.dart';
-import '../models/example_audio.dart';
 import '../models/word.dart';
-import '../models/word_choice.dart';
 import '../models/word_detail.dart';
-import '../models/word_meaning.dart';
-import '../models/word_with_relation.dart';
-import '../models/word_conjugation.dart';
-import '../repositories/example_audio_repository_provider.dart';
-import '../repositories/example_repository_provider.dart';
-import '../repositories/word_audio_repository_provider.dart';
-import '../repositories/word_meaning_repository_provider.dart';
-import '../repositories/word_repository_provider.dart';
 
 final wordReadQueriesProvider = Provider<WordReadQueries>((ref) {
   final db = ref.read(databaseProvider);
-  return WordReadQueries(ref, db);
+  return WordReadQueries(db);
 });
 
-/// 单词 Read 查询层（组合查询/场景查询）
+/// 单词 Read 查询层（2.0 — 基于新 words/word_details/word_examples 表）
 class WordReadQueries {
-  WordReadQueries(this.ref, this._db);
+  WordReadQueries(this._db);
 
-  final Ref ref;
   final Database _db;
 
-  /// 获取单词的完整详情（包含释义、音频、例句）
-  Future<WordDetail?> getWordDetail(int wordId) async {
+  /// 获取单词的完整详情（JOIN words + word_details + word_examples + study_words）
+  Future<WordDetail?> getWordDetail(String wordId, {int? userId}) async {
     try {
-      final wordRepository = ref.read(wordRepositoryProvider);
-      final meaningRepository = ref.read(wordMeaningRepositoryProvider);
-      final audioRepository = ref.read(wordAudioRepositoryProvider);
-      final exampleRepository = ref.read(exampleRepositoryProvider);
-      final exampleAudioRepository = ref.read(exampleAudioRepositoryProvider);
-
-      // 1) 获取单词基本信息
-      final word = await wordRepository.getWordById(wordId);
-      if (word == null) {
+      // 1) 获取 word 基本信息
+      final wordRows = await _db.query(
+        'words',
+        where: 'id = ?',
+        whereArgs: [wordId],
+        limit: 1,
+      );
+      if (wordRows.isEmpty) {
         logger.warning('单词不存在: $wordId');
         return null;
       }
 
-      // 2) 获取释义
-      final meanings = await meaningRepository.getWordMeanings(wordId);
-
-      // 3) 获取音频
-      final audios = await audioRepository.getWordAudios(wordId);
-
-      // 4) 获取例句
-      final sentences = await exampleRepository.getExampleSentences(wordId);
-
-      // 5) 批量获取例句音频
-      final exampleIds = sentences.map((s) => s.id).toList();
-      final exampleAudios = await exampleAudioRepository
-          .getExampleAudioByExampleIds(exampleIds);
-      final audioByExampleId = <int, ExampleAudio>{
-        for (final audio in exampleAudios) audio.exampleId: audio,
-      };
-
-      final examples = <ExampleSentenceWithAudio>[
-        for (final sentence in sentences)
-          ExampleSentenceWithAudio(
-            sentence: sentence,
-            audio: audioByExampleId[sentence.id],
-          ),
-      ];
-
-      // 6) 获取变形
-      final conjugations = await getConjugations(wordId);
-
-      logger.debug(
-        '单词详情获取成功: ${word.word} (${meanings.length}个释义, ${examples.length}个例句, ${conjugations.length}个变形)',
+      // 2) 获取 word_details
+      final detailRows = await _db.query(
+        'word_details',
+        where: 'word_id = ?',
+        whereArgs: [wordId],
+        limit: 1,
       );
 
-      return WordDetail(
-        word: word,
-        meanings: meanings,
-        audios: audios,
-        examples: examples,
-        conjugations: conjugations,
+      // 3) 获取 word_examples
+      final exampleRows = await _db.query(
+        'word_examples',
+        where: 'word_id = ?',
+        whereArgs: [wordId],
+        orderBy: 'sort_order ASC',
+      );
+
+      // 4) 获取用户学习状态
+      int? userState;
+      if (userId != null) {
+        final stateRows = await _db.query(
+          'study_words',
+          columns: ['user_state'],
+          where: 'user_id = ? AND word_id = ?',
+          whereArgs: [userId, wordId],
+          limit: 1,
+        );
+        if (stateRows.isNotEmpty) {
+          userState = stateRows.first['user_state'] as int?;
+        }
+      }
+
+      logger.dbQuery(
+        table: 'words + word_details + word_examples',
+        where: 'word_id = $wordId',
+        resultCount: 1,
+      );
+
+      return WordDetail.fromDbMaps(
+        wordMap: wordRows.first,
+        detailMap: detailRows.isNotEmpty ? detailRows.first : null,
+        exampleMaps: exampleRows,
+        userState: userState,
       );
     } catch (e, stackTrace) {
       logger.dbError(
@@ -95,48 +86,60 @@ class WordReadQueries {
     }
   }
 
-  /// 获取单词列表及其主要释义（用于列表显示）
-  Future<List<WordListItem>> getWordListItems({
-    String? jlptLevel,
-    int? limit,
-    int? offset,
+  /// 批量获取单词详情
+  Future<List<WordDetail>> getWordDetails(
+    List<String> wordIds, {
+    int? userId,
+  }) async {
+    if (wordIds.isEmpty) return [];
+
+    final results = <WordDetail>[];
+    for (final wordId in wordIds) {
+      final detail = await getWordDetail(wordId, userId: userId);
+      if (detail != null) results.add(detail);
+    }
+    return results;
+  }
+
+  /// 按 book_sort_order 从书中取下一批新词
+  ///
+  /// 返回 afterSort 之后的 limit 个单词的完整详情。
+  /// 用于学习流：取当前进度之后的新词。
+  Future<List<WordDetail>> getNextWordsInBook(
+    String bookId, {
+    required int afterSort,
+    required int limit,
+    int? userId,
   }) async {
     try {
-      final db = _db;
-      final sql =
-          '''
-        SELECT 
-          w.*,
-          wm.meaning_cn as primary_meaning
-        FROM words w
-        LEFT JOIN word_meanings wm ON w.id = wm.word_id AND wm.definition_order = 1
-        ${jlptLevel != null ? 'WHERE w.jlpt_level = ?' : ''}
-        ORDER BY w.id ASC
-        ${limit != null ? 'LIMIT $limit' : ''}
-        ${offset != null ? 'OFFSET $offset' : ''}
-      ''';
-
-      final results = await db.rawQuery(
-        sql,
-        jlptLevel != null ? [jlptLevel] : null,
+      // 查 lesson_word_map → word_id，按 book_sort_order 排序
+      final rows = await _db.rawQuery(
+        '''
+        SELECT lwm.word_id
+        FROM lesson_word_map lwm
+        WHERE lwm.book_id = ?
+          AND lwm.book_sort_order > ?
+        ORDER BY lwm.book_sort_order ASC
+        LIMIT ?
+        ''',
+        [bookId, afterSort, limit],
       );
 
       logger.dbQuery(
-        table: 'words + word_meanings',
-        where: jlptLevel != null ? 'jlpt_level = $jlptLevel' : null,
-        resultCount: results.length,
+        table: 'lesson_word_map',
+        where: 'book_id=$bookId afterSort=$afterSort limit=$limit',
+        resultCount: rows.length,
       );
 
-      return results.map((row) {
-        return WordListItem(
-          word: Word.fromMap(row),
-          primaryMeaning: row['primary_meaning'] as String?,
-        );
-      }).toList();
+      if (rows.isEmpty) return [];
+
+      final wordIds =
+          rows.map((r) => r['word_id'] as String).toList();
+      return getWordDetails(wordIds, userId: userId);
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
-        table: 'words + word_meanings',
+        table: 'lesson_word_map + words',
         dbError: e,
         stackTrace: stackTrace,
       );
@@ -144,50 +147,14 @@ class WordReadQueries {
     }
   }
 
-  /// 按 JLPT 等级获取单词列表
-  Future<List<Word>> getWordsByLevel({
-    required String jlptLevel,
-    int? limit,
-    int? offset,
-  }) async {
-    try {
-      final db = _db;
-      final results = await db.query(
-        'words',
-        where: 'jlpt_level = ?',
-        whereArgs: [jlptLevel],
-        orderBy: 'id ASC',
-        limit: limit,
-        offset: offset,
-      );
-
-      logger.dbQuery(
-        table: 'words',
-        where: 'jlpt_level = $jlptLevel',
-        resultCount: results.length,
-      );
-
-      return results.map((map) => Word.fromMap(map)).toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'words',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 搜索单词（按单词文本、假名或罗马音）
+  /// 搜索单词（按单词文本或 reading）
   Future<List<Word>> searchWords({required String keyword, int? limit}) async {
     try {
-      final db = _db;
-      final results = await db.query(
+      final results = await _db.query(
         'words',
-        where: 'word LIKE ? OR furigana LIKE ? OR romaji LIKE ?',
+        where: 'word LIKE ? OR reading LIKE ? OR romaji LIKE ?',
         whereArgs: ['%$keyword%', '%$keyword%', '%$keyword%'],
-        orderBy: 'id ASC',
+        orderBy: 'word ASC',
         limit: limit,
       );
 
@@ -209,331 +176,30 @@ class WordReadQueries {
     }
   }
 
-  /// 随机获取单词（只读）
-  Future<List<Word>> getRandomWords({int limit = 10}) async {
+  /// 获取书中用户的最大 book_sort_order（用于确定学习进度游标）
+  Future<int> getMaxLearnedSortOrder(String bookId, int userId) async {
     try {
-      final db = _db;
-      final results = await db.query(
-        'words',
-        orderBy: 'RANDOM()',
-        limit: limit,
-      );
-
-      logger.dbQuery(
-        table: 'words',
-        where: 'RANDOM() limit $limit',
-        resultCount: results.length,
-      );
-
-      return results.map((map) => Word.fromMap(map)).toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'words',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 随机获取带主释义的单词列表项（用于生成复习干扰项）
-  Future<List<WordListItem>> getRandomWordListItems({
-    required int limit,
-    List<int>? excludeIds,
-  }) async {
-    try {
-      final db = _db;
-      final whereClause = excludeIds != null && excludeIds.isNotEmpty
-          ? 'WHERE w.id NOT IN (${excludeIds.join(',')})'
-          : '';
-
-      final sql =
-          '''
-        SELECT 
-          w.*,
-          wm.meaning_cn as primary_meaning
-        FROM words w
-        LEFT JOIN word_meanings wm ON w.id = wm.word_id AND wm.definition_order = 1
-        $whereClause
-        ORDER BY RANDOM()
-        LIMIT $limit
-      ''';
-
-      final results = await db.rawQuery(sql);
-
-      return results.map((row) {
-        return WordListItem(
-          word: Word.fromMap(row),
-          primaryMeaning: row['primary_meaning'] as String?,
-        );
-      }).toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'words + word_meanings (random)',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 获取未学习的单词（用于预加载）
-  Future<List<Word>> getUnlearnedWords({
-    required int userId,
-    int limit = 20,
-    List<int> excludeIds = const [],
-  }) async {
-    try {
-      final db = _db;
-      final whereArgs = <Object>[userId];
-      var whereClause =
-          'id NOT IN (SELECT word_id FROM study_words WHERE user_id = ? AND user_state > 0)';
-
-      if (excludeIds.isNotEmpty) {
-        final placeholders = List.filled(excludeIds.length, '?').join(',');
-        whereClause += ' AND id NOT IN ($placeholders)';
-        whereArgs.addAll(excludeIds);
-      }
-
-      final results = await db.query(
-        'words',
-        where: whereClause,
-        whereArgs: whereArgs,
-        orderBy: 'id ASC',
-        limit: limit,
-      );
-
-      logger.dbQuery(
-        table: 'words',
-        where: 'unlearned userId=$userId (excludeIds: ${excludeIds.length})',
-        resultCount: results.length,
-      );
-
-      return results.map((map) => Word.fromMap(map)).toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'words',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 随机获取未掌握单词（包含释义，用于初始选择）
-  /// 筛选条件：user_state IS NULL OR user_state IN (0, 1)
-  Future<List<WordChoice>> getRandomUnmasteredWordsWithMeaning({
-    required int userId,
-    int count = 5,
-  }) async {
-    try {
-      final db = _db;
-
-      final wordIdRows = await db.rawQuery(
+      final rows = await _db.rawQuery(
         '''
-        SELECT w.id
-      FROM words w
-      LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
-      WHERE sw.user_state IS NULL OR sw.user_state IN (0, 1)
-      ORDER BY
-        CASE w.jlpt_level
-          WHEN 'N5' THEN 1
-          WHEN 'N4' THEN 2
-          WHEN 'N3' THEN 3
-          WHEN 'N2' THEN 4
-          WHEN 'N1' THEN 5
-          ELSE 6
-        END,
-        RANDOM()
-      LIMIT ?
-      ''',
-        [userId, count],
-      );
-
-      final wordIds = wordIdRows
-          .map((row) => row['id'])
-          .whereType<int>()
-          .toList();
-
-      logger.dbQuery(
-        table: 'words',
-        where: 'unmastered userId=$userId RANDOM() limit $count',
-        resultCount: wordIds.length,
-      );
-
-      if (wordIds.isEmpty) return [];
-
-      final placeholders = List.filled(wordIds.length, '?').join(',');
-      final wordRows = await db.query(
-        'words',
-        where: 'id IN ($placeholders)',
-        whereArgs: wordIds,
-      );
-      final wordsById = <int, Word>{
-        for (final row in wordRows) (row['id'] as int): Word.fromMap(row),
-      };
-
-      final meaningRepository = ref.read(wordMeaningRepositoryProvider);
-      final meanings = await meaningRepository.getWordMeaningsByWordIds(
-        wordIds,
-      );
-      final meaningsByWordId = <int, List<WordMeaning>>{};
-      for (final meaning in meanings) {
-        meaningsByWordId.putIfAbsent(meaning.wordId, () => []).add(meaning);
-      }
-
-      final choices = <WordChoice>[];
-      for (final wordId in wordIds) {
-        final word = wordsById[wordId];
-        if (word == null) continue;
-        final wordMeanings = meaningsByWordId[wordId] ?? const [];
-        choices.add(WordChoice(word: word, meanings: wordMeanings));
-      }
-
-      return choices;
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'words + word_meanings',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 随机获取一个未掌握的种子词（岛式扩展用）
-  /// 优先 N5，排除已在队列中的 word ID
-  Future<Word?> getRandomUnmasteredSeedWord({
-    required int userId,
-    List<int> excludeIds = const [],
-  }) async {
-    try {
-      final db = _db;
-      final args = <Object>[userId];
-      var excludeClause = '';
-
-      if (excludeIds.isNotEmpty) {
-        final placeholders = List.filled(excludeIds.length, '?').join(',');
-        excludeClause = 'AND w.id NOT IN ($placeholders)';
-        args.addAll(excludeIds);
-      }
-
-      final rows = await db.rawQuery('''
-        SELECT w.*
-        FROM words w
-        LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
-        WHERE (sw.user_state IS NULL OR sw.user_state IN (0, 1))
-          $excludeClause
-        ORDER BY
-          CASE w.jlpt_level
-            WHEN 'N5' THEN 1
-            WHEN 'N4' THEN 2
-            WHEN 'N3' THEN 3
-            WHEN 'N2' THEN 4
-            WHEN 'N1' THEN 5
-            ELSE 6
-          END,
-          RANDOM()
-        LIMIT 1
-      ''', args);
-
-      logger.dbQuery(
-        table: 'words',
-        where: 'unmastered seed userId=$userId excludeIds=${excludeIds.length}',
-        resultCount: rows.length,
-      );
-
-      if (rows.isEmpty) return null;
-      return Word.fromMap(rows.first);
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'words (seed)',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 获取单词的关联词（过滤已掌握）
-  /// 筛选条件：user_state IS NULL OR user_state IN (0, 1)
-  Future<List<WordWithRelation>> getRelatedWords({
-    required int userId,
-    required int wordId,
-  }) async {
-    try {
-      final db = _db;
-      final results = await db.rawQuery(
-        '''
-        SELECT w.*, wr.score, wr.relation_type
-        FROM word_relations wr
-        JOIN words w ON wr.related_word_id = w.id
-        LEFT JOIN study_words sw ON w.id = sw.word_id AND sw.user_id = ?
-        WHERE wr.word_id = ?
-          AND (sw.user_state IS NULL OR sw.user_state IN (0, 1))
-        ORDER BY wr.score DESC
-      ''',
-        [userId, wordId],
-      );
-
-      logger.dbQuery(
-        table: 'word_relations + words',
-        where: 'word_id = $wordId (userId=$userId, unmastered)',
-        resultCount: results.length,
-      );
-
-      return results.map((map) => WordWithRelation.fromMap(map)).toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'word_relations',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 获取单词的变形形式（包括元数据）
-  Future<List<WordConjugation>> getConjugations(int wordId) async {
-    try {
-      final db = _db;
-      final results = await db.rawQuery(
-        '''
-        SELECT 
-          wc.*,
-          ct.name_ja,
-          ct.name_cn,
-          ct.sort_order
-        FROM word_conjugations wc
-        JOIN conjugation_types ct ON wc.type_id = ct.id
-        WHERE wc.word_id = ?
-        ORDER BY ct.sort_order ASC
+        SELECT MAX(lwm.book_sort_order) as max_sort
+        FROM lesson_word_map lwm
+        JOIN study_words sw ON lwm.word_id = sw.word_id AND sw.user_id = ?
+        WHERE lwm.book_id = ?
+          AND sw.user_state > 0
         ''',
-        [wordId],
+        [userId, bookId],
       );
 
-      logger.dbQuery(
-        table: 'word_conjugations + conjugation_types',
-        where: 'word_id = \$wordId',
-        resultCount: results.length,
-      );
-
-      return results.map((map) => WordConjugation.fromMap(map)).toList();
+      if (rows.isEmpty || rows.first['max_sort'] == null) return 0;
+      return rows.first['max_sort'] as int;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
-        table: 'word_conjugations',
+        table: 'lesson_word_map + study_words',
         dbError: e,
         stackTrace: stackTrace,
       );
-      // Fail gracefully for conjugations (optional feature)
-      return [];
+      rethrow;
     }
   }
 }

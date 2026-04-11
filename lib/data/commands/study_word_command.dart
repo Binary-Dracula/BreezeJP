@@ -19,7 +19,7 @@ class StudyWordCommand {
   StudyWordRepository get _repo => ref.read(studyWordRepositoryProvider);
 
   /// 标记单词为已掌握
-  Future<void> markAsMastered(int userId, int wordId) async {
+  Future<void> markAsMastered(int userId, String wordId) async {
     try {
       final studyWord = await _repo.getStudyWord(userId, wordId);
       if (studyWord == null) {
@@ -52,7 +52,7 @@ class StudyWordCommand {
   }
 
   /// 标记单词为忽略
-  Future<void> markAsIgnored(int userId, int wordId) async {
+  Future<void> markAsIgnored(int userId, String wordId) async {
     try {
       final studyWord = await _repo.getStudyWord(userId, wordId);
       if (studyWord == null) {
@@ -85,7 +85,7 @@ class StudyWordCommand {
   }
 
   /// 重置单词学习进度
-  Future<void> resetProgress(int userId, int wordId) async {
+  Future<void> resetProgress(int userId, String wordId) async {
     try {
       final studyWord = await _repo.getStudyWord(userId, wordId);
       if (studyWord == null) {
@@ -129,7 +129,10 @@ class StudyWordCommand {
 
   /// 标记单词为学习中（user_state = 1）
   /// 如果记录不存在则创建，存在则更新
-  Future<void> markAsLearned({required int userId, required int wordId}) async {
+  Future<void> markAsLearned({
+    required int userId,
+    required String wordId,
+  }) async {
     try {
       final studyWord = await _repo.getStudyWord(userId, wordId);
       final now = DateTime.now();

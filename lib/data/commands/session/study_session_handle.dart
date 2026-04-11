@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../study_log_command.dart';
 import '../study_word_command.dart';
 import 'session_lifecycle_guard.dart';
 import 'session_scope.dart';
@@ -23,7 +22,7 @@ class StudySessionHandle {
   final SessionStatAccumulator _accumulator;
 
   StudyWordCommand get _studyWordCommand => _ref.read(studyWordCommandProvider);
-  StudyLogCommand get _studyLogCommand => _ref.read(studyLogCommandProvider);
+
   void onFirstLearn() {
     _recordEvent(SessionEventType.firstLearn);
   }
@@ -40,9 +39,8 @@ class StudySessionHandle {
     _recordEvent(SessionEventType.kanaReview);
   }
 
-  Future<void> submitFirstLearn({required int wordId}) async {
+  Future<void> submitFirstLearn({required String wordId}) async {
     onFirstLearn();
-
     await _studyWordCommand.markAsLearned(userId: userId, wordId: wordId);
   }
 

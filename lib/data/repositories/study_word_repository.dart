@@ -1,6 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
 import '../models/study_word.dart';
 
 /// 学习进度数据仓库
@@ -16,7 +15,7 @@ class StudyWordRepository {
   // ==================== 基础 CRUD ====================
 
   /// 获取用户对某个单词的学习记录
-  Future<StudyWord?> getStudyWord(int userId, int wordId) async {
+  Future<StudyWord?> getStudyWord(int userId, String wordId) async {
     try {
       final db = await _db;
       final whereClause = 'user_id = $userId AND word_id = $wordId';

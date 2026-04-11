@@ -6,7 +6,6 @@ import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/study_grammar.dart';
-import '../models/study_log.dart';
 import '../repositories/study_grammar_repository.dart';
 import '../repositories/study_grammar_repository_provider.dart';
 

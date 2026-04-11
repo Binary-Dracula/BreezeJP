@@ -57,7 +57,7 @@ class StudyWordQuery {
   }
 
   /// 获取用户对某个单词的学习记录
-  Future<StudyWord?> getStudyWord(int userId, int wordId) async {
+  Future<StudyWord?> getStudyWord(int userId, String wordId) async {
     try {
       final results = await _db.query(
         'study_words',
