@@ -127,7 +127,7 @@ class KanaCommand {
         id: existing?.id ?? 0,
         userId: userId,
         kanaId: kanaId,
-        learningStatus: baseStatus == LearningStatus.seen
+        learningStatus: baseStatus == LearningStatus.learning
             ? LearningStatus.learning
             : baseStatus,
         nextReviewAt: nextReviewAt,

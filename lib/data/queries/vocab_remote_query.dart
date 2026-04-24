@@ -8,13 +8,37 @@ import '../models/word_detail.dart';
 class VocabRemoteQuery {
   final _dio = DioClient.instance.dio;
 
-  /// 获取所有辞书列表
-  Future<List<VocabBook>> fetchBooks() async {
+  /// 获取当前所有可用辞书列表
+  Future<BookListResponse> fetchBooks() async {
     final response = await _dio.get<Map<String, dynamic>>(ApiEndpoints.books);
     final data = response.data!['data'] as List<dynamic>;
-    return data
-        .map((e) => VocabBook.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final meta = response.data!['meta'] as Map<String, dynamic>? ?? {};
+    return BookListResponse(
+      books: data
+          .map((e) => VocabBook.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      serverTime:
+          meta['server_time'] as String? ??
+          DateTime.now().toUtc().toIso8601String(),
+    );
+  }
+
+  /// 增量同步辞书列表状态。
+  Future<BookSyncResponse> fetchBookSync({required String since}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.bookSync,
+      queryParameters: {'since': since},
+    );
+    final data = response.data!['data'] as List<dynamic>;
+    final meta = response.data!['meta'] as Map<String, dynamic>? ?? {};
+    return BookSyncResponse(
+      books: data
+          .map((e) => VocabBook.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      serverTime:
+          meta['server_time'] as String? ??
+          DateTime.now().toUtc().toIso8601String(),
+    );
   }
 
   /// 获取书中下一批单词（按 book_sort_order 排列，含完整详情）
@@ -34,6 +58,20 @@ class VocabRemoteQuery {
     );
     return NextWordsResponse.fromJson(response.data!);
   }
+}
+
+class BookListResponse {
+  final List<VocabBook> books;
+  final String serverTime;
+
+  const BookListResponse({required this.books, required this.serverTime});
+}
+
+class BookSyncResponse {
+  final List<VocabBook> books;
+  final String serverTime;
+
+  const BookSyncResponse({required this.books, required this.serverTime});
 }
 
 /// 下一批单词响应（含 book_sort_order）

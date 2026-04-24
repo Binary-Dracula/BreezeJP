@@ -35,7 +35,7 @@ class GrammarCommand {
         id: 0,
         userId: userId,
         grammarId: grammarId,
-        learningStatus: LearningStatus.seen.value,
+        learningStatus: LearningStatus.unlearned.value,
         nextReviewAt: null,
         lastReviewedAt: null,
         interval: 0,
@@ -75,8 +75,8 @@ class GrammarCommand {
     if (existing.learningStatus == LearningStatus.learning.value) return;
 
     final now = DateTime.now();
-    // Initial accumulation using FSRS default parameters for 'Good'
-    final algorithmType = AlgorithmType.fsrs;
+    // Initial accumulation: use the user's configured algorithm
+    final algorithmType = _algorithmService.defaultAlgorithm;
     final output = _algorithmService.calculate(
       algorithmType: algorithmType,
       input: SRSInput.initial(ReviewRating.good),
@@ -208,5 +208,34 @@ class GrammarCommand {
 
     await _repo.saveStudyGrammar(updated);
     logger.info('Grammar restored to learning: $grammarId');
+  }
+
+  /// 恢复到未学习状态（learning/mastered -> unlearned）
+  Future<void> setUnlearned(int userId, int grammarId) async {
+    final existing = await getOrCreateLearningState(userId, grammarId);
+
+    if (existing.learningStatus == LearningStatus.unlearned.value &&
+        existing.nextReviewAt == null &&
+        existing.lastReviewedAt == null &&
+        existing.totalReviews == 0) {
+      return;
+    }
+
+    final updated = existing.copyWith(
+      learningStatus: LearningStatus.unlearned.value,
+      nextReviewAt: null,
+      lastReviewedAt: null,
+      interval: 0,
+      easeFactor: 2.5,
+      stability: 0,
+      difficulty: 0,
+      streak: 0,
+      totalReviews: 0,
+      failCount: 0,
+      updatedAt: DateTime.now(),
+    );
+
+    await _repo.saveStudyGrammar(updated);
+    logger.info('Grammar reset to unlearned: $grammarId');
   }
 }

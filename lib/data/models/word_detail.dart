@@ -13,7 +13,7 @@ class WordDetail {
     required this.word,
     required this.richContent,
     required this.examples,
-    this.userState = LearningStatus.seen,
+    this.userState = LearningStatus.learning,
   });
 
   /// 获取主要释义
@@ -22,7 +22,9 @@ class WordDetail {
 
   /// 获取所有释义文本
   List<String> get allMeanings =>
-      richContent.meanings.map((m) => m['meaning'] as String? ?? '').toList();
+      richContent.meaningEntries.map((entry) => entry.meaning).toList();
+
+  String? get audioSource => word.audioSource;
 
   WordDetail copyWith({
     Word? word,
@@ -53,7 +55,7 @@ class WordDetail {
       examples: exampleMaps?.map((m) => WordExample.fromMap(m)).toList() ?? [],
       userState: userState != null
           ? LearningStatus.fromValue(userState)
-          : LearningStatus.seen,
+          : LearningStatus.learning,
     );
   }
 
@@ -80,7 +82,6 @@ class WordRichContent {
   final List<Map<String, dynamic>> meanings;
   final List<Map<String, dynamic>>? grammarRules;
   final Map<String, dynamic>? conjugations;
-  final List<Map<String, dynamic>>? kanjiComponents;
   final Map<String, dynamic>? synonymsAntonyms;
   final List<Map<String, dynamic>>? collocations;
   final List<Map<String, dynamic>>? commonMistakes;
@@ -89,7 +90,6 @@ class WordRichContent {
     required this.meanings,
     this.grammarRules,
     this.conjugations,
-    this.kanjiComponents,
     this.synonymsAntonyms,
     this.collocations,
     this.commonMistakes,
@@ -98,8 +98,73 @@ class WordRichContent {
   factory WordRichContent.empty() => WordRichContent(meanings: []);
 
   String? get primaryMeaning {
-    if (meanings.isEmpty) return null;
-    return meanings.first['meaning'] as String?;
+    final entries = meaningEntries;
+    if (entries.isEmpty) return null;
+    return entries.first.meaning;
+  }
+
+  List<WordMeaningEntry> get meaningEntries => meanings
+      .map(WordMeaningEntry.fromMap)
+      .where((entry) => entry.meaning.isNotEmpty)
+      .toList();
+
+  List<WordGrammarRuleEntry> get grammarRuleEntries =>
+      (grammarRules ?? const [])
+          .map(WordGrammarRuleEntry.fromMap)
+          .where(
+            (entry) => entry.pattern.isNotEmpty || entry.explanation.isNotEmpty,
+          )
+          .toList();
+
+  List<WordCollocationEntry> get collocationEntries =>
+      (collocations ?? const [])
+          .map(WordCollocationEntry.fromMap)
+          .where((entry) => entry.phrase.isNotEmpty || entry.meaning.isNotEmpty)
+          .toList();
+
+  List<WordCommonMistakeEntry> get commonMistakeEntries =>
+      (commonMistakes ?? const [])
+          .map(WordCommonMistakeEntry.fromMap)
+          .where((entry) => entry.explanation.isNotEmpty)
+          .toList();
+
+  List<WordRelationEntry> get synonymEntries =>
+      _relationEntriesForKey('synonyms');
+
+  List<WordRelationEntry> get antonymEntries =>
+      _relationEntriesForKey('antonyms');
+
+  List<WordConjugationEntry> get conjugationEntries {
+    final raw = conjugations;
+    if (raw == null || raw.isEmpty) return const [];
+
+    const preferredOrder = [
+      'dictionary_form',
+      'masu_form',
+      'te_form',
+      'ta_form',
+      'nai_form',
+      'potential_form',
+      'passive_form',
+      'causative_form',
+    ];
+
+    final ordered = <WordConjugationEntry>[];
+    for (final key in preferredOrder) {
+      final value = _normalizedString(raw[key]);
+      if (value != null) {
+        ordered.add(WordConjugationEntry(key: key, value: value));
+      }
+    }
+
+    for (final entry in raw.entries) {
+      if (preferredOrder.contains(entry.key)) continue;
+      final value = _normalizedString(entry.value);
+      if (value == null) continue;
+      ordered.add(WordConjugationEntry(key: entry.key, value: value));
+    }
+
+    return ordered;
   }
 
   /// 从本地 DB 的 rich_content TEXT 字段解析
@@ -121,9 +186,8 @@ class WordRichContent {
     return WordRichContent(
       meanings: _toListOfMaps(content['meanings']),
       grammarRules: _toNullableListOfMaps(content['grammar_rules']),
-      conjugations: content['conjugations'] as Map<String, dynamic>?,
-      kanjiComponents: _toNullableListOfMaps(content['kanji_components']),
-      synonymsAntonyms: content['synonyms_antonyms'] as Map<String, dynamic>?,
+      conjugations: _toNullableMap(content['conjugations']),
+      synonymsAntonyms: _toNullableMap(content['synonyms_antonyms']),
       collocations: _toNullableListOfMaps(content['collocations']),
       commonMistakes: _toNullableListOfMaps(content['common_mistakes']),
     );
@@ -135,7 +199,6 @@ class WordRichContent {
       'meanings': meanings,
       if (grammarRules != null) 'grammar_rules': grammarRules,
       if (conjugations != null) 'conjugations': conjugations,
-      if (kanjiComponents != null) 'kanji_components': kanjiComponents,
       if (synonymsAntonyms != null) 'synonyms_antonyms': synonymsAntonyms,
       if (collocations != null) 'collocations': collocations,
       if (commonMistakes != null) 'common_mistakes': commonMistakes,
@@ -145,12 +208,67 @@ class WordRichContent {
 
   static List<Map<String, dynamic>> _toListOfMaps(dynamic value) {
     if (value == null) return [];
-    return (value as List<dynamic>).cast<Map<String, dynamic>>();
+    return (value as List<dynamic>)
+        .map((entry) => Map<String, dynamic>.from(entry as Map))
+        .toList();
   }
 
   static List<Map<String, dynamic>>? _toNullableListOfMaps(dynamic value) {
     if (value == null) return null;
-    return (value as List<dynamic>).cast<Map<String, dynamic>>();
+    return (value as List<dynamic>)
+        .map((entry) => Map<String, dynamic>.from(entry as Map))
+        .toList();
+  }
+
+  static Map<String, dynamic>? _toNullableMap(dynamic value) {
+    if (value == null) return null;
+    return Map<String, dynamic>.from(value as Map);
+  }
+
+  List<WordRelationEntry> _relationEntriesForKey(String key) {
+    final rawList = synonymsAntonyms?[key];
+    if (rawList is! List) return const [];
+    return rawList
+        .map(
+          (entry) => WordRelationEntry.fromMap(
+            Map<String, dynamic>.from(entry as Map),
+          ),
+        )
+        .where(
+          (entry) =>
+              entry.word.isNotEmpty || (entry.meaning?.isNotEmpty ?? false),
+        )
+        .toList();
+  }
+
+  static String? _normalizedString(dynamic value) {
+    if (value == null) return null;
+    final normalized = value is String ? value.trim() : value.toString().trim();
+    if (normalized.isEmpty) return null;
+
+    const placeholderValues = {
+      'n/a',
+      'na',
+      'none',
+      'null',
+      'nil',
+      '无',
+      '無',
+      '不适用',
+      '不適用',
+      '无变形',
+      '無変形',
+      '名词无变形',
+      '名詞無変形',
+      '副词无变形',
+      '副詞無変形',
+      '形容词无变形',
+      '形容詞無変形',
+    };
+
+    return placeholderValues.contains(normalized.toLowerCase())
+        ? null
+        : normalized;
   }
 }
 
@@ -158,7 +276,6 @@ class WordRichContent {
 class WordExample {
   final String id;
   final String wordId;
-  final String level;
   final String japanese;
   final String chinese;
   final bool hasAudio;
@@ -167,7 +284,6 @@ class WordExample {
   WordExample({
     required this.id,
     required this.wordId,
-    required this.level,
     required this.japanese,
     required this.chinese,
     this.hasAudio = false,
@@ -178,7 +294,6 @@ class WordExample {
     return WordExample(
       id: map['id'] as String,
       wordId: map['word_id'] as String,
-      level: (map['level'] as String?) ?? 'Casual',
       japanese: map['japanese'] as String,
       chinese: (map['chinese'] as String?) ?? '',
       hasAudio: (map['has_audio'] as int?) == 1,
@@ -190,7 +305,6 @@ class WordExample {
     return WordExample(
       id: json['id'] as String,
       wordId: json['word_id'] as String,
-      level: (json['level'] as String?) ?? 'Casual',
       japanese: json['japanese'] as String,
       chinese: (json['chinese'] as String?) ?? '',
       hasAudio: json['has_audio'] == true,
@@ -202,11 +316,116 @@ class WordExample {
     return {
       'id': id,
       'word_id': wordId,
-      'level': level,
       'japanese': japanese,
       'chinese': chinese,
       'has_audio': hasAudio ? 1 : 0,
       'sort_order': sortOrder,
     };
   }
+}
+
+class WordMeaningEntry {
+  final String meaning;
+  final String? partOfSpeech;
+  final String? note;
+
+  const WordMeaningEntry({required this.meaning, this.partOfSpeech, this.note});
+
+  factory WordMeaningEntry.fromMap(Map<String, dynamic> map) {
+    final meaning =
+        WordRichContent._normalizedString(map['meaning']) ??
+        WordRichContent._normalizedString(map['definition']) ??
+        WordRichContent._normalizedString(map['translation']) ??
+        '';
+    final note =
+        WordRichContent._normalizedString(map['notes']) ??
+        WordRichContent._normalizedString(map['nuance']) ??
+        WordRichContent._normalizedString(map['explanation']);
+    final partOfSpeech =
+        WordRichContent._normalizedString(map['part_of_speech']) ??
+        WordRichContent._normalizedString(map['pos']);
+
+    return WordMeaningEntry(
+      meaning: meaning,
+      partOfSpeech: partOfSpeech,
+      note: note,
+    );
+  }
+}
+
+class WordGrammarRuleEntry {
+  final String pattern;
+  final String explanation;
+
+  const WordGrammarRuleEntry({
+    required this.pattern,
+    required this.explanation,
+  });
+
+  factory WordGrammarRuleEntry.fromMap(Map<String, dynamic> map) {
+    return WordGrammarRuleEntry(
+      pattern: WordRichContent._normalizedString(map['pattern']) ?? '',
+      explanation:
+          WordRichContent._normalizedString(map['explanation']) ??
+          WordRichContent._normalizedString(map['meaning']) ??
+          '',
+    );
+  }
+}
+
+class WordCollocationEntry {
+  final String phrase;
+  final String meaning;
+
+  const WordCollocationEntry({required this.phrase, required this.meaning});
+
+  factory WordCollocationEntry.fromMap(Map<String, dynamic> map) {
+    return WordCollocationEntry(
+      phrase:
+          WordRichContent._normalizedString(map['phrase']) ??
+          WordRichContent._normalizedString(map['word']) ??
+          '',
+      meaning: WordRichContent._normalizedString(map['meaning']) ?? '',
+    );
+  }
+}
+
+class WordCommonMistakeEntry {
+  final String? mistakeType;
+  final String explanation;
+
+  const WordCommonMistakeEntry({this.mistakeType, required this.explanation});
+
+  factory WordCommonMistakeEntry.fromMap(Map<String, dynamic> map) {
+    return WordCommonMistakeEntry(
+      mistakeType: WordRichContent._normalizedString(map['mistake_type']),
+      explanation:
+          WordRichContent._normalizedString(map['explanation']) ??
+          WordRichContent._normalizedString(map['note']) ??
+          '',
+    );
+  }
+}
+
+class WordRelationEntry {
+  final String word;
+  final String? meaning;
+  final String? difference;
+
+  const WordRelationEntry({required this.word, this.meaning, this.difference});
+
+  factory WordRelationEntry.fromMap(Map<String, dynamic> map) {
+    return WordRelationEntry(
+      word: WordRichContent._normalizedString(map['word']) ?? '',
+      meaning: WordRichContent._normalizedString(map['meaning']),
+      difference: WordRichContent._normalizedString(map['difference']),
+    );
+  }
+}
+
+class WordConjugationEntry {
+  final String key;
+  final String value;
+
+  const WordConjugationEntry({required this.key, required this.value});
 }

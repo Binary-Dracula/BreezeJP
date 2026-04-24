@@ -50,12 +50,12 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  sqflite_common_ffi: ^2.3.3
   flutter_lints: ^6.0.0
   build_runner: ^2.11.1
   json_serializable: ^6.8.0
   freezed: ^3.2.3
   flutter_launcher_icons: ^0.13.1
+  mocktail: ^1.0.4
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -71,4 +71,3 @@ flutter:
   assets:
     - assets/database/breeze_jp.sqlite
     - assets/audio/kana/
-    - assets/mock/

@@ -1,3 +1,5 @@
+import '../../core/network/api_endpoints.dart';
+
 /// 单词主表模型（2.0 — UUID 主键，对齐 Supabase）
 class Word {
   final String id;
@@ -28,17 +30,25 @@ class Word {
     this.updatedAt,
   });
 
+  static const Set<String> _placeholderValues = {
+    'n/a',
+    'na',
+    'none',
+    'null',
+    'nil',
+  };
+
   factory Word.fromMap(Map<String, dynamic> map) {
     return Word(
       id: map['id'] as String,
-      word: map['word'] as String,
-      reading: (map['reading'] as String?) ?? '',
-      romaji: map['romaji'] as String?,
-      pitchAccent: map['pitch_accent'] as String?,
-      jlptLevel: map['jlpt_level'] as String?,
-      partOfSpeech: (map['part_of_speech'] as String?) ?? '',
-      transitivity: map['transitivity'] as String?,
-      primaryMeaning: map['primary_meaning'] as String?,
+      word: _normalizedRequiredString(map['word']),
+      reading: _normalizedString(map['reading']) ?? '',
+      romaji: _normalizedString(map['romaji']),
+      pitchAccent: _normalizedString(map['pitch_accent']),
+      jlptLevel: _normalizedString(map['jlpt_level'])?.toUpperCase(),
+      partOfSpeech: _normalizedString(map['part_of_speech']) ?? '',
+      transitivity: _normalizedString(map['transitivity']),
+      primaryMeaning: _normalizedString(map['primary_meaning']),
       hasAudio: (map['has_audio'] as int?) == 1,
       createdAt: map['created_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
@@ -57,14 +67,14 @@ class Word {
   factory Word.fromJson(Map<String, dynamic> json) {
     return Word(
       id: json['id'] as String,
-      word: json['word'] as String,
-      reading: (json['reading'] as String?) ?? '',
-      romaji: json['romaji'] as String?,
-      pitchAccent: json['pitch_accent'] as String?,
-      jlptLevel: json['jlpt_level'] as String?,
-      partOfSpeech: (json['part_of_speech'] as String?) ?? '',
-      transitivity: json['transitivity'] as String?,
-      primaryMeaning: json['primary_meaning'] as String?,
+      word: _normalizedRequiredString(json['word']),
+      reading: _normalizedString(json['reading']) ?? '',
+      romaji: _normalizedString(json['romaji']),
+      pitchAccent: _normalizedString(json['pitch_accent']),
+      jlptLevel: _normalizedString(json['jlpt_level'])?.toUpperCase(),
+      partOfSpeech: _normalizedString(json['part_of_speech']) ?? '',
+      transitivity: _normalizedString(json['transitivity']),
+      primaryMeaning: _normalizedString(json['primary_meaning']),
       hasAudio: json['has_audio'] == true,
     );
   }
@@ -85,5 +95,22 @@ class Word {
           ? updatedAt!.millisecondsSinceEpoch ~/ 1000
           : (DateTime.now().millisecondsSinceEpoch ~/ 1000),
     };
+  }
+
+  String? get audioSource {
+    if (!hasAudio) return null;
+    return '${ApiEndpoints.baseUrl}${ApiEndpoints.replaceParams(ApiEndpoints.wordAudio, {'id': id})}';
+  }
+
+  static String _normalizedRequiredString(dynamic value) {
+    return _normalizedString(value) ?? '';
+  }
+
+  static String? _normalizedString(dynamic value) {
+    if (value == null) return null;
+    final normalized = value is String ? value.trim() : value.toString().trim();
+    if (normalized.isEmpty) return null;
+    if (_placeholderValues.contains(normalized.toLowerCase())) return null;
+    return normalized;
   }
 }

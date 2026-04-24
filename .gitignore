@@ -106,8 +106,7 @@ app.*.map.json
 # Coverage
 coverage/
 
-# Generated files
-**/generated/
+# Flutter generated files (Dart codegen only, NOT data/vocab/generated/)
 **/*.g.dart
 **/*.freezed.dart
 lib/l10n/app_localizations*.dart
@@ -140,18 +139,33 @@ firebase_options.dart
 .dart-tool/
 
 # NHK Pipeline ignores
-tools/nhk_data_pipeline/venv/
-tools/nhk_data_pipeline/node_modules/
-tools/nhk_data_pipeline/data/
-tools/nhk_data_pipeline/output/
+.agents/skills/nhk-easy-news/pipeline/venv/
+.agents/skills/nhk-easy-news/pipeline/node_modules/
+.agents/skills/nhk-easy-news/pipeline/data/
+.agents/skills/nhk-easy-news/pipeline/output/
 
-# Data Crawler ignores
-scripts/data_crawler/venv/
-scripts/data_crawler/__pycache__/
-scripts/data_crawler/*.json
-scripts/data_crawler/*.jsonl
-scripts/data_crawler/*.log
-scripts/data_crawler/*.html
+# Python environments
+.venv/
+venv/
+
+# Vocab pipeline: raw scraped sources (audios uploaded to R2; re-scrape with vocab-scraper)
+data/vocab/sources/
+
+# Vocab pipeline runtime data
+data/vocab/checkpoints/
+data/vocab/logs/
+!data/vocab/checkpoints/.gitkeep
+!data/vocab/logs/.gitkeep
+
+# KanjiVG: SVG data directory (11K files, 154M — external dataset)
+files/日文汉字/kanjivg/kanji/
+
+# Raw dictionary database (27M, regenerated from source)
+files/jmdict.db
+
+# API Workers dependencies
+api/workers/node_modules/
+
 # Build artifacts
 release/
 *.aab

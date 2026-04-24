@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../data/models/read/grammar_book_item.dart';
 import '../controller/grammar_book_controller.dart';
+import '../../grammar/providers/grammar_status_refresh_provider.dart';
 import '../state/grammar_book_state.dart';
 
 /// 语法本页面
@@ -49,6 +50,11 @@ class _GrammarBookPageState extends ConsumerState<GrammarBookPage>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(grammarStatusRefreshProvider, (previous, next) {
+      if (previous == null || previous == next) return;
+      ref.read(grammarBookControllerProvider.notifier).loadInitial();
+    });
+
     final state = ref.watch(grammarBookControllerProvider);
 
     return Scaffold(

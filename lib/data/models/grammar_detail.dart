@@ -17,7 +17,7 @@ class GrammarDetail {
     required this.meanings,
     required this.contexts,
     required this.examples,
-    this.userState = LearningStatus.seen,
+    this.userState = LearningStatus.unlearned,
   });
 
   GrammarDetail copyWith({

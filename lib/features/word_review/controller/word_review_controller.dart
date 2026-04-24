@@ -115,13 +115,77 @@ class WordReviewController extends Notifier<WordReviewState> {
         final chars = correctReading.split('');
         options.addAll(chars);
         final distractorsChars = [
-          'あ', 'い', 'う', 'え', 'お', 'か', 'き', 'く', 'け', 'こ',
-          'が', 'ぎ', 'ぐ', 'げ', 'ご', 'さ', 'し', 'す', 'せ', 'そ',
-          'ざ', 'じ', 'ず', 'ぜ', 'ぞ', 'た', 'ち', 'つ', 'て', 'と',
-          'だ', 'ぢ', 'づ', 'で', 'ど', 'な', 'に', 'ぬ', 'ね', 'の',
-          'は', 'ひ', 'ふ', 'へ', 'ほ', 'ば', 'び', 'ぶ', 'べ', 'ぼ',
-          'ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ', 'ま', 'み', 'む', 'め', 'も',
-          'や', 'ゆ', 'よ', 'ら', 'り', 'る', 'れ', 'ろ', 'わ', 'を', 'ん',
+          'あ',
+          'い',
+          'う',
+          'え',
+          'お',
+          'か',
+          'き',
+          'く',
+          'け',
+          'こ',
+          'が',
+          'ぎ',
+          'ぐ',
+          'げ',
+          'ご',
+          'さ',
+          'し',
+          'す',
+          'せ',
+          'そ',
+          'ざ',
+          'じ',
+          'ず',
+          'ぜ',
+          'ぞ',
+          'た',
+          'ち',
+          'つ',
+          'て',
+          'と',
+          'だ',
+          'ぢ',
+          'づ',
+          'で',
+          'ど',
+          'な',
+          'に',
+          'ぬ',
+          'ね',
+          'の',
+          'は',
+          'ひ',
+          'ふ',
+          'へ',
+          'ほ',
+          'ば',
+          'び',
+          'ぶ',
+          'べ',
+          'ぼ',
+          'ぱ',
+          'ぴ',
+          'ぷ',
+          'ぺ',
+          'ぽ',
+          'ま',
+          'み',
+          'む',
+          'め',
+          'も',
+          'や',
+          'ゆ',
+          'よ',
+          'ら',
+          'り',
+          'る',
+          'れ',
+          'ろ',
+          'わ',
+          'を',
+          'ん',
         ];
         distractorsChars.shuffle();
         for (var i = 0; i < 4; i++) {
@@ -210,6 +274,7 @@ class WordReviewController extends Notifier<WordReviewState> {
           await _wordCommand.onWordReviewed(
             userId: item.studyWord.userId,
             wordId: item.studyWord.wordId,
+            bookId: item.studyWord.bookId,
             rating: ReviewRating.again,
           );
         } catch (e, stackTrace) {
@@ -229,6 +294,7 @@ class WordReviewController extends Notifier<WordReviewState> {
         await _wordCommand.onWordReviewed(
           userId: item.studyWord.userId,
           wordId: item.studyWord.wordId,
+          bookId: item.studyWord.bookId,
           rating: selectedRating,
         );
       }
@@ -343,7 +409,7 @@ class WordReviewController extends Notifier<WordReviewState> {
     String wordStr,
     Set<WordReviewQuestionType> available,
   ) {
-    final isNew = studyWord.totalReviews == 0 || studyWord.isNew;
+    final isNew = studyWord.totalReviews == 0;
     final r = math.Random().nextDouble();
 
     if (isNew) {

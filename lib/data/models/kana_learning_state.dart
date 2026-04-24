@@ -69,14 +69,13 @@ class KanaLearningState {
   bool get isLearning => learningStatus == LearningStatus.learning;
 
   factory KanaLearningState.fromMap(Map<String, dynamic> map) {
-    final statusValue = (map['learning_status'] as int? ?? 0)
-        .clamp(0, LearningStatus.values.length - 1)
-        .toInt();
     return KanaLearningState(
       id: map['id'] as int,
       userId: map['user_id'] as int,
       kanaId: map['kana_id'] as int,
-      learningStatus: LearningStatus.values[statusValue],
+      learningStatus: LearningStatus.fromValue(
+        map['learning_status'] as int? ?? LearningStatus.learning.value,
+      ),
       nextReviewAt: map['next_review_at'] as int?,
       lastReviewedAt: map['last_reviewed_at'] as int?,
       streak: map['streak'] as int? ?? 0,

@@ -11,6 +11,13 @@ final wordReadQueriesProvider = Provider<WordReadQueries>((ref) {
   return WordReadQueries(db);
 });
 
+class BookWordOrderEntry {
+  final String wordId;
+  final int bookSortOrder;
+
+  const BookWordOrderEntry({required this.wordId, required this.bookSortOrder});
+}
+
 /// 单词 Read 查询层（2.0 — 基于新 words/word_details/word_examples 表）
 class WordReadQueries {
   WordReadQueries(this._db);
@@ -113,28 +120,14 @@ class WordReadQueries {
   }) async {
     try {
       // 查 lesson_word_map → word_id，按 book_sort_order 排序
-      final rows = await _db.rawQuery(
-        '''
-        SELECT lwm.word_id
-        FROM lesson_word_map lwm
-        WHERE lwm.book_id = ?
-          AND lwm.book_sort_order > ?
-        ORDER BY lwm.book_sort_order ASC
-        LIMIT ?
-        ''',
-        [bookId, afterSort, limit],
+      final entries = await getNextWordOrderEntriesInBook(
+        bookId,
+        afterSort: afterSort,
+        limit: limit,
       );
+      if (entries.isEmpty) return [];
 
-      logger.dbQuery(
-        table: 'lesson_word_map',
-        where: 'book_id=$bookId afterSort=$afterSort limit=$limit',
-        resultCount: rows.length,
-      );
-
-      if (rows.isEmpty) return [];
-
-      final wordIds =
-          rows.map((r) => r['word_id'] as String).toList();
+      final wordIds = entries.map((entry) => entry.wordId).toList();
       return getWordDetails(wordIds, userId: userId);
     } catch (e, stackTrace) {
       logger.dbError(
@@ -176,26 +169,114 @@ class WordReadQueries {
     }
   }
 
-  /// 获取书中用户的最大 book_sort_order（用于确定学习进度游标）
-  Future<int> getMaxLearnedSortOrder(String bookId, int userId) async {
+  /// 获取下一批新词 ID（排除已学习的词，按 book_sort_order 排序）
+  ///
+  /// 返回 afterSortOrder 之后尚未有学习记录的最多 [limit] 个词 ID 及其 sort_order。
+  Future<List<BookWordOrderEntry>> getNextBatchWordIds(
+    String bookId, {
+    required int afterSortOrder,
+    required int limit,
+    required int userId,
+  }) async {
     try {
       final rows = await _db.rawQuery(
         '''
-        SELECT MAX(lwm.book_sort_order) as max_sort
+        SELECT lwm.word_id, lwm.book_sort_order
         FROM lesson_word_map lwm
-        JOIN study_words sw ON lwm.word_id = sw.word_id AND sw.user_id = ?
+        LEFT JOIN study_words sw
+          ON lwm.word_id = sw.word_id
+          AND sw.user_id = ?
+          AND sw.book_id = ?
         WHERE lwm.book_id = ?
-          AND sw.user_state > 0
+          AND lwm.book_sort_order > ?
+          AND sw.id IS NULL
+        ORDER BY lwm.book_sort_order ASC
+        LIMIT ?
         ''',
-        [userId, bookId],
+        [userId, bookId, bookId, afterSortOrder, limit],
       );
 
-      if (rows.isEmpty || rows.first['max_sort'] == null) return 0;
-      return rows.first['max_sort'] as int;
+      logger.dbQuery(
+        table: 'lesson_word_map',
+        where:
+            'book_id=$bookId afterSort=$afterSortOrder limit=$limit (exclude learned)',
+        resultCount: rows.length,
+      );
+
+      return rows
+          .map(
+            (row) => BookWordOrderEntry(
+              wordId: row['word_id'] as String,
+              bookSortOrder: row['book_sort_order'] as int,
+            ),
+          )
+          .toList();
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',
         table: 'lesson_word_map + study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  Future<List<BookWordOrderEntry>> getNextWordOrderEntriesInBook(
+    String bookId, {
+    required int afterSort,
+    required int limit,
+  }) async {
+    try {
+      final rows = await _db.rawQuery(
+        '''
+        SELECT lwm.word_id, lwm.book_sort_order
+        FROM lesson_word_map lwm
+        WHERE lwm.book_id = ?
+          AND lwm.book_sort_order > ?
+        ORDER BY lwm.book_sort_order ASC
+        LIMIT ?
+        ''',
+        [bookId, afterSort, limit],
+      );
+
+      logger.dbQuery(
+        table: 'lesson_word_map',
+        where: 'book_id=$bookId afterSort=$afterSort limit=$limit',
+        resultCount: rows.length,
+      );
+
+      return rows
+          .map(
+            (row) => BookWordOrderEntry(
+              wordId: row['word_id'] as String,
+              bookSortOrder: row['book_sort_order'] as int,
+            ),
+          )
+          .toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'lesson_word_map',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 获取书中单词总数
+  Future<int> getTotalWordCountInBook(String bookId) async {
+    try {
+      final rows = await _db.rawQuery(
+        'SELECT COUNT(*) as count FROM lesson_word_map WHERE book_id = ?',
+        [bookId],
+      );
+      return rows.first['count'] as int;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
+        table: 'lesson_word_map',
         dbError: e,
         stackTrace: stackTrace,
       );

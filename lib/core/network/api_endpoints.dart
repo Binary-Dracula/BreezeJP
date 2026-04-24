@@ -8,11 +8,17 @@ class ApiEndpoints {
   static const String articles = '/api/v1/articles';
   static const String articleDetail = '/api/v1/articles/{id}';
   static const String audio = '/api/v1/audio/{id}';
+  static const String wordAudio = '/api/v1/audio/words/{id}';
   static const String health = '/api/v1/health';
 
   // 词汇相关 API
   static const String books = '/api/v1/books';
+  static const String bookSync = '/api/v1/books/sync';
   static const String bookNextWords = '/api/v1/books/{bookId}/next-words';
+  static const String wordSync = '/api/v1/words/sync';
+
+  // 问题上报
+  static const String issues = '/api/v1/issues';
 
   /// 替换路径参数
   /// 例如: replaceParams('/words/{id}', {'id': '123'}) => '/words/123'

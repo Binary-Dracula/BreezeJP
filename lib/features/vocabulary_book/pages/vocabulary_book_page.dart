@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 
 import '../../../data/models/read/vocabulary_book_item.dart';
+import '../../learn/widgets/audio_play_button.dart';
 import '../controller/vocabulary_book_controller.dart';
 import '../state/vocabulary_book_state.dart';
 
@@ -255,11 +256,16 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           return _WordListTile(
             item: items[index],
             tabIndex: tabIndex,
-            onTap: () {},
+            onTap: () {
+              context.pushNamed(
+                'word-detail',
+                pathParameters: {'id': items[index].wordId},
+              );
+            },
             onToggleStatus: () {
               ref
                   .read(vocabularyBookControllerProvider.notifier)
-                  .toggleStatus(items[index].wordId);
+                  .toggleStatus(items[index]);
             },
           );
         },
@@ -333,13 +339,10 @@ class _WordListTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // 音频按钮
-              _buildAudioButton(),
-              const SizedBox(width: 10),
               // 单词信息
               Expanded(child: _buildWordInfo()),
-              // 状态切换按钮
-              _buildStatusButton(context),
+              const SizedBox(width: 12),
+              _buildActionColumn(context),
             ],
           ),
         ),
@@ -347,11 +350,33 @@ class _WordListTile extends StatelessWidget {
     );
   }
 
+  Widget _buildActionColumn(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildAudioButton(),
+        const SizedBox(height: 10),
+        _buildStatusButton(context),
+      ],
+    );
+  }
+
   Widget _buildAudioButton() {
-    return Icon(
-      item.hasAudio ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-      size: 28,
-      color: item.hasAudio ? const Color(0xFF5C8DFF) : Colors.grey.shade300,
+    final audioSource = item.audioSource;
+
+    return _ActionShell(
+      color: const Color(0xFF5C8DFF),
+      child: audioSource == null
+          ? Icon(
+              Icons.volume_off_rounded,
+              size: 20,
+              color: Colors.grey.shade300,
+            )
+          : AudioPlayButton(
+              audioSource: audioSource,
+              size: 22,
+              color: const Color(0xFF5C8DFF),
+            ),
     );
   }
 
@@ -431,27 +456,23 @@ class _WordListTile extends StatelessWidget {
   Widget _buildStatusButton(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     if (tabIndex == 0) {
-      // 学习中 → 掌握
       return _StatusToggleButton(
-        label: l10n.actionMaster,
         icon: Icons.check_circle_outline,
         color: const Color(0xFF34D399),
         onPressed: onToggleStatus,
       );
     } else if (tabIndex == 1) {
-      // 已掌握 → 恢复学习
       return _StatusToggleButton(
-        label: l10n.actionRestore,
         icon: Icons.replay_rounded,
         color: const Color(0xFF5C8DFF),
+        tooltip: l10n.actionRestore,
         onPressed: onToggleStatus,
       );
     } else {
-      // 已忽略 → 恢复学习 (目前 toggleStatus 的 index == 2 会走默认逻辑，需在状态和控制器中确保正确)
       return _StatusToggleButton(
-        label: l10n.actionRestore,
         icon: Icons.replay_rounded,
         color: const Color(0xFF5C8DFF),
+        tooltip: l10n.actionRestore,
         onPressed: onToggleStatus,
       );
     }
@@ -460,45 +481,52 @@ class _WordListTile extends StatelessWidget {
 
 /// 状态切换按钮
 class _StatusToggleButton extends StatelessWidget {
-  final String label;
   final IconData icon;
   final Color color;
+  final String? tooltip;
   final VoidCallback onPressed;
 
   const _StatusToggleButton({
-    required this.label,
     required this.icon,
     required this.color,
     required this.onPressed,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
+    return Tooltip(
+      message: tooltip ?? '',
+      child: _ActionShell(
+        color: color,
+        child: IconButton(
+          onPressed: onPressed,
+          icon: Icon(icon, size: 20, color: color),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         ),
       ),
+    );
+  }
+}
+
+class _ActionShell extends StatelessWidget {
+  final Color color;
+  final Widget child;
+
+  const _ActionShell({required this.color, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Center(child: child),
     );
   }
 }

@@ -31,10 +31,12 @@ class VocabularyBookQuery {
         whereArgs.addAll([keyword, keyword, keyword, keyword]);
       }
 
-      final sql = '''
+      final sql =
+          '''
         SELECT
           sw.id AS study_word_id,
           sw.word_id,
+          sw.book_id,
           w.word,
           w.reading,
           w.jlpt_level,
@@ -94,7 +96,8 @@ class VocabularyBookQuery {
         whereArgs.addAll([keyword, keyword, keyword, keyword]);
       }
 
-      final sql = '''
+      final sql =
+          '''
         SELECT sw.user_state, COUNT(*) AS count
         FROM study_words sw
         INNER JOIN words w ON sw.word_id = w.id

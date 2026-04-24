@@ -32,8 +32,9 @@ class AudioPlayController extends Notifier<AudioPlayStatus> {
           );
         }
         logger.debug('音频播放完成，状态回到 idle');
-      } else if (playerState.playing) {
-        // 正在播放
+      } else if (playerState.playing &&
+          playerState.processingState == ProcessingState.ready) {
+        // 只有真正 ready 后才进入 playing，避免 buffering/loading 时误显示为播放中
         final resolvedSource = state.currentSource?.isNotEmpty == true
             ? state.currentSource
             : (audioService.currentAudioSource.isNotEmpty
@@ -47,6 +48,26 @@ class AudioPlayController extends Notifier<AudioPlayStatus> {
             currentSource: resolvedSource,
           );
         }
+      } else if (playerState.processingState == ProcessingState.loading ||
+          playerState.processingState == ProcessingState.buffering) {
+        final resolvedSource = state.currentSource?.isNotEmpty == true
+            ? state.currentSource
+            : (audioService.currentAudioSource.isNotEmpty
+                  ? audioService.currentAudioSource
+                  : null);
+
+        if (resolvedSource != null &&
+            (state.state != AudioPlayState.loading ||
+                state.currentSource != resolvedSource)) {
+          state = AudioPlayStatus(
+            state: AudioPlayState.loading,
+            currentSource: resolvedSource,
+          );
+        }
+      } else if (!playerState.playing &&
+          playerState.processingState == ProcessingState.idle &&
+          state.state == AudioPlayState.playing) {
+        state = const AudioPlayStatus(state: AudioPlayState.idle);
       }
     });
 

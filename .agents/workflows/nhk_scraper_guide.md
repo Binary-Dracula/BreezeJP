@@ -9,10 +9,12 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 > [!IMPORTANT]
 > **DNS 前置条件**：NHK 的 CDN 域名 `media.vd.st.nhk` 和 `mediatoken.web.nhk` 在中国大陆的 DNS 无法解析。
 > 首次使用前需要通过浏览器的 DNS-over-HTTPS 查询这两个域名的 IP 并写入 `/etc/hosts`：
+>
 > ```bash
 > echo "23.200.3.236 media.vd.st.nhk" | sudo tee -a /etc/hosts
 > echo "184.26.43.72 mediatoken.web.nhk" | sudo tee -a /etc/hosts
 > ```
+>
 > IP 地址可能因 CDN 节点变动而失效，如遇到连接问题需重新查询更新。
 
 当用户要求抓取或更新 NHK Easy 新闻数据时，严格按以下步骤执行：
@@ -27,7 +29,7 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 
 ## 步骤 2: 更新爬虫脚本
 
-- 用 `multi_replace_file_content` 更新 `tools/nhk_data_pipeline/scripts/nhk_scraper.py` 顶部的 `Z_AT_TOKEN` 变量
+- 更新 `.agents/skills/nhk-easy-news/pipeline/scripts/nhk_scraper.py` 顶部的 `Z_AT_TOKEN` 变量
 
 ## 步骤 3: 获取 hdnts 音频 Token
 
@@ -36,6 +38,7 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 
 > [!WARNING]
 > **严禁以下行为**：
+>
 > 1. 绝对不要尝试自己编写 Python/Node.js 脚本去解析 m3u8 或下载 mp3 音频！NHK 有防盗链和分片机制，你的脚本会失败。所有的音频下载必须交给下文步骤 4 的现成管道脚本统一处理。
 > 2. 不要自行拼接或臆造 mp3 URL。
 
@@ -45,6 +48,7 @@ NHK Easy News 的数据抓取流程需要从浏览器获取 `z_at` JWT Token，�
 ## 步骤 4: 一键执行管道
 
 如果需要机器翻译日语新闻，请先在终端配置智谱大模型 API Key（可选）：
+
 ```bash
 export ZHIPU_API_KEY="你的_API_KEY"
 ```
@@ -53,11 +57,12 @@ export ZHIPU_API_KEY="你的_API_KEY"
 > 执行脚本时，必须严格使用以下命令格式，特别是 `--hdnts` 后面的 token **必须用双引号 `""` 包裹**，否则 bash 会因为包含 `~` 或 `=` 等特殊字符而报错。绝对不要试图自行编写任何其他的抓取或下载逻辑。
 
 ```bash
-# Cwd: tools/nhk_data_pipeline
+# Cwd: .agents/skills/nhk-easy-news/pipeline
 bash scripts/run_pipeline.sh --hdnts "<hdnts_token>"
 ```
 
 该脚本自动串联执行以下全部步骤：
+
 1. **爬虫**：抓取文本 + 下载音频 → `data/{id}/raw.json` + `data/{id}/{id}.mp3`
 2. **音频对齐**：faster-whisper + Needleman-Wunsch → `data/{id}/aligned.json`（生成 `start_ms` / `end_ms`）
 3. **Sudachi 分词**：合并对齐数据 + 分词 → `data/{id}/processed.json`（默认使用 Mode B）

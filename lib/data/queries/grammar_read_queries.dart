@@ -48,7 +48,7 @@ class GrammarReadQueries {
       // 5. 获取用户学习状态
       final studyState = await studyRepo.getStudyGrammar(userId, grammarId);
       final statusValue =
-          studyState?.learningStatus ?? LearningStatus.seen.value;
+          studyState?.learningStatus ?? LearningStatus.unlearned.value;
       final status = LearningStatus.fromValue(statusValue);
 
       return GrammarDetail(
@@ -101,7 +101,7 @@ class GrammarReadQueries {
   }) async {
     try {
       final db = _db;
-      
+
       if (userId == null) {
         final whereClause = jlptLevel != null ? 'jlpt_level = ?' : null;
         final whereArgs = jlptLevel != null ? [jlptLevel] : null;
@@ -126,7 +126,8 @@ class GrammarReadQueries {
         args.add(jlptLevel);
       }
 
-      final sql = '''
+      final sql =
+          '''
         SELECT g.*, sg.learning_status
         FROM grammars g
         LEFT JOIN study_grammars sg ON g.id = sg.grammar_id AND sg.user_id = ?
@@ -134,7 +135,7 @@ class GrammarReadQueries {
         ORDER BY g.id ASC
         LIMIT ? OFFSET ?
       ''';
-      
+
       args.add(limit ?? 1000); // 默认足够大的 limit
       args.add(offset ?? 0);
 
@@ -143,8 +144,8 @@ class GrammarReadQueries {
       return results.map((map) {
         final grammar = Grammar.fromMap(map);
         final statusValue = map['learning_status'] as int?;
-        final status = statusValue != null 
-            ? LearningStatus.fromValue(statusValue) 
+        final status = statusValue != null
+            ? LearningStatus.fromValue(statusValue)
             : null;
         return grammar.copyWith(userState: status);
       }).toList();

@@ -5,6 +5,7 @@ import '../../../core/constants/learning_status.dart';
 import '../controller/grammar_controller.dart';
 import '../state/grammar_state.dart';
 import '../widgets/grammar_card.dart';
+import '../../common/widgets/issue_report_sheet.dart';
 
 class GrammarLearningPage extends ConsumerStatefulWidget {
   final int grammarId;
@@ -51,7 +52,26 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
           onPressed: () => context.pop(),
         ),
         actions: [
-          // Optional: Menu for "Ignore" or "Report"
+          if (state.currentGrammarDetail != null)
+            IconButton(
+              icon: const Icon(Icons.flag_outlined, size: 20),
+              onPressed: () {
+                final detail = state.currentGrammarDetail!;
+                IssueReportSheet.show(
+                  context: context,
+                  ref: ref,
+                  contentType: 'grammar',
+                  contentId: detail.grammar.id.toString(),
+                  contentSnapshot: {
+                    'grammar': detail.grammar.toMap(),
+                    'meanings': detail.meanings.map((m) => m.toMap()).toList(),
+                    'contexts': detail.contexts.map((c) => c.toMap()).toList(),
+                    'examples': detail.examples.map((e) => e.toMap()).toList(),
+                  },
+                  displayTitle: detail.grammar.title,
+                );
+              },
+            ),
         ],
       ),
       body: _buildBody(state),
@@ -121,7 +141,7 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
       child: SafeArea(
         child: Row(
           children: [
-            if (status == LearningStatus.seen) ...[
+            if (status == LearningStatus.unlearned) ...[
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
@@ -165,6 +185,26 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
                   onPressed: () {
                     ref
                         .read(grammarControllerProvider.notifier)
+                        .resetToUnlearned();
+                  },
+                  icon: const Icon(Icons.remove_circle_outline),
+                  label: const Text('取消学习'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF64748B),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ref
+                        .read(grammarControllerProvider.notifier)
                         .markAsMastered();
                   },
                   icon: const Icon(Icons.check_circle_outline),
@@ -192,6 +232,26 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF5C8DFF),
                     side: const BorderSide(color: Color(0xFF5C8DFF)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ref
+                        .read(grammarControllerProvider.notifier)
+                        .resetToUnlearned();
+                  },
+                  icon: const Icon(Icons.remove_circle_outline),
+                  label: const Text('设为未学习'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF64748B),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

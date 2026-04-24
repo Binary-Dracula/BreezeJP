@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
+
+import '../../../core/widgets/common_example_item.dart';
 import '../../../data/models/word_detail.dart';
 
-/// 例句区（2.0 — 使用 WordExample 模型）
+/// 例句区（2.0 — 使用 CommonExampleItem 保持简洁一致）
 class WordExamplesSection extends StatelessWidget {
   final List<WordExample> examples;
 
@@ -17,9 +19,19 @@ class WordExamplesSection extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -43,18 +55,12 @@ class WordExamplesSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ...List.generate(examples.length, (index) {
-              final ex = examples[index];
+              final example = examples[index];
               return Padding(
                 padding: EdgeInsets.only(
                   bottom: index == examples.length - 1 ? 0 : 16,
                 ),
-                child: _ExampleItem(
-                  order: index + 1,
-                  japanese: ex.japanese,
-                  chinese: ex.chinese,
-                  level: ex.level,
-                  theme: theme,
-                ),
+                child: _ExampleItem(example: example, order: index + 1),
               );
             }),
           ],
@@ -65,67 +71,23 @@ class WordExamplesSection extends StatelessWidget {
 }
 
 class _ExampleItem extends StatelessWidget {
+  final WordExample example;
   final int order;
-  final String japanese;
-  final String chinese;
-  final String level;
-  final ThemeData theme;
 
-  const _ExampleItem({
-    required this.order,
-    required this.japanese,
-    required this.chinese,
-    required this.level,
-    required this.theme,
-  });
+  const _ExampleItem({required this.example, required this.order});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '$order',
-                style: TextStyle(
-                  color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    japanese,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    chinese,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        CommonExampleItem(
+          order: order,
+          primaryColor: const Color(0xFF6366F1),
+          data: ExampleDisplayData(
+            japanese: example.japanese,
+            translation: example.chinese,
+          ),
         ),
       ],
     );

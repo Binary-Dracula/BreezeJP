@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:breeze_jp/features/kana/review/pages/kana_review_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/register_page.dart';
 import '../features/profile/pages/profile_page.dart';
@@ -13,6 +16,7 @@ import '../features/article/pages/article_list_page.dart';
 import '../features/article/pages/article_detail_page.dart';
 import '../features/word_review/pages/word_review_page.dart';
 import '../features/vocabulary_book/pages/vocabulary_book_page.dart';
+import '../features/word_detail/pages/word_detail_page.dart';
 import '../features/book_selection/pages/book_selection_page.dart';
 import '../debug/pages/debug_placeholder_page.dart';
 import 'app_route_observer.dart';
@@ -25,10 +29,68 @@ import '../data/models/kana_detail.dart';
 import '../features/kana/chart/state/kana_chart_state.dart';
 import '../features/reference/pages/reference_page.dart';
 
+class _AuthRouterRefresh extends ChangeNotifier {
+  _AuthRouterRefresh()
+    : _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+        _,
+      ) {
+        instance.notifyListeners();
+      });
+
+  static final _AuthRouterRefresh instance = _AuthRouterRefresh._();
+
+  _AuthRouterRefresh._()
+    : _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+        _,
+      ) {
+        instance.notifyListeners();
+      });
+
+  final StreamSubscription<AuthState> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+bool _isPublicRoute(String location) {
+  const publicPrefixes = {
+    '/splash',
+    '/login',
+    '/register',
+    '/home',
+    '/kana-chart',
+    '/kana-stroke',
+    '/settings',
+    '/reference',
+  };
+
+  return publicPrefixes.any(
+    (prefix) => location == prefix || location.startsWith('$prefix/'),
+  );
+}
+
 /// 应用路由配置
 final appRouter = GoRouter(
   initialLocation: '/splash',
   observers: <NavigatorObserver>[appRouteObserver],
+  refreshListenable: _AuthRouterRefresh.instance,
+  redirect: (context, state) {
+    final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
+    final location = state.uri.path;
+
+    if (!isLoggedIn && !_isPublicRoute(location)) {
+      return '/login';
+    }
+
+    if (isLoggedIn && (location == '/login' || location == '/register')) {
+      return '/home';
+    }
+
+    return null;
+  },
   routes: [
     // Splash 页面
     GoRoute(
@@ -95,8 +157,16 @@ final appRouter = GoRouter(
         );
       },
     ),
-    // ----------------------------------------------------------------------
-    // Word Detail
+    // 单词详情页
+    GoRoute(
+      path: '/word-detail/:id',
+      name: 'word-detail',
+      builder: (context, state) {
+        final id = state.pathParameters['id'] ?? '';
+        return WordDetailPage(wordId: id);
+      },
+    ),
+
     GoRoute(
       path: '/kana-review',
       name: 'kana-review',

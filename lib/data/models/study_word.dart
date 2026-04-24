@@ -1,16 +1,15 @@
 import '../../core/constants/learning_status.dart';
 
-/// 用户学习进度模型（2.0 — word_id 改为 String UUID）
+/// 用户学习进度模型（2.0 — per-book，word_id + book_id 唯一）
 class StudyWord {
   final int id;
   final int userId;
   final String wordId;
+  final String bookId;
   final LearningStatus userState;
   final DateTime? nextReviewAt;
   final DateTime? lastReviewedAt;
   final DateTime? firstLearnedAt;
-  final DateTime? introducedAt;
-  final String? sourceBookId;
   final int? interval;
   final double? easeFactor;
   final double? stability;
@@ -25,12 +24,11 @@ class StudyWord {
     required this.id,
     required this.userId,
     required this.wordId,
+    required this.bookId,
     required this.userState,
     this.nextReviewAt,
     this.lastReviewedAt,
     this.firstLearnedAt,
-    this.introducedAt,
-    this.sourceBookId,
     this.interval,
     this.easeFactor,
     this.stability,
@@ -48,6 +46,7 @@ class StudyWord {
       id: map['id'] as int,
       userId: map['user_id'] as int,
       wordId: map['word_id'] as String,
+      bookId: map['book_id'] as String,
       userState: LearningStatus.fromValue(map['user_state'] as int),
       nextReviewAt: map['next_review_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
@@ -64,12 +63,6 @@ class StudyWord {
               (map['first_learned_at'] as int) * 1000,
             )
           : null,
-      introducedAt: map['introduced_at'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(
-              (map['introduced_at'] as int) * 1000,
-            )
-          : null,
-      sourceBookId: map['source_book_id'] as String?,
       interval: map['interval'] as int?,
       easeFactor: (map['ease_factor'] as num?)?.toDouble(),
       stability: (map['stability'] as num?)?.toDouble(),
@@ -91,6 +84,7 @@ class StudyWord {
     return {
       'user_id': userId,
       'word_id': wordId,
+      'book_id': bookId,
       'user_state': userState.value,
       'next_review_at': nextReviewAt != null
           ? nextReviewAt!.millisecondsSinceEpoch ~/ 1000
@@ -101,10 +95,6 @@ class StudyWord {
       'first_learned_at': firstLearnedAt != null
           ? firstLearnedAt!.millisecondsSinceEpoch ~/ 1000
           : null,
-      'introduced_at': introducedAt != null
-          ? introducedAt!.millisecondsSinceEpoch ~/ 1000
-          : null,
-      'source_book_id': sourceBookId,
       'interval': interval,
       'ease_factor': easeFactor,
       'stability': stability,
@@ -129,12 +119,11 @@ class StudyWord {
     int? id,
     int? userId,
     String? wordId,
+    String? bookId,
     LearningStatus? userState,
     Object? nextReviewAt = _sentinel,
     Object? lastReviewedAt = _sentinel,
     Object? firstLearnedAt = _sentinel,
-    Object? introducedAt = _sentinel,
-    Object? sourceBookId = _sentinel,
     int? interval,
     double? easeFactor,
     double? stability,
@@ -149,6 +138,7 @@ class StudyWord {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       wordId: wordId ?? this.wordId,
+      bookId: bookId ?? this.bookId,
       userState: userState ?? this.userState,
       nextReviewAt: nextReviewAt == _sentinel
           ? this.nextReviewAt
@@ -159,12 +149,6 @@ class StudyWord {
       firstLearnedAt: firstLearnedAt == _sentinel
           ? this.firstLearnedAt
           : firstLearnedAt as DateTime?,
-      introducedAt: introducedAt == _sentinel
-          ? this.introducedAt
-          : introducedAt as DateTime?,
-      sourceBookId: sourceBookId == _sentinel
-          ? this.sourceBookId
-          : sourceBookId as String?,
       interval: interval ?? this.interval,
       easeFactor: easeFactor ?? this.easeFactor,
       stability: stability ?? this.stability,
@@ -185,9 +169,6 @@ class StudyWord {
     if (nextReviewAt == null) return true;
     return DateTime.now().isAfter(nextReviewAt!);
   }
-
-  /// 是否为新单词
-  bool get isNew => userState == LearningStatus.seen && totalReviews == 0;
 
   /// 学习进度百分比（基于连续答对次数）
   double get progressPercentage {

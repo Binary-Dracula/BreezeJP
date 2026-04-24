@@ -1,15 +1,17 @@
-/// 学习状态枚举（用于单词与假名的统一生命周期状态）
+/// 学习状态枚举（单词、语法、假名统一状态）
+///
+/// 无记录 = 未学习。学习流程：翻到即创建 learning(1) 记录并进入 SRS。
 enum LearningStatus {
-  /// 已曝光（看过，但未进入 SRS）
-  seen(0, '已曝光'),
+  /// 未学习 / 未开始
+  unlearned(0, '未学习'),
 
-  /// SRS 学习中
+  /// SRS 学习中（翻到即标记）
   learning(1, '学习中'),
 
-  /// 已掌握（退出 SRS）
+  /// 已掌握（用户主动标记，退出 SRS）
   mastered(2, '已掌握'),
 
-  /// 已忽略
+  /// 已忽略（用户主动跳过）
   ignored(3, '已忽略');
 
   const LearningStatus(this.value, this.description);
@@ -20,7 +22,7 @@ enum LearningStatus {
 
   static LearningStatus fromValue(
     int value, {
-    LearningStatus fallback = LearningStatus.seen,
+    LearningStatus fallback = LearningStatus.learning,
   }) {
     return LearningStatus.values.firstWhere(
       (status) => status.value == value,

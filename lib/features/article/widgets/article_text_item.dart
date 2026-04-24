@@ -296,7 +296,6 @@ class _WordRubyWidget extends StatelessWidget {
   final Color textColor;
   final bool showFurigana;
   final VoidCallback? onLongPress;
-  final Color? backgroundColor;
 
   const _WordRubyWidget({
     required this.word,
@@ -305,7 +304,6 @@ class _WordRubyWidget extends StatelessWidget {
     required this.textColor,
     required this.showFurigana,
     this.onLongPress,
-    this.backgroundColor,
   });
 
   @override
@@ -352,17 +350,6 @@ class _WordRubyWidget extends StatelessWidget {
     // 因为 ruby_text 包的 copyWith 会用它覆盖所有 per-item 的 rubyStyle，
     // 导致纯假名片段的透明色被全局可见色覆盖。
     Widget rubyWidget = RubyText(styledRubyData, style: textStyle);
-
-    // 背景色容器（预留词性着色，不改变高度）
-    if (backgroundColor != null) {
-      rubyWidget = Container(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(3),
-        ),
-        child: rubyWidget,
-      );
-    }
 
     // 标点符号不包裹 GestureDetector
     if (word.isPunctuation || onLongPress == null) {

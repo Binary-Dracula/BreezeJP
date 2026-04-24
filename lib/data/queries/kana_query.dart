@@ -332,9 +332,9 @@ class KanaQuery {
             id: map['state_id'] as int,
             userId: map['state_user_id'] as int,
             kanaId: letter.id,
-            learningStatus:
-                LearningStatus.values[(map['learning_status'] as int? ?? 0)
-                    .clamp(0, LearningStatus.values.length - 1)],
+            learningStatus: LearningStatus.fromValue(
+              map['learning_status'] as int? ?? LearningStatus.learning.value,
+            ),
             nextReviewAt: map['state_next_review_at'] as int?,
             lastReviewedAt: map['state_last_reviewed_at'] as int?,
             streak: map['state_streak'] as int? ?? 0,

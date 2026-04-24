@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 
-/// 活用变形列表（2.0 — 从 WordRichContent.conjugations Map 渲染）
+import '../../../core/widgets/custom_ruby_text.dart';
+import '../../../data/models/word_detail.dart';
+
+/// 活用变形列表（2.0 — 从归一化后的 WordRichContent.conjugationEntries 渲染）
 class ConjugationList extends StatelessWidget {
   final Map<String, dynamic>? conjugations;
 
@@ -14,11 +17,14 @@ class ConjugationList extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final borderColor = theme.dividerColor;
     final l10n = AppLocalizations.of(context)!;
-
-    // conjugations 是一个 Map，key 是变形类型名(如"ます形")，value 是变形后的词
-    final entries = conjugations!.entries.toList();
+    final entries = WordRichContent(
+      meanings: const [],
+      conjugations: conjugations,
+    ).conjugationEntries;
+    if (entries.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,13 +38,18 @@ class ConjugationList extends StatelessWidget {
             ),
           ),
         ),
-        Card(
+        Container(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          elevation: 0,
-          color: theme.cardColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: borderColor, width: 0.5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: ListView.separated(
             shrinkWrap: true,
@@ -47,12 +58,10 @@ class ConjugationList extends StatelessWidget {
             separatorBuilder: (context, index) => Divider(
               height: 1,
               thickness: 0.5,
-              color: borderColor.withValues(alpha: 0.5),
+              color: theme.dividerColor.withValues(alpha: 0.4),
             ),
             itemBuilder: (context, index) {
               final entry = entries[index];
-              final typeName = entry.key;
-              final value = entry.value?.toString() ?? '';
               return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
@@ -63,19 +72,19 @@ class ConjugationList extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        typeName,
+                        _labelForKey(entry.key, l10n),
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.hintColor,
+                          color: const Color(0xFF64748B),
                         ),
                       ),
                     ),
                     Expanded(
                       flex: 3,
-                      child: Text(
-                        value,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: JapaneseSentence(
+                        text: entry.value,
+                        fontSize: theme.textTheme.bodyLarge?.fontSize ?? 16,
+                        rubyFontSize: 10,
+                        textColor: theme.textTheme.bodyLarge?.color,
                       ),
                     ),
                   ],
@@ -87,5 +96,28 @@ class ConjugationList extends StatelessWidget {
         const SizedBox(height: 16),
       ],
     );
+  }
+
+  String _labelForKey(String key, AppLocalizations l10n) {
+    switch (key) {
+      case 'dictionary_form':
+        return l10n.conjugationDictionaryForm;
+      case 'masu_form':
+        return l10n.conjugationMasuForm;
+      case 'te_form':
+        return l10n.conjugationTeForm;
+      case 'ta_form':
+        return l10n.conjugationTaForm;
+      case 'nai_form':
+        return l10n.conjugationNaiForm;
+      case 'potential_form':
+        return l10n.conjugationPotentialForm;
+      case 'passive_form':
+        return l10n.conjugationPassiveForm;
+      case 'causative_form':
+        return l10n.conjugationCausativeForm;
+      default:
+        return key.replaceAll('_', ' ');
+    }
   }
 }

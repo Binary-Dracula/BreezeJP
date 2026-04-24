@@ -73,13 +73,18 @@ class DebugSeedCommand {
     var wordSkipped = 0;
 
     for (final word in wordSelected) {
-      final existing = await _studyWordRepository.getStudyWord(userId, word.id);
+      final existing = await _studyWordRepository.getStudyWord(
+        userId,
+        word.id,
+        'debug_book',
+      );
 
       if (existing == null) {
         final state = StudyWord(
           id: 0,
           userId: userId,
           wordId: word.id,
+          bookId: 'debug_book',
           userState: LearningStatus.learning,
           nextReviewAt: dueAt,
           lastReviewedAt: lastReviewedAt,

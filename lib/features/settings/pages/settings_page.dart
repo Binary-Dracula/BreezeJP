@@ -3,17 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/algorithm/srs_types.dart';
-import '../../../core/providers/preferences_provider.dart';
 import '../../../core/auth/auth_provider.dart';
+import '../../../core/providers/preferences_provider.dart';
+import '../../../data/queries/book_query_provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final currentAlgorithm = ref.watch(algorithmTypeProvider);
     final currentUser = ref.watch(currentUserProvider);
     final displayName = ref.watch(displayNameProvider);
+    final selectedBookAsync = ref.watch(selectedBookProvider);
     final email = currentUser?.email ?? '';
     final isLoggedIn = currentUser != null;
 
@@ -315,6 +319,62 @@ class SettingsPage extends ConsumerWidget {
                               ),
                             );
                           },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.menu_book_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.settingsCurrentBook,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                selectedBookAsync.when(
+                                  data: (book) =>
+                                      book?.title ??
+                                      l10n.settingsNoSelectedBook,
+                                  loading: () => l10n.loading,
+                                  error: (_, _) => l10n.settingsNoSelectedBook,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => context.push('/book-selection'),
+                          icon: const Icon(Icons.arrow_forward_ios, size: 16),
                         ),
                       ],
                     ),

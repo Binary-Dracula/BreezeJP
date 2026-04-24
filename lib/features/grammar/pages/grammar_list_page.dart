@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/learning_status.dart';
 import '../controller/grammar_list_controller.dart';
+import '../providers/grammar_status_refresh_provider.dart';
 import '../state/grammar_list_state.dart';
 
 class GrammarListPage extends ConsumerStatefulWidget {
@@ -53,6 +54,11 @@ class _GrammarListPageState extends ConsumerState<GrammarListPage>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(grammarStatusRefreshProvider, (previous, next) {
+      if (previous == null || previous == next) return;
+      ref.read(grammarListControllerProvider.notifier).loadGrammars();
+    });
+
     final state = ref.watch(grammarListControllerProvider);
 
     return Scaffold(

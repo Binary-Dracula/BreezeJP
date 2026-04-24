@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../db/app_database_provider.dart';
+import '../../core/utils/app_logger.dart';
+import '../db/app_database.dart';
+import 'book_sync_command_provider.dart';
 import 'active_user_command_provider.dart';
+import 'word_sync_command_provider.dart';
 
 enum AppBootstrapStatus { ready }
 
@@ -20,7 +23,19 @@ class AppBootstrapCommand {
     await activeUserCommand.ensureActiveUser();
 
     // Ensure database is initialized and available to data layer.
-    _ref.read(databaseProvider);
+    await AppDatabase.instance.database;
+
+    try {
+      await _ref.read(bookSyncCommandProvider).syncBooks();
+    } catch (e) {
+      logger.error('[Bootstrap] Book sync failed, skipping', e);
+    }
+
+    try {
+      await _ref.read(wordSyncCommandProvider).syncUpdatedWords();
+    } catch (e) {
+      logger.error('[Bootstrap] Word sync failed, skipping', e);
+    }
 
     return const AppBootstrapResult(AppBootstrapStatus.ready);
   }

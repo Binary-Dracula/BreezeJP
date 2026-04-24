@@ -1,9 +1,11 @@
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/constants/learning_status.dart';
 
 /// 单词本列表项（只读，2.0 — JOIN study_words + words）
 class VocabularyBookItem {
   final int studyWordId;
   final String wordId;
+  final String bookId;
   final String word;
   final String reading;
   final String? jlptLevel;
@@ -16,6 +18,7 @@ class VocabularyBookItem {
   const VocabularyBookItem({
     required this.studyWordId,
     required this.wordId,
+    required this.bookId,
     required this.word,
     required this.reading,
     this.jlptLevel,
@@ -30,6 +33,7 @@ class VocabularyBookItem {
     return VocabularyBookItem(
       studyWordId: map['study_word_id'] as int,
       wordId: map['word_id'] as String,
+      bookId: map['book_id'] as String,
       word: map['word'] as String,
       reading: (map['reading'] as String?) ?? '',
       jlptLevel: map['jlpt_level'] as String?,
@@ -41,5 +45,10 @@ class VocabularyBookItem {
         (map['updated_at'] as int) * 1000,
       ),
     );
+  }
+
+  String? get audioSource {
+    if (!hasAudio) return null;
+    return '${ApiEndpoints.baseUrl}${ApiEndpoints.replaceParams(ApiEndpoints.wordAudio, {'id': wordId})}';
   }
 }

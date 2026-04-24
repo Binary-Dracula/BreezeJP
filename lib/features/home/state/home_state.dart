@@ -8,8 +8,6 @@ class HomeState {
 
   // 核心卡片数据
   final int reviewCount;
-  final int newWordCount;
-  final int todayReviewCount;
 
   // 待复习五十音数量
   final int kanaReviewCount;
@@ -24,8 +22,6 @@ class HomeState {
     this.error,
     this.userName = 'BreezeJP User',
     this.reviewCount = 0,
-    this.newWordCount = 0,
-    this.todayReviewCount = 0,
     this.kanaReviewCount = 0,
     this.masteredWordCount = 0,
     this.isInitialized = false,
@@ -36,8 +32,6 @@ class HomeState {
     String? error,
     String? userName,
     int? reviewCount,
-    int? newWordCount,
-    int? todayReviewCount,
     int? kanaReviewCount,
     int? masteredWordCount,
     bool? isInitialized,
@@ -47,8 +41,6 @@ class HomeState {
       error: error,
       userName: userName ?? this.userName,
       reviewCount: reviewCount ?? this.reviewCount,
-      newWordCount: newWordCount ?? this.newWordCount,
-      todayReviewCount: todayReviewCount ?? this.todayReviewCount,
       kanaReviewCount: kanaReviewCount ?? this.kanaReviewCount,
       masteredWordCount: masteredWordCount ?? this.masteredWordCount,
       isInitialized: isInitialized ?? this.isInitialized,
@@ -56,7 +48,7 @@ class HomeState {
   }
 
   /// 是否有任务 (待复习或新单词)
-  bool get hasTask => reviewCount > 0 || newWordCount > 0;
+  bool get hasTask => reviewCount > 0 || kanaReviewCount > 0;
 
   /// 是否有错误
   bool get hasError => error != null;

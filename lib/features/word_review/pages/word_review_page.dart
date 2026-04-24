@@ -6,9 +6,7 @@ import '../../../core/widgets/review_widgets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../data/models/word_detail.dart';
 import '../../../services/audio_service_provider.dart';
-import '../../learn/widgets/word_examples_section.dart';
-import '../../learn/widgets/word_header.dart';
-import '../../learn/widgets/word_meanings_section.dart';
+import '../../word_detail/widgets/word_detail_content.dart';
 import '../controller/word_review_controller.dart';
 import '../state/word_review_item.dart';
 import '../state/word_review_state.dart';
@@ -288,33 +286,24 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage> {
           snap: true,
           snapSizes: const [0.6, 0.9],
           builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 拖拽手柄
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.black12,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
+            return SafeArea(
+              top: false,
+              child: WordDetailContent(
+                wordDetail: wordDetail,
+                scrollController: scrollController,
+                prefixChildren: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      WordHeader(wordDetail: wordDetail),
-                      WordMeaningsSection(richContent: wordDetail.richContent),
-                      WordExamplesSection(examples: wordDetail.examples),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             );
           },

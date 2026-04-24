@@ -104,10 +104,6 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
                 const SizedBox(height: 12),
                 _buildReviewSection(context, state, l10n),
                 const SizedBox(height: 24),
-                _buildSectionTitle(l10n.homeSectionStats),
-                const SizedBox(height: 12),
-                _buildStatsCard(context, state, l10n),
-                const SizedBox(height: 24),
                 _buildSectionTitle(l10n.homeSectionTools),
                 const SizedBox(height: 12),
                 _buildToolsGrid(context, l10n),
@@ -280,111 +276,6 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsCard(
-    BuildContext context,
-    HomeState state,
-    AppLocalizations l10n,
-  ) {
-    final hasActivity =
-        state.newWordCount > 0 ||
-        state.todayReviewCount > 0 ||
-        state.masteredWordCount > 0;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatColumn(
-                  icon: Icons.auto_awesome_rounded,
-                  color: const Color(0xFF6366F1),
-                  label: l10n.statsTodayLearning,
-                  value: '${state.newWordCount}',
-                ),
-              ),
-              Container(width: 1, height: 48, color: Colors.grey.shade200),
-              Expanded(
-                child: _buildStatColumn(
-                  icon: Icons.repeat_rounded,
-                  color: const Color(0xFF14B8A6),
-                  label: l10n.statsTodayReview,
-                  value: '${state.todayReviewCount}',
-                ),
-              ),
-              Container(width: 1, height: 48, color: Colors.grey.shade200),
-              Expanded(
-                child: _buildStatColumn(
-                  icon: Icons.star_rounded,
-                  color: const Color(0xFF0EA5E9),
-                  label: l10n.masteredWords,
-                  value: '${state.masteredWordCount}',
-                ),
-              ),
-            ],
-          ),
-          if (!hasActivity) ...[
-            const SizedBox(height: 12),
-            Text(
-              l10n.statsNoActivityMessage,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 单列统计项（居中排列：图标 + 标签 + 数值）
-  Widget _buildStatColumn({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color, size: 18),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
         ),
       ],
     );

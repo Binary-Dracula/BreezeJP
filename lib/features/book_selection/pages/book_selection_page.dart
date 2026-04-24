@@ -3,14 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/preferences_provider.dart';
+import '../controller/book_selection_controller.dart';
 import '../../../data/models/vocab_book.dart';
-import '../../../data/queries/vocab_remote_query_provider.dart';
-
-/// 从 API 获取辞书列表的 FutureProvider
-final booksProvider = FutureProvider<List<VocabBook>>((ref) async {
-  final remote = ref.read(vocabRemoteQueryProvider);
-  return remote.fetchBooks();
-});
 
 /// 辞书选择页面
 class BookSelectionPage extends ConsumerWidget {
@@ -18,7 +12,7 @@ class BookSelectionPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final booksAsync = ref.watch(booksProvider);
+    final state = ref.watch(bookSelectionControllerProvider);
     final selectedBookId = ref.watch(selectedBookIdProvider);
 
     return Scaffold(
@@ -28,68 +22,82 @@ class BookSelectionPage extends ConsumerWidget {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
       ),
-      body: booksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.cloud_off_rounded,
-                  size: 48,
-                  color: Colors.grey.shade400,
+      body: state.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : state.error != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.cloud_off_rounded,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '无法加载辞书列表',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '请检查网络连接后重试',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () => ref
+                          .read(bookSelectionControllerProvider.notifier)
+                          .refreshBooks(),
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('重试'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  '无法加载辞书列表',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '请检查网络连接后重试',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => ref.invalidate(booksProvider),
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('重试'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        data: (books) {
-          if (books.isEmpty) {
-            return Center(
-              child: Text(
-                '暂无可用辞书',
-                style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
               ),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            itemCount: books.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final book = books[index];
-              final isSelected = book.id == selectedBookId;
-              return _BookCard(
-                book: book,
-                isSelected: isSelected,
-                onTap: () => _onBookSelected(context, ref, book),
-              );
-            },
-          );
-        },
-      ),
+            )
+          : Builder(
+              builder: (context) {
+                final books = state.books;
+                if (books.isEmpty) {
+                  return Center(
+                    child: Text(
+                      '暂无可用辞书',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  itemCount: books.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final book = books[index];
+                    final isSelected = book.id == selectedBookId;
+                    return _BookCard(
+                      book: book,
+                      isSelected: isSelected,
+                      onTap: () => _onBookSelected(context, ref, book),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 

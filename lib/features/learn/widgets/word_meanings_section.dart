@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
+
 import '../../../data/models/word_detail.dart';
 
-/// 释义区（2.0 — 使用 WordRichContent.meanings）
+/// 释义区（2.0 — 使用归一化后的 WordRichContent.meaningEntries）
 class WordMeaningsSection extends StatelessWidget {
   final WordRichContent richContent;
 
@@ -10,7 +11,7 @@ class WordMeaningsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meanings = richContent.meanings;
+    final meanings = richContent.meaningEntries;
     if (meanings.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -18,9 +19,19 @@ class WordMeaningsSection extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
         child: Column(
@@ -44,15 +55,12 @@ class WordMeaningsSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ...List.generate(meanings.length, (index) {
-              final m = meanings[index];
-              final meaning = m['meaning'] as String? ?? '';
-              final pos = m['part_of_speech'] as String?;
-              final notes = m['notes'] as String?;
+              final entry = meanings[index];
               return _MeaningItem(
                 order: index + 1,
-                meaning: meaning,
-                partOfSpeech: pos,
-                notes: notes,
+                meaning: entry.meaning,
+                partOfSpeech: entry.partOfSpeech,
+                notes: entry.note,
                 theme: theme,
               );
             }),
@@ -108,11 +116,22 @@ class _MeaningItem extends StatelessWidget {
               children: [
                 if (partOfSpeech?.isNotEmpty == true)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Text(
-                      partOfSpeech!,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14B8A6).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        partOfSpeech!,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF14B8A6),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),

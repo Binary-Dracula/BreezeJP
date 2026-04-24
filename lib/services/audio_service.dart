@@ -1,4 +1,7 @@
 import 'package:just_audio/just_audio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../core/network/api_endpoints.dart';
 import '../core/utils/app_logger.dart';
 
 /// 音频播放服务
@@ -51,10 +54,7 @@ class AudioService {
 
       if (source.startsWith('http://') || source.startsWith('https://')) {
         final encodedUrl = _encodeUrl(source);
-        await _player.setUrl(
-          encodedUrl,
-          headers: {'X-Breeze-Token': 'BreezeJP-2026-Secret-V1'},
-        );
+        await _player.setUrl(encodedUrl, headers: _onlineAudioHeaders(source));
       } else {
         await _player.setAsset(source);
       }
@@ -161,6 +161,19 @@ class AudioService {
 
   String _encodeUrl(String url) {
     return Uri.encodeFull(url);
+  }
+
+  Map<String, String> _onlineAudioHeaders(String source) {
+    final headers = <String, String>{
+      'X-Breeze-Token': 'BreezeJP-2026-Secret-V1',
+    };
+
+    final jwt = Supabase.instance.client.auth.currentSession?.accessToken;
+    if (jwt?.isNotEmpty == true && source.startsWith(ApiEndpoints.baseUrl)) {
+      headers['Authorization'] = 'Bearer $jwt';
+    }
+
+    return headers;
   }
 }
 
