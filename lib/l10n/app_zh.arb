@@ -455,6 +455,30 @@
   "@learnNoMoreWordsContent": {
     "description": "学习页无更多新词弹窗内容"
   },
+  "learnConfirmIgnoreTitle": "确认忽略这个单词？",
+  "@learnConfirmIgnoreTitle": {
+    "description": "学习页忽略操作确认弹窗标题"
+  },
+  "learnConfirmIgnoreContent": "忽略后会自动进入下一个单词，后续可在单词本中恢复。",
+  "@learnConfirmIgnoreContent": {
+    "description": "学习页忽略操作确认弹窗内容"
+  },
+  "learnConfirmMasteredTitle": "确认标记为已掌握？",
+  "@learnConfirmMasteredTitle": {
+    "description": "学习页已掌握操作确认弹窗标题"
+  },
+  "learnConfirmMasteredContent": "标记后会自动进入下一个单词，后续可在单词本中恢复学习。",
+  "@learnConfirmMasteredContent": {
+    "description": "学习页已掌握操作确认弹窗内容"
+  },
+  "learnConfirmCancel": "取消",
+  "@learnConfirmCancel": {
+    "description": "学习页确认弹窗取消按钮"
+  },
+  "learnConfirmConfirm": "确认",
+  "@learnConfirmConfirm": {
+    "description": "学习页确认弹窗确认按钮"
+  },
   "settingsCurrentBook": "当前辞书",
   "@settingsCurrentBook": {
     "description": "设置页当前辞书设置项标题"

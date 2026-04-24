@@ -192,6 +192,12 @@ final appRouter = GoRouter(
       name: 'book-selection',
       builder: (context, state) => const BookSelectionPage(),
     ),
+    GoRoute(
+      path: '/book-selection/settings',
+      name: 'book-selection-settings',
+      builder: (context, state) =>
+          const BookSelectionPage(navigateToLearnOnSelect: false),
+    ),
 
     // Debug 占位入口
     GoRoute(

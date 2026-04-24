@@ -43,7 +43,9 @@ class WordSyncCommand {
     final body = response.data!;
     final data = body['data'] as List<dynamic>;
     final meta = body['meta'] as Map<String, dynamic>? ?? {};
-    final serverTime = meta['server_time'] as String? ?? DateTime.now().toUtc().toIso8601String();
+    final serverTime =
+        meta['server_time'] as String? ??
+        DateTime.now().toUtc().toIso8601String();
 
     if (data.isEmpty) {
       await prefs.setString(_lastSyncKey, serverTime);
@@ -76,13 +78,16 @@ class WordSyncCommand {
           word.toMap(),
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
-        await txn.insert(
-          'word_details',
-          {'word_id': word.id, 'rich_content': detail.richContent.toJsonString()},
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await txn.insert('word_details', {
+          'word_id': word.id,
+          'rich_content': detail.richContent.toJsonString(),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
 
-        await txn.delete('word_examples', where: 'word_id = ?', whereArgs: [word.id]);
+        await txn.delete(
+          'word_examples',
+          where: 'word_id = ?',
+          whereArgs: [word.id],
+        );
         for (final example in detail.examples) {
           await txn.insert('word_examples', example.toMap());
         }

@@ -141,7 +141,7 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
       child: SafeArea(
         child: Row(
           children: [
-            if (status == LearningStatus.unlearned) ...[
+            if (status == LearningStatus.learning) ...[
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
@@ -185,26 +185,6 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
                   onPressed: () {
                     ref
                         .read(grammarControllerProvider.notifier)
-                        .resetToUnlearned();
-                  },
-                  icon: const Icon(Icons.remove_circle_outline),
-                  label: const Text('取消学习'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF64748B),
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ref
-                        .read(grammarControllerProvider.notifier)
                         .markAsMastered();
                   },
                   icon: const Icon(Icons.check_circle_outline),
@@ -232,26 +212,6 @@ class _GrammarLearningPageState extends ConsumerState<GrammarLearningPage> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF5C8DFF),
                     side: const BorderSide(color: Color(0xFF5C8DFF)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ref
-                        .read(grammarControllerProvider.notifier)
-                        .resetToUnlearned();
-                  },
-                  icon: const Icon(Icons.remove_circle_outline),
-                  label: const Text('设为未学习'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF64748B),
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

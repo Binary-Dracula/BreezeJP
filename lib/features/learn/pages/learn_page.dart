@@ -73,7 +73,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
               if (!state.isLoading && !state.isEmpty)
                 Positioned(
                   right: 10,
-                  bottom: 104,
+                  bottom: 200,
                   child: _buildActionRail(context, state, l10n),
                 ),
             ],
@@ -198,6 +198,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
     final currentStatus = state.currentWordState();
     final isIgnored = currentStatus == LearningStatus.ignored;
     final isMastered = currentStatus == LearningStatus.mastered;
+    final isLastWord = state.currentIndex >= state.words.length - 1;
 
     return SafeArea(
       child: Column(
@@ -205,14 +206,12 @@ class _LearnPageState extends ConsumerState<LearnPage> {
         children: [
           DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.22),
+              color: Colors.blue.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.42),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 18,
                   offset: const Offset(0, 8),
                 ),
@@ -224,28 +223,40 @@ class _LearnPageState extends ConsumerState<LearnPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _RailActionButton(
-                    icon: Icons.visibility_off_outlined,
-                    label: l10n.wordActionIgnore,
-                    color: const Color(0xFFF59E0B),
-                    enabled: !isIgnored,
-                    onPressed: () => controller.markCurrentIgnored(),
+                    icon: Icons.arrow_forward_ios_rounded,
+                    color: const Color(0xFF64748B),
+                    enabled: true,
+                    onPressed: () {
+                      if (isLastWord) {
+                        _showBatchCompletedDialog(context, l10n);
+                      } else {
+                        controller.goToNext();
+                      }
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  _RailActionButton(
-                    icon: Icons.check_circle_outline,
-                    label: l10n.wordActionMastered,
-                    color: const Color(0xFF34D399),
-                    enabled: !isMastered,
-                    emphasized: true,
-                    onPressed: () => controller.markCurrentMastered(),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   _RailActionButton(
                     icon: Icons.arrow_back_ios_new_rounded,
-                    label: l10n.previous,
                     color: const Color(0xFF64748B),
                     enabled: state.currentIndex > 0,
                     onPressed: () => controller.goToPrev(),
+                  ),
+                  const SizedBox(height: 16),
+                  _RailActionButton(
+                    icon: Icons.check_circle_outline,
+                    color: const Color(0xFF34D399),
+                    enabled: !isMastered,
+                    emphasized: true,
+                    onPressed: () =>
+                        _showConfirmMasteredDialog(context, l10n, controller),
+                  ),
+                  const SizedBox(height: 16),
+                  _RailActionButton(
+                    icon: Icons.visibility_off_outlined,
+                    color: const Color(0xFFF59E0B),
+                    enabled: !isIgnored,
+                    onPressed: () =>
+                        _showConfirmIgnoreDialog(context, l10n, controller),
                   ),
                 ],
               ),
@@ -336,6 +347,60 @@ class _LearnPageState extends ConsumerState<LearnPage> {
     );
   }
 
+  void _showConfirmIgnoreDialog(
+    BuildContext context,
+    AppLocalizations l10n,
+    LearnController controller,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.learnConfirmIgnoreTitle),
+        content: Text(l10n.learnConfirmIgnoreContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.learnConfirmCancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              controller.markCurrentIgnored();
+            },
+            child: Text(l10n.learnConfirmConfirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConfirmMasteredDialog(
+    BuildContext context,
+    AppLocalizations l10n,
+    LearnController controller,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.learnConfirmMasteredTitle),
+        content: Text(l10n.learnConfirmMasteredContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.learnConfirmCancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              controller.markCurrentMastered();
+            },
+            child: Text(l10n.learnConfirmConfirm),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _exitLearnPage(BuildContext context) {
     if (context.canPop()) {
       context.pop();
@@ -347,7 +412,6 @@ class _LearnPageState extends ConsumerState<LearnPage> {
 
 class _RailActionButton extends StatelessWidget {
   final IconData icon;
-  final String label;
   final Color color;
   final bool enabled;
   final bool emphasized;
@@ -355,7 +419,6 @@ class _RailActionButton extends StatelessWidget {
 
   const _RailActionButton({
     required this.icon,
-    required this.label,
     required this.color,
     required this.enabled,
     required this.onPressed,
@@ -368,40 +431,21 @@ class _RailActionButton extends StatelessWidget {
     final foregroundColor = emphasized ? Colors.white : effectiveColor;
     final backgroundColor = emphasized
         ? effectiveColor
-        : Colors.white.withValues(alpha: enabled ? 0.72 : 0.5);
+        : Colors.white.withValues(alpha: enabled ? 0.55 : 0.32);
 
-    return SizedBox(
-      width: 72,
-      child: Column(
-        children: [
-          Material(
-            color: backgroundColor,
-            elevation: emphasized ? 5 : 2,
-            shadowColor: Colors.black.withValues(alpha: 0.08),
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: enabled ? onPressed : null,
-              child: SizedBox(
-                width: 56,
-                height: 56,
-                child: Icon(icon, color: foregroundColor, size: 24),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: enabled ? const Color(0xFF475569) : Colors.grey.shade400,
-            ),
-          ),
-        ],
+    return Material(
+      color: backgroundColor,
+      elevation: emphasized ? 5 : 2,
+      shadowColor: Colors.black.withValues(alpha: 0.06),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: enabled ? onPressed : null,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(icon, color: foregroundColor, size: 22),
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 # 单词增量同步功能档案
 
 ## 功能概述
+
 App 启动时，用时间戳向 API 请求"最近更新的单词"，覆盖本地已有单词的内容（用户尚未下载的跳过）。确保管理员在后台修改的单词数据能同步到已安装 App 的用户。
 
 ---
@@ -35,10 +36,14 @@ App 启动 → Splash → AppBootstrapCommand.run()
 注册位置：`api/workers/src/index.ts`（JWT 认证区块内）
 
 ```typescript
-import { handleBookList, handleNextWords, handleWordSync } from './routes/vocab';
+import {
+  handleBookList,
+  handleNextWords,
+  handleWordSync,
+} from "./routes/vocab";
 // ...
 // GET /api/v1/words/sync?since=<ISO>
-if (path === '/api/v1/words/sync') {
+if (path === "/api/v1/words/sync") {
   return handleWordSync(request, env, auth);
 }
 ```
@@ -48,12 +53,15 @@ if (path === '/api/v1/words/sync') {
 ## 2. Flutter 层
 
 ### 端点常量
+
 `lib/core/network/api_endpoints.dart`
+
 ```dart
 static const String wordSync = '/api/v1/words/sync';
 ```
 
 ### Command
+
 `lib/data/commands/word_sync_command.dart`
 
 - SharedPreferences key：`words_last_sync_time`
@@ -62,6 +70,7 @@ static const String wordSync = '/api/v1/words/sync';
 - 返回更新数量
 
 `lib/data/commands/word_sync_command_provider.dart`
+
 ```dart
 final wordSyncCommandProvider = Provider<WordSyncCommand>((ref) {
   final db = ref.read(databaseProvider);
@@ -70,7 +79,9 @@ final wordSyncCommandProvider = Provider<WordSyncCommand>((ref) {
 ```
 
 ### 集成启动流程
+
 `lib/data/commands/app_bootstrap_command.dart`
+
 ```dart
 try {
   await _ref.read(wordSyncCommandProvider).syncUpdatedWords();
