@@ -327,6 +327,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get learnNoMoreWordsContent => '这本书当前没有更多新词可学，先回到首页吧。';
 
   @override
+  String get learnConfirmIgnoreTitle => '确认忽略这个单词？';
+
+  @override
+  String get learnConfirmIgnoreContent => '忽略后会自动进入下一个单词，后续可在单词本中恢复。';
+
+  @override
+  String get learnConfirmMasteredTitle => '确认标记为已掌握？';
+
+  @override
+  String get learnConfirmMasteredContent => '标记后会自动进入下一个单词，后续可在单词本中恢复学习。';
+
+  @override
+  String get learnConfirmCancel => '取消';
+
+  @override
+  String get learnConfirmConfirm => '确认';
+
+  @override
   String get settingsCurrentBook => '当前辞书';
 
   @override

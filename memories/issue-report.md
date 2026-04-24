@@ -1,6 +1,7 @@
 # Issue Report 功能档案
 
 ## 功能概述
+
 用户在学习页（单词 / 语法）发现问题时，点击 🚩 按钮上报，内容进入 Supabase，管理员在 Admin 面板处理。
 
 ---
@@ -36,19 +37,22 @@ RLS：用户只能 INSERT 自己的记录；管理员 Service Role 可全量读�
 
 ```typescript
 // index.ts 中
-import { handleCreateIssue } from './routes/issues';
+import { handleCreateIssue } from "./routes/issues";
 // ...
-if (path === '/api/v1/issues' && request.method === 'POST') {
+if (path === "/api/v1/issues" && request.method === "POST") {
   return handleCreateIssue(request, env, auth);
 }
 ```
 
 payload 示例：
+
 ```json
 {
   "type": "word",
   "description": "释义有误，应为……",
-  "snapshot": { /* word.toMap() + richContent.toJsonString() */ }
+  "snapshot": {
+    /* word.toMap() + richContent.toJsonString() */
+  }
 }
 ```
 
@@ -57,23 +61,30 @@ payload 示例：
 ## 3. Flutter 层
 
 ### 端点常量
+
 `lib/core/network/api_endpoints.dart`
+
 ```dart
 static const String issues = '/api/v1/issues';
 ```
 
 ### Command
+
 `lib/data/commands/issue_report_command.dart`
+
 - POST 到 `ApiEndpoints.issues`
 - 字段：`type`, `description`, `snapshot`
 
 `lib/data/commands/issue_report_command_provider.dart`
+
 ```dart
 final issueReportCommandProvider = Provider<IssueReportCommand>((ref) { ... });
 ```
 
 ### Widget
+
 `lib/features/common/widgets/issue_report_sheet.dart`
+
 - `ConsumerStatefulWidget`，底部弹出 Sheet
 - 静态方法 `IssueReportSheet.show(context, type, snapshot)`
 - 包含描述文本框 + 提交按钮
@@ -81,6 +92,7 @@ final issueReportCommandProvider = Provider<IssueReportCommand>((ref) { ... });
 ### 调用点
 
 **单词学习页** `lib/features/learn/pages/learn_page.dart`
+
 ```dart
 // AppBar 右侧 IconButton
 IconButton(
@@ -97,6 +109,7 @@ IconButton(
 ```
 
 **语法学习页** `lib/features/grammar/pages/grammar_learning_page.dart`
+
 ```dart
 // AppBar actions 中
 IconButton(
@@ -123,16 +136,19 @@ IconButton(
 部署：Cloudflare Pages，项目名 `breezejp-admin`
 
 地址：
+
 - `https://breezejp-admin.pages.dev`
 - `https://admin.binary-dracula.com`（自定义域名）
 
 部署命令（必须加 `--branch main`）：
+
 ```bash
 cd admin && npm run build
 npx wrangler pages deploy dist --project-name breezejp-admin --branch main --commit-dirty=true
 ```
 
 功能：
+
 - 登录（Supabase Auth，管理员账号）
 - 问题列表，支持按 type / status 筛选
 - 问题详情，含 snapshot 展示

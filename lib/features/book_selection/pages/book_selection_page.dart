@@ -8,7 +8,9 @@ import '../../../data/models/vocab_book.dart';
 
 /// 辞书选择页面
 class BookSelectionPage extends ConsumerWidget {
-  const BookSelectionPage({super.key});
+  final bool navigateToLearnOnSelect;
+
+  const BookSelectionPage({super.key, this.navigateToLearnOnSelect = true});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -108,7 +110,11 @@ class BookSelectionPage extends ConsumerWidget {
   ) async {
     await ref.read(selectedBookIdProvider.notifier).setBookId(book.id);
     if (context.mounted) {
-      context.go('/learn/${book.id}');
+      if (navigateToLearnOnSelect) {
+        context.go('/learn/${book.id}');
+      } else {
+        context.pop();
+      }
     }
   }
 }

@@ -682,6 +682,42 @@ abstract class AppLocalizations {
   /// **'这本书当前没有更多新词可学，先回到首页吧。'**
   String get learnNoMoreWordsContent;
 
+  /// 学习页忽略操作确认弹窗标题
+  ///
+  /// In zh, this message translates to:
+  /// **'确认忽略这个单词？'**
+  String get learnConfirmIgnoreTitle;
+
+  /// 学习页忽略操作确认弹窗内容
+  ///
+  /// In zh, this message translates to:
+  /// **'忽略后会自动进入下一个单词，后续可在单词本中恢复。'**
+  String get learnConfirmIgnoreContent;
+
+  /// 学习页已掌握操作确认弹窗标题
+  ///
+  /// In zh, this message translates to:
+  /// **'确认标记为已掌握？'**
+  String get learnConfirmMasteredTitle;
+
+  /// 学习页已掌握操作确认弹窗内容
+  ///
+  /// In zh, this message translates to:
+  /// **'标记后会自动进入下一个单词，后续可在单词本中恢复学习。'**
+  String get learnConfirmMasteredContent;
+
+  /// 学习页确认弹窗取消按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'取消'**
+  String get learnConfirmCancel;
+
+  /// 学习页确认弹窗确认按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'确认'**
+  String get learnConfirmConfirm;
+
   /// 设置页当前辞书设置项标题
   ///
   /// In zh, this message translates to:

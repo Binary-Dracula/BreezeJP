@@ -157,6 +157,77 @@ class SettingsPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => context.push('/book-selection/settings'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF5C8DFF),
+                                      Color(0xFF6DD5ED),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.menu_book_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.settingsCurrentBook,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      selectedBookAsync.when(
+                                        data: (book) =>
+                                            book?.title ??
+                                            l10n.settingsNoSelectedBook,
+                                        loading: () => l10n.loading,
+                                        error: (_, _) =>
+                                            l10n.settingsNoSelectedBook,
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Colors.grey.shade500,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
                     Row(
                       children: [
                         Container(
@@ -275,108 +346,78 @@ class SettingsPage extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final currentInterval = ref.watch(
-                              firstReviewIntervalProvider,
-                            );
-                            final intervals = [5, 10, 15, 20, 25, 30];
-
-                            return DropdownButtonHideUnderline(
-                              child: DropdownButton<int>(
-                                value: intervals.contains(currentInterval)
-                                    ? currentInterval
-                                    : 10,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: Colors.grey,
-                                ),
-                                elevation: 0,
-                                dropdownColor: Colors.white,
-                                alignment: Alignment.centerRight,
-                                items: intervals.map((int value) {
-                                  return DropdownMenuItem<int>(
-                                    value: value,
-                                    child: Text(
-                                      '$value 分钟',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (int? newValue) {
-                                  if (newValue != null) {
-                                    ref
-                                        .read(
-                                          firstReviewIntervalProvider.notifier,
-                                        )
-                                        .setInterval(newValue);
-                                  }
-                                },
-                              ),
-                            );
-                          },
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                    const SizedBox(height: 12),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final interval = ref.watch(firstReviewIntervalProvider);
+                        final sliderValue = interval.clamp(10, 50).toDouble();
+
+                        return Column(
+                          children: [
+                            SliderTheme(
+                              data: SliderThemeData(
+                                activeTrackColor: const Color(0xFF10B981),
+                                inactiveTrackColor: Colors.grey.shade200,
+                                thumbColor: const Color(0xFF10B981),
+                                overlayColor: const Color(
+                                  0xFF10B981,
+                                ).withValues(alpha: 0.12),
+                                valueIndicatorColor: const Color(0xFF10B981),
+                                showValueIndicator: ShowValueIndicator.onDrag,
+                              ),
+                              child: Slider(
+                                value: sliderValue,
+                                min: 10,
+                                max: 50,
+                                divisions: 8,
+                                label: '${sliderValue.round()} 分钟',
+                                onChanged: (value) {
+                                  ref
+                                      .read(
+                                        firstReviewIntervalProvider.notifier,
+                                      )
+                                      .setInterval(value.round());
+                                },
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.menu_book_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.settingsCurrentBook,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                selectedBookAsync.when(
-                                  data: (book) =>
-                                      book?.title ??
-                                      l10n.settingsNoSelectedBook,
-                                  loading: () => l10n.loading,
-                                  error: (_, _) => l10n.settingsNoSelectedBook,
-                                ),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade500,
-                                ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '10 分钟',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '当前: ${sliderValue.round()} 分钟',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF10B981),
+                                    ),
+                                  ),
+                                  Text(
+                                    '50 分钟',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => context.push('/book-selection'),
-                          icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                        ),
-                      ],
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 32),
                     // ── 每次学习单词数 ──
