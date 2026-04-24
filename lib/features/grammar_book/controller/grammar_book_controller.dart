@@ -10,6 +10,7 @@ import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/queries/grammar_book_query.dart';
 import '../../../data/queries/grammar_book_query_provider.dart';
+import '../../grammar/providers/grammar_status_refresh_provider.dart';
 import '../state/grammar_book_state.dart';
 
 /// 语法本页控制器 Provider
@@ -157,6 +158,7 @@ class GrammarBookController extends Notifier<GrammarBookState> {
       }
 
       await loadInitial();
+      ref.read(grammarStatusRefreshProvider.notifier).bump();
     } catch (e, stackTrace) {
       logger.error('切换语法状态失败', e, stackTrace);
     }

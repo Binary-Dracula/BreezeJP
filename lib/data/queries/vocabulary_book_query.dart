@@ -4,20 +4,14 @@ import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/read/vocabulary_book_item.dart';
 
-/// 单词本查询层（只读）
-/// 联表查询 study_words + words + word_meanings + word_audio
+/// 单词本查询层（只读，2.0 — 对齐新 words 表）
+/// 联表查询 study_words + words
 class VocabularyBookQuery {
   VocabularyBookQuery(this._db);
 
   final Database _db;
 
   /// 获取单词本列表项（分页 + 按状态筛选 + 可选搜索）
-  ///
-  /// [userId] 用户 ID
-  /// [status] 学习状态（learning / mastered）
-  /// [limit] 每页数量
-  /// [offset] 偏移量
-  /// [searchQuery] 可选搜索关键词（单词/假名/释义）
   Future<List<VocabularyBookItem>> getVocabularyBookItems({
     required int userId,
     required LearningStatus status,
@@ -32,7 +26,7 @@ class VocabularyBookQuery {
       if (searchQuery != null && searchQuery.trim().isNotEmpty) {
         final keyword = '%${searchQuery.trim()}%';
         searchClause = '''
-          AND (w.word LIKE ? OR w.furigana LIKE ? OR wm.meaning_cn LIKE ? OR w.romaji LIKE ?)
+          AND (w.word LIKE ? OR w.reading LIKE ? OR w.primary_meaning LIKE ? OR w.romaji LIKE ?)
         ''';
         whereArgs.addAll([keyword, keyword, keyword, keyword]);
       }
@@ -42,22 +36,19 @@ class VocabularyBookQuery {
         SELECT
           sw.id AS study_word_id,
           sw.word_id,
+          sw.book_id,
           w.word,
-          w.furigana,
+          w.reading,
           w.jlpt_level,
           w.part_of_speech,
-          wm.meaning_cn AS primary_meaning,
-          wa.audio_filename,
-          wa.audio_url,
+          w.primary_meaning,
+          w.has_audio,
           sw.user_state,
           sw.updated_at
         FROM study_words sw
         INNER JOIN words w ON sw.word_id = w.id
-        LEFT JOIN word_meanings wm ON w.id = wm.word_id AND wm.definition_order = 1
-        LEFT JOIN word_audio wa ON w.id = wa.word_id
         WHERE sw.user_id = ? AND sw.user_state = ?
         $searchClause
-        GROUP BY sw.id
         ORDER BY sw.updated_at DESC
         LIMIT $limit OFFSET $offset
       ''';
@@ -65,7 +56,7 @@ class VocabularyBookQuery {
       final results = await _db.rawQuery(sql, whereArgs);
 
       logger.dbQuery(
-        table: 'study_words + words + word_meanings + word_audio',
+        table: 'study_words + words',
         where:
             'user_id=$userId, user_state=${status.name}, search=$searchQuery',
         resultCount: results.length,
@@ -84,8 +75,6 @@ class VocabularyBookQuery {
   }
 
   /// 获取各状态的单词数量
-  ///
-  /// 返回 `{LearningStatus.learning: count, LearningStatus.mastered: count}`
   Future<Map<LearningStatus, int>> getStatusCounts({
     required int userId,
     String? searchQuery,
@@ -102,7 +91,7 @@ class VocabularyBookQuery {
       if (searchQuery != null && searchQuery.trim().isNotEmpty) {
         final keyword = '%${searchQuery.trim()}%';
         searchClause = '''
-          AND (w.word LIKE ? OR w.furigana LIKE ? OR wm.meaning_cn LIKE ? OR w.romaji LIKE ?)
+          AND (w.word LIKE ? OR w.reading LIKE ? OR w.primary_meaning LIKE ? OR w.romaji LIKE ?)
         ''';
         whereArgs.addAll([keyword, keyword, keyword, keyword]);
       }
@@ -112,7 +101,6 @@ class VocabularyBookQuery {
         SELECT sw.user_state, COUNT(*) AS count
         FROM study_words sw
         INNER JOIN words w ON sw.word_id = w.id
-        LEFT JOIN word_meanings wm ON w.id = wm.word_id AND wm.definition_order = 1
         WHERE sw.user_id = ?
           AND sw.user_state IN (?, ?, ?)
           $searchClause

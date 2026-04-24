@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 import 'package:breeze_jp/router/app_route_observer.dart';
 
+import '../../../core/providers/preferences_provider.dart';
 import '../controller/home_controller.dart';
 import '../state/home_state.dart';
 
@@ -80,7 +81,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
       );
     }
 
-    final isNewUser = state.masteredWordCount == 0 && state.streakDays == 0;
+    final isNewUser = state.masteredWordCount == 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
@@ -102,10 +103,6 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
                 _buildSectionTitle(l10n.homeSectionReview),
                 const SizedBox(height: 12),
                 _buildReviewSection(context, state, l10n),
-                const SizedBox(height: 24),
-                _buildSectionTitle(l10n.homeSectionStats),
-                const SizedBox(height: 12),
-                _buildStatsCard(context, state, l10n),
                 const SizedBox(height: 24),
                 _buildSectionTitle(l10n.homeSectionTools),
                 const SizedBox(height: 12),
@@ -184,45 +181,56 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     AppLocalizations l10n,
     bool isNewUser,
   ) {
-    return Column(
-      children: [
-        Row(
+    return Consumer(
+      builder: (context, ref, _) {
+        final selectedBookId = ref.watch(selectedBookIdProvider);
+        return Column(
           children: [
-            Expanded(
-              child: _PrimaryActionCard(
-                title: l10n.homeKanaTitle,
-                subtitle: l10n.homeKanaSubtitle,
-                colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
-                icon: Icons.grid_view_rounded,
-                onTap: () => context.push('/kana-chart'),
-                accentText: l10n.homeEnter,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: _PrimaryActionCard(
+                    title: l10n.homeKanaTitle,
+                    subtitle: l10n.homeKanaSubtitle,
+                    colors: const [Color(0xFF34D399), Color(0xFF0EA5E9)],
+                    icon: Icons.grid_view_rounded,
+                    onTap: () => context.push('/kana-chart'),
+                    accentText: l10n.homeEnter,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _PrimaryActionCard(
+                    title: l10n.homeNewWordTitle,
+                    subtitle: isNewUser
+                        ? l10n.homeNewWordSubtitleNewUser
+                        : l10n.homeNewWordSubtitle,
+                    colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
+                    icon: Icons.bolt_rounded,
+                    onTap: () {
+                      if (selectedBookId != null) {
+                        context.push('/learn/$selectedBookId');
+                      } else {
+                        context.push('/book-selection');
+                      }
+                    },
+                    accentText: l10n.startLearning,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _PrimaryActionCard(
-                title: l10n.homeNewWordTitle,
-                subtitle: isNewUser
-                    ? l10n.homeNewWordSubtitleNewUser
-                    : l10n.homeNewWordSubtitle,
-                colors: const [Color(0xFF5C8DFF), Color(0xFF6DD5ED)],
-                icon: Icons.bolt_rounded,
-                onTap: () => context.push('/initial-choice'),
-                accentText: l10n.startLearning,
-              ),
+            const SizedBox(height: 12),
+            _PrimaryActionCard(
+              title: l10n.homeGrammarTitle,
+              subtitle: l10n.homeGrammarSubtitle,
+              colors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+              icon: Icons.segment_rounded,
+              onTap: () => context.push('/grammar/list'),
+              accentText: l10n.homeGrammarAccent,
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        _PrimaryActionCard(
-          title: l10n.homeGrammarTitle,
-          subtitle: l10n.homeGrammarSubtitle,
-          colors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-          icon: Icons.segment_rounded,
-          onTap: () => context.push('/grammar/list'),
-          accentText: l10n.homeGrammarAccent,
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -273,113 +281,6 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     );
   }
 
-  Widget _buildStatsCard(
-    BuildContext context,
-    HomeState state,
-    AppLocalizations l10n,
-  ) {
-    final hasActivity =
-        state.newWordCount > 0 ||
-        state.todayReviewCount > 0 ||
-        state.todayStudyDurationMinutes > 0;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatColumn(
-                  icon: Icons.auto_awesome_rounded,
-                  color: const Color(0xFF6366F1),
-                  label: l10n.statsTodayLearning,
-                  value: '${state.newWordCount}',
-                ),
-              ),
-              Container(width: 1, height: 48, color: Colors.grey.shade200),
-              Expanded(
-                child: _buildStatColumn(
-                  icon: Icons.repeat_rounded,
-                  color: const Color(0xFF14B8A6),
-                  label: l10n.statsTodayReview,
-                  value: '${state.todayReviewCount}',
-                ),
-              ),
-              Container(width: 1, height: 48, color: Colors.grey.shade200),
-              Expanded(
-                child: _buildStatColumn(
-                  icon: Icons.timer_outlined,
-                  color: const Color(0xFF0EA5E9),
-                  label: l10n.todayDuration,
-                  value: l10n.statsDurationMinutes(
-                    state.todayStudyDurationMinutes,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (!hasActivity) ...[
-            const SizedBox(height: 12),
-            Text(
-              l10n.statsNoActivityMessage,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 单列统计项（居中排列：图标 + 标签 + 数值）
-  Widget _buildStatColumn({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color, size: 18),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildToolsGrid(BuildContext context, AppLocalizations l10n) {
     final tools = [
       _ToolItem(
@@ -402,13 +303,6 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         subtitle: l10n.homeReadingSubtitle,
         gradient: const [Color(0xFFEC4899), Color(0xFFDB2777)],
         onTap: () => context.push('/article-list'),
-      ),
-      _ToolItem(
-        icon: Icons.bar_chart_rounded,
-        title: l10n.detailedStats,
-        subtitle: l10n.detailedStatsSubtitle,
-        gradient: const [Color(0xFF14B8A6), Color(0xFF0D9488)],
-        onTap: () => context.push('/statistics'),
       ),
       _ToolItem(
         icon: Icons.library_books_rounded,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../data/models/study_log.dart';
+import '../../core/algorithm/srs_types.dart';
 
 /// 复习进度条
 class ReviewProgressBar extends StatelessWidget {

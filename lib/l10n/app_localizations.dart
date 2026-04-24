@@ -634,6 +634,84 @@ abstract class AppLocalizations {
   /// **'选择新路径'**
   String get chooseNewPath;
 
+  /// 通用重试按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get commonRetry;
+
+  /// 学习页无可学习单词提示
+  ///
+  /// In zh, this message translates to:
+  /// **'没有可学习的单词'**
+  String get learnNoWordsAvailable;
+
+  /// 学习页当前批次完成弹窗标题
+  ///
+  /// In zh, this message translates to:
+  /// **'当前批次已完成'**
+  String get learnBatchCompletedTitle;
+
+  /// 学习页当前批次完成弹窗内容
+  ///
+  /// In zh, this message translates to:
+  /// **'这一批单词都已经处理完了，继续拉取下一批进行学习吗？'**
+  String get learnBatchCompletedContent;
+
+  /// 学习页继续下一批按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'继续下一批'**
+  String get learnBatchCompletedContinue;
+
+  /// 学习页返回首页按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'返回首页'**
+  String get learnBatchCompletedExit;
+
+  /// 学习页无更多新词弹窗标题
+  ///
+  /// In zh, this message translates to:
+  /// **'没有更多新词了'**
+  String get learnNoMoreWordsTitle;
+
+  /// 学习页无更多新词弹窗内容
+  ///
+  /// In zh, this message translates to:
+  /// **'这本书当前没有更多新词可学，先回到首页吧。'**
+  String get learnNoMoreWordsContent;
+
+  /// 设置页当前辞书设置项标题
+  ///
+  /// In zh, this message translates to:
+  /// **'当前辞书'**
+  String get settingsCurrentBook;
+
+  /// 设置页未选择辞书状态
+  ///
+  /// In zh, this message translates to:
+  /// **'未选择辞书'**
+  String get settingsNoSelectedBook;
+
+  /// 学习页辞书不可用弹窗标题
+  ///
+  /// In zh, this message translates to:
+  /// **'辞书不可用'**
+  String get learnBookUnavailableTitle;
+
+  /// 学习页辞书不可用弹窗内容
+  ///
+  /// In zh, this message translates to:
+  /// **'这本辞书已经不可用于继续学习新单词，请选择其他辞书。'**
+  String get learnBookUnavailableContent;
+
+  /// 学习页辞书不可用弹窗主操作按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'选择辞书'**
+  String get learnBookUnavailableSelectBook;
+
   /// 笔顺练习页面标题
   ///
   /// In zh, this message translates to:
@@ -777,6 +855,114 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'活用'**
   String get conjugationTitle;
+
+  /// 活用-原形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'原形'**
+  String get conjugationDictionaryForm;
+
+  /// 活用-ます形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'ます形'**
+  String get conjugationMasuForm;
+
+  /// 活用-て形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'て形'**
+  String get conjugationTeForm;
+
+  /// 活用-た形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'た形'**
+  String get conjugationTaForm;
+
+  /// 活用-ない形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'ない形'**
+  String get conjugationNaiForm;
+
+  /// 活用-可能形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'可能形'**
+  String get conjugationPotentialForm;
+
+  /// 活用-被动形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'被动形'**
+  String get conjugationPassiveForm;
+
+  /// 活用-使役形标签
+  ///
+  /// In zh, this message translates to:
+  /// **'使役形'**
+  String get conjugationCausativeForm;
+
+  /// 单词扩展信息标题
+  ///
+  /// In zh, this message translates to:
+  /// **'扩展内容'**
+  String get wordAdditionalInfo;
+
+  /// 单词语法提示标题
+  ///
+  /// In zh, this message translates to:
+  /// **'语法提示'**
+  String get wordGrammarHints;
+
+  /// 单词常见搭配标题
+  ///
+  /// In zh, this message translates to:
+  /// **'常见搭配'**
+  String get wordCollocations;
+
+  /// 单词近义词标题
+  ///
+  /// In zh, this message translates to:
+  /// **'近义词'**
+  String get wordSimilarWords;
+
+  /// 单词反义词标题
+  ///
+  /// In zh, this message translates to:
+  /// **'反义词'**
+  String get wordOppositeWords;
+
+  /// 单词易错点标题
+  ///
+  /// In zh, this message translates to:
+  /// **'易错点'**
+  String get wordCommonMistakes;
+
+  /// 单词汉字拆解标题
+  ///
+  /// In zh, this message translates to:
+  /// **'汉字拆解'**
+  String get wordKanjiBreakdown;
+
+  /// 单词音调标签
+  ///
+  /// In zh, this message translates to:
+  /// **'音调 {value}'**
+  String wordPitchAccentLabel(String value);
+
+  /// 单词汉字拆解-音读标签
+  ///
+  /// In zh, this message translates to:
+  /// **'音读'**
+  String get wordOnyomiLabel;
+
+  /// 单词汉字拆解-训读标签
+  ///
+  /// In zh, this message translates to:
+  /// **'训读'**
+  String get wordKunyomiLabel;
 
   /// 活用类型未知时的占位
   ///
@@ -1029,6 +1215,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'数字、时间、日期等常识'**
   String get homeReferenceSubtitle;
+
+  /// 问题上报弹窗标题
+  ///
+  /// In zh, this message translates to:
+  /// **'报告问题'**
+  String get issueReportTitle;
+
+  /// 问题上报输入框提示
+  ///
+  /// In zh, this message translates to:
+  /// **'请描述你发现的问题（可选）'**
+  String get issueReportHint;
+
+  /// 问题上报提交按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'提交'**
+  String get issueReportSubmit;
+
+  /// 问题上报成功提示
+  ///
+  /// In zh, this message translates to:
+  /// **'已提交，感谢反馈！'**
+  String get issueReportSuccess;
+
+  /// 问题上报失败提示
+  ///
+  /// In zh, this message translates to:
+  /// **'提交失败，请稍后再试'**
+  String get issueReportFailed;
 }
 
 class _AppLocalizationsDelegate

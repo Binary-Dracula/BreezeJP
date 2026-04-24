@@ -8,6 +8,7 @@ import '../../core/utils/app_logger.dart';
 
 class AppDatabase {
   static const _dbName = "breeze_jp.sqlite";
+  static const _dbVersion = 2;
 
   static Database? _database;
 
@@ -45,9 +46,35 @@ class AppDatabase {
       logger.info('[DB] database_exists: path=$dbPath');
     }
 
-    final db = await openDatabase(dbPath);
+    final db = await openDatabase(
+      dbPath,
+      version: _dbVersion,
+      onOpen: (db) async {
+        await _ensureSchema(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        await _ensureSchema(db);
+      },
+    );
     logger.info('[DB] init_complete: database opened successfully');
     return db;
+  }
+
+  Future<void> _ensureSchema(Database db) async {
+    final bookColumns = await db.rawQuery("PRAGMA table_info(books)");
+    final hasIsAvailable = bookColumns.any(
+      (row) => row['name'] == 'is_available',
+    );
+
+    if (!hasIsAvailable) {
+      await db.execute(
+        'ALTER TABLE books ADD COLUMN is_available INTEGER NOT NULL DEFAULT 1',
+      );
+    }
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_books_available_sort ON books (is_available, sort_order)',
+    );
   }
 
   /// 将 assets/database/breeze_jp.sqlite 复制到应用目录

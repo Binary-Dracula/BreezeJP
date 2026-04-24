@@ -35,7 +35,6 @@ class FirstReviewIntervalNotifier extends Notifier<int> {
   }
 }
 
-
 class AlgorithmTypeNotifier extends Notifier<AlgorithmType> {
   static const _key = 'review_algorithm_type';
 
@@ -59,5 +58,57 @@ class AlgorithmTypeNotifier extends Notifier<AlgorithmType> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_key, type.index);
     state = type;
+  }
+}
+
+// ── 选书 ID ──
+
+final selectedBookIdProvider =
+    NotifierProvider<SelectedBookIdNotifier, String?>(() {
+      return SelectedBookIdNotifier();
+    });
+
+class SelectedBookIdNotifier extends Notifier<String?> {
+  static const _key = 'selected_book_id';
+
+  @override
+  String? build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getString(_key);
+  }
+
+  Future<void> setBookId(String? bookId) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (bookId == null) {
+      await prefs.remove(_key);
+    } else {
+      await prefs.setString(_key, bookId);
+    }
+    state = bookId;
+  }
+}
+
+// ── 每次学习批量大小 ──
+
+final learnBatchSizeProvider = NotifierProvider<LearnBatchSizeNotifier, int>(
+  () {
+    return LearnBatchSizeNotifier();
+  },
+);
+
+class LearnBatchSizeNotifier extends Notifier<int> {
+  static const _key = 'learn_batch_size';
+
+  @override
+  int build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getInt(_key) ?? 10; // 默认 10
+  }
+
+  Future<void> setSize(int size) async {
+    final clamped = size.clamp(10, 50);
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setInt(_key, clamped);
+    state = clamped;
   }
 }

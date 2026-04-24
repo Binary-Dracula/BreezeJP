@@ -1,6 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
 import '../models/user.dart';
 
 /// 用户数据仓库

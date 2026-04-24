@@ -1,30 +1,30 @@
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/constants/learning_status.dart';
 
-/// 单词本列表项（只读，用于列表展示）
-/// JOIN study_words + words + word_meanings + word_audios 的查询结果
+/// 单词本列表项（只读，2.0 — JOIN study_words + words）
 class VocabularyBookItem {
   final int studyWordId;
-  final int wordId;
+  final String wordId;
+  final String bookId;
   final String word;
-  final String? furigana;
+  final String reading;
   final String? jlptLevel;
   final String? partOfSpeech;
   final String? primaryMeaning;
-  final String? audioFilename;
-  final String? audioUrl;
+  final bool hasAudio;
   final LearningStatus userState;
   final DateTime updatedAt;
 
   const VocabularyBookItem({
     required this.studyWordId,
     required this.wordId,
+    required this.bookId,
     required this.word,
-    this.furigana,
+    required this.reading,
     this.jlptLevel,
     this.partOfSpeech,
     this.primaryMeaning,
-    this.audioFilename,
-    this.audioUrl,
+    this.hasAudio = false,
     required this.userState,
     required this.updatedAt,
   });
@@ -32,18 +32,23 @@ class VocabularyBookItem {
   factory VocabularyBookItem.fromMap(Map<String, dynamic> map) {
     return VocabularyBookItem(
       studyWordId: map['study_word_id'] as int,
-      wordId: map['word_id'] as int,
+      wordId: map['word_id'] as String,
+      bookId: map['book_id'] as String,
       word: map['word'] as String,
-      furigana: map['furigana'] as String?,
+      reading: (map['reading'] as String?) ?? '',
       jlptLevel: map['jlpt_level'] as String?,
       partOfSpeech: map['part_of_speech'] as String?,
       primaryMeaning: map['primary_meaning'] as String?,
-      audioFilename: map['audio_filename'] as String?,
-      audioUrl: map['audio_url'] as String?,
+      hasAudio: (map['has_audio'] as int?) == 1,
       userState: LearningStatus.fromValue(map['user_state'] as int),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(
         (map['updated_at'] as int) * 1000,
       ),
     );
+  }
+
+  String? get audioSource {
+    if (!hasAudio) return null;
+    return '${ApiEndpoints.baseUrl}${ApiEndpoints.replaceParams(ApiEndpoints.wordAudio, {'id': wordId})}';
   }
 }

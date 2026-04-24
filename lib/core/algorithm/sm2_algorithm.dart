@@ -1,4 +1,3 @@
-import '../../data/models/study_log.dart';
 import 'srs_types.dart';
 
 /// SM-2 算法实现
@@ -47,16 +46,13 @@ class SM2Algorithm implements SRSAlgorithm {
     } else {
       // 成功
       // SM-2 标准逻辑：
-      // - 首次复习后（reviews=0）：interval = 1 天
-      // - 第二次复习后（reviews=1）：interval = 6 天
+      // - 首次或当前 interval≤1（初次学习）：interval = 6 天
       // - 后续复习：interval = previous × EF
       // 修正：如果 previous interval 是 0 (来自 Again)，则强制设为 1，防止计算结果永远为 0
       final effectiveInterval = input.interval <= 0 ? 1.0 : input.interval;
 
       if (input.reviews == 0) {
-        newInterval = 1; // 首次复习后 1 天
-      } else if (input.reviews == 1) {
-        newInterval = 6; // 第二次复习后 6 天
+        newInterval = 6; // 首次复习（直接毕业）：6 天
       } else {
         newInterval = (effectiveInterval * input.easeFactor).roundToDouble();
       }

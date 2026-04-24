@@ -17,30 +17,30 @@ class StudyWordQuery {
 
   final Database _db;
 
-  /// 获取用户的所有学习记录
-  Future<List<StudyWord>> getUserStudyWords(
-    int userId, {
+  /// 获取用户在某本书中的所有学习记录
+  Future<List<StudyWord>> getBookStudyWords(
+    int userId,
+    String bookId, {
     LearningStatus? state,
-    int? limit,
-    int? offset,
   }) async {
     try {
-      final db = _db;
+      final whereArgs = state != null
+          ? [userId, bookId, state.value]
+          : [userId, bookId];
       final whereClause = state != null
-          ? 'user_id = $userId AND user_state = ${state.value}'
-          : 'user_id = $userId';
-      final results = await db.query(
+          ? 'user_id = ? AND book_id = ? AND user_state = ?'
+          : 'user_id = ? AND book_id = ?';
+
+      final results = await _db.query(
         'study_words',
-        where: state != null ? 'user_id = ? AND user_state = ?' : 'user_id = ?',
-        whereArgs: state != null ? [userId, state.value] : [userId],
+        where: whereClause,
+        whereArgs: whereArgs,
         orderBy: 'updated_at DESC',
-        limit: limit,
-        offset: offset,
       );
 
       logger.dbQuery(
         table: 'study_words',
-        where: whereClause,
+        where: 'user_id=$userId book_id=$bookId state=${state?.value}',
         resultCount: results.length,
       );
 
@@ -56,19 +56,23 @@ class StudyWordQuery {
     }
   }
 
-  /// 获取用户对某个单词的学习记录
-  Future<StudyWord?> getStudyWord(int userId, int wordId) async {
+  /// 获取用户对某本书中某个单词的学习记录
+  Future<StudyWord?> getStudyWord(
+    int userId,
+    String wordId,
+    String bookId,
+  ) async {
     try {
       final results = await _db.query(
         'study_words',
-        where: 'user_id = ? AND word_id = ?',
-        whereArgs: [userId, wordId],
+        where: 'user_id = ? AND word_id = ? AND book_id = ?',
+        whereArgs: [userId, wordId, bookId],
         limit: 1,
       );
 
       logger.dbQuery(
         table: 'study_words',
-        where: 'user_id = $userId AND word_id = $wordId',
+        where: 'user_id=$userId word_id=$wordId book_id=$bookId',
         resultCount: results.length,
       );
 
@@ -85,18 +89,17 @@ class StudyWordQuery {
     }
   }
 
-  /// 获取需要复习的单词
+  /// 获取需要复习的单词（跨书汇总，按到期时间排序）
   Future<List<StudyWord>> getDueReviews(int userId, {int? limit}) async {
     try {
-      final db = _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final learningValue = LearningStatus.learning.value;
-      final whereClause =
-          'user_id = $userId AND user_state = $learningValue AND next_review_at <= $now';
 
-      final results = await db.query(
+      final results = await _db.query(
         'study_words',
-        where: 'user_id = ? AND user_state = ? AND next_review_at <= ?',
+        where:
+            'user_id = ? AND user_state = ? AND '
+            '(next_review_at IS NULL OR next_review_at <= ?)',
         whereArgs: [userId, learningValue, now],
         orderBy: 'next_review_at ASC',
         limit: limit,
@@ -104,47 +107,7 @@ class StudyWordQuery {
 
       logger.dbQuery(
         table: 'study_words',
-        where: whereClause,
-        resultCount: results.length,
-      );
-      print(
-        'DEBUG: getDueReviews userId=$userId results=${results.length} now=$now',
-      );
-      for (var r in results) {
-        print(
-          'DEBUG: Review Item: ${r['word_id']} next=${r['next_review_at']}',
-        );
-      }
-
-      return results.map((map) => StudyWord.fromMap(map)).toList();
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'SELECT',
-        table: 'study_words',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  /// 获取新单词（已曝光但未进入 SRS）
-  Future<List<StudyWord>> getNewWords(int userId, {int? limit}) async {
-    try {
-      final db = _db;
-      final seenValue = LearningStatus.seen.value;
-      final whereClause = 'user_id = $userId AND user_state = $seenValue';
-      final results = await db.query(
-        'study_words',
-        where: 'user_id = ? AND user_state = ?',
-        whereArgs: [userId, seenValue],
-        orderBy: 'created_at ASC',
-        limit: limit,
-      );
-
-      logger.dbQuery(
-        table: 'study_words',
-        where: whereClause,
+        where: 'user_id=$userId state=learning due<=$now',
         resultCount: results.length,
       );
 
@@ -163,26 +126,53 @@ class StudyWordQuery {
   /// 获取待复习单词数量
   Future<int> getDueReviewCount(int userId) async {
     try {
-      final db = _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final learningValue = LearningStatus.learning.value;
 
-      final result = await db.rawQuery(
+      final result = await _db.rawQuery(
         '''
         SELECT COUNT(*) as count
         FROM study_words
-        WHERE user_id = ? AND user_state = ? AND next_review_at <= ?
-      ''',
+        WHERE user_id = ? AND user_state = ?
+          AND (next_review_at IS NULL OR next_review_at <= ?)
+        ''',
         [userId, learningValue, now],
       );
 
-      logger.dbQuery(
+      return result.first['count'] as int;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT',
         table: 'study_words',
-        where: 'user_id = $userId AND user_state = $learningValue (due count)',
-        resultCount: 1,
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 获取某本书的学习统计（各状态数量）
+  Future<Map<LearningStatus, int>> getBookStudyStats(
+    int userId,
+    String bookId,
+  ) async {
+    try {
+      final rows = await _db.rawQuery(
+        '''
+        SELECT user_state, COUNT(*) as count
+        FROM study_words
+        WHERE user_id = ? AND book_id = ?
+        GROUP BY user_state
+        ''',
+        [userId, bookId],
       );
 
-      return result.first['count'] as int;
+      final stats = <LearningStatus, int>{};
+      for (final row in rows) {
+        final status = LearningStatus.fromValue(row['user_state'] as int);
+        stats[status] = row['count'] as int;
+      }
+      return stats;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'SELECT',

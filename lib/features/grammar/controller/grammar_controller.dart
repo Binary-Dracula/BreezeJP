@@ -9,6 +9,7 @@ import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/models/user.dart';
 import '../../../data/models/grammar_detail.dart';
 import '../../../data/queries/grammar_read_queries.dart';
+import '../providers/grammar_status_refresh_provider.dart';
 import '../state/grammar_state.dart';
 
 final grammarControllerProvider =
@@ -127,6 +128,7 @@ class GrammarController extends Notifier<GrammarState> {
     final userId = await _ensureUserId();
     await _grammarCommand.startLearning(userId, currentStr.grammar.id);
     await _refreshCurrentState();
+    _notifyStatusChanged();
   }
 
   /// 标记已掌握 (-> Mastered)
@@ -137,6 +139,7 @@ class GrammarController extends Notifier<GrammarState> {
     final userId = await _ensureUserId();
     await _grammarCommand.markAsMastered(userId, currentStr.grammar.id);
     await _refreshCurrentState();
+    _notifyStatusChanged();
   }
 
   /// 恢复学习 (Mastered -> Learning)
@@ -147,6 +150,17 @@ class GrammarController extends Notifier<GrammarState> {
     final userId = await _ensureUserId();
     await _grammarCommand.restoreToLearning(userId, currentStr.grammar.id);
     await _refreshCurrentState();
+    _notifyStatusChanged();
+  }
+
+  Future<void> resetToUnlearned() async {
+    final currentStr = state.currentGrammarDetail;
+    if (currentStr == null) return;
+
+    final userId = await _ensureUserId();
+    await _grammarCommand.setUnlearned(userId, currentStr.grammar.id);
+    await _refreshCurrentState();
+    _notifyStatusChanged();
   }
 
   Future<void> _refreshCurrentState() async {
@@ -164,5 +178,9 @@ class GrammarController extends Notifier<GrammarState> {
     newQueue[currentIndex] = updated;
 
     state = state.copyWith(studyQueue: newQueue);
+  }
+
+  void _notifyStatusChanged() {
+    ref.read(grammarStatusRefreshProvider.notifier).bump();
   }
 }

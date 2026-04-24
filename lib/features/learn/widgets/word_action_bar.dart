@@ -33,7 +33,7 @@ class WordActionBar extends StatelessWidget {
     //   mastered -> [恢复学习]
     final buttons = <Widget>[];
 
-    if (userState == LearningStatus.seen) {
+    if (userState == LearningStatus.learning) {
       buttons.addAll([
         _expandedButton(
           FilledButton(

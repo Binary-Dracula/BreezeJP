@@ -4,7 +4,7 @@ import '../../../core/constants/learning_status.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
-import '../../../data/commands/word_command.dart';
+import '../../../data/commands/study_word_command.dart';
 import '../../../data/models/read/vocabulary_book_item.dart';
 import '../../../data/models/user.dart';
 import '../../../data/queries/active_user_query.dart';
@@ -34,7 +34,7 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
   VocabularyBookQuery get _query => ref.read(vocabularyBookQueryProvider);
-  WordCommand get _wordCommand => ref.read(wordCommandProvider);
+  StudyWordCommand get _studyWordCommand => ref.read(studyWordCommandProvider);
 
   Future<User> _getActiveUser() async {
     final ensured = await _activeUserCommand.ensureActiveUser();
@@ -166,18 +166,26 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
   }
 
   /// 切换单词状态（学习中 ↔ 已掌握）
-  Future<void> toggleStatus(int wordId) async {
+  Future<void> toggleStatus(VocabularyBookItem item) async {
     try {
       final userId = await _ensureUserId();
 
       if (state.currentTabIndex == 0) {
         // 学习中 → 已掌握
-        await _wordCommand.markWordAsMastered(userId, wordId);
-        logger.info('[VocabularyBook] 标记为已掌握: wordId=$wordId');
+        await _studyWordCommand.markAsMastered(
+          userId: userId,
+          wordId: item.wordId,
+          bookId: item.bookId,
+        );
+        logger.info('[VocabularyBook] 标记为已掌握: wordId=${item.wordId}');
       } else {
         // 已掌握 → 学习中
-        await _wordCommand.addWordToReview(userId, wordId);
-        logger.info('[VocabularyBook] 恢复学习: wordId=$wordId');
+        await _studyWordCommand.markAsLearned(
+          userId: userId,
+          wordId: item.wordId,
+          bookId: item.bookId,
+        );
+        logger.info('[VocabularyBook] 恢复学习: wordId=${item.wordId}');
       }
 
       // 重新加载数据以刷新两个 Tab 的列表和数量

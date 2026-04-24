@@ -423,6 +423,58 @@
   "@chooseNewPath": {
     "description": "选择新路径按钮"
   },
+  "commonRetry": "重试",
+  "@commonRetry": {
+    "description": "通用重试按钮"
+  },
+  "learnNoWordsAvailable": "没有可学习的单词",
+  "@learnNoWordsAvailable": {
+    "description": "学习页无可学习单词提示"
+  },
+  "learnBatchCompletedTitle": "当前批次已完成",
+  "@learnBatchCompletedTitle": {
+    "description": "学习页当前批次完成弹窗标题"
+  },
+  "learnBatchCompletedContent": "这一批单词都已经处理完了，继续拉取下一批进行学习吗？",
+  "@learnBatchCompletedContent": {
+    "description": "学习页当前批次完成弹窗内容"
+  },
+  "learnBatchCompletedContinue": "继续下一批",
+  "@learnBatchCompletedContinue": {
+    "description": "学习页继续下一批按钮"
+  },
+  "learnBatchCompletedExit": "返回首页",
+  "@learnBatchCompletedExit": {
+    "description": "学习页返回首页按钮"
+  },
+  "learnNoMoreWordsTitle": "没有更多新词了",
+  "@learnNoMoreWordsTitle": {
+    "description": "学习页无更多新词弹窗标题"
+  },
+  "learnNoMoreWordsContent": "这本书当前没有更多新词可学，先回到首页吧。",
+  "@learnNoMoreWordsContent": {
+    "description": "学习页无更多新词弹窗内容"
+  },
+  "settingsCurrentBook": "当前辞书",
+  "@settingsCurrentBook": {
+    "description": "设置页当前辞书设置项标题"
+  },
+  "settingsNoSelectedBook": "未选择辞书",
+  "@settingsNoSelectedBook": {
+    "description": "设置页未选择辞书状态"
+  },
+  "learnBookUnavailableTitle": "辞书不可用",
+  "@learnBookUnavailableTitle": {
+    "description": "学习页辞书不可用弹窗标题"
+  },
+  "learnBookUnavailableContent": "这本辞书已经不可用于继续学习新单词，请选择其他辞书。",
+  "@learnBookUnavailableContent": {
+    "description": "学习页辞书不可用弹窗内容"
+  },
+  "learnBookUnavailableSelectBook": "选择辞书",
+  "@learnBookUnavailableSelectBook": {
+    "description": "学习页辞书不可用弹窗主操作按钮"
+  },
   "kanaStrokePracticeTitle": "{kana} 笔顺练习",
   "@kanaStrokePracticeTitle": {
     "description": "笔顺练习页面标题",
@@ -534,6 +586,83 @@
   "conjugationTitle": "活用",
   "@conjugationTitle": {
     "description": "活用变形区标题"
+  },
+  "conjugationDictionaryForm": "原形",
+  "@conjugationDictionaryForm": {
+    "description": "活用-原形标签"
+  },
+  "conjugationMasuForm": "ます形",
+  "@conjugationMasuForm": {
+    "description": "活用-ます形标签"
+  },
+  "conjugationTeForm": "て形",
+  "@conjugationTeForm": {
+    "description": "活用-て形标签"
+  },
+  "conjugationTaForm": "た形",
+  "@conjugationTaForm": {
+    "description": "活用-た形标签"
+  },
+  "conjugationNaiForm": "ない形",
+  "@conjugationNaiForm": {
+    "description": "活用-ない形标签"
+  },
+  "conjugationPotentialForm": "可能形",
+  "@conjugationPotentialForm": {
+    "description": "活用-可能形标签"
+  },
+  "conjugationPassiveForm": "被动形",
+  "@conjugationPassiveForm": {
+    "description": "活用-被动形标签"
+  },
+  "conjugationCausativeForm": "使役形",
+  "@conjugationCausativeForm": {
+    "description": "活用-使役形标签"
+  },
+  "wordAdditionalInfo": "扩展内容",
+  "@wordAdditionalInfo": {
+    "description": "单词扩展信息标题"
+  },
+  "wordGrammarHints": "语法提示",
+  "@wordGrammarHints": {
+    "description": "单词语法提示标题"
+  },
+  "wordCollocations": "常见搭配",
+  "@wordCollocations": {
+    "description": "单词常见搭配标题"
+  },
+  "wordSimilarWords": "近义词",
+  "@wordSimilarWords": {
+    "description": "单词近义词标题"
+  },
+  "wordOppositeWords": "反义词",
+  "@wordOppositeWords": {
+    "description": "单词反义词标题"
+  },
+  "wordCommonMistakes": "易错点",
+  "@wordCommonMistakes": {
+    "description": "单词易错点标题"
+  },
+  "wordKanjiBreakdown": "汉字拆解",
+  "@wordKanjiBreakdown": {
+    "description": "单词汉字拆解标题"
+  },
+  "wordPitchAccentLabel": "音调 {value}",
+  "@wordPitchAccentLabel": {
+    "description": "单词音调标签",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "wordOnyomiLabel": "音读",
+  "@wordOnyomiLabel": {
+    "description": "单词汉字拆解-音读标签"
+  },
+  "wordKunyomiLabel": "训读",
+  "@wordKunyomiLabel": {
+    "description": "单词汉字拆解-训读标签"
   },
   "conjugationUnknown": "未知",
   "@conjugationUnknown": {
@@ -732,5 +861,25 @@
   "homeReferenceSubtitle": "数字、时间、日期等常识",
   "@homeReferenceSubtitle": {
     "description": "首页工具区-速查副标题"
+  },
+  "issueReportTitle": "报告问题",
+  "@issueReportTitle": {
+    "description": "问题上报弹窗标题"
+  },
+  "issueReportHint": "请描述你发现的问题（可选）",
+  "@issueReportHint": {
+    "description": "问题上报输入框提示"
+  },
+  "issueReportSubmit": "提交",
+  "@issueReportSubmit": {
+    "description": "问题上报提交按钮"
+  },
+  "issueReportSuccess": "已提交，感谢反馈！",
+  "@issueReportSuccess": {
+    "description": "问题上报成功提示"
+  },
+  "issueReportFailed": "提交失败，请稍后再试",
+  "@issueReportFailed": {
+    "description": "问题上报失败提示"
   }
 }

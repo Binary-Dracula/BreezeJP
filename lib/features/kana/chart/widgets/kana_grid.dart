@@ -431,7 +431,7 @@ class KanaGrid extends ConsumerWidget {
         children: [
           // 假名
           Text(
-            displayText ?? '',
+            displayText,
             style: TextStyle(
               fontSize: size != null ? 28 : 24,
               fontWeight: FontWeight.w500,

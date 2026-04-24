@@ -1,14 +1,15 @@
 import '../../core/constants/learning_status.dart';
 
-/// 用户学习进度模型
-/// 记录用户对每个单词的学习状态和 SRS 数据
+/// 用户学习进度模型（2.0 — per-book，word_id + book_id 唯一）
 class StudyWord {
   final int id;
   final int userId;
-  final int wordId;
+  final String wordId;
+  final String bookId;
   final LearningStatus userState;
   final DateTime? nextReviewAt;
   final DateTime? lastReviewedAt;
+  final DateTime? firstLearnedAt;
   final int? interval;
   final double? easeFactor;
   final double? stability;
@@ -23,9 +24,11 @@ class StudyWord {
     required this.id,
     required this.userId,
     required this.wordId,
+    required this.bookId,
     required this.userState,
     this.nextReviewAt,
     this.lastReviewedAt,
+    this.firstLearnedAt,
     this.interval,
     this.easeFactor,
     this.stability,
@@ -42,7 +45,8 @@ class StudyWord {
     return StudyWord(
       id: map['id'] as int,
       userId: map['user_id'] as int,
-      wordId: map['word_id'] as int,
+      wordId: map['word_id'] as String,
+      bookId: map['book_id'] as String,
       userState: LearningStatus.fromValue(map['user_state'] as int),
       nextReviewAt: map['next_review_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
@@ -52,6 +56,11 @@ class StudyWord {
       lastReviewedAt: map['last_reviewed_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
               (map['last_reviewed_at'] as int) * 1000,
+            )
+          : null,
+      firstLearnedAt: map['first_learned_at'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (map['first_learned_at'] as int) * 1000,
             )
           : null,
       interval: map['interval'] as int?,
@@ -75,12 +84,16 @@ class StudyWord {
     return {
       'user_id': userId,
       'word_id': wordId,
+      'book_id': bookId,
       'user_state': userState.value,
       'next_review_at': nextReviewAt != null
           ? nextReviewAt!.millisecondsSinceEpoch ~/ 1000
           : null,
       'last_reviewed_at': lastReviewedAt != null
           ? lastReviewedAt!.millisecondsSinceEpoch ~/ 1000
+          : null,
+      'first_learned_at': firstLearnedAt != null
+          ? firstLearnedAt!.millisecondsSinceEpoch ~/ 1000
           : null,
       'interval': interval,
       'ease_factor': easeFactor,
@@ -105,10 +118,12 @@ class StudyWord {
   StudyWord copyWith({
     int? id,
     int? userId,
-    int? wordId,
+    String? wordId,
+    String? bookId,
     LearningStatus? userState,
     Object? nextReviewAt = _sentinel,
     Object? lastReviewedAt = _sentinel,
+    Object? firstLearnedAt = _sentinel,
     int? interval,
     double? easeFactor,
     double? stability,
@@ -123,6 +138,7 @@ class StudyWord {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       wordId: wordId ?? this.wordId,
+      bookId: bookId ?? this.bookId,
       userState: userState ?? this.userState,
       nextReviewAt: nextReviewAt == _sentinel
           ? this.nextReviewAt
@@ -130,6 +146,9 @@ class StudyWord {
       lastReviewedAt: lastReviewedAt == _sentinel
           ? this.lastReviewedAt
           : lastReviewedAt as DateTime?,
+      firstLearnedAt: firstLearnedAt == _sentinel
+          ? this.firstLearnedAt
+          : firstLearnedAt as DateTime?,
       interval: interval ?? this.interval,
       easeFactor: easeFactor ?? this.easeFactor,
       stability: stability ?? this.stability,
@@ -151,12 +170,8 @@ class StudyWord {
     return DateTime.now().isAfter(nextReviewAt!);
   }
 
-  /// 是否为新单词
-  bool get isNew => userState == LearningStatus.seen && totalReviews == 0;
-
   /// 学习进度百分比（基于连续答对次数）
   double get progressPercentage {
-    // 假设连续答对 5 次即为掌握
     const masteryStreak = 5;
     return (streak / masteryStreak).clamp(0.0, 1.0);
   }

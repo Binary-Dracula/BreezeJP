@@ -1,6 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import '../../core/utils/app_logger.dart';
-import '../db/app_database.dart';
 import '../models/word.dart';
 
 /// 单词数据仓库

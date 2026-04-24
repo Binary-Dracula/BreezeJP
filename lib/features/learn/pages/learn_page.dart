@@ -1,48 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/tracking/page_duration_tracking_mixin.dart';
+import '../../../core/constants/learning_status.dart';
 import '../../../l10n/app_localizations.dart';
 import '../controller/learn_controller.dart';
 import '../state/learn_state.dart';
-import '../widgets/word_action_bar.dart';
-import '../widgets/word_examples_section.dart';
-import '../widgets/word_header.dart';
-import '../widgets/word_meanings_section.dart';
-import '../widgets/conjugation_list.dart';
+import '../../common/widgets/issue_report_sheet.dart';
+import '../../word_detail/widgets/word_detail_content.dart';
 
-/// 学习页面
-/// 全屏展示单词详情，支持左右滑动切换单词
+/// 学习页面（2.0 — 批次式学习，AnimatedSwitcher 无滑动翻页）
 class LearnPage extends ConsumerStatefulWidget {
-  final int initialWordId;
+  final String bookId;
 
-  const LearnPage({super.key, required this.initialWordId});
+  const LearnPage({super.key, required this.bookId});
 
   @override
   ConsumerState<LearnPage> createState() => _LearnPageState();
 }
 
-class _LearnPageState extends ConsumerState<LearnPage>
-    with PageDurationTrackingMixin<LearnPage> {
-  late PageController _pageController;
-
+class _LearnPageState extends ConsumerState<LearnPage> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
-
-    // 页面加载时初始化学习
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(learnControllerProvider.notifier)
-          .initWithWord(widget.initialWordId);
+      ref.read(learnControllerProvider.notifier).startLearning(widget.bookId);
     });
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   @override
@@ -50,63 +32,75 @@ class _LearnPageState extends ConsumerState<LearnPage>
     final state = ref.watch(learnControllerProvider);
     final l10n = AppLocalizations.of(context)!;
 
-    // 监听路径结束状态
     ref.listen(learnControllerProvider, (previous, next) {
-      if (next.pathEnded && !(previous?.pathEnded ?? false)) {
-        _showPathEndedDialog(context, l10n);
+      if (next.isBatchComplete && !(previous?.isBatchComplete ?? false)) {
+        _showBatchCompletedDialog(context, l10n);
+      }
+      if (next.isBookComplete && !(previous?.isBookComplete ?? false)) {
+        _showNoMoreWordsDialog(context, l10n);
+      }
+      if (next.isResumed && !(previous?.isResumed ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('已恢复上次学习进度'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      if (next.isBookUnavailableForNextBatch &&
+          !(previous?.isBookUnavailableForNextBatch ?? false)) {
+        _showBookUnavailableDialog(context, l10n);
       }
     });
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        final shouldPop = await _handlePop();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop();
-        }
+        _exitLearnPage(context);
       },
       child: Scaffold(
+        backgroundColor: const Color(0xFFF6F7FB),
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              // 顶部操作栏
-              _buildTopBar(context, state, l10n),
-              // 内容区域
-              Expanded(child: _buildContent(context, state)),
+              Column(
+                children: [
+                  _buildTopBar(context, state, l10n),
+                  Expanded(child: _buildContent(context, state, l10n)),
+                ],
+              ),
+              if (!state.isLoading && !state.isEmpty)
+                Positioned(
+                  right: 10,
+                  bottom: 104,
+                  child: _buildActionRail(context, state, l10n),
+                ),
             ],
           ),
         ),
-        bottomNavigationBar: _buildWordActionBar(state),
       ),
     );
   }
 
-  /// 顶部操作栏
   Widget _buildTopBar(
     BuildContext context,
     LearnState state,
     AppLocalizations l10n,
   ) {
     final theme = Theme.of(context);
+    final hasWords = state.words.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 关闭按钮
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () async {
-              await ref.read(learnControllerProvider.notifier).endSession();
-              if (context.mounted) {
-                context.pop();
-              }
-            },
+            onPressed: () => _exitLearnPage(context),
           ),
-          // 已学计数
-          if (state.learnedCount > 0)
+          const Spacer(),
+          if (hasWords)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -114,20 +108,43 @@ class _LearnPageState extends ConsumerState<LearnPage>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                l10n.learnedCount(state.learnedCount),
+                '${state.currentIndex + 1} / ${state.words.length}',
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
+          const Spacer(),
+          if (hasWords)
+            IconButton(
+              icon: const Icon(Icons.flag_outlined, size: 20),
+              onPressed: () {
+                final wordDetail = state.currentWordDetail;
+                if (wordDetail == null) return;
+                IssueReportSheet.show(
+                  context: context,
+                  ref: ref,
+                  contentType: 'word',
+                  contentId: wordDetail.word.id,
+                  contentSnapshot: {
+                    'word': wordDetail.word.toMap(),
+                    'rich_content': wordDetail.richContent.toJsonString(),
+                  },
+                  displayTitle: wordDetail.word.word,
+                );
+              },
+            ),
         ],
       ),
     );
   }
 
-  /// 构建内容区域
-  Widget _buildContent(BuildContext context, LearnState state) {
+  Widget _buildContent(
+    BuildContext context,
+    LearnState state,
+    AppLocalizations l10n,
+  ) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -145,9 +162,9 @@ class _LearnPageState extends ConsumerState<LearnPage>
               onPressed: () {
                 ref
                     .read(learnControllerProvider.notifier)
-                    .initWithWord(widget.initialWordId);
+                    .startLearning(widget.bookId);
               },
-              child: const Text('重试'),
+              child: Text(l10n.commonRetry),
             ),
           ],
         ),
@@ -155,93 +172,237 @@ class _LearnPageState extends ConsumerState<LearnPage>
     }
 
     if (state.isEmpty) {
-      return const Center(child: Text('没有可学习的单词'));
+      return Center(child: Text(l10n.learnNoWordsAvailable));
     }
 
-    return PageView.builder(
-      controller: _pageController,
-      onPageChanged: (index) {
-        ref.read(learnControllerProvider.notifier).onPageChanged(index);
-      },
-      itemCount: state.studyQueue.length,
-      itemBuilder: (context, index) {
-        final wordDetail = state.studyQueue[index];
-        return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              WordHeader(wordDetail: wordDetail),
-              WordMeaningsSection(meanings: wordDetail.meanings),
-              WordExamplesSection(examples: wordDetail.examples),
-              ConjugationList(conjugations: wordDetail.conjugations),
-              if (state.isLoadingMore && index == state.studyQueue.length - 1)
-                const Padding(
-                  padding: EdgeInsets.only(top: 8, bottom: 16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-            ],
-          ),
-        );
-      },
+    final wordDetail = state.currentWordDetail;
+    if (wordDetail == null) return const SizedBox.shrink();
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
+      child: WordDetailContent(
+        key: ValueKey(state.currentIndex),
+        wordDetail: wordDetail,
+      ),
     );
   }
 
-  Widget? _buildWordActionBar(LearnState state) {
-    if (state.isLoading || state.isEmpty) return null;
-
-    final currentWord = state.currentWordDetail;
-    if (currentWord == null) return null;
-
+  Widget _buildActionRail(
+    BuildContext context,
+    LearnState state,
+    AppLocalizations l10n,
+  ) {
     final controller = ref.read(learnControllerProvider.notifier);
+    final currentStatus = state.currentWordState();
+    final isIgnored = currentStatus == LearningStatus.ignored;
+    final isMastered = currentStatus == LearningStatus.mastered;
 
-    return WordActionBar(
-      userState: currentWord.userState,
-      onAddToReview: () {
-        controller.addCurrentWordToReview();
-      },
-      onQuickMaster: () {
-        controller.quickMasterCurrentWord();
-      },
-      onMarkMastered: () {
-        controller.markCurrentWordAsMastered();
-      },
-      onToggleIgnored: () {
-        controller.toggleCurrentWordIgnored();
-      },
-      onRestoreLearning: () {
-        controller.onRestoreLearningTapped(currentWord.word.id);
-      },
-    );
-  }
-
-  /// 显示路径结束对话框
-  void _showPathEndedDialog(BuildContext context, AppLocalizations l10n) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.pathEndedTitle),
-        content: Text(l10n.pathEndedContent),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ref.read(learnControllerProvider.notifier).endSession().then((_) {
-                if (context.mounted) {
-                  context.go('/initial-choice');
-                }
-              });
-            },
-            child: Text(l10n.chooseNewPath),
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.42),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _RailActionButton(
+                    icon: Icons.visibility_off_outlined,
+                    label: l10n.wordActionIgnore,
+                    color: const Color(0xFFF59E0B),
+                    enabled: !isIgnored,
+                    onPressed: () => controller.markCurrentIgnored(),
+                  ),
+                  const SizedBox(height: 12),
+                  _RailActionButton(
+                    icon: Icons.check_circle_outline,
+                    label: l10n.wordActionMastered,
+                    color: const Color(0xFF34D399),
+                    enabled: !isMastered,
+                    emphasized: true,
+                    onPressed: () => controller.markCurrentMastered(),
+                  ),
+                  const SizedBox(height: 12),
+                  _RailActionButton(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    label: l10n.previous,
+                    color: const Color(0xFF64748B),
+                    enabled: state.currentIndex > 0,
+                    onPressed: () => controller.goToPrev(),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<bool> _handlePop() async {
-    await ref.read(learnControllerProvider.notifier).endSession();
-    return true;
+  void _showBatchCompletedDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.learnBatchCompletedTitle),
+        content: Text(l10n.learnBatchCompletedContent),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _exitLearnPage(context);
+            },
+            child: Text(l10n.learnBatchCompletedExit),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              ref.read(learnControllerProvider.notifier).continueNextBatch();
+            },
+            child: Text(l10n.learnBatchCompletedContinue),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNoMoreWordsDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.learnNoMoreWordsTitle),
+        content: Text(l10n.learnNoMoreWordsContent),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _exitLearnPage(context);
+            },
+            child: Text(l10n.learnBatchCompletedExit),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBookUnavailableDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.learnBookUnavailableTitle),
+        content: Text(l10n.learnBookUnavailableContent),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ref
+                  .read(learnControllerProvider.notifier)
+                  .acknowledgeBookUnavailableForNextBatch();
+              Navigator.of(dialogContext).pop();
+              _exitLearnPage(context);
+            },
+            child: Text(l10n.learnBatchCompletedExit),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref
+                  .read(learnControllerProvider.notifier)
+                  .acknowledgeBookUnavailableForNextBatch();
+              Navigator.of(dialogContext).pop();
+              context.go('/book-selection');
+            },
+            child: Text(l10n.learnBookUnavailableSelectBook),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exitLearnPage(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/home');
+  }
+}
+
+class _RailActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool enabled;
+  final bool emphasized;
+  final VoidCallback onPressed;
+
+  const _RailActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.enabled,
+    required this.onPressed,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = enabled ? color : Colors.grey.shade400;
+    final foregroundColor = emphasized ? Colors.white : effectiveColor;
+    final backgroundColor = emphasized
+        ? effectiveColor
+        : Colors.white.withValues(alpha: enabled ? 0.72 : 0.5);
+
+    return SizedBox(
+      width: 72,
+      child: Column(
+        children: [
+          Material(
+            color: backgroundColor,
+            elevation: emphasized ? 5 : 2,
+            shadowColor: Colors.black.withValues(alpha: 0.08),
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: enabled ? onPressed : null,
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: Icon(icon, color: foregroundColor, size: 24),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: enabled ? const Color(0xFF475569) : Colors.grey.shade400,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -303,6 +303,45 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chooseNewPath => '选择新路径';
 
   @override
+  String get commonRetry => '重试';
+
+  @override
+  String get learnNoWordsAvailable => '没有可学习的单词';
+
+  @override
+  String get learnBatchCompletedTitle => '当前批次已完成';
+
+  @override
+  String get learnBatchCompletedContent => '这一批单词都已经处理完了，继续拉取下一批进行学习吗？';
+
+  @override
+  String get learnBatchCompletedContinue => '继续下一批';
+
+  @override
+  String get learnBatchCompletedExit => '返回首页';
+
+  @override
+  String get learnNoMoreWordsTitle => '没有更多新词了';
+
+  @override
+  String get learnNoMoreWordsContent => '这本书当前没有更多新词可学，先回到首页吧。';
+
+  @override
+  String get settingsCurrentBook => '当前辞书';
+
+  @override
+  String get settingsNoSelectedBook => '未选择辞书';
+
+  @override
+  String get learnBookUnavailableTitle => '辞书不可用';
+
+  @override
+  String get learnBookUnavailableContent => '这本辞书已经不可用于继续学习新单词，请选择其他辞书。';
+
+  @override
+  String get learnBookUnavailableSelectBook => '选择辞书';
+
+  @override
   String kanaStrokePracticeTitle(String kana) {
     return '$kana 笔顺练习';
   }
@@ -377,6 +416,62 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get conjugationTitle => '活用';
+
+  @override
+  String get conjugationDictionaryForm => '原形';
+
+  @override
+  String get conjugationMasuForm => 'ます形';
+
+  @override
+  String get conjugationTeForm => 'て形';
+
+  @override
+  String get conjugationTaForm => 'た形';
+
+  @override
+  String get conjugationNaiForm => 'ない形';
+
+  @override
+  String get conjugationPotentialForm => '可能形';
+
+  @override
+  String get conjugationPassiveForm => '被动形';
+
+  @override
+  String get conjugationCausativeForm => '使役形';
+
+  @override
+  String get wordAdditionalInfo => '扩展内容';
+
+  @override
+  String get wordGrammarHints => '语法提示';
+
+  @override
+  String get wordCollocations => '常见搭配';
+
+  @override
+  String get wordSimilarWords => '近义词';
+
+  @override
+  String get wordOppositeWords => '反义词';
+
+  @override
+  String get wordCommonMistakes => '易错点';
+
+  @override
+  String get wordKanjiBreakdown => '汉字拆解';
+
+  @override
+  String wordPitchAccentLabel(String value) {
+    return '音调 $value';
+  }
+
+  @override
+  String get wordOnyomiLabel => '音读';
+
+  @override
+  String get wordKunyomiLabel => '训读';
 
   @override
   String get conjugationUnknown => '未知';
@@ -515,4 +610,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeReferenceSubtitle => '数字、时间、日期等常识';
+
+  @override
+  String get issueReportTitle => '报告问题';
+
+  @override
+  String get issueReportHint => '请描述你发现的问题（可选）';
+
+  @override
+  String get issueReportSubmit => '提交';
+
+  @override
+  String get issueReportSuccess => '已提交，感谢反馈！';
+
+  @override
+  String get issueReportFailed => '提交失败，请稍后再试';
 }
