@@ -1,12 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_logger.dart';
-import '../../../../data/commands/active_user_command.dart';
-import '../../../../data/commands/active_user_command_provider.dart';
 import '../../../../data/queries/active_user_query.dart';
 import '../../../../data/queries/active_user_query_provider.dart';
-import '../../../../data/models/user.dart';
 import '../../../../data/queries/kana_query.dart';
 import '../../../../data/queries/kana_query_provider.dart';
 import '../state/kana_chart_state.dart';
@@ -19,68 +14,52 @@ final kanaChartControllerProvider =
 
 /// 五十音表控制器
 class KanaChartController extends Notifier<KanaChartState> {
-  /// 当前用户 ID（从 app_state 表获取）
-  int? _userId;
   Object? _activeLoadToken;
 
   @override
   KanaChartState build() {
-    unawaited(loadKanaChart());
+    Future<void>.microtask(loadKanaChart);
     return const KanaChartState();
   }
 
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
-  ActiveUserCommand get _activeUserCommand =>
-      ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
-
-  Future<User> _getActiveUser() async {
-    final ensured = await _activeUserCommand.ensureActiveUser();
-    final user = await _activeUserQuery.getActiveUser();
-    return user ?? ensured;
-  }
-
-  Future<int> _ensureUserId() async {
-    _userId ??= (await _getActiveUser()).id;
-    return _userId!;
-  }
 
   /// 加载五十音表数据
   Future<void> loadKanaChart() async {
     final token = Object();
     _activeLoadToken = token;
     try {
-      final userId = await _ensureUserId();
-      if (_activeLoadToken != token) return;
       logger.debug('开始加载五十音表数据');
       state = state.copyWith(isLoading: true, error: null);
 
-      // 1. 获取所有假名类型
-      final kanaTypes = await _kanaQuery.getAllKanaTypes();
+      final userId = await _activeUserQuery.getActiveUserId() ?? 0;
+      final results = await Future.wait<dynamic>([
+        _kanaQuery.getAllKanaTypes(),
+        _kanaQuery.getAllKanaLettersWithState(userId),
+        _kanaQuery.countTotalKana(),
+        userId > 0
+            ? _kanaQuery.countMasteredKana(userId: userId)
+            : Future.value(0),
+      ]);
       if (_activeLoadToken != token) return;
 
-      // 2. 获取所有假名及学习状态
-      final kanaLetters = await _kanaQuery.getAllKanaLettersWithState(
-        userId,
-      );
-      if (_activeLoadToken != token) return;
-
-      // 3. 获取统计数量
-      final totalCount = await _kanaQuery.countTotalKana();
-      if (_activeLoadToken != token) return;
-      final masteredCount =
-          await _kanaQuery.countMasteredKana(userId: userId);
-      if (_activeLoadToken != token) return;
+      final kanaTypes = results[0] as List<dynamic>;
+      final kanaLetters = results[1] as List<dynamic>;
+      final totalCount = results[2] as int;
+      final masteredCount = results[3] as int;
 
       state = state.copyWith(
         isLoading: false,
-        kanaTypes: kanaTypes.map((item) => item.type).toList(),
-        kanaLetters: kanaLetters,
+        kanaTypes: [for (final item in kanaTypes) item.type as String],
+        kanaLetters: [for (final item in kanaLetters) item],
         totalCount: totalCount,
         masteredCount: masteredCount,
       );
 
-      logger.debug('五十音表加载成功: ${kanaLetters.length}个假名, ${kanaTypes.length}个类型');
+      logger.debug(
+        '五十音表加载成功: ${state.kanaLetters.length}个假名, ${state.kanaTypes.length}个类型',
+      );
     } catch (e, stackTrace) {
       if (_activeLoadToken != token) return;
       logger.error('加载五十音表失败', e, stackTrace);
@@ -94,7 +73,6 @@ class KanaChartController extends Notifier<KanaChartState> {
         ? KanaDisplayMode.katakana
         : KanaDisplayMode.hiragana;
     state = state.copyWith(displayMode: newMode);
-    unawaited(loadKanaChart());
     logger.debug('切换显示模式: $newMode');
   }
 
@@ -102,7 +80,6 @@ class KanaChartController extends Notifier<KanaChartState> {
   void setDisplayMode(KanaDisplayMode mode) {
     if (state.displayMode == mode) return;
     state = state.copyWith(displayMode: mode);
-    unawaited(loadKanaChart());
   }
 
   /// 设置类型筛选

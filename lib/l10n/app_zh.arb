@@ -720,6 +720,30 @@
   "@vocabularyBookNoIgnoredWords": {
     "description": "单词本-无忽略单词空状态"
   },
+  "vocabularyBookNoFavoriteWords": "还没有收藏的单词\n去详情页把重要单词收进单词本吧！",
+  "@vocabularyBookNoFavoriteWords": {
+    "description": "单词本-无收藏单词空状态"
+  },
+  "vocabularyBookSearchHint": "搜索单词、假名或释义...",
+  "@vocabularyBookSearchHint": {
+    "description": "单词本-搜索框占位"
+  },
+  "vocabularyBookTabLearningLabel": "学习中",
+  "@vocabularyBookTabLearningLabel": {
+    "description": "单词本-学习中 Tab 纯文本标题"
+  },
+  "vocabularyBookTabMasteredLabel": "已掌握",
+  "@vocabularyBookTabMasteredLabel": {
+    "description": "单词本-已掌握 Tab 纯文本标题"
+  },
+  "vocabularyBookTabIgnoredLabel": "已忽略",
+  "@vocabularyBookTabIgnoredLabel": {
+    "description": "单词本-已忽略 Tab 纯文本标题"
+  },
+  "vocabularyBookTabFavoritesLabel": "收藏",
+  "@vocabularyBookTabFavoritesLabel": {
+    "description": "单词本-收藏 Tab 纯文本标题"
+  },
   "vocabularyBookTabLearning": "学习中 ({count})",
   "@vocabularyBookTabLearning": {
     "description": "单词本-学习中 Tab 标题",
@@ -747,6 +771,27 @@
       }
     }
   },
+  "vocabularyBookTabFavorites": "收藏 ({count})",
+  "@vocabularyBookTabFavorites": {
+    "description": "单词本-收藏 Tab 标题",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vocabularyBookCountSummary": "{tab} · {count} 个单词",
+  "@vocabularyBookCountSummary": {
+    "description": "单词本-当前 Tab 数量摘要",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goToLearn": "去学习",
   "@goToLearn": {
     "description": "空状态跳转到学习按钮"
@@ -758,6 +803,51 @@
   "actionRestore": "恢复",
   "@actionRestore": {
     "description": "列表项操作-恢复学习"
+  },
+  "actionFavorite": "收藏",
+  "@actionFavorite": {
+    "description": "操作-收藏单词"
+  },
+  "actionUnfavorite": "取消收藏",
+  "@actionUnfavorite": {
+    "description": "操作-取消收藏单词"
+  },
+  "actionFavoriteSentence": "收藏例句",
+  "@actionFavoriteSentence": {
+    "description": "操作-收藏例句"
+  },
+  "actionUnfavoriteSentence": "取消收藏例句",
+  "@actionUnfavoriteSentence": {
+    "description": "操作-取消收藏例句"
+  },
+  "exampleFavoritesTitle": "例句收藏",
+  "@exampleFavoritesTitle": {
+    "description": "页面标题-例句收藏"
+  },
+  "exampleFavoritesSearchHint": "搜索单词、例句或释义...",
+  "@exampleFavoritesSearchHint": {
+    "description": "例句收藏-搜索框占位"
+  },
+  "exampleFavoritesCountSummary": "共 {count} 条例句",
+  "@exampleFavoritesCountSummary": {
+    "description": "例句收藏-数量摘要",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exampleFavoritesEmpty": "还没有收藏的例句\n去单词详情里把高频表达收起来吧！",
+  "@exampleFavoritesEmpty": {
+    "description": "例句收藏-空状态"
+  },
+  "wordFavoriteToggleFailed": "单词收藏操作失败，请稍后再试",
+  "@wordFavoriteToggleFailed": {
+    "description": "单词收藏切换失败提示"
+  },
+  "exampleFavoriteToggleFailed": "例句收藏操作失败，请稍后再试",
+  "@exampleFavoriteToggleFailed": {
+    "description": "例句收藏切换失败提示"
   },
   "homeSectionLearning": "学习主入口",
   "@homeSectionLearning": {
@@ -774,6 +864,10 @@
   "homeSectionTools": "工具区",
   "@homeSectionTools": {
     "description": "首页-工具区区块标题"
+  },
+  "homeExampleFavoritesSubtitle": "把常用表达单独收进例句夹",
+  "@homeExampleFavoritesSubtitle": {
+    "description": "首页-例句收藏工具入口副标题"
   },
   "homeKanaTitle": "学习五十音图",
   "@homeKanaTitle": {

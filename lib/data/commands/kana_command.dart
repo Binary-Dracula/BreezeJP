@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/algorithm/algorithm_service.dart';
@@ -5,9 +7,11 @@ import '../../core/algorithm/algorithm_service_provider.dart';
 import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
+import '../../core/providers/home_summary_invalidation_provider.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/log_formatter.dart';
 import '../../core/domain/kana_domain_event.dart';
+import 'sync_remote_command.dart';
 import '../models/kana_learning_state.dart';
 import '../repositories/kana_repository.dart';
 import '../repositories/kana_repository_provider.dart';
@@ -20,6 +24,9 @@ class KanaCommand {
 
   KanaRepository get _repo => ref.read(kanaRepositoryProvider);
   AlgorithmService get _algorithmService => ref.read(algorithmServiceProvider);
+  SyncRemoteCommand get _syncRemote => ref.read(syncRemoteCommandProvider);
+  HomeSummaryInvalidationNotifier get _homeSummaryInvalidation =>
+      ref.read(homeSummaryInvalidationProvider.notifier);
 
   /// Create kana learning state when first practiced.
   Future<KanaPracticed?> onKanaPracticed({
@@ -53,6 +60,7 @@ class KanaCommand {
         updatedAt: nowSeconds,
       );
       await _repo.insertKanaLearningState(state);
+      _homeSummaryInvalidation.markStale();
       logger.stateChange(
         scope: 'kana',
         userId: userId,
@@ -61,6 +69,7 @@ class KanaCommand {
         toState: 'learning',
         reason: 'practice',
       );
+      unawaited(_pushKanaState(state, 'mark_learned'));
       return KanaPracticed(userId: userId, kanaId: kanaId, occurredAt: now);
     } catch (e, stackTrace) {
       logger.dbError(
@@ -148,6 +157,8 @@ class KanaCommand {
       } else {
         await _repo.updateKanaLearningState(updated);
       }
+      _homeSummaryInvalidation.markStale();
+      unawaited(_pushKanaState(updated, 'review'));
       logger.srsUpdate(
         scope: 'kana',
         userId: userId,
@@ -187,6 +198,7 @@ class KanaCommand {
           updatedAt: nowSeconds,
         );
         await _repo.insertKanaLearningState(state);
+        _homeSummaryInvalidation.markStale();
         logger.stateChange(
           scope: 'kana',
           userId: userId,
@@ -195,6 +207,7 @@ class KanaCommand {
           toState: 'mastered',
           reason: 'toggle_mastered',
         );
+        unawaited(_pushKanaState(state, 'mark_mastered'));
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -204,6 +217,7 @@ class KanaCommand {
           updatedAt: nowSeconds,
         );
         await _repo.updateKanaLearningState(updated);
+        _homeSummaryInvalidation.markStale();
         logger.stateChange(
           scope: 'kana',
           userId: userId,
@@ -212,6 +226,7 @@ class KanaCommand {
           toState: 'learning',
           reason: 'toggle_mastered',
         );
+        unawaited(_pushKanaState(updated, 'mark_learned'));
         return KanaUnmastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -221,6 +236,7 @@ class KanaCommand {
           updatedAt: nowSeconds,
         );
         await _repo.updateKanaLearningState(updated);
+        _homeSummaryInvalidation.markStale();
         logger.stateChange(
           scope: 'kana',
           userId: userId,
@@ -229,6 +245,7 @@ class KanaCommand {
           toState: 'mastered',
           reason: 'toggle_mastered',
         );
+        unawaited(_pushKanaState(updated, 'mark_mastered'));
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
       return null;
@@ -263,5 +280,14 @@ class KanaCommand {
       'totalReviews': state.totalReviews,
       'failCount': state.failCount,
     };
+  }
+
+  Future<void> _pushKanaState(KanaLearningState state, String operation) async {
+    try {
+      await _syncRemote.pushKanaState(state: state, operation: operation);
+    } catch (e, stackTrace) {
+      logger.warning('假名状态已写本地，云端同步稍后重试: ${state.kanaId}');
+      logger.error('假名状态同步失败', e, stackTrace);
+    }
   }
 }

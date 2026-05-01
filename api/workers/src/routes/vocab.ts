@@ -70,10 +70,101 @@ export async function handleNextWords(
     ...(fullDetails.get(m.word_id) ?? { id: m.word_id }),
   }));
   const hasMore = sequenceRows.length > afterSort + nextRows.length;
+  const nextCursor = nextRows.length > 0
+    ? nextRows[nextRows.length - 1].book_sort_order
+    : afterSort;
 
   return jsonResponse({
     data: result,
-    meta: { has_more: hasMore },
+    meta: {
+      has_more: hasMore,
+      total_words: sequenceRows.length,
+      next_cursor: nextCursor,
+    },
+  }, corsHeaders(request));
+}
+
+/**
+ * GET /api/v1/learn/books/:bookId/next?limit=<M>
+ * 服务端根据云端 user_book_progress.current_sort_cursor 决定下一批学习词。
+ */
+export async function handleUserNextWords(
+  request: Request,
+  env: Env,
+  auth: AuthPayload,
+  bookId: string
+): Promise<Response> {
+  const url = new URL(request.url);
+  const limitRaw = parseInt(url.searchParams.get('limit') ?? '10', 10);
+  const limit = Math.min(Math.max(limitRaw, 1), 50);
+
+  const bookResp = await supabaseFetch(env, '/books', {
+    select: 'id,is_available',
+    id: `eq.${bookId}`,
+    limit: '1',
+  });
+
+  if (!bookResp.ok) {
+    return errorResponse(500, 'DB_ERROR', 'Failed to validate book state');
+  }
+
+  const books = (await bookResp.json()) as Array<Pick<VocabBook, 'id' | 'is_available'>>;
+  const book = books[0];
+  if (!book) {
+    return errorResponse(404, 'BOOK_NOT_FOUND', 'Book not found');
+  }
+
+  if (!book.is_available) {
+    return errorResponse(409, 'BOOK_UNAVAILABLE', 'Book is no longer available');
+  }
+
+  const progressResp = await supabaseFetch(env, '/user_book_progress', {
+    select: 'current_sort_cursor',
+    user_id: `eq.${auth.sub}`,
+    book_id: `eq.${bookId}`,
+    limit: '1',
+  });
+
+  if (!progressResp.ok) {
+    return errorResponse(500, 'DB_ERROR', 'Failed to read cloud book progress');
+  }
+
+  const progressRows = (await progressResp.json()) as Array<{ current_sort_cursor: number }>;
+  const currentCursor = progressRows[0]?.current_sort_cursor ?? 0;
+
+  const sequenceRows = await fetchBookSequenceRows(env, bookId);
+  const nextRows = sequenceRows
+    .filter(row => row.book_sort_order > currentCursor)
+    .slice(0, limit);
+
+  if (nextRows.length === 0) {
+    return jsonResponse({
+      data: [],
+      meta: {
+        has_more: false,
+        total_words: sequenceRows.length,
+        next_cursor: currentCursor,
+      },
+    }, corsHeaders(request));
+  }
+
+  const wordIds = nextRows.map(m => m.word_id);
+  const fullDetails = await fetchFullDetailsBatch(env, wordIds);
+  const result = nextRows.map(m => ({
+    book_sort_order: m.book_sort_order,
+    ...(fullDetails.get(m.word_id) ?? { id: m.word_id }),
+  }));
+  const nextCursor = nextRows[nextRows.length - 1].book_sort_order;
+  const hasMore = sequenceRows.length > nextCursor;
+
+  return jsonResponse({
+    data: result,
+    meta: {
+      has_more: hasMore,
+      total_words: sequenceRows.length,
+      next_cursor: nextCursor,
+      current_cursor: currentCursor,
+    },
   }, corsHeaders(request));
 }
 
@@ -126,6 +217,31 @@ export async function fetchFullDetailsBatch(
   }
 
   return result;
+}
+
+/**
+ * GET /api/v1/words/:id
+ * 获取单个词条完整详情。
+ */
+export async function handleWordDetail(
+  request: Request,
+  env: Env,
+  wordId: string,
+): Promise<Response> {
+  const details = await fetchFullDetailsBatch(env, [wordId]);
+  const detail = details.get(wordId);
+
+  if (!detail) {
+    return errorResponse(404, 'WORD_NOT_FOUND', 'Word not found');
+  }
+
+  return jsonResponse(
+    {
+      data: detail,
+      meta: { server_time: new Date().toISOString() },
+    },
+    corsHeaders(request),
+  );
 }
 
 /**

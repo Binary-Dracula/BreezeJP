@@ -126,4 +126,26 @@ class BookProgressRepository {
       rethrow;
     }
   }
+
+  /// 删除某个用户的全部书籍进度
+  Future<void> deleteAllByUser(int userId) async {
+    try {
+      final db = await _db;
+      final deletedRows = await db.delete(
+        'book_progress',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+
+      logger.dbDelete(table: 'book_progress', deletedRows: deletedRows);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'book_progress',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
 }

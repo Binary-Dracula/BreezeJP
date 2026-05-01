@@ -1,10 +1,11 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
-import 'package:breeze_jp/router/app_route_observer.dart';
 
+import '../../../core/auth/auth_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
 import '../controller/home_controller.dart';
 import '../state/home_state.dart';
@@ -16,51 +17,53 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage> with RouteAware {
-  bool _routeObserverSubscribed = false;
+class _HomePageState extends ConsumerState<HomePage> {
+  Timer? _greetingTimer;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(homeControllerProvider.notifier).loadHomeData();
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_routeObserverSubscribed) return;
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      appRouteObserver.subscribe(this, route);
-      _routeObserverSubscribed = true;
-    }
+    _scheduleGreetingUpdate();
   }
 
   @override
   void dispose() {
-    if (_routeObserverSubscribed) {
-      appRouteObserver.unsubscribe(this);
-    }
+    _greetingTimer?.cancel();
     super.dispose();
   }
 
-  @override
-  void didPopNext() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(homeControllerProvider.notifier).loadHomeData();
+  void _scheduleGreetingUpdate() {
+    _greetingTimer?.cancel();
+    final now = DateTime.now();
+    final nextMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
+    _greetingTimer = Timer(nextMinute.difference(now), () {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+      _scheduleGreetingUpdate();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeControllerProvider);
+    final isLoggedIn = ref.watch(isLoggedInProvider);
+    final authDisplayName = ref.watch(displayNameProvider);
+    final authUser = ref.watch(currentUserProvider);
     final l10n = AppLocalizations.of(context)!;
-
-    if (state.isLoading && !state.hasData) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final displayedUserName = _resolveDisplayedUserName(
+      localUserName: state.userName,
+      isLoggedIn: isLoggedIn,
+      authDisplayName: authDisplayName,
+      authEmail: authUser?.email,
+    );
 
     if (state.hasError && !state.hasData) {
       return Scaffold(
@@ -86,30 +89,45 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => ref.read(homeControllerProvider.notifier).refresh(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context, state.userName, l10n),
-                const SizedBox(height: 20),
-                _buildSectionTitle(l10n.homeSectionLearning),
-                const SizedBox(height: 12),
-                _buildPrimaryActions(context, l10n, isNewUser),
-                const SizedBox(height: 24),
-                _buildSectionTitle(l10n.homeSectionReview),
-                const SizedBox(height: 12),
-                _buildReviewSection(context, state, l10n),
-                const SizedBox(height: 24),
-                _buildSectionTitle(l10n.homeSectionTools),
-                const SizedBox(height: 12),
-                _buildToolsGrid(context, l10n),
-              ],
+        child: Stack(
+          children: [
+            RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(homeControllerProvider.notifier).refresh(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context, displayedUserName, l10n),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(l10n.homeSectionLearning),
+                    const SizedBox(height: 12),
+                    _buildPrimaryActions(context, l10n, isNewUser),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle(l10n.homeSectionReview),
+                    const SizedBox(height: 12),
+                    _buildReviewSection(context, state, l10n),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle(l10n.homeSectionTools),
+                    const SizedBox(height: 12),
+                    _buildToolsGrid(context, l10n),
+                  ],
+                ),
+              ),
             ),
-          ),
+            if (state.isLoading)
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+          ],
         ),
       ),
     );
@@ -117,7 +135,7 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
 
   Widget _buildHeader(
     BuildContext context,
-    String userName,
+    String displayedUserName,
     AppLocalizations l10n,
   ) {
     return Row(
@@ -132,8 +150,8 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
               ),
               const SizedBox(height: 6),
               Text(
-                userName.isNotEmpty
-                    ? l10n.userGreeting(userName)
+                displayedUserName.isNotEmpty
+                    ? l10n.userGreeting(displayedUserName)
                     : l10n.homeWelcome,
                 style: const TextStyle(
                   fontSize: 24,
@@ -156,11 +174,6 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
           icon: const Icon(Icons.settings_outlined),
           color: Colors.grey.shade800,
         ),
-        if (kDebugMode)
-          TextButton(
-            onPressed: () => context.push('/debug'),
-            child: const Text('Debug'),
-          ),
       ],
     );
   }
@@ -291,6 +304,13 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
         onTap: () => context.push('/vocabulary-book'),
       ),
       _ToolItem(
+        icon: Icons.format_quote_rounded,
+        title: l10n.exampleFavoritesTitle,
+        subtitle: l10n.homeExampleFavoritesSubtitle,
+        gradient: const [Color(0xFF14B8A6), Color(0xFF0D9488)],
+        onTap: () => context.push('/example-favorites'),
+      ),
+      _ToolItem(
         icon: Icons.segment_rounded,
         title: l10n.homeGrammarBookTitle,
         subtitle: l10n.homeGrammarBookSubtitle,
@@ -404,10 +424,46 @@ class _HomePageState extends ConsumerState<HomePage> with RouteAware {
   }
 
   String _getGreeting(AppLocalizations l10n) {
-    var hour = DateTime.now().hour;
+    final hour = DateTime.now().hour;
     if (hour < 12) return l10n.greetingMorning;
     if (hour < 18) return l10n.greetingAfternoon;
     return l10n.greetingEvening;
+  }
+
+  String _resolveDisplayedUserName({
+    required String localUserName,
+    required bool isLoggedIn,
+    required String? authDisplayName,
+    required String? authEmail,
+  }) {
+    if (!isLoggedIn) {
+      return '';
+    }
+
+    final displayName = authDisplayName?.trim() ?? '';
+    if (displayName.isNotEmpty) {
+      return displayName;
+    }
+
+    final normalizedLocalName = localUserName.trim();
+    if (normalizedLocalName.isNotEmpty &&
+        !_isGuestPlaceholderName(normalizedLocalName)) {
+      return normalizedLocalName;
+    }
+
+    final email = authEmail?.trim() ?? '';
+    if (email.contains('@')) {
+      final prefix = email.split('@').first.trim();
+      if (prefix.isNotEmpty) {
+        return prefix;
+      }
+    }
+
+    return '';
+  }
+
+  bool _isGuestPlaceholderName(String value) {
+    return value.isEmpty || value == 'BreezeJP User' || value == 'Breeze 用户';
   }
 }
 

@@ -6,6 +6,7 @@ import 'review_kana_item.dart';
 class KanaReviewState {
   static const Object _unset = Object();
 
+  final String? sessionId;
   final bool isLoading;
   final bool isEmpty;
   final List<ReviewKanaItem> items;
@@ -17,6 +18,7 @@ class KanaReviewState {
   final String? error;
 
   const KanaReviewState({
+    this.sessionId,
     this.isLoading = false,
     this.isEmpty = false,
     this.items = const [],
@@ -41,6 +43,7 @@ class KanaReviewState {
   }
 
   KanaReviewState copyWith({
+    Object? sessionId = _unset,
     bool? isLoading,
     bool? isEmpty,
     List<ReviewKanaItem>? items,
@@ -52,6 +55,7 @@ class KanaReviewState {
     Object? error = _unset,
   }) {
     return KanaReviewState(
+      sessionId: sessionId == _unset ? this.sessionId : (sessionId as String?),
       isLoading: isLoading ?? this.isLoading,
       isEmpty: isEmpty ?? this.isEmpty,
       items: items ?? this.items,

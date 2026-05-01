@@ -139,3 +139,150 @@ export interface PaginationMeta {
   cursor: string | null;
   server_time: string;
 }
+
+export type ReviewSessionPhase = 'testing' | 'grading';
+export type ReviewSessionStatus = 'active' | 'completed' | 'abandoned';
+
+export interface ReviewSessionEnvelope<TItem> {
+  session_id: string | null;
+  current_index: number;
+  current_phase: ReviewSessionPhase;
+  has_mistake_on_current: boolean;
+  items: TItem[];
+}
+
+export interface ReviewSessionUpdateRequest<TItem> {
+  session_id: string;
+  current_index?: number;
+  current_phase?: ReviewSessionPhase;
+  has_mistake_on_current?: boolean;
+  items?: TItem[];
+  is_finished?: boolean;
+}
+
+export type SyncEntityType =
+  | 'profile'
+  | 'word_state'
+  | 'word_favorite'
+  | 'word_example_favorite'
+  | 'kana_state'
+  | 'grammar_state'
+  | 'book_progress';
+
+export type SyncOperation =
+  | 'upsert'
+  | 'delete'
+  | 'mark_learned'
+  | 'mark_mastered'
+  | 'mark_ignored'
+  | 'review'
+  | 'reset';
+
+export interface SyncMutation {
+  mutation_id: string;
+  entity_type: SyncEntityType;
+  entity_key: string;
+  operation: SyncOperation;
+  payload: Record<string, unknown>;
+  base_version?: number | null;
+  client_occurred_at?: string | null;
+}
+
+export interface SyncRegisterDeviceRequest {
+  device_id: string;
+  platform: string;
+  device_name?: string | null;
+  app_version?: string | null;
+}
+
+export interface SyncBootstrapRequest {
+  device_id: string;
+  cursor?: string | null;
+  limit?: number;
+}
+
+export interface SyncPullRequest {
+  device_id: string;
+  after_seq?: number;
+  limit?: number;
+}
+
+export interface SyncPushRequest {
+  device_id: string;
+  known_cursor?: string | null;
+  mutations: SyncMutation[];
+}
+
+export interface SyncAckedMutation {
+  mutation_id: string;
+  entity_type: SyncEntityType;
+  entity_key: string;
+  result_version: number | null;
+  status: 'applied' | 'noop' | 'duplicate';
+}
+
+export interface SyncConflict {
+  mutation_id: string;
+  entity_type: SyncEntityType;
+  entity_key: string;
+  reason: string;
+  server_version: number | null;
+  server_state?: Record<string, unknown> | null;
+}
+
+export interface SyncPullEvent {
+  seq: number;
+  entity_type: SyncEntityType;
+  entity_key: string;
+  operation: SyncOperation;
+  payload: Record<string, unknown>;
+  committed_at: string;
+}
+
+export interface SyncRegisterDeviceResponse {
+  data: {
+    device_id: string;
+    server_cursor: string;
+    bootstrap_required: boolean;
+  };
+  meta: {
+    server_time: string;
+  };
+}
+
+export interface SyncBootstrapResponse {
+  data: {
+    profile: Record<string, unknown> | null;
+    word_states: Record<string, unknown>[];
+    word_favorites: Record<string, unknown>[];
+    word_example_favorites: Record<string, unknown>[];
+    kana_states: Record<string, unknown>[];
+    grammar_states: Record<string, unknown>[];
+    book_progress: Record<string, unknown>[];
+  };
+  meta: {
+    next_cursor: string;
+    has_more: boolean;
+    server_time: string;
+  };
+}
+
+export interface SyncPushResponse {
+  data: {
+    acked_mutations: SyncAckedMutation[];
+    conflicts: SyncConflict[];
+  };
+  meta: {
+    next_cursor: string;
+    server_time: string;
+  };
+}
+
+export interface SyncPullResponse {
+  data: SyncPullEvent[];
+  meta: {
+    next_cursor: string;
+    has_more: boolean;
+    server_time: string;
+  };
+}

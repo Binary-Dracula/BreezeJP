@@ -198,7 +198,6 @@ class _LearnPageState extends ConsumerState<LearnPage> {
     final currentStatus = state.currentWordState();
     final isIgnored = currentStatus == LearningStatus.ignored;
     final isMastered = currentStatus == LearningStatus.mastered;
-    final isLastWord = state.currentIndex >= state.words.length - 1;
 
     return SafeArea(
       child: Column(
@@ -226,13 +225,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
                     icon: Icons.arrow_forward_ios_rounded,
                     color: const Color(0xFF64748B),
                     enabled: true,
-                    onPressed: () {
-                      if (isLastWord) {
-                        _showBatchCompletedDialog(context, l10n);
-                      } else {
-                        controller.goToNext();
-                      }
-                    },
+                    onPressed: () => controller.goToNext(),
                   ),
                   const SizedBox(height: 16),
                   _RailActionButton(

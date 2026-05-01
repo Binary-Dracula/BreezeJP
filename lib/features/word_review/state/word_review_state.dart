@@ -11,6 +11,7 @@ enum ReviewCardPhase {
 class WordReviewState {
   static const Object _unset = Object();
 
+  final String? sessionId;
   final bool isLoading;
   final bool isEmpty;
 
@@ -30,6 +31,7 @@ class WordReviewState {
   final String? error;
 
   const WordReviewState({
+    this.sessionId,
     this.isLoading = false,
     this.isEmpty = false,
     this.items = const [],
@@ -54,6 +56,7 @@ class WordReviewState {
   }
 
   WordReviewState copyWith({
+    Object? sessionId = _unset,
     bool? isLoading,
     bool? isEmpty,
     List<WordReviewItem>? items,
@@ -65,6 +68,7 @@ class WordReviewState {
     Object? error = _unset,
   }) {
     return WordReviewState(
+      sessionId: sessionId == _unset ? this.sessionId : (sessionId as String?),
       isLoading: isLoading ?? this.isLoading,
       isEmpty: isEmpty ?? this.isEmpty,
       items: items ?? this.items,

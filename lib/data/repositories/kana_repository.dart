@@ -22,8 +22,10 @@ class KanaRepository {
   Future<List<KanaLetter>> getAllKanaLetters() async {
     try {
       final db = await _db;
-      final results =
-          await db.query('kana_letters', orderBy: 'display_order ASC');
+      final results = await db.query(
+        'kana_letters',
+        orderBy: 'display_order ASC',
+      );
 
       logger.dbQuery(
         table: 'kana_letters',
@@ -296,6 +298,33 @@ class KanaRepository {
     }
   }
 
+  /// 按唯一键保存假名学习状态（存在则覆盖）
+  Future<void> upsertKanaLearningState(KanaLearningState state) async {
+    try {
+      final db = await _db;
+      final map = state.toInsertMap();
+      await db.insert(
+        'kana_learning_state',
+        map,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      logger.dbInsert(
+        table: 'kana_learning_state',
+        id: state.id,
+        keyFields: {'userId': state.userId, 'kanaId': state.kanaId},
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 删除用户的假名学习状态
   Future<int> deleteKanaLearningStatesByUser(int userId) async {
     try {
@@ -304,6 +333,29 @@ class KanaRepository {
         'kana_learning_state',
         where: 'user_id = ?',
         whereArgs: [userId],
+      );
+
+      logger.dbDelete(table: 'kana_learning_state', deletedRows: count);
+      return count;
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'kana_learning_state',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 按唯一键删除单条假名学习状态
+  Future<int> deleteKanaLearningState(int userId, int kanaId) async {
+    try {
+      final db = await _db;
+      final count = await db.delete(
+        'kana_learning_state',
+        where: 'user_id = ? AND kana_id = ?',
+        whereArgs: [userId, kanaId],
       );
 
       logger.dbDelete(table: 'kana_learning_state', deletedRows: count);
@@ -350,5 +402,4 @@ class KanaRepository {
       rethrow;
     }
   }
-
 }

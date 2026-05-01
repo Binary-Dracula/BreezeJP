@@ -7,6 +7,12 @@ description: BreezeJP 工程级架构规范与编码准则，适用于全项目�
 
 > **本文档是 BreezeJP 项目的权威工程准则，完全自包含。** Agent 或开发者在进行任何编码时必须遵守。
 
+## 0. 规则入口
+
+- `.github/README.md` 是当前仓库的开发规则导航页。
+- `.github/coding_rules.instructions.md` 是全项目默认生效的工程规则入口。
+- `.github/` 下的其他专题文档用于补充长期有效的专项规约；若与历史散落文档冲突，以 `.github/` 下文档为准。
+
 ---
 
 ## 1. 语言偏好

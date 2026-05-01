@@ -4,13 +4,15 @@ import '../../../core/constants/learning_status.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
+import '../../../data/commands/favorite_command.dart';
+import '../../../data/commands/favorite_command_provider.dart';
 import '../../../data/commands/study_word_command.dart';
 import '../../../data/models/read/vocabulary_book_item.dart';
 import '../../../data/models/user.dart';
 import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
-import '../../../data/queries/vocabulary_book_query.dart';
-import '../../../data/queries/vocabulary_book_query_provider.dart';
+import '../../../data/queries/study_remote_query.dart';
+import '../../../data/queries/study_remote_query_provider.dart';
 import '../state/vocabulary_book_state.dart';
 
 /// 单词本页控制器 Provider
@@ -33,8 +35,9 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
-  VocabularyBookQuery get _query => ref.read(vocabularyBookQueryProvider);
+  StudyRemoteQuery get _remoteQuery => ref.read(studyRemoteQueryProvider);
   StudyWordCommand get _studyWordCommand => ref.read(studyWordCommandProvider);
+  FavoriteCommand get _favoriteCommand => ref.read(favoriteCommandProvider);
 
   Future<User> _getActiveUser() async {
     final ensured = await _activeUserCommand.ensureActiveUser();
@@ -51,56 +54,60 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
   Future<void> loadInitial() async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      final userId = await _ensureUserId();
+      await _ensureUserId();
 
       // 并行加载：两个 tab 的首页数据 + 数量统计
       final searchQuery = state.searchQuery.isEmpty ? null : state.searchQuery;
 
       final results = await Future.wait([
-        _query.getVocabularyBookItems(
-          userId: userId,
+        _remoteQuery.fetchWordBook(
           status: LearningStatus.learning,
           limit: _kPageSize,
           offset: 0,
           searchQuery: searchQuery,
         ),
-        _query.getVocabularyBookItems(
-          userId: userId,
+        _remoteQuery.fetchWordBook(
           status: LearningStatus.mastered,
           limit: _kPageSize,
           offset: 0,
           searchQuery: searchQuery,
         ),
-        _query.getVocabularyBookItems(
-          userId: userId,
+        _remoteQuery.fetchWordBook(
           status: LearningStatus.ignored,
           limit: _kPageSize,
           offset: 0,
           searchQuery: searchQuery,
         ),
-        _query.getStatusCounts(userId: userId, searchQuery: searchQuery),
+        _remoteQuery.fetchWordFavorites(
+          limit: _kPageSize,
+          offset: 0,
+          searchQuery: searchQuery,
+        ),
       ]);
 
-      final learningWords = results[0] as List<VocabularyBookItem>;
-      final masteredWords = results[1] as List<VocabularyBookItem>;
-      final ignoredWords = results[2] as List<VocabularyBookItem>;
-      final counts = results[3] as Map<LearningStatus, int>;
+      final learningPage = results[0];
+      final masteredPage = results[1];
+      final ignoredPage = results[2];
+      final favoritePage = results[3];
 
       state = state.copyWith(
         isLoading: false,
-        learningWords: List.from(learningWords),
-        masteredWords: List.from(masteredWords),
-        ignoredWords: List.from(ignoredWords),
-        learningCount: counts[LearningStatus.learning] ?? 0,
-        masteredCount: counts[LearningStatus.mastered] ?? 0,
-        ignoredCount: counts[LearningStatus.ignored] ?? 0,
-        hasMoreLearning: learningWords.length >= _kPageSize,
-        hasMoreMastered: masteredWords.length >= _kPageSize,
-        hasMoreIgnored: ignoredWords.length >= _kPageSize,
+        learningWords: List.from(learningPage.items),
+        masteredWords: List.from(masteredPage.items),
+        ignoredWords: List.from(ignoredPage.items),
+        favoriteWords: List.from(favoritePage.items),
+        learningCount: learningPage.totalCount,
+        masteredCount: masteredPage.totalCount,
+        ignoredCount: ignoredPage.totalCount,
+        favoriteCount: favoritePage.totalCount,
+        hasMoreLearning: learningPage.hasMore,
+        hasMoreMastered: masteredPage.hasMore,
+        hasMoreIgnored: ignoredPage.hasMore,
+        hasMoreFavorites: favoritePage.hasMore,
       );
 
       logger.debug(
-        '单词本加载完成: 学习中=${learningWords.length}, 已掌握=${masteredWords.length}, 已忽略=${ignoredWords.length}',
+        '单词本加载完成: 学习中=${learningPage.items.length}, 已掌握=${masteredPage.items.length}, 已忽略=${ignoredPage.items.length}, 收藏=${favoritePage.items.length}',
       );
     } catch (e, stackTrace) {
       logger.error('单词本加载失败', e, stackTrace);
@@ -114,35 +121,60 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
 
     try {
       state = state.copyWith(isLoadingMore: true);
-      final userId = await _ensureUserId();
+      await _ensureUserId();
       final currentList = state.currentList;
       final searchQuery = state.searchQuery.isEmpty ? null : state.searchQuery;
 
-      final moreItems = await _query.getVocabularyBookItems(
-        userId: userId,
-        status: state.currentStatus,
-        limit: _kPageSize,
-        offset: currentList.length,
-        searchQuery: searchQuery,
-      );
+      final response = await switch (state.currentTabIndex) {
+        0 => _remoteQuery.fetchWordBook(
+          status: LearningStatus.learning,
+          limit: _kPageSize,
+          offset: currentList.length,
+          searchQuery: searchQuery,
+        ),
+        1 => _remoteQuery.fetchWordBook(
+          status: LearningStatus.mastered,
+          limit: _kPageSize,
+          offset: currentList.length,
+          searchQuery: searchQuery,
+        ),
+        2 => _remoteQuery.fetchWordBook(
+          status: LearningStatus.ignored,
+          limit: _kPageSize,
+          offset: currentList.length,
+          searchQuery: searchQuery,
+        ),
+        _ => _remoteQuery.fetchWordFavorites(
+          limit: _kPageSize,
+          offset: currentList.length,
+          searchQuery: searchQuery,
+        ),
+      };
+      final moreItems = response.items;
 
       if (state.currentTabIndex == 0) {
         state = state.copyWith(
           isLoadingMore: false,
           learningWords: [...state.learningWords, ...moreItems],
-          hasMoreLearning: moreItems.length >= _kPageSize,
+          hasMoreLearning: response.hasMore,
         );
       } else if (state.currentTabIndex == 1) {
         state = state.copyWith(
           isLoadingMore: false,
           masteredWords: [...state.masteredWords, ...moreItems],
-          hasMoreMastered: moreItems.length >= _kPageSize,
+          hasMoreMastered: response.hasMore,
+        );
+      } else if (state.currentTabIndex == 2) {
+        state = state.copyWith(
+          isLoadingMore: false,
+          ignoredWords: [...state.ignoredWords, ...moreItems],
+          hasMoreIgnored: response.hasMore,
         );
       } else {
         state = state.copyWith(
           isLoadingMore: false,
-          ignoredWords: [...state.ignoredWords, ...moreItems],
-          hasMoreIgnored: moreItems.length >= _kPageSize,
+          favoriteWords: [...state.favoriteWords, ...moreItems],
+          hasMoreFavorites: response.hasMore,
         );
       }
 
@@ -178,9 +210,12 @@ class VocabularyBookController extends Notifier<VocabularyBookState> {
           bookId: item.bookId,
         );
         logger.info('[VocabularyBook] 标记为已掌握: wordId=${item.wordId}');
+      } else if (state.currentTabIndex == 3) {
+        await _favoriteCommand.removeWordFavorite(wordId: item.wordId);
+        logger.info('[VocabularyBook] 取消收藏: wordId=${item.wordId}');
       } else {
-        // 已掌握 → 学习中
-        await _studyWordCommand.markAsLearned(
+        // 已掌握/已忽略 → 学习中
+        await _studyWordCommand.restoreToLearning(
           userId: userId,
           wordId: item.wordId,
           bookId: item.bookId,

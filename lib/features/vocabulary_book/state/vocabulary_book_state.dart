@@ -1,4 +1,3 @@
-import '../../../core/constants/learning_status.dart';
 import '../../../data/models/read/vocabulary_book_item.dart';
 
 /// 单词本页面状态（不可变）
@@ -8,18 +7,21 @@ class VocabularyBookState {
   final bool hasMoreLearning;
   final bool hasMoreMastered;
   final bool hasMoreIgnored;
+  final bool hasMoreFavorites;
   final String? error;
 
   final List<VocabularyBookItem> learningWords;
   final List<VocabularyBookItem> masteredWords;
   final List<VocabularyBookItem> ignoredWords;
+  final List<VocabularyBookItem> favoriteWords;
 
   final int learningCount;
   final int masteredCount;
   final int ignoredCount;
+  final int favoriteCount;
 
   final String searchQuery;
-  final int currentTabIndex; // 0=学习中, 1=已掌握, 2=已忽略
+  final int currentTabIndex; // 0=学习中, 1=已掌握, 2=已忽略, 3=已收藏
 
   const VocabularyBookState({
     this.isLoading = false,
@@ -27,13 +29,16 @@ class VocabularyBookState {
     this.hasMoreLearning = true,
     this.hasMoreMastered = true,
     this.hasMoreIgnored = true,
+    this.hasMoreFavorites = true,
     this.error,
     this.learningWords = const [],
     this.masteredWords = const [],
     this.ignoredWords = const [],
+    this.favoriteWords = const [],
     this.learningCount = 0,
     this.masteredCount = 0,
     this.ignoredCount = 0,
+    this.favoriteCount = 0,
     this.searchQuery = '',
     this.currentTabIndex = 0,
   });
@@ -44,13 +49,16 @@ class VocabularyBookState {
     bool? hasMoreLearning,
     bool? hasMoreMastered,
     bool? hasMoreIgnored,
+    bool? hasMoreFavorites,
     String? error,
     List<VocabularyBookItem>? learningWords,
     List<VocabularyBookItem>? masteredWords,
     List<VocabularyBookItem>? ignoredWords,
+    List<VocabularyBookItem>? favoriteWords,
     int? learningCount,
     int? masteredCount,
     int? ignoredCount,
+    int? favoriteCount,
     String? searchQuery,
     int? currentTabIndex,
   }) {
@@ -60,13 +68,16 @@ class VocabularyBookState {
       hasMoreLearning: hasMoreLearning ?? this.hasMoreLearning,
       hasMoreMastered: hasMoreMastered ?? this.hasMoreMastered,
       hasMoreIgnored: hasMoreIgnored ?? this.hasMoreIgnored,
+      hasMoreFavorites: hasMoreFavorites ?? this.hasMoreFavorites,
       error: error,
       learningWords: learningWords ?? this.learningWords,
       masteredWords: masteredWords ?? this.masteredWords,
       ignoredWords: ignoredWords ?? this.ignoredWords,
+      favoriteWords: favoriteWords ?? this.favoriteWords,
       learningCount: learningCount ?? this.learningCount,
       masteredCount: masteredCount ?? this.masteredCount,
       ignoredCount: ignoredCount ?? this.ignoredCount,
+      favoriteCount: favoriteCount ?? this.favoriteCount,
       searchQuery: searchQuery ?? this.searchQuery,
       currentTabIndex: currentTabIndex ?? this.currentTabIndex,
     );
@@ -77,6 +88,7 @@ class VocabularyBookState {
     0 => learningWords,
     1 => masteredWords,
     2 => ignoredWords,
+    3 => favoriteWords,
     _ => learningWords,
   };
 
@@ -85,15 +97,8 @@ class VocabularyBookState {
     0 => hasMoreLearning,
     1 => hasMoreMastered,
     2 => hasMoreIgnored,
+    3 => hasMoreFavorites,
     _ => hasMoreLearning,
-  };
-
-  /// 当前 Tab 对应的状态
-  LearningStatus get currentStatus => switch (currentTabIndex) {
-    0 => LearningStatus.learning,
-    1 => LearningStatus.mastered,
-    2 => LearningStatus.ignored,
-    _ => LearningStatus.learning,
   };
 
   /// 是否为空（当前 Tab 无数据）

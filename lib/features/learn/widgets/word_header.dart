@@ -7,8 +7,9 @@ import 'audio_play_button.dart';
 /// 单词头部信息（2.0 — 对齐新 Word 模型）
 class WordHeader extends StatelessWidget {
   final WordDetail wordDetail;
+  final Widget? trailingAction;
 
-  const WordHeader({super.key, required this.wordDetail});
+  const WordHeader({super.key, required this.wordDetail, this.trailingAction});
 
   @override
   Widget build(BuildContext context) {
@@ -34,52 +35,67 @@ class WordHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                JapaneseSentence(
-                  text: word.word,
-                  fontSize: 32,
-                  rubyFontSize: 12,
-                  textColor: const Color(0xFF1E293B),
-                ),
-                if (word.reading.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      word.reading,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF5C8DFF),
-                        fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      JapaneseSentence(
+                        text: word.word,
+                        fontSize: 32,
+                        rubyFontSize: 12,
+                        textColor: const Color(0xFF1E293B),
                       ),
-                    ),
-                  ),
-                if (word.romaji?.isNotEmpty == true)
-                  Text(
-                    word.romaji!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                if (word.audioSource != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 14),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF5C8DFF).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Center(
-                        child: AudioPlayButton(
-                          audioSource: word.audioSource,
-                          size: 28,
-                          color: const Color(0xFF5C8DFF),
+                      if (word.reading.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            word.reading,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: const Color(0xFF5C8DFF),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      if (word.romaji?.isNotEmpty == true)
+                        Text(
+                          word.romaji!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
+                          ),
+                        ),
+                      if (word.audioSource != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 14),
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF5C8DFF,
+                              ).withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Center(
+                              child: AudioPlayButton(
+                                audioSource: word.audioSource,
+                                size: 28,
+                                color: const Color(0xFF5C8DFF),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
+                ),
+                if (trailingAction != null) ...[
+                  const SizedBox(width: 12),
+                  trailingAction!,
+                ],
               ],
             ),
             const SizedBox(height: 12),

@@ -1,6 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/auth/auth_provider.dart';
+import '../../../core/providers/home_summary_invalidation_provider.dart';
+import '../../../data/commands/active_user_command_provider.dart';
+import '../../../data/commands/sync_remote_command.dart';
+import '../../../data/commands/sync_scheduler_command_provider.dart';
 import '../state/auth_page_state.dart';
 
 final authControllerProvider = NotifierProvider<AuthController, AuthPageState>(
@@ -19,6 +26,7 @@ class AuthController extends Notifier<AuthPageState> {
     try {
       final response = await _auth.signInWithEmail(email, password);
       if (response.session != null) {
+        await _prepareAuthenticatedHome();
         state = const AuthPageState();
         return true;
       }
@@ -42,6 +50,7 @@ class AuthController extends Notifier<AuthPageState> {
 
       // 邮件确认已关闭时，signUp 直接返回 session
       if (response.session != null) {
+        await _prepareAuthenticatedHome();
         state = const AuthPageState();
         return true;
       }
@@ -65,6 +74,13 @@ class AuthController extends Notifier<AuthPageState> {
     state = const AuthPageState(isLoading: true);
     try {
       await _auth.updateDisplayName(displayName);
+      final activeUser = await ref
+          .read(activeUserCommandProvider)
+          .ensureActiveUser();
+      await ref
+          .read(syncRemoteCommandProvider)
+          .syncDownForCurrentUser(localUserId: activeUser.id);
+      ref.read(homeSummaryInvalidationProvider.notifier).markStale();
       state = const AuthPageState();
       return true;
     } catch (e) {
@@ -90,9 +106,29 @@ class AuthController extends Notifier<AuthPageState> {
   Future<void> signOut() async {
     state = const AuthPageState(isLoading: true);
     try {
+      ref.read(syncSchedulerCommandProvider).stop();
       await _auth.signOut();
     } finally {
       state = const AuthPageState();
+    }
+  }
+
+  Future<void> _prepareAuthenticatedHome() async {
+    final activeUser = await ref
+        .read(activeUserCommandProvider)
+        .ensureActiveUser();
+
+    await ref.read(syncSchedulerCommandProvider).start();
+    unawaited(_primeAuthenticatedSync(activeUser.id));
+  }
+
+  Future<void> _primeAuthenticatedSync(int localUserId) async {
+    try {
+      await ref
+          .read(syncRemoteCommandProvider)
+          .syncDownForCurrentUser(localUserId: localUserId);
+    } catch (e) {
+      logger.warning('[Auth] 登录后首轮云端同步失败，稍后重试: $e');
     }
   }
 

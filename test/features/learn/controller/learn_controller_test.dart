@@ -8,8 +8,6 @@ import 'package:breeze_jp/data/commands/word_introduction_command.dart';
 import 'package:breeze_jp/data/commands/word_introduction_command_provider.dart';
 import 'package:breeze_jp/data/models/learning_session.dart';
 import 'package:breeze_jp/data/models/user.dart';
-import 'package:breeze_jp/data/models/word.dart';
-import 'package:breeze_jp/data/models/word_detail.dart';
 import 'package:breeze_jp/data/queries/active_user_query.dart';
 import 'package:breeze_jp/data/queries/active_user_query_provider.dart';
 import 'package:breeze_jp/data/queries/book_query.dart';
@@ -65,12 +63,6 @@ void main() {
   late _MockVocabRemoteQuery remoteQuery;
 
   final user = User(id: 1, username: 'u', passwordHash: 'p');
-  final wordDetail = WordDetail(
-    word: Word(id: 'word-1', word: '言葉', reading: 'ことば', partOfSpeech: 'noun'),
-    richContent: WordRichContent.empty(),
-    examples: const [],
-  );
-
   setUpAll(() {
     registerFallbackValue(<String>[]);
   });
@@ -99,6 +91,9 @@ void main() {
         wordId: any(named: 'wordId'),
         bookId: any(named: 'bookId'),
       ),
+    ).thenAnswer((_) async {});
+    when(
+      () => sessionRepository.deleteAllByBook(any(), any()),
     ).thenAnswer((_) async {});
 
     container = ProviderContainer(
@@ -151,11 +146,21 @@ void main() {
   );
 
   test('resumes active session even when book is unavailable', () async {
+    final wordsPayload = encodeSessionWords([
+      {
+        'id': 'word-1',
+        'word': '言葉',
+        'reading': 'ことば',
+        'part_of_speech': 'noun',
+        'book_sort_order': 1,
+      },
+    ]);
     final session = LearningSession(
       id: 1,
       userId: 1,
       bookId: 'book-1',
       wordIds: const ['word-1'],
+      wordsPayload: wordsPayload,
       currentIndex: 0,
       batchStartSort: 0,
       batchEndSort: 10,
@@ -168,9 +173,6 @@ void main() {
     when(
       () => sessionRepository.getActiveSession(1, 'book-1'),
     ).thenAnswer((_) async => session);
-    when(
-      () => wordReadQueries.getWordDetails(['word-1'], userId: 1),
-    ).thenAnswer((_) async => [wordDetail]);
 
     await container
         .read(learnControllerProvider.notifier)

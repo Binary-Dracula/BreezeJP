@@ -8,8 +8,8 @@ import '../../../data/commands/grammar_command.dart';
 import '../../../data/models/user.dart';
 import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
-import '../../../data/queries/grammar_book_query.dart';
-import '../../../data/queries/grammar_book_query_provider.dart';
+import '../../../data/queries/study_remote_query.dart';
+import '../../../data/queries/study_remote_query_provider.dart';
 import '../../grammar/providers/grammar_status_refresh_provider.dart';
 import '../state/grammar_book_state.dart';
 
@@ -32,7 +32,7 @@ class GrammarBookController extends Notifier<GrammarBookState> {
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
-  GrammarBookQuery get _query => ref.read(grammarBookQueryProvider);
+  StudyRemoteQuery get _remoteQuery => ref.read(studyRemoteQueryProvider);
   GrammarCommand get _grammarCommand => ref.read(grammarCommandProvider);
 
   Future<User> _getActiveUser() async {
@@ -50,44 +50,40 @@ class GrammarBookController extends Notifier<GrammarBookState> {
   Future<void> loadInitial() async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      final userId = await _ensureUserId();
+      await _ensureUserId();
 
       final searchQuery = state.searchQuery.isEmpty ? null : state.searchQuery;
 
       final results = await Future.wait([
-        _query.getGrammarBookItems(
-          userId: userId,
+        _remoteQuery.fetchGrammarBook(
           status: LearningStatus.learning,
           limit: _kPageSize,
           offset: 0,
           searchQuery: searchQuery,
         ),
-        _query.getGrammarBookItems(
-          userId: userId,
+        _remoteQuery.fetchGrammarBook(
           status: LearningStatus.mastered,
           limit: _kPageSize,
           offset: 0,
           searchQuery: searchQuery,
         ),
-        _query.getStatusCounts(userId: userId, searchQuery: searchQuery),
       ]);
 
-      final learningItems = results[0] as List;
-      final masteredItems = results[1] as List;
-      final counts = results[2] as Map<LearningStatus, int>;
+      final learningPage = results[0];
+      final masteredPage = results[1];
 
       state = state.copyWith(
         isLoading: false,
-        learningGrammars: List.from(learningItems),
-        masteredGrammars: List.from(masteredItems),
-        learningCount: counts[LearningStatus.learning] ?? 0,
-        masteredCount: counts[LearningStatus.mastered] ?? 0,
-        hasMoreLearning: learningItems.length >= _kPageSize,
-        hasMoreMastered: masteredItems.length >= _kPageSize,
+        learningGrammars: List.from(learningPage.items),
+        masteredGrammars: List.from(masteredPage.items),
+        learningCount: learningPage.totalCount,
+        masteredCount: masteredPage.totalCount,
+        hasMoreLearning: learningPage.hasMore,
+        hasMoreMastered: masteredPage.hasMore,
       );
 
       logger.info(
-        '语法本加载完成: 学习中=${learningItems.length}, 已掌握=${masteredItems.length}',
+        '语法本加载完成: 学习中=${learningPage.items.length}, 已掌握=${masteredPage.items.length}',
       );
     } catch (e, stackTrace) {
       logger.error('语法本加载失败', e, stackTrace);
@@ -101,29 +97,29 @@ class GrammarBookController extends Notifier<GrammarBookState> {
 
     try {
       state = state.copyWith(isLoadingMore: true);
-      final userId = await _ensureUserId();
+      await _ensureUserId();
       final currentList = state.currentList;
       final searchQuery = state.searchQuery.isEmpty ? null : state.searchQuery;
 
-      final moreItems = await _query.getGrammarBookItems(
-        userId: userId,
+      final response = await _remoteQuery.fetchGrammarBook(
         status: state.currentStatus,
         limit: _kPageSize,
         offset: currentList.length,
         searchQuery: searchQuery,
       );
+      final moreItems = response.items;
 
       if (state.currentTabIndex == 0) {
         state = state.copyWith(
           isLoadingMore: false,
           learningGrammars: [...state.learningGrammars, ...moreItems],
-          hasMoreLearning: moreItems.length >= _kPageSize,
+          hasMoreLearning: response.hasMore,
         );
       } else {
         state = state.copyWith(
           isLoadingMore: false,
           masteredGrammars: [...state.masteredGrammars, ...moreItems],
-          hasMoreMastered: moreItems.length >= _kPageSize,
+          hasMoreMastered: response.hasMore,
         );
       }
     } catch (e, stackTrace) {

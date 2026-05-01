@@ -105,6 +105,37 @@ class StudyWordRepository {
     }
   }
 
+  /// 按唯一键保存学习记录（存在则覆盖）
+  Future<void> saveStudyWord(StudyWord studyWord) async {
+    try {
+      final db = await _db;
+      final map = studyWord.toMapForInsert();
+      await db.insert(
+        'study_words',
+        map,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      logger.dbInsert(
+        table: 'study_words',
+        id: studyWord.id,
+        keyFields: {
+          'wordId': studyWord.wordId,
+          'bookId': studyWord.bookId,
+          'userId': studyWord.userId,
+        },
+      );
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'UPSERT',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 更新学习记录
   Future<void> updateStudyWord(StudyWord studyWord) async {
     try {
@@ -217,6 +248,54 @@ class StudyWordRepository {
         'study_words',
         where: 'user_id = ? AND book_id = ?',
         whereArgs: [userId, bookId],
+      );
+
+      logger.dbDelete(table: 'study_words', deletedRows: deletedRows);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 删除某用户的所有学习记录
+  Future<void> deleteAllByUser(int userId) async {
+    try {
+      final db = await _db;
+      final deletedRows = await db.delete(
+        'study_words',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+
+      logger.dbDelete(table: 'study_words', deletedRows: deletedRows);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// 按唯一键删除学习记录
+  Future<void> deleteStudyWordByUniqueKey(
+    int userId,
+    String wordId,
+    String bookId,
+  ) async {
+    try {
+      final db = await _db;
+      final deletedRows = await db.delete(
+        'study_words',
+        where: 'user_id = ? AND word_id = ? AND book_id = ?',
+        whereArgs: [userId, wordId, bookId],
       );
 
       logger.dbDelete(table: 'study_words', deletedRows: deletedRows);

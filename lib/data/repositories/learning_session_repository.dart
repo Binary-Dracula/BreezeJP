@@ -68,16 +68,36 @@ class LearningSessionRepository {
     try {
       final db = await _db;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final affectedRows = await db.update(
-        'learning_sessions',
-        {
-          'current_index': session.currentIndex,
-          'status': session.status,
-          'updated_at': now,
-        },
-        where: 'id = ?',
-        whereArgs: [session.id],
-      );
+      var deletedRows = 0;
+      final affectedRows = await db.transaction((txn) async {
+        if (session.status == 'completed') {
+          deletedRows = await txn.delete(
+            'learning_sessions',
+            where: 'user_id = ? AND book_id = ? AND status = ? AND id != ?',
+            whereArgs: [
+              session.userId,
+              session.bookId,
+              'completed',
+              session.id,
+            ],
+          );
+        }
+
+        return txn.update(
+          'learning_sessions',
+          {
+            'current_index': session.currentIndex,
+            'status': session.status,
+            'updated_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [session.id],
+        );
+      });
+
+      if (deletedRows > 0) {
+        logger.dbDelete(table: 'learning_sessions', deletedRows: deletedRows);
+      }
 
       logger.dbUpdate(
         table: 'learning_sessions',

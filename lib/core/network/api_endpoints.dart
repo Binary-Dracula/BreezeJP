@@ -15,10 +15,26 @@ class ApiEndpoints {
   static const String books = '/api/v1/books';
   static const String bookSync = '/api/v1/books/sync';
   static const String bookNextWords = '/api/v1/books/{bookId}/next-words';
+  static const String learnNextWords = '/api/v1/learn/books/{bookId}/next';
+  static const String wordDetail = '/api/v1/words/{id}';
   static const String wordSync = '/api/v1/words/sync';
+  static const String wordReviewSession = '/api/v1/review/words/session';
+  static const String wordBook = '/api/v1/me/word-book';
+  static const String exampleFavorites = '/api/v1/me/example-favorites';
+  static const String grammarBook = '/api/v1/me/grammar-book';
+  static const String homeSummary = '/api/v1/me/home-summary';
+  static const String grammarDetail = '/api/v1/grammars/{id}';
+  static const String grammarLearningQueue = '/api/v1/grammar-learning/queue';
+  static const String reference = '/api/v1/reference';
 
   // 问题上报
   static const String issues = '/api/v1/issues';
+
+  // 用户数据同步
+  static const String syncRegisterDevice = '/api/v1/sync/register-device';
+  static const String syncBootstrap = '/api/v1/sync/bootstrap';
+  static const String syncPull = '/api/v1/sync/pull';
+  static const String syncPush = '/api/v1/sync/push';
 
   /// 替换路径参数
   /// 例如: replaceParams('/words/{id}', {'id': '123'}) => '/words/123'

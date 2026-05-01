@@ -1048,6 +1048,42 @@ abstract class AppLocalizations {
   /// **'没有已忽略的单词'**
   String get vocabularyBookNoIgnoredWords;
 
+  /// 单词本-无收藏单词空状态
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有收藏的单词\n去详情页把重要单词收进单词本吧！'**
+  String get vocabularyBookNoFavoriteWords;
+
+  /// 单词本-搜索框占位
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索单词、假名或释义...'**
+  String get vocabularyBookSearchHint;
+
+  /// 单词本-学习中 Tab 纯文本标题
+  ///
+  /// In zh, this message translates to:
+  /// **'学习中'**
+  String get vocabularyBookTabLearningLabel;
+
+  /// 单词本-已掌握 Tab 纯文本标题
+  ///
+  /// In zh, this message translates to:
+  /// **'已掌握'**
+  String get vocabularyBookTabMasteredLabel;
+
+  /// 单词本-已忽略 Tab 纯文本标题
+  ///
+  /// In zh, this message translates to:
+  /// **'已忽略'**
+  String get vocabularyBookTabIgnoredLabel;
+
+  /// 单词本-收藏 Tab 纯文本标题
+  ///
+  /// In zh, this message translates to:
+  /// **'收藏'**
+  String get vocabularyBookTabFavoritesLabel;
+
   /// 单词本-学习中 Tab 标题
   ///
   /// In zh, this message translates to:
@@ -1066,6 +1102,18 @@ abstract class AppLocalizations {
   /// **'已忽略 ({count})'**
   String vocabularyBookTabIgnored(int count);
 
+  /// 单词本-收藏 Tab 标题
+  ///
+  /// In zh, this message translates to:
+  /// **'收藏 ({count})'**
+  String vocabularyBookTabFavorites(int count);
+
+  /// 单词本-当前 Tab 数量摘要
+  ///
+  /// In zh, this message translates to:
+  /// **'{tab} · {count} 个单词'**
+  String vocabularyBookCountSummary(String tab, int count);
+
   /// 空状态跳转到学习按钮
   ///
   /// In zh, this message translates to:
@@ -1083,6 +1131,66 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'恢复'**
   String get actionRestore;
+
+  /// 操作-收藏单词
+  ///
+  /// In zh, this message translates to:
+  /// **'收藏'**
+  String get actionFavorite;
+
+  /// 操作-取消收藏单词
+  ///
+  /// In zh, this message translates to:
+  /// **'取消收藏'**
+  String get actionUnfavorite;
+
+  /// 操作-收藏例句
+  ///
+  /// In zh, this message translates to:
+  /// **'收藏例句'**
+  String get actionFavoriteSentence;
+
+  /// 操作-取消收藏例句
+  ///
+  /// In zh, this message translates to:
+  /// **'取消收藏例句'**
+  String get actionUnfavoriteSentence;
+
+  /// 页面标题-例句收藏
+  ///
+  /// In zh, this message translates to:
+  /// **'例句收藏'**
+  String get exampleFavoritesTitle;
+
+  /// 例句收藏-搜索框占位
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索单词、例句或释义...'**
+  String get exampleFavoritesSearchHint;
+
+  /// 例句收藏-数量摘要
+  ///
+  /// In zh, this message translates to:
+  /// **'共 {count} 条例句'**
+  String exampleFavoritesCountSummary(int count);
+
+  /// 例句收藏-空状态
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有收藏的例句\n去单词详情里把高频表达收起来吧！'**
+  String get exampleFavoritesEmpty;
+
+  /// 单词收藏切换失败提示
+  ///
+  /// In zh, this message translates to:
+  /// **'单词收藏操作失败，请稍后再试'**
+  String get wordFavoriteToggleFailed;
+
+  /// 例句收藏切换失败提示
+  ///
+  /// In zh, this message translates to:
+  /// **'例句收藏操作失败，请稍后再试'**
+  String get exampleFavoriteToggleFailed;
 
   /// 首页-学习主入口区块标题
   ///
@@ -1107,6 +1215,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'工具区'**
   String get homeSectionTools;
+
+  /// 首页-例句收藏工具入口副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'把常用表达单独收进例句夹'**
+  String get homeExampleFavoritesSubtitle;
 
   /// 首页-五十音图入口卡片标题
   ///

@@ -31,4 +31,19 @@ class GrammarBookItem {
       ),
     );
   }
+
+  factory GrammarBookItem.fromJson(Map<String, dynamic> json) {
+    return GrammarBookItem(
+      studyGrammarId: (json['study_grammar_id'] as int?) ?? 0,
+      grammarId: json['grammar_id'] as int,
+      title: json['title'] as String,
+      jlptLevel: json['jlpt_level'] as String?,
+      userState: LearningStatus.fromValue(
+        (json['learning_status'] as int?) ?? 0,
+      ),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(
+        ((json['updated_at'] as int?) ?? 0) * 1000,
+      ),
+    );
+  }
 }

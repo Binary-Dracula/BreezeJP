@@ -16,6 +16,7 @@ class ReviewKanaItem {
   final KanaLearningState learningState;
   final String? audioFilename;
   final ReviewQuestionType questionType;
+  final List<String> options;
 
   /// switchMode 题型使用：配对的对应假名（平假名 ↔ 片假名）
   final KanaLetter? counterpartLetter;
@@ -25,6 +26,25 @@ class ReviewKanaItem {
     required this.learningState,
     this.audioFilename,
     required this.questionType,
+    required this.options,
     this.counterpartLetter,
   });
+}
+
+ReviewQuestionType reviewQuestionTypeFromApi(String value) {
+  switch (value) {
+    case 'romaji_to_hiragana':
+      return ReviewQuestionType.romajiToHiragana;
+    case 'katakana_to_romaji':
+      return ReviewQuestionType.katakanaToRomaji;
+    case 'romaji_to_katakana':
+      return ReviewQuestionType.romajiToKatakana;
+    case 'hiragana_to_katakana':
+      return ReviewQuestionType.hiraganaToKatakana;
+    case 'katakana_to_hiragana':
+      return ReviewQuestionType.katakanaToHiragana;
+    case 'hiragana_to_romaji':
+    default:
+      return ReviewQuestionType.hiraganaToRomaji;
+  }
 }

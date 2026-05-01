@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/algorithm/algorithm_service.dart';
 import '../../core/algorithm/algorithm_service_provider.dart';
@@ -5,6 +7,7 @@ import '../../core/algorithm/srs_types.dart';
 
 import '../../core/constants/learning_status.dart';
 import '../../core/utils/app_logger.dart';
+import 'sync_remote_command.dart';
 import '../models/study_grammar.dart';
 import '../repositories/study_grammar_repository.dart';
 import '../repositories/study_grammar_repository_provider.dart';
@@ -20,6 +23,7 @@ class GrammarCommand {
 
   StudyGrammarRepository get _repo => ref.read(studyGrammarRepositoryProvider);
   AlgorithmService get _algorithmService => ref.read(algorithmServiceProvider);
+  SyncRemoteCommand get _syncRemote => ref.read(syncRemoteCommandProvider);
 
   /// 获取或创建学习状态 (默认 seen/0)
   Future<StudyGrammar> getOrCreateLearningState(
@@ -57,6 +61,7 @@ class GrammarCommand {
       logger.info(
         'Grammar state initialized: userId=$userId grammarId=$grammarId',
       );
+      unawaited(_pushGrammarState(state, 'upsert'));
       return state;
     } catch (e, stackTrace) {
       logger.dbError(
@@ -96,6 +101,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
+    unawaited(_pushGrammarState(updated, 'mark_learned'));
     logger.info('Grammar marked as learning: $grammarId');
   }
 
@@ -157,6 +163,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
+    unawaited(_pushGrammarState(updated, 'review'));
     logger.info('Grammar reviewed: $grammarId, rating: ${rating.name}');
   }
 
@@ -171,6 +178,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
+    unawaited(_pushGrammarState(updated, 'mark_mastered'));
     logger.info('Grammar mastered: $grammarId');
   }
 
@@ -207,6 +215,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
+    unawaited(_pushGrammarState(updated, 'mark_learned'));
     logger.info('Grammar restored to learning: $grammarId');
   }
 
@@ -236,6 +245,16 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
+    unawaited(_pushGrammarState(updated, 'reset'));
     logger.info('Grammar reset to unlearned: $grammarId');
+  }
+
+  Future<void> _pushGrammarState(StudyGrammar state, String operation) async {
+    try {
+      await _syncRemote.pushGrammarState(state: state, operation: operation);
+    } catch (e, stackTrace) {
+      logger.warning('语法状态已写本地，云端同步稍后重试: ${state.grammarId}');
+      logger.error('语法状态同步失败', e, stackTrace);
+    }
   }
 }

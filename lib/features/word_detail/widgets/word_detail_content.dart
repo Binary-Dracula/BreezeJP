@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/word_detail.dart';
+import '../../favorites/widgets/word_favorite_button.dart';
 import '../../learn/widgets/conjugation_list.dart';
 import '../../learn/widgets/word_examples_section.dart';
 import '../../learn/widgets/word_header.dart';
@@ -30,7 +31,10 @@ class WordDetailContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ...prefixChildren,
-          WordHeader(wordDetail: wordDetail),
+          WordHeader(
+            wordDetail: wordDetail,
+            trailingAction: WordFavoriteButton(wordId: wordDetail.word.id),
+          ),
           WordMeaningsSection(richContent: wordDetail.richContent),
           WordExamplesSection(examples: wordDetail.examples),
           WordInsightsSection(richContent: wordDetail.richContent),

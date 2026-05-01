@@ -6,6 +6,7 @@ class LearningSession {
   final int userId;
   final String bookId;
   final List<String> wordIds;
+  final String? wordsPayload;
   final int currentIndex;
   final int batchStartSort;
   final int batchEndSort;
@@ -21,6 +22,7 @@ class LearningSession {
     required this.userId,
     required this.bookId,
     required this.wordIds,
+    this.wordsPayload,
     required this.currentIndex,
     required this.batchStartSort,
     required this.batchEndSort,
@@ -36,6 +38,7 @@ class LearningSession {
       userId: map['user_id'] as int,
       bookId: map['book_id'] as String,
       wordIds: List<String>.from(jsonDecode(map['word_ids'] as String) as List),
+      wordsPayload: map['words_payload'] as String?,
       currentIndex: map['current_index'] as int,
       batchStartSort: map['batch_start_sort'] as int,
       batchEndSort: map['batch_end_sort'] as int,
@@ -57,6 +60,7 @@ class LearningSession {
       'user_id': userId,
       'book_id': bookId,
       'word_ids': jsonEncode(wordIds),
+      'words_payload': wordsPayload,
       'current_index': currentIndex,
       'batch_start_sort': batchStartSort,
       'batch_end_sort': batchEndSort,
@@ -78,6 +82,7 @@ class LearningSession {
     int? userId,
     String? bookId,
     List<String>? wordIds,
+    Object? wordsPayload = _sentinel,
     int? currentIndex,
     int? batchStartSort,
     int? batchEndSort,
@@ -91,6 +96,9 @@ class LearningSession {
       userId: userId ?? this.userId,
       bookId: bookId ?? this.bookId,
       wordIds: wordIds ?? this.wordIds,
+      wordsPayload: wordsPayload == _sentinel
+          ? this.wordsPayload
+          : wordsPayload as String?,
       currentIndex: currentIndex ?? this.currentIndex,
       batchStartSort: batchStartSort ?? this.batchStartSort,
       batchEndSort: batchEndSort ?? this.batchEndSort,
@@ -100,6 +108,8 @@ class LearningSession {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  static const Object _sentinel = Object();
 
   bool get isActive => status == 'active';
   bool get isCompleted => status == 'completed';

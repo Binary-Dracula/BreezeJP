@@ -15,6 +15,7 @@ class WordReviewItem {
   final String? audioSource;
   final String? meaning;
   final String? reading;
+  final List<String> options;
 
   const WordReviewItem({
     required this.studyWord,
@@ -23,5 +24,20 @@ class WordReviewItem {
     required this.audioSource,
     required this.meaning,
     required this.reading,
+    required this.options,
   });
+}
+
+WordReviewQuestionType wordReviewQuestionTypeFromApi(String value) {
+  switch (value) {
+    case 'audio_to_meaning':
+      return WordReviewQuestionType.audioToMeaning;
+    case 'kanji_to_reading':
+      return WordReviewQuestionType.kanjiToReading;
+    case 'meaning_to_spelling':
+      return WordReviewQuestionType.meaningToSpelling;
+    case 'word_to_meaning':
+    default:
+      return WordReviewQuestionType.wordToMeaning;
+  }
 }

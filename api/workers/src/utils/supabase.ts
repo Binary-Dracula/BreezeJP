@@ -33,6 +33,29 @@ export async function supabaseFetch(
 }
 
 /**
+ * 调用 Supabase Postgres RPC 函数。
+ */
+export async function supabaseRpc<TPayload>(
+  env: Env,
+  fn: string,
+  payload: TPayload,
+  options?: {
+    headers?: Record<string, string>;
+  }
+): Promise<Response> {
+  return fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
  * 统一的 JSON 响应封装
  */
 export function jsonResponse(body: unknown, extraHeaders?: Record<string, string>): Response {

@@ -25,6 +25,16 @@ class ReferenceItem {
     this.translation,
     this.isIrregular = false,
   });
+
+  factory ReferenceItem.fromJson(Map<String, dynamic> json) {
+    return ReferenceItem(
+      character: json['character'] as String,
+      kana: json['kana'] as String,
+      romaji: json['romaji'] as String?,
+      translation: json['translation'] as String?,
+      isIrregular: json['isIrregular'] == true,
+    );
+  }
 }
 
 /// 针对每一个大模块下的分组（比如按1-10分组，按百千分组）
@@ -44,4 +54,17 @@ class ReferenceGroup {
     this.subtitle,
     required this.items,
   });
+
+  factory ReferenceGroup.fromJson(Map<String, dynamic> json) {
+    return ReferenceGroup(
+      title: json['title'] as String,
+      subtitle: json['subtitle'] as String?,
+      items: (json['items'] as List<dynamic>)
+          .map(
+            (item) =>
+                ReferenceItem.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList(),
+    );
+  }
 }

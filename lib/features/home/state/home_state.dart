@@ -20,7 +20,7 @@ class HomeState {
   const HomeState({
     this.isLoading = false,
     this.error,
-    this.userName = 'BreezeJP User',
+    this.userName = '',
     this.reviewCount = 0,
     this.kanaReviewCount = 0,
     this.masteredWordCount = 0,

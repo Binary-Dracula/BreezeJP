@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/learning_status.dart';
 import '../../../../core/domain/domain_event_bus.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../data/models/kana_detail.dart';
@@ -9,6 +10,7 @@ import '../../../../data/commands/active_user_command.dart';
 import '../../../../data/commands/active_user_command_provider.dart';
 import '../../../../data/queries/active_user_query.dart';
 import '../../../../data/queries/active_user_query_provider.dart';
+import '../../../../data/models/kana_learning_state.dart';
 import '../../../../data/models/user.dart';
 import '../../../../data/queries/kana_query.dart';
 import '../../../../data/queries/kana_query_provider.dart';
@@ -47,8 +49,9 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
     final safeIndex = kanaLetters.isEmpty
         ? 0
         : initialIndex.clamp(0, kanaLetters.length - 1);
-    final currentKanaId =
-        kanaLetters.isEmpty ? null : kanaLetters[safeIndex].letter.id;
+    final currentKanaId = kanaLetters.isEmpty
+        ? null
+        : kanaLetters[safeIndex].letter.id;
 
     state = state.copyWith(
       kanaLetters: kanaLetters,
@@ -106,23 +109,23 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
     }
 
     final requestedKanaId = current.letter.id;
-    state = state.copyWith(
-      currentKanaId: requestedKanaId,
-      learningState: null,
-    );
+    state = state.copyWith(currentKanaId: requestedKanaId, learningState: null);
 
     try {
-      final user = await _getActiveUser();
       if (state.currentKanaId != requestedKanaId) {
         return;
       }
-      final learningState = await _kanaQuery.getKanaLearningState(
-        user.id,
-        requestedKanaId,
-      );
+      final userId = await _activeUserQuery.getActiveUserId() ?? 0;
+      final detail = await _kanaQuery.getKanaDetail(userId, requestedKanaId);
       if (state.currentKanaId != requestedKanaId) {
         return;
       }
+      if (detail == null) {
+        state = state.copyWith(isLoading: false, error: '未找到假名详情');
+        return;
+      }
+
+      final learningState = detail.learningState;
       state = state.copyWith(
         currentKanaId: requestedKanaId,
         learningState: learningState,
@@ -135,23 +138,10 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
         );
       }
 
-      final strokeOrder = await _kanaQuery.getKanaStrokeOrder(
-        requestedKanaId,
-      );
-      if (state.currentKanaId != requestedKanaId) {
-        return;
-      }
-      final audio = await _kanaQuery.getKanaAudioByKanaId(requestedKanaId);
-      if (state.currentKanaId != requestedKanaId) {
-        return;
-      }
-
-      final svg = strokeOrder?.svg;
-
       state = state.copyWith(
         isLoading: false,
-        svgData: svg,
-        audioFilename: audio?.audioFilename,
+        svgData: detail.strokeOrder?.svg,
+        audioFilename: detail.audio?.audioFilename,
       );
 
       logger.info('加载假名笔顺成功: kanaId=$requestedKanaId');
@@ -174,7 +164,15 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
     if (event != null) {
       DomainEventBus().publish(event);
     }
-    await refreshState();
+    _setCurrentLearningState(
+      state.learningState ??
+          KanaLearningState(
+            id: 0,
+            userId: user.id,
+            kanaId: kanaId,
+            learningStatus: LearningStatus.learning,
+          ),
+    );
   }
 
   /// 切换当前假名掌握状态（learning ↔ mastered）
@@ -187,32 +185,25 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
     if (event != null) {
       DomainEventBus().publish(event);
     }
-    await refreshState();
+    final current = state.learningState;
+    final nextStatus = current?.learningStatus == LearningStatus.mastered
+        ? LearningStatus.learning
+        : LearningStatus.mastered;
+    _setCurrentLearningState(
+      (current ??
+              KanaLearningState(
+                id: 0,
+                userId: user.id,
+                kanaId: kanaId,
+                learningStatus: nextStatus,
+              ))
+          .copyWith(learningStatus: nextStatus),
+    );
   }
 
-  /// 刷新当前假名的学习状态
-  Future<void> refreshState() async {
-    final current = state.currentKana;
-    if (current == null) return;
-    final requestedKanaId = current.letter.id;
+  void _setCurrentLearningState(KanaLearningState learningState) {
     state = state.copyWith(
-      currentKanaId: requestedKanaId,
-      learningState: null,
-    );
-    final user = await _getActiveUser();
-    if (state.currentKanaId != requestedKanaId) {
-      return;
-    }
-    final learningState = await _kanaQuery.getKanaLearningState(
-      user.id,
-      requestedKanaId,
-    );
-    if (state.currentKanaId != requestedKanaId) {
-      return;
-    }
-
-    state = state.copyWith(
-      currentKanaId: requestedKanaId,
+      currentKanaId: learningState.kanaId,
       learningState: learningState,
     );
   }

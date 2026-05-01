@@ -3,6 +3,7 @@ import 'package:breeze_jp/l10n/app_localizations.dart';
 
 import '../../../core/widgets/common_example_item.dart';
 import '../../../data/models/word_detail.dart';
+import '../../favorites/widgets/word_example_favorite_button.dart';
 
 /// 例句区（2.0 — 使用 CommonExampleItem 保持简洁一致）
 class WordExamplesSection extends StatelessWidget {
@@ -87,6 +88,10 @@ class _ExampleItem extends StatelessWidget {
           data: ExampleDisplayData(
             japanese: example.japanese,
             translation: example.chinese,
+          ),
+          trailing: WordExampleFavoriteButton(
+            exampleId: example.id,
+            wordId: example.wordId,
           ),
         ),
       ],

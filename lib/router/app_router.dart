@@ -14,11 +14,11 @@ import '../features/learn/pages/learn_page.dart';
 import '../features/kana/chart/pages/kana_chart_page.dart';
 import '../features/article/pages/article_list_page.dart';
 import '../features/article/pages/article_detail_page.dart';
+import '../features/favorites/pages/example_favorites_page.dart';
 import '../features/word_review/pages/word_review_page.dart';
 import '../features/vocabulary_book/pages/vocabulary_book_page.dart';
 import '../features/word_detail/pages/word_detail_page.dart';
 import '../features/book_selection/pages/book_selection_page.dart';
-import '../debug/pages/debug_placeholder_page.dart';
 import 'app_route_observer.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/grammar/pages/grammar_list_page.dart';
@@ -186,6 +186,12 @@ final appRouter = GoRouter(
       builder: (context, state) => const VocabularyBookPage(),
     ),
 
+    GoRoute(
+      path: '/example-favorites',
+      name: 'example-favorites',
+      builder: (context, state) => const ExampleFavoritesPage(),
+    ),
+
     // 辞书选择页面
     GoRoute(
       path: '/book-selection',
@@ -197,13 +203,6 @@ final appRouter = GoRouter(
       name: 'book-selection-settings',
       builder: (context, state) =>
           const BookSelectionPage(navigateToLearnOnSelect: false),
-    ),
-
-    // Debug 占位入口
-    GoRoute(
-      path: '/debug',
-      name: 'debug',
-      builder: (context, state) => const DebugPlaceholderPage(),
     ),
 
     // Reading Mode / Shadowing

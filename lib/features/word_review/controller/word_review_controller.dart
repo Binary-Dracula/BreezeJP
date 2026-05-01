@@ -4,15 +4,13 @@ import '../../../core/algorithm/srs_types.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
+import '../../../data/commands/review_session_remote_command.dart';
 import '../../../data/commands/word_command.dart';
-import '../../../data/models/study_word.dart';
 import '../../../data/models/user.dart';
-import '../../../data/models/word_detail.dart';
 import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
-import '../../../data/queries/study_word_query.dart';
-import '../../../data/queries/word_read_queries.dart';
-import 'dart:math' as math;
+import '../../../data/queries/study_remote_query.dart';
+import '../../../data/queries/study_remote_query_provider.dart';
 
 import '../state/word_review_item.dart';
 import '../state/word_review_state.dart';
@@ -23,13 +21,12 @@ final wordReviewControllerProvider =
     );
 
 class WordReviewController extends Notifier<WordReviewState> {
-  final Set<String> _mistakeWordIds = {};
-
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
-  StudyWordQuery get _studyWordQuery => ref.read(studyWordQueryProvider);
-  WordReadQueries get _wordReadQueries => ref.read(wordReadQueriesProvider);
+  StudyRemoteQuery get _studyRemoteQuery => ref.read(studyRemoteQueryProvider);
+  ReviewSessionRemoteCommand get _reviewSessionRemoteCommand =>
+      ref.read(reviewSessionRemoteCommandProvider);
   WordCommand get _wordCommand => ref.read(wordCommandProvider);
 
   @override
@@ -46,6 +43,7 @@ class WordReviewController extends Notifier<WordReviewState> {
     required bool isEmpty,
   }) {
     state = state.copyWith(
+      sessionId: null,
       isLoading: isLoading,
       isEmpty: isEmpty,
       items: const [],
@@ -61,29 +59,45 @@ class WordReviewController extends Notifier<WordReviewState> {
   Future<void> loadReview() async {
     try {
       _setSessionBootstrapState(isLoading: true, isEmpty: false);
-      _mistakeWordIds.clear();
 
       final user = await _getActiveUser();
-      final dueStates = await _studyWordQuery.getDueReviews(user.id);
-
-      final items = await _composeReviewItems(dueStates);
+      final remoteSession = await _studyRemoteQuery.fetchWordReviewSession(
+        localUserId: user.id,
+      );
+      final items = remoteSession.items
+          .map(
+            (item) => WordReviewItem(
+              studyWord: item.studyWord,
+              wordDetail: item.wordDetail,
+              questionType: wordReviewQuestionTypeFromApi(item.questionType),
+              audioSource: item.audioSource,
+              meaning: item.meaning,
+              reading: item.reading,
+              options: item.options,
+            ),
+          )
+          .toList();
       if (items.isEmpty) {
         _setSessionBootstrapState(isLoading: false, isEmpty: true);
         logger.info('No due words for review.');
         return;
       }
 
-      logger.info('Start single card review: ${items.length} items');
+      final safeIndex = _resolveSafeCurrentIndex(
+        remoteSession.currentIndex,
+        items.length,
+      );
 
-      items.shuffle();
+      logger.info('Resume remote word review session: ${items.length} items');
 
       state = state.copyWith(
+        sessionId: remoteSession.sessionId,
         isLoading: false,
         isEmpty: false,
         items: items,
-        currentIndex: 0,
-        currentPhase: ReviewCardPhase.testing,
-        hasMistakeOnCurrent: false,
+        currentIndex: safeIndex,
+        currentPhase: _reviewCardPhaseFromApi(remoteSession.currentPhase),
+        hasMistakeOnCurrent: remoteSession.hasMistakeOnCurrent,
         isAllFinished: false,
         error: null,
       );
@@ -99,149 +113,7 @@ class WordReviewController extends Notifier<WordReviewState> {
   Future<void> _prepareCurrentCardOptions() async {
     final item = state.currentItem;
     if (item == null) return;
-
-    // 从本地词库随机取干扰项
-    final distractors = await _wordReadQueries.searchWords(
-      keyword: '',
-      limit: 10,
-    );
-
-    final options = <String>[];
-    String correctOption = '';
-
-    switch (item.questionType) {
-      case WordReviewQuestionType.meaningToSpelling:
-        final correctReading = item.reading ?? '';
-        final chars = correctReading.split('');
-        options.addAll(chars);
-        final distractorsChars = [
-          'あ',
-          'い',
-          'う',
-          'え',
-          'お',
-          'か',
-          'き',
-          'く',
-          'け',
-          'こ',
-          'が',
-          'ぎ',
-          'ぐ',
-          'げ',
-          'ご',
-          'さ',
-          'し',
-          'す',
-          'せ',
-          'そ',
-          'ざ',
-          'じ',
-          'ず',
-          'ぜ',
-          'ぞ',
-          'た',
-          'ち',
-          'つ',
-          'て',
-          'と',
-          'だ',
-          'ぢ',
-          'づ',
-          'で',
-          'ど',
-          'な',
-          'に',
-          'ぬ',
-          'ね',
-          'の',
-          'は',
-          'ひ',
-          'ふ',
-          'へ',
-          'ほ',
-          'ば',
-          'び',
-          'ぶ',
-          'べ',
-          'ぼ',
-          'ぱ',
-          'ぴ',
-          'ぷ',
-          'ぺ',
-          'ぽ',
-          'ま',
-          'み',
-          'む',
-          'め',
-          'も',
-          'や',
-          'ゆ',
-          'よ',
-          'ら',
-          'り',
-          'る',
-          'れ',
-          'ろ',
-          'わ',
-          'を',
-          'ん',
-        ];
-        distractorsChars.shuffle();
-        for (var i = 0; i < 4; i++) {
-          options.add(distractorsChars[i]);
-        }
-        break;
-      case WordReviewQuestionType.wordToMeaning:
-      case WordReviewQuestionType.audioToMeaning:
-        correctOption = item.meaning ?? 'Unknown';
-        options.add(correctOption);
-        for (final d in distractors) {
-          final m = d.primaryMeaning;
-          if (m != null && m.isNotEmpty && !options.contains(m)) {
-            options.add(m);
-          }
-          if (options.length >= 4) break;
-        }
-        break;
-      case WordReviewQuestionType.kanjiToReading:
-        correctOption = item.reading ?? '';
-        options.add(correctOption);
-        for (final d in distractors) {
-          final r = d.reading.trim();
-          if (r.isNotEmpty && !options.contains(r)) {
-            options.add(r);
-          }
-          if (options.length >= 4) break;
-        }
-        break;
-    }
-
-    // 补足选项
-    if (item.questionType != WordReviewQuestionType.meaningToSpelling &&
-        options.length < 4) {
-      final allItems = state.items;
-      final otherItems = allItems
-          .where((i) => i.studyWord.wordId != item.studyWord.wordId)
-          .toList();
-      otherItems.shuffle();
-      for (final o in otherItems) {
-        if (options.length >= 4) break;
-        String val = '';
-        if (item.questionType == WordReviewQuestionType.wordToMeaning ||
-            item.questionType == WordReviewQuestionType.audioToMeaning) {
-          val = o.meaning ?? '';
-        } else if (item.questionType == WordReviewQuestionType.kanjiToReading) {
-          val = o.reading ?? '';
-        }
-        if (val.isNotEmpty && !options.contains(val)) {
-          options.add(val);
-        }
-      }
-    }
-
-    options.shuffle();
-    state = state.copyWith(currentOptions: options);
+    state = state.copyWith(currentOptions: item.options);
   }
 
   /// 用户在客观测试中选择了某个选项
@@ -265,10 +137,10 @@ class WordReviewController extends Notifier<WordReviewState> {
 
     if (isCorrect) {
       state = state.copyWith(currentPhase: ReviewCardPhase.grading);
+      await _persistCurrentSession();
     } else {
       if (!state.hasMistakeOnCurrent) {
         state = state.copyWith(hasMistakeOnCurrent: true);
-        _mistakeWordIds.add(item.studyWord.wordId);
 
         try {
           await _wordCommand.onWordReviewed(
@@ -280,6 +152,7 @@ class WordReviewController extends Notifier<WordReviewState> {
         } catch (e, stackTrace) {
           logger.error('Failed to log again rating', e, stackTrace);
         }
+        await _persistCurrentSession();
       }
     }
   }
@@ -319,6 +192,7 @@ class WordReviewController extends Notifier<WordReviewState> {
         items: items,
         currentIndex: nextIndex,
       );
+      await _completeCurrentSession();
     } else {
       state = state.copyWith(
         items: items,
@@ -327,113 +201,69 @@ class WordReviewController extends Notifier<WordReviewState> {
         hasMistakeOnCurrent: false,
       );
       await _prepareCurrentCardOptions();
+      await _persistCurrentSession();
     }
   }
 
   Future<void> finishAll() async {
     state = state.copyWith(isLoading: false, isAllFinished: true);
-  }
-
-  Future<List<WordReviewItem>> _composeReviewItems(
-    List<StudyWord> studyWords,
-  ) async {
-    final items = <WordReviewItem>[];
-
-    for (final studyWord in studyWords) {
-      final WordDetail? detail = await _wordReadQueries.getWordDetail(
-        studyWord.wordId,
-      );
-      if (detail == null) {
-        logger.warning('Word not found for review: wordId=${studyWord.wordId}');
-        continue;
-      }
-
-      final meaning = detail.primaryMeaning;
-      final reading = _readingText(detail);
-      final availableTypes = _availableTypes(
-        meaning: meaning,
-        reading: reading,
-      );
-
-      if (availableTypes.isEmpty) {
-        logger.warning(
-          'Skip word without review content: wordId=${studyWord.wordId}',
-        );
-        continue;
-      }
-
-      final questionType = _chooseQuestionType(
-        studyWord,
-        detail.word.word,
-        availableTypes,
-      );
-
-      items.add(
-        WordReviewItem(
-          studyWord: studyWord,
-          wordDetail: detail,
-          questionType: questionType,
-          audioSource: null,
-          meaning: meaning,
-          reading: reading,
-        ),
-      );
-    }
-    return items;
-  }
-
-  String? _readingText(WordDetail detail) {
-    final reading = detail.word.reading.trim();
-    if (reading.isNotEmpty) return reading;
-    final romaji = detail.word.romaji?.trim() ?? '';
-    return romaji.isNotEmpty ? romaji : null;
-  }
-
-  Set<WordReviewQuestionType> _availableTypes({
-    required String? meaning,
-    required String? reading,
-  }) {
-    final available = <WordReviewQuestionType>{};
-    if (meaning != null && meaning.isNotEmpty) {
-      available.add(WordReviewQuestionType.wordToMeaning);
-      available.add(WordReviewQuestionType.meaningToSpelling);
-    }
-    if (reading != null && reading.isNotEmpty) {
-      available.add(WordReviewQuestionType.kanjiToReading);
-    }
-    return available;
-  }
-
-  WordReviewQuestionType _chooseQuestionType(
-    StudyWord studyWord,
-    String wordStr,
-    Set<WordReviewQuestionType> available,
-  ) {
-    final isNew = studyWord.totalReviews == 0;
-    final r = math.Random().nextDouble();
-
-    if (isNew) {
-      if (r < 0.7 && available.contains(WordReviewQuestionType.wordToMeaning)) {
-        return WordReviewQuestionType.wordToMeaning;
-      }
-      if (available.contains(WordReviewQuestionType.wordToMeaning)) {
-        return WordReviewQuestionType.wordToMeaning;
-      }
-      return available.first;
-    } else {
-      if (r < 0.4 &&
-          available.contains(WordReviewQuestionType.kanjiToReading) &&
-          RegExp(r'[\u4e00-\u9faf]').hasMatch(wordStr)) {
-        return WordReviewQuestionType.kanjiToReading;
-      }
-      if (available.contains(WordReviewQuestionType.meaningToSpelling)) {
-        return WordReviewQuestionType.meaningToSpelling;
-      }
-      return available.first;
-    }
+    await _completeCurrentSession();
   }
 
   Future<void> endSession() async {
-    return;
+    if (state.sessionId == null) {
+      return;
+    }
+    if (state.isAllFinished) {
+      await _completeCurrentSession();
+      return;
+    }
+    if (state.items.isEmpty || state.isEmpty) {
+      return;
+    }
+    await _persistCurrentSession();
+  }
+
+  Future<void> _persistCurrentSession() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null) {
+      return;
+    }
+    await _reviewSessionRemoteCommand.saveWordSession(
+      sessionId: sessionId,
+      state: state,
+    );
+  }
+
+  Future<void> _completeCurrentSession() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null) {
+      return;
+    }
+    await _reviewSessionRemoteCommand.completeWordSession(
+      sessionId: sessionId,
+      state: state,
+    );
+    state = state.copyWith(sessionId: null);
+  }
+
+  int _resolveSafeCurrentIndex(int currentIndex, int itemCount) {
+    if (itemCount <= 0) {
+      return 0;
+    }
+    if (currentIndex < 0) {
+      return 0;
+    }
+    if (currentIndex >= itemCount) {
+      return itemCount - 1;
+    }
+    return currentIndex;
+  }
+
+  ReviewCardPhase _reviewCardPhaseFromApi(String value) {
+    return ReviewCardPhase.values.firstWhere(
+      (phase) => phase.name == value,
+      orElse: () => ReviewCardPhase.testing,
+    );
   }
 }

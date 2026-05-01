@@ -516,6 +516,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyBookNoIgnoredWords => '没有已忽略的单词';
 
   @override
+  String get vocabularyBookNoFavoriteWords => '还没有收藏的单词\n去详情页把重要单词收进单词本吧！';
+
+  @override
+  String get vocabularyBookSearchHint => '搜索单词、假名或释义...';
+
+  @override
+  String get vocabularyBookTabLearningLabel => '学习中';
+
+  @override
+  String get vocabularyBookTabMasteredLabel => '已掌握';
+
+  @override
+  String get vocabularyBookTabIgnoredLabel => '已忽略';
+
+  @override
+  String get vocabularyBookTabFavoritesLabel => '收藏';
+
+  @override
   String vocabularyBookTabLearning(int count) {
     return '学习中 ($count)';
   }
@@ -531,6 +549,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String vocabularyBookTabFavorites(int count) {
+    return '收藏 ($count)';
+  }
+
+  @override
+  String vocabularyBookCountSummary(String tab, int count) {
+    return '$tab · $count 个单词';
+  }
+
+  @override
   String get goToLearn => '去学习';
 
   @override
@@ -538,6 +566,38 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get actionRestore => '恢复';
+
+  @override
+  String get actionFavorite => '收藏';
+
+  @override
+  String get actionUnfavorite => '取消收藏';
+
+  @override
+  String get actionFavoriteSentence => '收藏例句';
+
+  @override
+  String get actionUnfavoriteSentence => '取消收藏例句';
+
+  @override
+  String get exampleFavoritesTitle => '例句收藏';
+
+  @override
+  String get exampleFavoritesSearchHint => '搜索单词、例句或释义...';
+
+  @override
+  String exampleFavoritesCountSummary(int count) {
+    return '共 $count 条例句';
+  }
+
+  @override
+  String get exampleFavoritesEmpty => '还没有收藏的例句\n去单词详情里把高频表达收起来吧！';
+
+  @override
+  String get wordFavoriteToggleFailed => '单词收藏操作失败，请稍后再试';
+
+  @override
+  String get exampleFavoriteToggleFailed => '例句收藏操作失败，请稍后再试';
 
   @override
   String get homeSectionLearning => '学习主入口';
@@ -550,6 +610,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeSectionTools => '工具区';
+
+  @override
+  String get homeExampleFavoritesSubtitle => '把常用表达单独收进例句夹';
 
   @override
   String get homeKanaTitle => '学习五十音图';

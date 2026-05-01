@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/algorithm/algorithm_service.dart';
 import '../../core/algorithm/algorithm_service_provider.dart';
 import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
+import '../../core/providers/home_summary_invalidation_provider.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/log_formatter.dart';
+import 'sync_remote_command.dart';
 import '../models/study_word.dart';
 import '../repositories/study_word_repository.dart';
 import '../repositories/study_word_repository_provider.dart';
@@ -22,6 +26,9 @@ class WordCommand {
 
   StudyWordRepository get _repo => ref.read(studyWordRepositoryProvider);
   AlgorithmService get _algorithmService => ref.read(algorithmServiceProvider);
+  SyncRemoteCommand get _syncRemote => ref.read(syncRemoteCommandProvider);
+  HomeSummaryInvalidationNotifier get _homeSummaryInvalidation =>
+      ref.read(homeSummaryInvalidationProvider.notifier);
 
   /// 记录一次复习并更新 SRS 状态。
   Future<void> onWordReviewed({
@@ -89,6 +96,8 @@ class WordCommand {
     );
 
     await _repo.updateStudyWord(updated);
+    _homeSummaryInvalidation.markStale();
+    unawaited(_pushWordState(updated));
     logger.srsUpdate(
       scope: 'word',
       userId: userId,
@@ -116,5 +125,14 @@ class WordCommand {
       'totalReviews': word.totalReviews,
       'failCount': word.failCount,
     };
+  }
+
+  Future<void> _pushWordState(StudyWord state) async {
+    try {
+      await _syncRemote.pushWordState(state: state, operation: 'review');
+    } catch (e, stackTrace) {
+      logger.warning('单词复习结果已写本地，云端同步稍后重试: ${state.wordId}');
+      logger.error('单词复习状态同步失败', e, stackTrace);
+    }
   }
 }

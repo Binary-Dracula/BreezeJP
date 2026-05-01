@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/learning_status.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
@@ -8,7 +9,8 @@ import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/models/user.dart';
 import '../../../data/models/grammar_detail.dart';
-import '../../../data/queries/grammar_read_queries.dart';
+import '../../../data/queries/grammar_remote_query.dart';
+import '../../../data/queries/grammar_remote_query_provider.dart';
 import '../providers/grammar_status_refresh_provider.dart';
 import '../state/grammar_state.dart';
 
@@ -27,8 +29,7 @@ class GrammarController extends Notifier<GrammarState> {
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
   GrammarCommand get _grammarCommand => ref.read(grammarCommandProvider);
-  GrammarReadQueries get _grammarQueries =>
-      ref.read(grammarReadQueriesProvider);
+  GrammarRemoteQuery get _remoteQuery => ref.read(grammarRemoteQueryProvider);
 
   Future<User> _getActiveUser() async {
     final ensured = await _activeUserCommand.ensureActiveUser();
@@ -45,8 +46,7 @@ class GrammarController extends Notifier<GrammarState> {
   Future<void> initWithGrammar(int grammarId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final userId = await _ensureUserId();
-      final detail = await _grammarQueries.getGrammarDetail(userId, grammarId);
+      final detail = await _remoteQuery.fetchGrammarDetail(grammarId);
 
       if (detail == null) {
         state = state.copyWith(isLoading: false, error: '语法不存在');
@@ -75,29 +75,16 @@ class GrammarController extends Notifier<GrammarState> {
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final userId = await _ensureUserId();
       final currentIds = state.studyQueue.map((g) => g.grammar.id).toList();
 
-      final newGrammars = await _grammarQueries.getUnlearnedGrammars(
-        userId: userId,
+      final newDetails = await _remoteQuery.fetchGrammarLearningQueue(
         limit: 5,
         excludeIds: currentIds,
       );
 
-      if (newGrammars.isEmpty) {
+      if (newDetails.isEmpty) {
         state = state.copyWith(isLoadingMore: false);
         return;
-      }
-
-      final newDetails = <GrammarDetail>[];
-      for (final grammar in newGrammars) {
-        final detail = await _grammarQueries.getGrammarDetail(
-          userId,
-          grammar.id,
-        );
-        if (detail != null) {
-          newDetails.add(detail);
-        }
       }
 
       state = state.copyWith(
@@ -127,7 +114,7 @@ class GrammarController extends Notifier<GrammarState> {
 
     final userId = await _ensureUserId();
     await _grammarCommand.startLearning(userId, currentStr.grammar.id);
-    await _refreshCurrentState();
+    _setCurrentUserState(LearningStatus.learning);
     _notifyStatusChanged();
   }
 
@@ -138,7 +125,7 @@ class GrammarController extends Notifier<GrammarState> {
 
     final userId = await _ensureUserId();
     await _grammarCommand.markAsMastered(userId, currentStr.grammar.id);
-    await _refreshCurrentState();
+    _setCurrentUserState(LearningStatus.mastered);
     _notifyStatusChanged();
   }
 
@@ -149,7 +136,7 @@ class GrammarController extends Notifier<GrammarState> {
 
     final userId = await _ensureUserId();
     await _grammarCommand.restoreToLearning(userId, currentStr.grammar.id);
-    await _refreshCurrentState();
+    _setCurrentUserState(LearningStatus.learning);
     _notifyStatusChanged();
   }
 
@@ -159,23 +146,16 @@ class GrammarController extends Notifier<GrammarState> {
 
     final userId = await _ensureUserId();
     await _grammarCommand.setUnlearned(userId, currentStr.grammar.id);
-    await _refreshCurrentState();
+    _setCurrentUserState(LearningStatus.unlearned);
     _notifyStatusChanged();
   }
 
-  Future<void> _refreshCurrentState() async {
+  void _setCurrentUserState(LearningStatus status) {
     final currentIndex = state.currentIndex;
     final currentItem = state.studyQueue[currentIndex];
-    final userId = await _ensureUserId();
-
-    final updated = await _grammarQueries.getGrammarDetail(
-      userId,
-      currentItem.grammar.id,
-    );
-    if (updated == null) return;
 
     final newQueue = List<GrammarDetail>.from(state.studyQueue);
-    newQueue[currentIndex] = updated;
+    newQueue[currentIndex] = currentItem.copyWith(userState: status);
 
     state = state.copyWith(studyQueue: newQueue);
   }

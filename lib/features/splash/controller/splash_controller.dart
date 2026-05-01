@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/auth/auth_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/app_bootstrap_command.dart';
 import '../../../data/commands/app_bootstrap_command_provider.dart';
+import '../../../data/commands/sync_scheduler_command_provider.dart';
+import '../../home/controller/home_controller.dart';
 import '../state/splash_state.dart';
 
 /// Splash 控制器 Provider
@@ -35,6 +38,10 @@ class SplashController extends Notifier<SplashState> {
       logger.info('[LEARN] init_step: step=database_init');
       final bootstrap = ref.read(appBootstrapCommandProvider);
       final result = await bootstrap.run();
+      await ref.read(homeControllerProvider.notifier).loadHomeData();
+      if (ref.read(isLoggedInProvider)) {
+        await ref.read(syncSchedulerCommandProvider).start();
+      }
 
       // 2. 可以在这里添加其他初始化任务
       // 例如：加载用户设置、检查更新等

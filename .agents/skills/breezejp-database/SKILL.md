@@ -5,7 +5,7 @@ description: BreezeJP 项目的 SQLite 数据库模式、实体关系、表结�
 
 # BreezeJP 数据库规范与模型
 
-本 Skill 基于 `.kiro/steering/database.md` 以及相关架构文档。当你在进行涉及持久化、数据读取、统计结算或调试功能的排查及编写代码时，**必须严格遵守** 以下规则。
+本 Skill 基于 BreezeJP 当前仓库里的数据库设计、运行时 schema 与工程规则整理而成，并与 `.github/coding_rules.instructions.md` 及同目录下的专题规约文档共同组成数据库开发基线。当你在进行涉及持久化、数据读取、统计结算或调试功能的排查及编写代码时，**必须严格遵守** 以下规则。
 
 ## 1. 核心读写与防越权原则 (SQL / Repository / Controller)
 

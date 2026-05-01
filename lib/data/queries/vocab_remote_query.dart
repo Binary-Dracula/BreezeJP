@@ -58,6 +58,21 @@ class VocabRemoteQuery {
     );
     return NextWordsResponse.fromJson(response.data!);
   }
+
+  /// 服务端根据云端学习进度决定下一批学习词。
+  Future<NextWordsResponse> fetchUserNextWords({
+    required String bookId,
+    required int limit,
+  }) async {
+    final path = ApiEndpoints.replaceParams(ApiEndpoints.learnNextWords, {
+      'bookId': bookId,
+    });
+    final response = await _dio.get<Map<String, dynamic>>(
+      path,
+      queryParameters: {'limit': limit},
+    );
+    return NextWordsResponse.fromJson(response.data!);
+  }
 }
 
 class BookListResponse {
@@ -78,17 +93,30 @@ class BookSyncResponse {
 class NextWordsResponse {
   final List<WordDetailWithSort> words;
   final bool hasMore;
+  final int totalWords;
+  final int nextCursor;
+  final List<Map<String, dynamic>> rawWordsJson;
 
-  NextWordsResponse({required this.words, required this.hasMore});
+  NextWordsResponse({
+    required this.words,
+    required this.hasMore,
+    required this.totalWords,
+    required this.nextCursor,
+    required this.rawWordsJson,
+  });
 
   factory NextWordsResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as List<dynamic>;
     final meta = json['meta'] as Map<String, dynamic>? ?? {};
+    final rawWords = data
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
     return NextWordsResponse(
-      words: data
-          .map((e) => WordDetailWithSort.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      words: rawWords.map((e) => WordDetailWithSort.fromJson(e)).toList(),
       hasMore: meta['has_more'] == true,
+      totalWords: (meta['total_words'] as int?) ?? 0,
+      nextCursor: (meta['next_cursor'] as int?) ?? 0,
+      rawWordsJson: rawWords,
     );
   }
 }

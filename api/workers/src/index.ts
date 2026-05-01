@@ -4,6 +4,14 @@
 //   GET  /api/v1/articles/:id     - 新闻详情（含分词）
 //   GET  /api/v1/audio/:id        - 文章音频代理
 //   GET  /api/v1/audio/words/:id  - 词汇音频代理
+//   GET  /api/v1/books            - 词书列表
+//   GET  /api/v1/books/sync       - 词书增量同步
+//   GET  /api/v1/reference        - 参考内容
+//   GET  /api/v1/review/words/session - 单词复习会话
+//   GET  /api/v1/sync/bootstrap   - 同步引导数据
+//   GET  /api/v1/sync/pull        - 拉取增量同步变更
+//   POST /api/v1/sync/register-device - 注册同步设备
+//   POST /api/v1/sync/push        - 推送本地同步变更
 //   POST /api/v1/issues           - 问题上报（需认证）
 //   GET  /api/v1/health           - 健康检查（无需认证）
 //   OPTIONS *                     - CORS 预检
@@ -13,8 +21,18 @@ import { verifyAuth, unauthorizedResponse } from './middleware/auth';
 import { corsHeaders, handleOptions } from './middleware/cors';
 import { handleArticleList, handleArticleDetail } from './routes/articles';
 import { handleAudio, handleWordAudio } from './routes/audio';
-import { handleBookList, handleBookSync, handleNextWords, handleWordSync } from './routes/vocab';
+import { handleGrammarDetail, handleGrammarLearningQueue } from './routes/grammar';
+import { handleHomeSummary } from './routes/home';
+import { handleReferenceContent } from './routes/reference';
+import { handleGrammarBook, handleUpdateWordReviewSession, handleWordBook, handleWordExampleFavorites, handleWordReviewSession } from './routes/study';
+import { handleBookList, handleBookSync, handleNextWords, handleUserNextWords, handleWordDetail, handleWordSync } from './routes/vocab';
 import { handleCreateIssue } from './routes/issues';
+import {
+  handleRegisterSyncDevice,
+  handleSyncBootstrap,
+  handleSyncPull,
+  handleSyncPush,
+} from './routes/sync';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -49,6 +67,31 @@ export default {
       return handleCreateIssue(request, env, auth);
     }
 
+    // ---- Sync 路由（需 JWT 认证）----
+    if (path === '/api/v1/sync/register-device' || path === '/api/v1/sync/push') {
+      const auth = await verifyAuth(request, env);
+      if (!auth) {
+        return unauthorizedResponse('Invalid or expired token. Please re-login.');
+      }
+
+      if (method === 'POST' && path === '/api/v1/sync/register-device') {
+        return handleRegisterSyncDevice(request, env, auth);
+      }
+
+      if (method === 'POST' && path === '/api/v1/sync/push') {
+        return handleSyncPush(request, env, auth);
+      }
+    }
+
+    if (method === 'POST' && path === '/api/v1/review/words/session') {
+      const auth = await verifyAuth(request, env);
+      if (!auth) {
+        return unauthorizedResponse('Invalid or expired token. Please re-login.');
+      }
+
+      return handleUpdateWordReviewSession(request, env, auth);
+    }
+
     // ---- 仅允许 GET/HEAD 方法（其余路由）----
     if (method !== 'GET' && method !== 'HEAD') {
       return new Response(
@@ -67,6 +110,10 @@ export default {
     // GET /api/v1/books/sync?since=<ISO>
     if (path === '/api/v1/books/sync') {
       return handleBookSync(request, env);
+    }
+
+    if (path === '/api/v1/reference') {
+      return handleReferenceContent(request);
     }
 
     // GET /api/v1/books/:id/next-words?after_sort=<N>&limit=<M>
@@ -92,6 +139,61 @@ export default {
     // GET /api/v1/words/sync?since=<ISO>
     if (path === '/api/v1/words/sync') {
       return handleWordSync(request, env, auth);
+    }
+
+    const wordDetailMatch = path.match(/^\/api\/v1\/words\/([^/]+)$/);
+    if (wordDetailMatch) {
+      return handleWordDetail(request, env, wordDetailMatch[1]);
+    }
+
+    // GET /api/v1/learn/books/:id/next
+    const userNextWordsMatch = path.match(/^\/api\/v1\/learn\/books\/([^/]+)\/next$/);
+    if (userNextWordsMatch) {
+      return handleUserNextWords(request, env, auth, userNextWordsMatch[1]);
+    }
+
+    if (path === '/api/v1/review/words/session') {
+      return handleWordReviewSession(request, env, auth);
+    }
+
+    if (path === '/api/v1/me/word-book') {
+      return handleWordBook(request, env, auth);
+    }
+
+    if (path === '/api/v1/me/example-favorites') {
+      return handleWordExampleFavorites(request, env, auth);
+    }
+
+    if (path === '/api/v1/me/grammar-book') {
+      return handleGrammarBook(request, env, auth);
+    }
+
+    if (path === '/api/v1/me/home-summary') {
+      return handleHomeSummary(request, env, auth);
+    }
+
+    if (path === '/api/v1/grammar-learning/queue') {
+      return handleGrammarLearningQueue(request, env, auth);
+    }
+
+    const grammarDetailMatch = path.match(/^\/api\/v1\/grammars\/(\d+)$/);
+    if (grammarDetailMatch) {
+      return handleGrammarDetail(
+        request,
+        env,
+        auth,
+        Number.parseInt(grammarDetailMatch[1], 10),
+      );
+    }
+
+    // GET /api/v1/sync/bootstrap
+    if (path === '/api/v1/sync/bootstrap') {
+      return handleSyncBootstrap(request, env, auth);
+    }
+
+    // GET /api/v1/sync/pull
+    if (path === '/api/v1/sync/pull') {
+      return handleSyncPull(request, env, auth);
     }
 
     // GET /api/v1/articles

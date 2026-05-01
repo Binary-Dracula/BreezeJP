@@ -39,6 +39,9 @@ class LearnState {
   /// 当前辞书不可再继续拉取下一批新词
   final bool isBookUnavailableForNextBatch;
 
+  /// 当前书总词数（来自 API）
+  final int totalWordsInBook;
+
   const LearnState({
     this.words = const [],
     this.currentIndex = 0,
@@ -51,6 +54,7 @@ class LearnState {
     this.isBookComplete = false,
     this.isResumed = false,
     this.isBookUnavailableForNextBatch = false,
+    this.totalWordsInBook = 0,
   });
 
   /// 当前卡片的单词详情
@@ -82,6 +86,7 @@ class LearnState {
     bool? isBookComplete,
     bool? isResumed,
     bool? isBookUnavailableForNextBatch,
+    int? totalWordsInBook,
   }) {
     return LearnState(
       words: words ?? this.words,
@@ -96,6 +101,7 @@ class LearnState {
       isResumed: isResumed ?? this.isResumed,
       isBookUnavailableForNextBatch:
           isBookUnavailableForNextBatch ?? this.isBookUnavailableForNextBatch,
+      totalWordsInBook: totalWordsInBook ?? this.totalWordsInBook,
     );
   }
 

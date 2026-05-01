@@ -5,7 +5,7 @@ description: BreezeJP 项目的 MVVM 架构规范、数据源流转、路由及�
 
 # BreezeJP 架构与编码规范
 
-本 Skill 整合了 `.kiro/steering` 目录下的所有架构与层级规定。作为 Agent，在 BreezeJP 中进行自动化编码时，**必须严格遵守** 以下强制性规范。
+本 Skill 基于当前仓库已经生效的工程规则整理而成，并与 `.github/coding_rules.instructions.md` 一起构成 BreezeJP 的长期开发规则入口。作为 Agent，在 BreezeJP 中进行自动化编码时，**必须严格遵守** 以下强制性规范。
 
 ## 1. 核心架构模式
 

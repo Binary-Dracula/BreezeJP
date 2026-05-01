@@ -26,12 +26,14 @@ class CommonExampleItem extends ConsumerWidget {
   final ExampleDisplayData data;
   final int order;
   final Color? primaryColor;
+  final Widget? trailing;
 
   const CommonExampleItem({
     super.key,
     required this.data,
     required this.order,
     this.primaryColor,
+    this.trailing,
   });
 
   @override
@@ -73,7 +75,13 @@ class CommonExampleItem extends ConsumerWidget {
         ),
         // 播放按钮
         const SizedBox(width: 8),
-        _buildPlayButton(audioStatus, audioController, color),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPlayButton(audioStatus, audioController, color),
+            if (trailing != null) ...[const SizedBox(width: 6), trailing!],
+          ],
+        ),
       ],
     );
   }

@@ -90,4 +90,46 @@ class StudyGrammarRepository {
       rethrow;
     }
   }
+
+  Future<void> deleteAllByUser(int userId) async {
+    try {
+      final db = await _db;
+      final deletedRows = await db.delete(
+        'study_grammars',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+
+      logger.dbDelete(table: 'study_grammars', deletedRows: deletedRows);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_grammars',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteStudyGrammar(int userId, int grammarId) async {
+    try {
+      final db = await _db;
+      final deletedRows = await db.delete(
+        'study_grammars',
+        where: 'user_id = ? AND grammar_id = ?',
+        whereArgs: [userId, grammarId],
+      );
+
+      logger.dbDelete(table: 'study_grammars', deletedRows: deletedRows);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'study_grammars',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
 }

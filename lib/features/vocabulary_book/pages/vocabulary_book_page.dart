@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:breeze_jp/l10n/app_localizations.dart';
 
 import '../../../data/models/read/vocabulary_book_item.dart';
+import '../../favorites/providers/favorite_refresh_provider.dart';
 import '../../learn/widgets/audio_play_button.dart';
 import '../controller/vocabulary_book_controller.dart';
 import '../state/vocabulary_book_state.dart';
@@ -25,7 +26,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_onTabChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -51,6 +52,11 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(favoriteRefreshProvider, (previous, next) {
+      if (previous == null || previous == next) return;
+      ref.read(vocabularyBookControllerProvider.notifier).loadInitial();
+    });
+
     final state = ref.watch(vocabularyBookControllerProvider);
 
     return Scaffold(
@@ -62,6 +68,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           if (_isSearchVisible) _buildSearchBar(),
           // TabBar
           _buildTabBar(state),
+          _buildCountSummary(state),
           // 列表内容
           Expanded(child: _buildTabContent(state)),
         ],
@@ -109,6 +116,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
   }
 
   Widget _buildSearchBar() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -116,7 +124,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
         controller: _searchController,
         autofocus: true,
         decoration: InputDecoration(
-          hintText: '搜索单词、假名或释义...',
+          hintText: l10n.vocabularyBookSearchHint,
           hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           prefixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 20),
           suffixIcon: _searchController.text.isNotEmpty
@@ -161,10 +169,34 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
         labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         unselectedLabelStyle: const TextStyle(fontSize: 15),
         tabs: [
-          Tab(text: l10n.vocabularyBookTabLearning(state.learningCount)),
-          Tab(text: l10n.vocabularyBookTabMastered(state.masteredCount)),
-          Tab(text: l10n.vocabularyBookTabIgnored(state.ignoredCount)),
+          Tab(text: l10n.vocabularyBookTabLearningLabel),
+          Tab(text: l10n.vocabularyBookTabMasteredLabel),
+          Tab(text: l10n.vocabularyBookTabIgnoredLabel),
+          Tab(text: l10n.vocabularyBookTabFavoritesLabel),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCountSummary(VocabularyBookState state) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF6F7FB),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Center(
+        child: Text(
+          l10n.vocabularyBookCountSummary(
+            _currentTabLabel(state.currentTabIndex, l10n),
+            _currentTabCount(state),
+          ),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+          ),
+        ),
       ),
     );
   }
@@ -205,6 +237,17 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
           )!.vocabularyBookNoIgnoredWords,
           emptyIcon: Icons.visibility_off_outlined,
         ),
+        _buildWordList(
+          items: state.favoriteWords,
+          isLoading: state.isLoading,
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.hasMoreFavorites,
+          tabIndex: 3,
+          emptyMessage: AppLocalizations.of(
+            context,
+          )!.vocabularyBookNoFavoriteWords,
+          emptyIcon: Icons.star_border_rounded,
+        ),
       ],
     );
   }
@@ -239,7 +282,7 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: items.length + (isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           if (index >= items.length) {
             return const Padding(
@@ -306,6 +349,32 @@ class _VocabularyBookPageState extends ConsumerState<VocabularyBookPage>
         ],
       ),
     );
+  }
+
+  String _currentTabLabel(int tabIndex, AppLocalizations l10n) {
+    switch (tabIndex) {
+      case 0:
+        return l10n.vocabularyBookTabLearningLabel;
+      case 1:
+        return l10n.vocabularyBookTabMasteredLabel;
+      case 2:
+        return l10n.vocabularyBookTabIgnoredLabel;
+      default:
+        return l10n.vocabularyBookTabFavoritesLabel;
+    }
+  }
+
+  int _currentTabCount(VocabularyBookState state) {
+    switch (state.currentTabIndex) {
+      case 0:
+        return state.learningCount;
+      case 1:
+        return state.masteredCount;
+      case 2:
+        return state.ignoredCount;
+      default:
+        return state.favoriteCount;
+    }
   }
 }
 
@@ -468,7 +537,7 @@ class _WordListTile extends StatelessWidget {
         tooltip: l10n.actionRestore,
         onPressed: onToggleStatus,
       );
-    } else {
+    } else if (tabIndex == 2) {
       return _StatusToggleButton(
         icon: Icons.replay_rounded,
         color: const Color(0xFF5C8DFF),
@@ -476,6 +545,13 @@ class _WordListTile extends StatelessWidget {
         onPressed: onToggleStatus,
       );
     }
+
+    return _StatusToggleButton(
+      icon: Icons.star_rounded,
+      color: const Color(0xFFF59E0B),
+      tooltip: l10n.actionUnfavorite,
+      onPressed: onToggleStatus,
+    );
   }
 }
 
