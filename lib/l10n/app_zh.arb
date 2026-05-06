@@ -284,6 +284,14 @@
   "@networkServiceUnavailable": {
     "description": "HTTP 503 错误"
   },
+  "networkErrorTitle": "网络连接失败",
+  "@networkErrorTitle": {
+    "description": "网络错误页面标题"
+  },
+  "networkErrorMessage": "请检查网络设置后重试",
+  "@networkErrorMessage": {
+    "description": "网络错误页面描述"
+  },
   "loadFailed": "加载失败: {error}",
   "@loadFailed": {
     "description": "通用加载失败错误",
@@ -381,6 +389,14 @@
   "wordReviewTitleReadingWord": "读音 → 单词",
   "@wordReviewTitleReadingWord": {
     "description": "单词复习题型标题-读音到单词"
+  },
+  "wordReviewTitleClozeTest": "例句填空",
+  "@wordReviewTitleClozeTest": {
+    "description": "单词复习题型标题-例句填空"
+  },
+  "wordReviewContinue": "继续",
+  "@wordReviewContinue": {
+    "description": "答对后展示答案阶段的继续按钮"
   },
   "wordReviewSubtitleReadingWord": "点击读音 → 点击对应单词",
   "@wordReviewSubtitleReadingWord": {

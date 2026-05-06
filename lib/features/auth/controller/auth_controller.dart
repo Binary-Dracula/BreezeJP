@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/auth/auth_service.dart';
@@ -9,6 +7,7 @@ import '../../../data/commands/active_user_command_provider.dart';
 import '../../../data/commands/sync_remote_command.dart';
 import '../../../data/commands/sync_scheduler_command_provider.dart';
 import '../state/auth_page_state.dart';
+import '../../home/controller/home_controller.dart';
 
 final authControllerProvider = NotifierProvider<AuthController, AuthPageState>(
   AuthController.new,
@@ -113,23 +112,30 @@ class AuthController extends Notifier<AuthPageState> {
     }
   }
 
+  /// 登录/注册后的准备流程：同步完成 + Home 数据预加载，完成后再返回（导航发生前）
   Future<void> _prepareAuthenticatedHome() async {
     final activeUser = await ref
         .read(activeUserCommandProvider)
         .ensureActiveUser();
 
-    await ref.read(syncSchedulerCommandProvider).start();
-    unawaited(_primeAuthenticatedSync(activeUser.id));
-  }
-
-  Future<void> _primeAuthenticatedSync(int localUserId) async {
+    // 1. 同步云端数据（阻塞：完成后才跳转 Home）
     try {
       await ref
           .read(syncRemoteCommandProvider)
-          .syncDownForCurrentUser(localUserId: localUserId);
+          .syncDownForCurrentUser(localUserId: activeUser.id);
     } catch (e) {
       logger.warning('[Auth] 登录后首轮云端同步失败，稍后重试: $e');
     }
+
+    // 2. 预加载 Home 摘要（让 Home 页面一进来就有数据）
+    try {
+      await ref.read(homeControllerProvider.notifier).loadHomeData();
+    } catch (e) {
+      logger.warning('[Auth] Home 数据预加载失败: $e');
+    }
+
+    // 3. 启动定期同步调度器
+    await ref.read(syncSchedulerCommandProvider).start();
   }
 
   /// 将 Supabase 错误信息转为用户友好文案

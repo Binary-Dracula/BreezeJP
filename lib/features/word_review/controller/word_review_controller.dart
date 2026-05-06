@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/algorithm/srs_types.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
@@ -53,6 +54,7 @@ class WordReviewController extends Notifier<WordReviewState> {
       currentOptions: const [],
       isAllFinished: false,
       error: null,
+      isNetworkError: false,
     );
   }
 
@@ -74,6 +76,7 @@ class WordReviewController extends Notifier<WordReviewState> {
               meaning: item.meaning,
               reading: item.reading,
               options: item.options,
+              clozeSentence: item.clozeSentence,
             ),
           )
           .toList();
@@ -105,15 +108,30 @@ class WordReviewController extends Notifier<WordReviewState> {
       await _prepareCurrentCardOptions();
     } catch (e, stackTrace) {
       logger.error('Start word review failed', e, stackTrace);
-      state = state.copyWith(isLoading: false, error: e.toString());
+      final isNetworkError = e is NetworkException;
+      state = state.copyWith(
+        isLoading: false,
+        error: isNetworkError ? null : e.toString(),
+        isNetworkError: isNetworkError,
+      );
     }
   }
 
-  /// 为当前卡片生成四选一选项
+  /// 为当前卡片生成选项并记录答题开始时间
   Future<void> _prepareCurrentCardOptions() async {
     final item = state.currentItem;
     if (item == null) return;
-    state = state.copyWith(currentOptions: item.options);
+    state = state.copyWith(
+      currentOptions: item.options,
+      cardStartTime: DateTime.now(),
+    );
+  }
+
+  /// 根据答题耗时（秒）自动推导评分：≤4s → easy，5–10s → good，>10s → hard
+  ReviewRating _ratingFromElapsed(double elapsedSeconds) {
+    if (elapsedSeconds <= 4) return ReviewRating.easy;
+    if (elapsedSeconds <= 10) return ReviewRating.good;
+    return ReviewRating.hard;
   }
 
   /// 用户在客观测试中选择了某个选项
@@ -131,11 +149,32 @@ class WordReviewController extends Notifier<WordReviewState> {
       case WordReviewQuestionType.meaningToSpelling:
         correctOption = item.reading ?? '';
         break;
+      case WordReviewQuestionType.clozeTest:
+        correctOption = item.wordDetail.word.word;
+        break;
     }
 
     final isCorrect = selectedOption == correctOption;
 
     if (isCorrect) {
+      // 根据答题耗时自动评分（无需用户手动选 Hard/Good/Easy）
+      if (!state.hasMistakeOnCurrent) {
+        final elapsed = state.cardStartTime != null
+            ? DateTime.now().difference(state.cardStartTime!).inMilliseconds /
+                  1000.0
+            : 5.0;
+        final autoRating = _ratingFromElapsed(elapsed);
+        try {
+          await _wordCommand.onWordReviewed(
+            userId: item.studyWord.userId,
+            wordId: item.studyWord.wordId,
+            bookId: item.studyWord.bookId,
+            rating: autoRating,
+          );
+        } catch (e, stackTrace) {
+          logger.error('Failed to log auto rating', e, stackTrace);
+        }
+      }
       state = state.copyWith(currentPhase: ReviewCardPhase.grading);
       await _persistCurrentSession();
     } else {
@@ -157,24 +196,10 @@ class WordReviewController extends Notifier<WordReviewState> {
     }
   }
 
-  /// 用户在主观评价中点击了 Hard/Good/Easy
-  Future<void> submitSubjectiveRating(ReviewRating selectedRating) async {
+  /// 用户在答案展示阶段点击「继续」前进下一题
+  Future<void> continueToNext() async {
     final item = state.currentItem;
     if (item == null || state.currentPhase != ReviewCardPhase.grading) return;
-
-    try {
-      if (!state.hasMistakeOnCurrent) {
-        await _wordCommand.onWordReviewed(
-          userId: item.studyWord.userId,
-          wordId: item.studyWord.wordId,
-          bookId: item.studyWord.bookId,
-          rating: selectedRating,
-        );
-      }
-    } catch (e, stackTrace) {
-      logger.error('Failed to log rating', e, stackTrace);
-    }
-
     await _goToNextCard();
   }
 

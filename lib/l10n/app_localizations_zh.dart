@@ -211,6 +211,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get networkServiceUnavailable => '服务不可用';
 
   @override
+  String get networkErrorTitle => '网络连接失败';
+
+  @override
+  String get networkErrorMessage => '请检查网络设置后重试';
+
+  @override
   String loadFailed(String error) {
     return '加载失败: $error';
   }
@@ -272,6 +278,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wordReviewTitleReadingWord => '读音 → 单词';
+
+  @override
+  String get wordReviewTitleClozeTest => '例句填空';
+
+  @override
+  String get wordReviewContinue => '继续';
 
   @override
   String get wordReviewSubtitleReadingWord => '点击读音 → 点击对应单词';

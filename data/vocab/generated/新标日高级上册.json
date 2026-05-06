@@ -4,7 +4,7 @@
     "book_title": "新标准日本语高级上册",
     "book_id": "723344b0-5b8b-519d-8753-0f5cc16b2fe1",
     "total_words": 1798,
-    "generated_count": 1722,
+    "generated_count": 1798,
     "version": "4.0"
   },
   "words": [
@@ -39798,256 +39798,6 @@
         "moji_meaning": "",
         "source": "mojidict",
         "generation_status": "SUCCESS"
-      }
-    },
-    {
-      "_word_id": "af1ff02b-5842-50fa-b889-e2956922ce26",
-      "_lesson": {
-        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
-        "number": 3,
-        "title": "第一单元 / 第三课"
-      },
-      "_sort_order": 161,
-      "_book_sort_order": 453,
-      "1_basic_info": {
-        "word": "古墳",
-        "reading": "こふん",
-        "romaji": "",
-        "pitch_accent": null,
-        "jlpt_level": "",
-        "part_of_speech": "",
-        "transitivity": null
-      },
-      "2_meanings_and_nuance": [],
-      "3_critical_grammar_rules": {
-        "associated_particles": []
-      },
-      "4_conjugations": {
-        "dictionary_form": null,
-        "masu_form": null,
-        "nai_form": null,
-        "te_form": null,
-        "ta_form": null,
-        "potential_form": null,
-        "passive_form": null,
-        "causative_form": null
-      },
-      "6_example_sentences": [],
-      "7_synonyms_and_antonyms": {
-        "synonyms": [],
-        "antonyms": []
-      },
-      "8_collocations_and_phrases": [],
-      "9_common_mistakes_and_usage_notes": [],
-      "_source_meta": {
-        "moji_word_id": "198950810",
-        "moji_target_id": "198950810",
-        "word_text": "古墳",
-        "moji_reading": "こふん",
-        "moji_accent": "0",
-        "moji_meaning": "",
-        "source": "mojidict",
-        "generation_status": "FAILED_SKIP"
-      }
-    },
-    {
-      "_word_id": "110215d1-02f2-5ffa-968a-6c89183ca40a",
-      "_lesson": {
-        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
-        "number": 3,
-        "title": "第一单元 / 第三课"
-      },
-      "_sort_order": 162,
-      "_book_sort_order": 454,
-      "1_basic_info": {
-        "word": "前開き",
-        "reading": "まえあき",
-        "romaji": "",
-        "pitch_accent": null,
-        "jlpt_level": "",
-        "part_of_speech": "",
-        "transitivity": null
-      },
-      "2_meanings_and_nuance": [],
-      "3_critical_grammar_rules": {
-        "associated_particles": []
-      },
-      "4_conjugations": {
-        "dictionary_form": null,
-        "masu_form": null,
-        "nai_form": null,
-        "te_form": null,
-        "ta_form": null,
-        "potential_form": null,
-        "passive_form": null,
-        "causative_form": null
-      },
-      "6_example_sentences": [],
-      "7_synonyms_and_antonyms": {
-        "synonyms": [],
-        "antonyms": []
-      },
-      "8_collocations_and_phrases": [],
-      "9_common_mistakes_and_usage_notes": [],
-      "_source_meta": {
-        "moji_word_id": "198978229",
-        "moji_target_id": "198978229",
-        "word_text": "前開き",
-        "moji_reading": "まえあき",
-        "moji_accent": "0",
-        "moji_meaning": "",
-        "source": "mojidict",
-        "generation_status": "FAILED_SKIP"
-      }
-    },
-    {
-      "_word_id": "4b920a6e-d794-5aa1-a835-606607a34a4c",
-      "_lesson": {
-        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
-        "number": 3,
-        "title": "第一单元 / 第三课"
-      },
-      "_sort_order": 163,
-      "_book_sort_order": 455,
-      "1_basic_info": {
-        "word": "着付け",
-        "reading": "きつけ",
-        "romaji": "",
-        "pitch_accent": null,
-        "jlpt_level": "",
-        "part_of_speech": "",
-        "transitivity": null
-      },
-      "2_meanings_and_nuance": [],
-      "3_critical_grammar_rules": {
-        "associated_particles": []
-      },
-      "4_conjugations": {
-        "dictionary_form": null,
-        "masu_form": null,
-        "nai_form": null,
-        "te_form": null,
-        "ta_form": null,
-        "potential_form": null,
-        "passive_form": null,
-        "causative_form": null
-      },
-      "6_example_sentences": [],
-      "7_synonyms_and_antonyms": {
-        "synonyms": [],
-        "antonyms": []
-      },
-      "8_collocations_and_phrases": [],
-      "9_common_mistakes_and_usage_notes": [],
-      "_source_meta": {
-        "moji_word_id": "198985257",
-        "moji_target_id": "198985257",
-        "word_text": "着付け",
-        "moji_reading": "きつけ",
-        "moji_accent": "0",
-        "moji_meaning": "",
-        "source": "mojidict",
-        "generation_status": "FAILED_SKIP"
-      }
-    },
-    {
-      "_word_id": "ed9b41a2-7aff-5efd-80ee-7a8cf54d3096",
-      "_lesson": {
-        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
-        "number": 3,
-        "title": "第一单元 / 第三课"
-      },
-      "_sort_order": 164,
-      "_book_sort_order": 456,
-      "1_basic_info": {
-        "word": "そうだ",
-        "reading": "そうだ",
-        "romaji": "",
-        "pitch_accent": null,
-        "jlpt_level": "",
-        "part_of_speech": "",
-        "transitivity": null
-      },
-      "2_meanings_and_nuance": [],
-      "3_critical_grammar_rules": {
-        "associated_particles": []
-      },
-      "4_conjugations": {
-        "dictionary_form": null,
-        "masu_form": null,
-        "nai_form": null,
-        "te_form": null,
-        "ta_form": null,
-        "potential_form": null,
-        "passive_form": null,
-        "causative_form": null
-      },
-      "6_example_sentences": [],
-      "7_synonyms_and_antonyms": {
-        "synonyms": [],
-        "antonyms": []
-      },
-      "8_collocations_and_phrases": [],
-      "9_common_mistakes_and_usage_notes": [],
-      "_source_meta": {
-        "moji_word_id": "19892842",
-        "moji_target_id": "19892842",
-        "word_text": "そうだ",
-        "moji_reading": "そうだ",
-        "moji_accent": "1",
-        "moji_meaning": "",
-        "source": "mojidict",
-        "generation_status": "FAILED_SKIP"
-      }
-    },
-    {
-      "_word_id": "e58decad-7e70-59cc-847f-b2621f8c3156",
-      "_lesson": {
-        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
-        "number": 3,
-        "title": "第一单元 / 第三课"
-      },
-      "_sort_order": 165,
-      "_book_sort_order": 457,
-      "1_basic_info": {
-        "word": "末期",
-        "reading": "まっき",
-        "romaji": "",
-        "pitch_accent": null,
-        "jlpt_level": "",
-        "part_of_speech": "",
-        "transitivity": null
-      },
-      "2_meanings_and_nuance": [],
-      "3_critical_grammar_rules": {
-        "associated_particles": []
-      },
-      "4_conjugations": {
-        "dictionary_form": null,
-        "masu_form": null,
-        "nai_form": null,
-        "te_form": null,
-        "ta_form": null,
-        "potential_form": null,
-        "passive_form": null,
-        "causative_form": null
-      },
-      "6_example_sentences": [],
-      "7_synonyms_and_antonyms": {
-        "synonyms": [],
-        "antonyms": []
-      },
-      "8_collocations_and_phrases": [],
-      "9_common_mistakes_and_usage_notes": [],
-      "_source_meta": {
-        "moji_word_id": "1989105398",
-        "moji_target_id": "1989105398",
-        "word_text": "末期",
-        "moji_reading": "まっき",
-        "moji_accent": "1",
-        "moji_meaning": "",
-        "source": "mojidict",
-        "generation_status": "FAILED_SKIP"
       }
     },
     {
@@ -137436,6 +137186,6655 @@
         "moji_target_id": "1989100400",
         "word_text": "負",
         "moji_reading": "ふ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "61cd1bd8-405b-5426-b7e1-ad14087168f1",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 21,
+      "_book_sort_order": 1717,
+      "1_basic_info": {
+        "word": "間柄",
+        "reading": "あいだがら",
+        "romaji": "aidagara",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "人与人之间的关系，亲属关系。",
+          "nuance": "多用于描述人际关系或血缘关系，带有一定的社会性或情感色彩。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～との間柄",
+            "explanation": "表示与某人之间的关系。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]とは古[ふる]い間柄[あいだがら]だ。",
+          "chinese": "我和他是老交情了。"
+        },
+        {
+          "japanese": "親戚[しんせき]という間柄[あいだがら]で、よく助[たす]け合[あ]っている。",
+          "chinese": "因为是亲戚关系，所以经常互相帮助。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "関係",
+            "meaning": "关系",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "親[した]しい間柄[あいだがら]",
+          "meaning": "亲密的关系"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "通常用于描述人与人之间，不用于描述事物之间的关系。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198941215",
+        "moji_target_id": "198941215",
+        "word_text": "間柄",
+        "moji_reading": "あいだがら",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "1637c7fe-1b2d-5d3e-836a-b4edd89db8ac",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 24,
+      "_book_sort_order": 1720,
+      "1_basic_info": {
+        "word": "今一つ",
+        "reading": "いまひとつ",
+        "romaji": "imahitotsu",
+        "pitch_accent": "4",
+        "jlpt_level": "N2",
+        "part_of_speech": "副词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "还差一点，总觉得不够好。",
+          "nuance": "用于委婉地表达不满或评价不高。"
+        },
+        {
+          "definition": "再来一个。",
+          "nuance": "表示在现有基础上再增加一个。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この料理[りょうり]は、味[あじ]が今[いま]ひとつだ。",
+          "chinese": "这道菜味道总觉得差了点什么。"
+        },
+        {
+          "japanese": "説明[せつめい]を聞[き]いても、今[いま]ひとつよくわからない。",
+          "chinese": "听了说明，还是觉得不太明白。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "もう一つ",
+            "meaning": "再一个/还差一点",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "今[いま]ひとつピンとこない",
+          "meaning": "总觉得没抓到重点/没感觉"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "语境限制",
+          "explanation": "多用于否定评价，表示程度不足。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "220120w122309",
+        "moji_target_id": "220120w122309",
+        "word_text": "今一つ",
+        "moji_reading": "いまひとつ",
+        "moji_accent": "4",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "0fd8d3de-d06f-535d-915c-30ef6dd64087",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 26,
+      "_book_sort_order": 1722,
+      "1_basic_info": {
+        "word": "レトルト食品",
+        "reading": "れとるとしょくひん",
+        "romaji": "retorutoshokuhin",
+        "pitch_accent": "5",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "软包装食品，袋装即食食品。",
+          "nuance": "指经过高温高压杀菌处理，可常温保存的袋装食品。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "忙[いそが]しい時[とき]は、レトルト食品[しょくひん]が便利[べんり]だ。",
+          "chinese": "忙的时候，软包装食品很方便。"
+        },
+        {
+          "japanese": "最近[さいきん]のレトルト食品[しょくひん]はとても美味[おい]しい。",
+          "chinese": "最近的袋装即食食品非常好吃。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "レトルトカレー",
+          "meaning": "袋装咖喱"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词源",
+          "explanation": "源自英语 Retort Pouch。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198928865",
+        "moji_target_id": "198928865",
+        "word_text": "レトルト食品",
+        "moji_reading": "れとるとしょくひん",
+        "moji_accent": "5",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "dce81335-ce27-5331-969f-b4ef417a0d80",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 27,
+      "_book_sort_order": 1723,
+      "1_basic_info": {
+        "word": "到底",
+        "reading": "とうてい",
+        "romaji": "toutei",
+        "pitch_accent": "0",
+        "jlpt_level": "N1",
+        "part_of_speech": "副词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "无论如何也（不能/不……）。",
+          "nuance": "后接否定表达，强调无论怎么努力也无法实现。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "到底～ない",
+            "explanation": "与否定形式呼应，表示绝无可能。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]の考[かんが]えは、到底[とうてい]理解[りかい]できない。",
+          "chinese": "他的想法，我无论如何也无法理解。"
+        },
+        {
+          "japanese": "この仕事[しごと]は、今日[きょう]中[じゅう]には到底[とうてい]終[お]わらない。",
+          "chinese": "这项工作今天无论如何也做不完。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "どうしても",
+            "meaning": "无论如何",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "到底無理[むり]だ",
+          "meaning": "无论如何都不可能"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "语法限制",
+          "explanation": "必须与否定表达搭配使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198990885",
+        "moji_target_id": "198990885",
+        "word_text": "到底",
+        "moji_reading": "とうてい",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "ab2ce595-38b0-5a8a-8d78-ff7bea703d7f",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 28,
+      "_book_sort_order": 1724,
+      "1_basic_info": {
+        "word": "共有",
+        "reading": "きょうゆう",
+        "romaji": "kyouyuu",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "サ变名词/サ变动词",
+        "transitivity": "他动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "共有，共同拥有。",
+          "nuance": "指多人共同使用或拥有某物、信息或空间。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を共有する",
+            "explanation": "表示共同拥有某事物。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "共有する",
+        "masu_form": "共有します",
+        "nai_form": "共有しない",
+        "te_form": "共有して",
+        "ta_form": "共有した",
+        "potential_form": "共有できる",
+        "passive_form": "共有される",
+        "causative_form": "共有させる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "みんなで情報[じょうほう]を共有[きょうゆう]しましょう。",
+          "chinese": "大家一起来共享信息吧。"
+        },
+        {
+          "japanese": "この部屋[へや]は二人[ふたり]で共有[きょうゆう]している。",
+          "chinese": "这个房间是两个人共用的。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "分かち合う",
+            "meaning": "分享/分担",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "専有",
+            "meaning": "独占",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "情報共有[じょうほうきょうゆう]",
+          "meaning": "信息共享"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "在IT领域中常指文件或资源的共享。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198944857",
+        "moji_target_id": "198944857",
+        "word_text": "共有",
+        "moji_reading": "きょうゆう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "ee8186c9-0e8c-5c5f-8a71-4db7a5d6fe8f",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 29,
+      "_book_sort_order": 1725,
+      "1_basic_info": {
+        "word": "工学部",
+        "reading": "こうがくぶ",
+        "romaji": "kougakubu",
+        "pitch_accent": "4",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "大学中研究工程学、技术学的学部。",
+          "nuance": "指代大学的专业院系。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "工学部[こうがくぶ]の学生[がくせい]",
+            "explanation": "表示所属关系，工学部的学生。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]は大学[だいがく]の工学部[こうがくぶ]で機械[きかい]を専攻[せんこう]している。",
+          "chinese": "他在大学的工学部主修机械。"
+        },
+        {
+          "japanese": "工学部[こうがくぶ]の実験室[じっけんしつ]はいつも忙[いそが]しい。",
+          "chinese": "工学部的实验室总是很忙。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "工学部[こうがくぶ]出身[しゅっしん]",
+          "meaning": "工学部毕业。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "通常指代大学的院系，不用于高中或初中。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "5ql1vgIGA5",
+        "moji_target_id": "5ql1vgIGA5",
+        "word_text": "工学部",
+        "moji_reading": "こうがくぶ",
+        "moji_accent": "4",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "57b23892-e6d3-5b70-81e0-c1da83ccdffb",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 30,
+      "_book_sort_order": 1726,
+      "1_basic_info": {
+        "word": "エコ",
+        "reading": "",
+        "romaji": "eko",
+        "pitch_accent": "1",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词/形容动词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "生态、环保（ecology的缩写）。",
+          "nuance": "强调对环境友好、节能减排的生活方式或产品。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "エコな生活[せいかつ]",
+            "explanation": "作为形容动词使用，表示环保的生活。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "最近[さいきん]はエコを意識[いしき]した商品[しょうひん]が多[おお]い。",
+          "chinese": "最近有许多具有环保意识的商品。"
+        },
+        {
+          "japanese": "エコな暮[く]らしを心[こころ]がけている。",
+          "chinese": "我一直留心过着环保的生活。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "環境[かんきょう]に優[やさ]しい",
+            "meaning": "对环境友好",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "エコバッグ",
+          "meaning": "环保购物袋。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词源",
+          "explanation": "源自英语ecology，在日语中作为外来语广泛使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "19898348",
+        "moji_target_id": "19898348",
+        "word_text": "エコ",
+        "moji_reading": "えこ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "c72d36cf-b6a3-59e6-8e55-1db4f78c1f09",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 31,
+      "_book_sort_order": 1727,
+      "1_basic_info": {
+        "word": "耳を傾ける",
+        "reading": "みみをかたむける",
+        "romaji": "mimi o katamukeru",
+        "pitch_accent": null,
+        "jlpt_level": "N2",
+        "part_of_speech": "惯用句",
+        "transitivity": "他动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "倾听，仔细听。",
+          "nuance": "表示认真地听取对方的意见或声音。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～に耳[みみ]を傾[かたむ]ける",
+            "explanation": "表示倾听的对象。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "国民[こくみん]の声[こえ]に耳[みみ]を傾[かたむ]けるべきだ。",
+          "chinese": "应该倾听国民的声音。"
+        },
+        {
+          "japanese": "彼[かれ]は彼女[かのじょ]の話[はなし]にじっくりと耳[みみ]を傾[かたむ]けた。",
+          "chinese": "他认真地倾听了她的话。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "聞[き]く",
+            "meaning": "听",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "意見[いけん]に耳[みみ]を傾[かたむ]ける",
+          "meaning": "倾听意见。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "搭配",
+          "explanation": "助词通常使用「に」，表示倾听的对象。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198961398",
+        "moji_target_id": "198961398",
+        "word_text": "耳を傾ける",
+        "moji_reading": "みみをかたむける",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "b3d14ea3-91b7-5443-97cf-963f948b22b1",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 32,
+      "_book_sort_order": 1728,
+      "1_basic_info": {
+        "word": "内側",
+        "reading": "うちがわ",
+        "romaji": "uchigawa",
+        "pitch_accent": "0",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "内侧，里面。",
+          "nuance": "指物体或空间的内部。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "内側[うちがわ]から",
+            "explanation": "从内侧。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "箱[はこ]の内側[うちがわ]に名前[なまえ]を書[か]いてください。",
+          "chinese": "请在盒子的内侧写上名字。"
+        },
+        {
+          "japanese": "ドアの内側[うちがわ]から鍵[かぎ]をかける。",
+          "chinese": "从门内侧锁上。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "内部[ないぶ]",
+            "meaning": "内部",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "外側[そとがわ]",
+            "meaning": "外侧",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "内側[うちがわ]から見[み]る",
+          "meaning": "从内侧看。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "发音",
+          "explanation": "注意「うちがわ」的读音，不要读成「ないそく」除非是特定术语。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198992668",
+        "moji_target_id": "198992668",
+        "word_text": "内側",
+        "moji_reading": "うちがわ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "d2ae8014-f93e-5efa-8606-616695f39fde",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 33,
+      "_book_sort_order": 1729,
+      "1_basic_info": {
+        "word": "育メン",
+        "reading": "いくめん",
+        "romaji": "ikumen",
+        "pitch_accent": null,
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "积极参与育儿的男性。",
+          "nuance": "由“育儿”和“帅哥（イケメン）”组合而成的造词，带有赞赏意味。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "育[いく]メンになる",
+            "explanation": "成为积极育儿的男性。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "最近[さいきん]は育[いく]メンが増[ふ]えている。",
+          "chinese": "最近积极参与育儿的男性在增加。"
+        },
+        {
+          "japanese": "彼[かれ]は本当[ほんとう]に育[いく]メンだ。",
+          "chinese": "他真的是个积极参与育儿的好爸爸。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "育[いく]メンパパ",
+          "meaning": "积极育儿的爸爸。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词源",
+          "explanation": "这是一个现代流行语，非正式用语。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "MVob6cHjhQ",
+        "moji_target_id": "MVob6cHjhQ",
+        "word_text": "育メン",
+        "moji_reading": "いくめん",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "cac9cdbe-872c-5bfc-84b4-5a7c5e6ffe0d",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 34,
+      "_book_sort_order": 1730,
+      "1_basic_info": {
+        "word": "京都議定書",
+        "reading": "きょうとぎていしょ",
+        "romaji": "kyoutogiteisho",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "《京都议定书》，指1997年在日本京都通过的关于限制温室气体排放的国际条约。",
+          "nuance": "专有名词，特指环境领域的国际协议。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "京都議定書[きょうとぎていしょ]を採択[さいたく]する",
+            "explanation": "采纳《京都议定书》。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "京都議定書[きょうとぎていしょ]は地球温暖化[ちきゅうおんだんか]を防[ふせ]ぐための国際的[こくさいてき]な枠組[わくぐ]みです。",
+          "chinese": "《京都议定书》是防止全球变暖的国际框架。"
+        },
+        {
+          "japanese": "日本[にほん]は京都議定書[きょうとぎていしょ]の目標[もくひょう]達成[たっせい]に向[む]けて努力[どりょく]しました。",
+          "chinese": "日本为了实现《京都议定书》的目标而做出了努力。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "京都議定書[きょうとぎていしょ]の締結[ていけつ]",
+          "meaning": "《京都议定书》的缔结"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "作为专有名词使用，通常不加助词以外的修饰。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198944668",
+        "moji_target_id": "198944668",
+        "word_text": "京都議定書",
+        "moji_reading": "きょうとぎていしょ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "8b74bea1-5d57-5040-8e69-373a6e1f08f0",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 35,
+      "_book_sort_order": 1731,
+      "1_basic_info": {
+        "word": "花粉",
+        "reading": "かふん",
+        "romaji": "kafun",
+        "pitch_accent": "0",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "花粉，植物雄蕊产生的粉末。",
+          "nuance": "常用于讨论花粉症（花粉症[かふんしょう]）的语境。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "花粉[かふん]が飛[と]ぶ",
+            "explanation": "花粉飞散。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "春[はる]になると、花粉[かふん]が飛[と]び始[はじ]めます。",
+          "chinese": "到了春天，花粉就开始飞散了。"
+        },
+        {
+          "japanese": "私[わたし]は花粉[かふん]アレルギーで苦[くる]しんでいます。",
+          "chinese": "我因为花粉过敏而感到痛苦。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "花粉症[かふんしょう]",
+          "meaning": "花粉症"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "搭配错误",
+          "explanation": "常与“飞散[ひさん]”或“飞[と]ぶ”搭配使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198937038",
+        "moji_target_id": "198937038",
+        "word_text": "花粉",
+        "moji_reading": "かふん",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "facb3378-548d-58fe-b2b8-eeecb45f023b",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 36,
+      "_book_sort_order": 1732,
+      "1_basic_info": {
+        "word": "毎月",
+        "reading": "まいつき",
+        "romaji": "maitsuki",
+        "pitch_accent": "0",
+        "jlpt_level": "N5",
+        "part_of_speech": "名词/副词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "每月，每个月。",
+          "nuance": "表示时间频率。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "毎月[まいつき]に",
+            "explanation": "每月（强调频率）。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "毎月[まいつき]、貯金[ちょきん]をしています。",
+          "chinese": "我每个月都在存钱。"
+        },
+        {
+          "japanese": "この雑誌[ざっし]は毎月[まいつき]発行[はっこう]されます。",
+          "chinese": "这本杂志每月发行。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "月々[つきづき]",
+            "meaning": "每月",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "毎月[まいつき]の家賃[やちん]",
+          "meaning": "每月的房租"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "读音注意",
+          "explanation": "也可以读作“まいげつ”，意思相同，但“まいつき”更为常用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989105274",
+        "moji_target_id": "1989105274",
+        "word_text": "毎月",
+        "moji_reading": "まいつき",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "b4c290aa-b422-550c-8f98-f4774cb4162f",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 37,
+      "_book_sort_order": 1733,
+      "1_basic_info": {
+        "word": "快速",
+        "reading": "かいそく",
+        "romaji": "kaisoku",
+        "pitch_accent": "0",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词/形容动词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "快速，速度快。",
+          "nuance": "常用于交通工具（如电车）的等级。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "快速[かいそく]で走[はし]る",
+            "explanation": "快速行驶。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "次[つぎ]の駅[えき]には快速[かいそく]が止[と]まります。",
+          "chinese": "快速列车会在下一站停车。"
+        },
+        {
+          "japanese": "快速[かいそく]電車[でんしゃ]に乗[の]って帰[かえ]ります。",
+          "chinese": "坐快速电车回家。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "高速[こうそく]",
+            "meaning": "高速",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "各停[かくてい]",
+            "meaning": "各站停车",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "快速[かいそく]列車[れっしゃ]",
+          "meaning": "快速列车"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "在铁路系统中，快速通常介于普通列车和特急列车之间。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198937873",
+        "moji_target_id": "198937873",
+        "word_text": "快速",
+        "moji_reading": "かいそく",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "8fccf2a4-2d0c-5dbd-9797-1b8f62003938",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 38,
+      "_book_sort_order": 1734,
+      "1_basic_info": {
+        "word": "分別",
+        "reading": "ぶんべつ",
+        "romaji": "bunbetsu",
+        "pitch_accent": "0/1",
+        "jlpt_level": "N2",
+        "part_of_speech": "サ变名词/他动词",
+        "transitivity": "他动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "分类，区分（垃圾等）。",
+          "nuance": "常用于垃圾分类（ゴミの分別）。"
+        },
+        {
+          "definition": "辨别是非，明辨事理。",
+          "nuance": "指人的判断力或成熟度。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "ゴミを分別[ぶんべつ]する",
+            "explanation": "对垃圾进行分类。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "分別する",
+        "masu_form": "分別します",
+        "nai_form": "分別しない",
+        "te_form": "分別して",
+        "ta_form": "分別した",
+        "potential_form": "分別できる",
+        "passive_form": "分別される",
+        "causative_form": "分別させる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "日本[にほん]ではゴミの分別[ぶんべつ]が厳[きび]しいです。",
+          "chinese": "在日本，垃圾分类非常严格。"
+        },
+        {
+          "japanese": "大人[おとな]なら、善悪[ぜんあく]の分別[ぶんべつ]がつくだろう。",
+          "chinese": "如果是成年人，应该能辨别是非吧。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "区別[くべつ]",
+            "meaning": "区别",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "分別[ぶんべつ]のある人[ひと]",
+          "meaning": "明事理的人"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "读音注意",
+          "explanation": "在佛教用语中读作“ふんべつ”，表示妄想或执着，日常生活中读“ぶんべつ”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989101652",
+        "moji_target_id": "1989101652",
+        "word_text": "分別",
+        "moji_reading": "ぶんべつ",
+        "moji_accent": "0/1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "bce01791-17c1-561e-86f3-83ade18839ac",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 39,
+      "_book_sort_order": 1735,
+      "1_basic_info": {
+        "word": "静岡",
+        "reading": "しずおか",
+        "romaji": "shizuoka",
+        "pitch_accent": "2",
+        "jlpt_level": "N/A",
+        "part_of_speech": "专有名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "日本的一个县名，位于本州岛中部。",
+          "nuance": ""
+        },
+        {
+          "definition": "该县的县厅所在地，即静冈市。",
+          "nuance": ""
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "静岡[しずおか]へ行く",
+            "explanation": "表示移动的目的地。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "来月[らいげつ]、静岡[しずおか]へ旅行[りょこう]に行[い]きます。",
+          "chinese": "下个月要去静冈旅行。"
+        },
+        {
+          "japanese": "静岡[しずおか]県[けん]はお茶[ちゃ]が有名[ゆうめい]です。",
+          "chinese": "静冈县的茶很有名。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "静岡[しずおか]茶[ちゃ]",
+          "meaning": "静冈产的茶叶。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "发音注意",
+          "explanation": "注意“静”字的读音是しず，不要读成しつ。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "220120w59778",
+        "moji_target_id": "220120w59778",
+        "word_text": "静岡",
+        "moji_reading": "しずおか",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "1c94f5d4-897e-5bde-9028-997d7df74c6a",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 40,
+      "_book_sort_order": 1736,
+      "1_basic_info": {
+        "word": "順路",
+        "reading": "じゅんろ",
+        "romaji": "junro",
+        "pitch_accent": "1",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "参观或行走的顺序路线。",
+          "nuance": "常用于博物馆、展览馆或游览路线的指示牌。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "順路[じゅんろ]に沿[そ]って進[すす]む",
+            "explanation": "表示沿着既定的路线前进。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "順路[じゅんろ]に沿[そ]って見学[けんがく]してください。",
+          "chinese": "请按照参观路线进行参观。"
+        },
+        {
+          "japanese": "順路[じゅんろ]の矢印[やじるし]を見[み]る。",
+          "chinese": "看参观路线的箭头指示。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "ルート",
+            "meaning": "路线",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "順路[じゅんろ]案内[あんない]",
+          "meaning": "路线引导。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "使用场景",
+          "explanation": "通常用于公共场所的指示，不用于日常生活的行走路径。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198966719",
+        "moji_target_id": "198966719",
+        "word_text": "順路",
+        "moji_reading": "じゅんろ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "1c5bcd5e-5d0d-5bbe-9e10-ca85665a8136",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 41,
+      "_book_sort_order": 1737,
+      "1_basic_info": {
+        "word": "有望",
+        "reading": "ゆうぼう",
+        "romaji": "yuubou",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "な形容词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "有希望，前途光明。",
+          "nuance": "多用于评价人才、事业或计划。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "有望[ゆうぼう]な新人[しんじん]",
+            "explanation": "修饰名词时使用な。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]は有望[ゆうぼう]な若手[わかて]選手[せんしゅ]です。",
+          "chinese": "他是一位前途无量的年轻选手。"
+        },
+        {
+          "japanese": "この計画[けいかく]は有望[ゆうぼう]だと思[おも]います。",
+          "chinese": "我认为这个计划很有希望。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "将来性[しょうらいせい]がある",
+            "meaning": "有前途",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "絶望的[ぜつぼうてき]",
+            "meaning": "绝望的",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "有望[ゆうぼう]株[かぶ]",
+          "meaning": "有潜力的股票。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词性误用",
+          "explanation": "是有望な形容词，不能直接接名词，必须加な。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989109203",
+        "moji_target_id": "1989109203",
+        "word_text": "有望",
+        "moji_reading": "ゆうぼう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "69e81fea-117b-5635-a9fc-0f74316a6393",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 42,
+      "_book_sort_order": 1738,
+      "1_basic_info": {
+        "word": "前田",
+        "reading": "まえた",
+        "romaji": "maeda",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "专有名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "日本常见的姓氏。",
+          "nuance": ""
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "前田[まえだ]さんは今日[きょう]休[やす]みです。",
+          "chinese": "前田先生/小姐今天休息。"
+        },
+        {
+          "japanese": "私[わたし]の隣[となり]の席[せき]は前田[まえだ]さんです。",
+          "chinese": "我旁边的座位是前田先生/小姐。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "读音注意",
+          "explanation": "作为姓氏通常读作まえだ，注意不要读成まえた。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "i176dbaaf16203011c",
+        "moji_target_id": "i176dbaaf16203011c",
+        "word_text": "前田",
+        "moji_reading": "まえた",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "caf17a46-b588-55e3-bf6b-54ac8fded140",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 44,
+      "_book_sort_order": 1740,
+      "1_basic_info": {
+        "word": "株式会社東進",
+        "reading": "かぶしきかいしゃとうしん",
+        "romaji": "kabushikigaishatoushin",
+        "pitch_accent": null,
+        "jlpt_level": "N/A",
+        "part_of_speech": "专有名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "日本的一家教育机构名称。",
+          "nuance": ""
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "株式会社東進[かぶしきかいしゃとうしん]は有名[ゆうめい]な予備校[よびこう]です。",
+          "chinese": "株式会社东进是一家著名的补习学校。"
+        },
+        {
+          "japanese": "彼[かれ]は株式会社東進[かぶしきかいしゃとうしん]で働[はたら]いています。",
+          "chinese": "他在株式会社东进工作。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "书写规范",
+          "explanation": "株式会社通常写在公司名称前面或后面，作为正式名称使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "34lKjfmZxQ",
+        "moji_target_id": "34lKjfmZxQ",
+        "word_text": "株式会社東進",
+        "moji_reading": "かぶしきかいしゃとうしん",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "74316b2d-d614-5c31-b1ed-fe5aca2b8b72",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 45,
+      "_book_sort_order": 1741,
+      "1_basic_info": {
+        "word": "物事",
+        "reading": "ものごと",
+        "romaji": "monogoto",
+        "pitch_accent": "2",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "指世间万物、事情、现象等抽象或具体的对象。",
+          "nuance": "侧重于指代客观存在的各种事物或现象，常用于讨论对事物的看法或处理方式。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "物事[ものごと]を考える",
+            "explanation": "思考事情。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "物事[ものごと]を多角的[たかくてき]に見[み]る必要[ひつよう]がある。",
+          "chinese": "有必要多角度地看待事物。"
+        },
+        {
+          "japanese": "彼[かれ]は物事[ものごと]の判断[はんだん]が早[はや]い。",
+          "chinese": "他对事物的判断很快。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "事柄",
+            "meaning": "事情，事项",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "物事[ものごと]の道理[どうり]",
+          "meaning": "事物的道理"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法混淆",
+          "explanation": "物事通常指抽象的“事物”或“事情”，不用于指代具体的“物品”（物品应使用“物”）。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989101435",
+        "moji_target_id": "1989101435",
+        "word_text": "物事",
+        "moji_reading": "ものごと",
+        "moji_accent": "2",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "41d30aa6-3b21-5892-bde3-8d398b7f8442",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 46,
+      "_book_sort_order": 1742,
+      "1_basic_info": {
+        "word": "伝票",
+        "reading": "でんぴょう",
+        "romaji": "denpyou",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "传票，单据，账单。",
+          "nuance": "指记录交易、会计事项的凭证，常用于商业或餐饮业。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "伝票[でんぴょう]を切[き]る",
+            "explanation": "开具传票。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "会計[かいけい]の際[さい]に伝票[でんぴょう]を渡[わた]してください。",
+          "chinese": "结账时请出示传票。"
+        },
+        {
+          "japanese": "伝票[でんぴょう]の記入[きにゅう]にミスがあった。",
+          "chinese": "传票填写有误。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "領収書",
+            "meaning": "收据",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "伝票[でんぴょう]処理[しょり]",
+          "meaning": "传票处理"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "语境限制",
+          "explanation": "主要用于会计、财务或餐饮结账场景，日常生活中较少使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198989141",
+        "moji_target_id": "198989141",
+        "word_text": "伝票",
+        "moji_reading": "でんぴょう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "f6d5975d-a0b4-5ab9-bee5-9a89a14c7fbd",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 47,
+      "_book_sort_order": 1743,
+      "1_basic_info": {
+        "word": "税制",
+        "reading": "ぜいせい",
+        "romaji": "zeisei",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "税制，税收制度。",
+          "nuance": "指国家关于税收的法律、法规及征收体系。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "税制[ぜいせい]改革[かいかく]",
+            "explanation": "税制改革。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "政府[せいふ]は税制[ぜいせい]の見直[みなお]しを行[おこな]っている。",
+          "chinese": "政府正在重新审视税收制度。"
+        },
+        {
+          "japanese": "新[あたら]しい税制[ぜいせい]が導入[どうにゅう]された。",
+          "chinese": "新的税制被引入了。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "税制[ぜいせい]優遇[ゆうぐう]",
+          "meaning": "税收优惠"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "专业术语",
+          "explanation": "属于经济、政治领域的专业词汇，常用于新闻报道或政策讨论。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198975949",
+        "moji_target_id": "198975949",
+        "word_text": "税制",
+        "moji_reading": "ぜいせい",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "cafb55c8-c77f-56cb-9aba-e6fa503d66cf",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 48,
+      "_book_sort_order": 1744,
+      "1_basic_info": {
+        "word": "動作",
+        "reading": "どうさ",
+        "romaji": "dousa",
+        "pitch_accent": "1",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词/サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "动作，举止，行为。",
+          "nuance": "指身体的活动或机器的运转。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "動作[どうさ]をする",
+            "explanation": "做动作。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]の動作[どうさ]はとても優雅[ゆうが]だ。",
+          "chinese": "他的动作非常优雅。"
+        },
+        {
+          "japanese": "この機械[きかい]の動作[どうさ]が不安定[ふあんてい]だ。",
+          "chinese": "这台机器的运转不稳定。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "動き",
+            "meaning": "移动，活动",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "動作[どうさ]確認[かくにん]",
+          "meaning": "动作确认（测试机器是否正常）"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "适用范围",
+          "explanation": "既可指人的身体动作，也可指计算机程序或机械的运行状态。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198991357",
+        "moji_target_id": "198991357",
+        "word_text": "動作",
+        "moji_reading": "どうさ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "da0ede8a-59c3-5995-9d63-e8c68bd1bb20",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 49,
+      "_book_sort_order": 1745,
+      "1_basic_info": {
+        "word": "回答",
+        "reading": "かいとう",
+        "romaji": "kaitou",
+        "pitch_accent": "0",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词/サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "回答，答复。",
+          "nuance": "指对提问、要求或质询给出的正式回应。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "回答[かいとう]を求[もと]める",
+            "explanation": "要求回答。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "質問[しつもん]に対[たい]して回答[かいとう]する。",
+          "chinese": "针对提问进行回答。"
+        },
+        {
+          "japanese": "まだ回答[かいとう]が来[こ]ない。",
+          "chinese": "还没有收到答复。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "返事",
+            "meaning": "回复",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "質問",
+            "meaning": "提问",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "回答[かいとう]期限[きげん]",
+          "meaning": "回答期限"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义辨析",
+          "explanation": "“回答”多用于正式场合或针对特定问题；“返事”则多用于日常生活中对呼唤或询问的简单回应。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198937812",
+        "moji_target_id": "198937812",
+        "word_text": "回答",
+        "moji_reading": "かいとう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "58b3b8dc-ad8a-575c-9e9d-3a760e136252",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 50,
+      "_book_sort_order": 1746,
+      "1_basic_info": {
+        "word": "決済",
+        "reading": "けっさい",
+        "romaji": "kessai",
+        "pitch_accent": "1",
+        "jlpt_level": "N2",
+        "part_of_speech": "サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "结账，结算，支付款项。",
+          "nuance": "多用于商业、金融或日常消费场景，指完成金钱的支付行为。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～で決済[けっさい]する",
+            "explanation": "表示使用某种方式（如信用卡、电子支付）进行结算。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "クレジットカードで決済[けっさい]する。",
+          "chinese": "用信用卡结算。"
+        },
+        {
+          "japanese": "オンラインで代金[だいきん]を決済[けっさい]しました。",
+          "chinese": "在网上支付了货款。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "支払い",
+            "meaning": "支付",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "決済[けっさい]手段[しゅだん]",
+          "meaning": "结算手段"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义混淆",
+          "explanation": "注意不要与“決裁（けっさい）”混淆，后者指上级对下级呈报的文件进行审批。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198948563",
+        "moji_target_id": "198948563",
+        "word_text": "決済",
+        "moji_reading": "けっさい",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "f314578c-13ed-5ae3-a19d-178327ab028e",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 52,
+      "_book_sort_order": 1748,
+      "1_basic_info": {
+        "word": "白ばくれる",
+        "reading": "しらばくれる",
+        "romaji": "shirabakureru",
+        "pitch_accent": null,
+        "jlpt_level": "N1",
+        "part_of_speech": "一段动词/自动词",
+        "transitivity": "自动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "装傻，假装不知道，明知故问。",
+          "nuance": "带有贬义，指明明知道真相却故意装作不知情。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を白ばくれる",
+            "explanation": "虽然是自动词，但有时在口语中会接宾语表示对某事装傻。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "白ばくれる",
+        "masu_form": "白ばくれます",
+        "nai_form": "白ばくれない",
+        "te_form": "白ばくれて",
+        "ta_form": "白ばくれた",
+        "potential_form": "白ばくれられる",
+        "passive_form": "白ばくれられる",
+        "causative_form": "白ばくれさせる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "知[し]っているくせに、白ばくれるな。",
+          "chinese": "明明知道，别装傻了。"
+        },
+        {
+          "japanese": "彼[かれ]は都合[つごう]が悪[わる]くなると、すぐ白ばくれる。",
+          "chinese": "他一遇到不利的情况就立刻装傻。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "知[し]らぬ顔[かお]をする",
+            "meaning": "装作不知道",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "白[しら]ばっくれる",
+          "meaning": "装傻（更口语化的变体）"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "语体限制",
+          "explanation": "属于口语，不宜在正式场合或书面语中使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "EAGXjcLZea",
+        "moji_target_id": "EAGXjcLZea",
+        "word_text": "白ばくれる",
+        "moji_reading": "しらばくれる",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "6c4e7057-fa4f-5173-a1ee-75deac4f09bc",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 53,
+      "_book_sort_order": 1749,
+      "1_basic_info": {
+        "word": "大切さ",
+        "reading": "たいせつさ",
+        "romaji": "taisetsusa",
+        "pitch_accent": "0",
+        "jlpt_level": "N4",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "重要性，珍贵程度。",
+          "nuance": "由形容词“大切”加接尾词“さ”构成，表示抽象的性质或程度。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～の大切[たいせつ]さ",
+            "explanation": "表示某事物的重要性。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "命[いのち]の大切[たいせつ]さを学[まな]ぶ。",
+          "chinese": "学习生命的重要性。"
+        },
+        {
+          "japanese": "家族[かぞく]の大切[たいせつ]さを再確認[さいかくにん]した。",
+          "chinese": "重新确认了家人的重要性。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "重要性[じゅうようせい]",
+            "meaning": "重要性",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "大切[たいせつ]さを知[し]る",
+          "meaning": "懂得重要性"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词性误用",
+          "explanation": "“大切”是形容动词，修饰名词时用“な”，而“大切さ”本身是名词，后面不能直接接“な”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "00gar0uWdf",
+        "moji_target_id": "00gar0uWdf",
+        "word_text": "大切さ",
+        "moji_reading": "たいせつさ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "e95c1983-a888-55d4-85f2-8ec21de16026",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 54,
+      "_book_sort_order": 1750,
+      "1_basic_info": {
+        "word": "養分",
+        "reading": "ようぶん",
+        "romaji": "youbun",
+        "pitch_accent": "1",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "养分，营养成分。",
+          "nuance": "指维持生物生长所必需的物质，也常用于比喻。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～に養分[ようぶん]を与[あた]える",
+            "explanation": "给某物提供养分。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "植物[しょくぶつ]に養分[ようぶん]を与[あた]える。",
+          "chinese": "给植物提供养分。"
+        },
+        {
+          "japanese": "この土[つち]には十分[じゅうぶん]な養分[ようぶん]がある。",
+          "chinese": "这片土壤有充足的养分。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "栄養[えいよう]",
+            "meaning": "营养",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "養分[ようぶん]を吸収[きゅうしゅう]する",
+          "meaning": "吸收养分"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "搭配限制",
+          "explanation": "多用于植物或土壤，指代生物学意义上的营养物质。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989110275",
+        "moji_target_id": "1989110275",
+        "word_text": "養分",
+        "moji_reading": "ようぶん",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "86ed49cd-e775-553c-9a8c-55f836c5e3ca",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 55,
+      "_book_sort_order": 1751,
+      "1_basic_info": {
+        "word": "～済み",
+        "reading": "～ずみ",
+        "romaji": "zumi",
+        "pitch_accent": "1",
+        "jlpt_level": "N3",
+        "part_of_speech": "接尾词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "已完成，已处理。",
+          "nuance": "接在动词连用形（ます形去掉ます）或名词后，表示该动作或事项已经结束。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "名詞[めいし]＋済[ず]み",
+            "explanation": "表示某事已完成。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "支払[しはら]い済[ず]みです。",
+          "chinese": "已支付。"
+        },
+        {
+          "japanese": "確認[かくにん]済[ず]みの書類[しょるい]です。",
+          "chinese": "这是已确认过的文件。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "完了[かんりょう]",
+            "meaning": "完成",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "未[み]～",
+            "meaning": "未～",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "発送[はっそう]済[ず]み",
+          "meaning": "已发货"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "接续错误",
+          "explanation": "只能接在名词或动词连用形后，不能直接接在动词原形后。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198915993",
+        "moji_target_id": "198915993",
+        "word_text": "～済み",
+        "moji_reading": "～ずみ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "f960b742-b70f-5295-aa51-2746a5500de1",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 56,
+      "_book_sort_order": 1752,
+      "1_basic_info": {
+        "word": "低減",
+        "reading": "ていげん",
+        "romaji": "teigen",
+        "pitch_accent": "0",
+        "jlpt_level": "N1",
+        "part_of_speech": "サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "降低，减少（指程度、数量、价值等）。",
+          "nuance": "多用于正式场合或技术性语境，强调通过某种手段使数值或程度下降。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "を低減[ていげん]する",
+            "explanation": "表示减少的对象。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "コストの低減[ていげん]を図[はか]る。",
+          "chinese": "设法降低成本。"
+        },
+        {
+          "japanese": "騒音[そうおん]を低減[ていげん]する技術[ぎじゅつ]。",
+          "chinese": "降低噪音的技术。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "削減",
+            "meaning": "削减",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "増大",
+            "meaning": "增大",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "コスト低減[ていげん]",
+          "meaning": "成本降低"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词汇混淆",
+          "explanation": "与“削減”相比，低減更侧重于结果上的数值下降，而非主动的削减行为。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198987790",
+        "moji_target_id": "198987790",
+        "word_text": "低減",
+        "moji_reading": "ていげん",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "bcc4017b-6d49-500a-968d-0e99f7bc9b52",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 57,
+      "_book_sort_order": 1753,
+      "1_basic_info": {
+        "word": "切り替える",
+        "reading": "きりかえる",
+        "romaji": "kirikaeru",
+        "pitch_accent": "4/5/3",
+        "jlpt_level": "N3",
+        "part_of_speech": "一段动词",
+        "transitivity": "他动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "切换，转换。",
+          "nuance": "指将一种状态、物品或心情更换为另一种。"
+        },
+        {
+          "definition": "更换，更新。",
+          "nuance": "指用新的东西替换旧的。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "を～に切[き]り替[か]える",
+            "explanation": "将某物切换为某物。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "切り替える",
+        "masu_form": "切り替えます",
+        "nai_form": "切り替えない",
+        "te_form": "切り替えて",
+        "ta_form": "切り替えた",
+        "potential_form": "切り替えられる",
+        "passive_form": "切り替えられる",
+        "causative_form": "切り替えさせる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "気分[きぶん]を新[あら]たに切[き]り替[か]える。",
+          "chinese": "转换心情，重新振作。"
+        },
+        {
+          "japanese": "システムを新[あたら]しいものに切[き]り替[か]える。",
+          "chinese": "将系统切换为新的。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "交換",
+            "meaning": "交换",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "気分[きぶん]を切[き]り替[か]える",
+          "meaning": "转换心情"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "常用于抽象概念如心情、话题，也用于具体设备或系统的切换。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198976492",
+        "moji_target_id": "198976492",
+        "word_text": "切り替える",
+        "moji_reading": "きりかえる",
+        "moji_accent": "4/5/3",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "9026f319-dfbb-5396-8ddd-f5b495f7551e",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 58,
+      "_book_sort_order": 1754,
+      "1_basic_info": {
+        "word": "岩崎洋子",
+        "reading": "いわさきようこ",
+        "romaji": "iwasakiyouko",
+        "pitch_accent": null,
+        "jlpt_level": "N/A",
+        "part_of_speech": "专有名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "人名（日本女性姓名）。",
+          "nuance": ""
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "岩崎[いわさき]洋子[ようこ]さんは今日[きょう]来[く]る予定[よてい]です。",
+          "chinese": "岩崎洋子小姐预定今天来。"
+        },
+        {
+          "japanese": "私[わたし]の友人[ゆうじん]に岩崎[いわさき]洋子[ようこ]という人[ひと]がいます。",
+          "chinese": "我的朋友里有一个叫岩崎洋子的人。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "书写注意",
+          "explanation": "作为专有名词，读音可能因人而异，但这是最常见的读法。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "TGN98wXeJx",
+        "moji_target_id": "TGN98wXeJx",
+        "word_text": "岩崎洋子",
+        "moji_reading": "いわさきようこ",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "5cf37c4c-3bb2-59cd-9e31-ef8f16c7b86e",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 59,
+      "_book_sort_order": 1755,
+      "1_basic_info": {
+        "word": "契約書",
+        "reading": "けいやくしょ",
+        "romaji": "keiyakusho",
+        "pitch_accent": "5/0",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "合同书，契约书。",
+          "nuance": "指记录双方协议内容的正式书面文件。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "契約書[けいやくしょ]にサインする",
+            "explanation": "在合同上签字。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "契約書[けいやくしょ]に判[はん]を押[お]す。",
+          "chinese": "在合同书上盖章。"
+        },
+        {
+          "japanese": "契約書[けいやくしょ]の内容[ないよう]をよく読[よ]んでください。",
+          "chinese": "请仔细阅读合同书的内容。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "合意書",
+            "meaning": "协议书",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "契約書[けいやくしょ]を交[か]わす",
+          "meaning": "签订合同"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "通常指正式的法律文件。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198947704",
+        "moji_target_id": "198947704",
+        "word_text": "契約書",
+        "moji_reading": "けいやくしょ",
+        "moji_accent": "5/0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "449d3b89-75fd-5cc3-b486-a8766bfb17a3",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 60,
+      "_book_sort_order": 1756,
+      "1_basic_info": {
+        "word": "容赦",
+        "reading": "ようしゃ",
+        "romaji": "yousha",
+        "pitch_accent": "1",
+        "jlpt_level": "N2",
+        "part_of_speech": "サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "宽恕，原谅。",
+          "nuance": "指对对方的过错不予追究。"
+        },
+        {
+          "definition": "留情，客气。",
+          "nuance": "指在竞争或攻击时不留余地。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "容赦[ようしゃ]なく",
+            "explanation": "毫不留情地。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "容赦[ようしゃ]なく攻撃[こうげき]する。",
+          "chinese": "毫不留情地攻击。"
+        },
+        {
+          "japanese": "今回[こんかい]だけは容赦[ようしゃ]してやる。",
+          "chinese": "这次就原谅你。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "手加減",
+            "meaning": "手下留情",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "容赦[ようしゃ]ない",
+          "meaning": "毫不留情的"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "常以“容赦なく”的形式作为副词使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989109824",
+        "moji_target_id": "1989109824",
+        "word_text": "容赦",
+        "moji_reading": "ようしゃ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "fa6f2a11-e98e-5ed0-ae20-b4f7367833d9",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 61,
+      "_book_sort_order": 1757,
+      "1_basic_info": {
+        "word": "～源",
+        "reading": "～げん",
+        "romaji": "gen",
+        "pitch_accent": "1",
+        "jlpt_level": "N3",
+        "part_of_speech": "接尾词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "表示事物的来源、根源或产生的基础。",
+          "nuance": "常接在名词后，构成表示“……的来源”的词。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～の源",
+            "explanation": "表示某事物的根源。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "太陽[たいよう]はエネルギーの源[みなもと]だ。",
+          "chinese": "太阳是能量的源泉。"
+        },
+        {
+          "japanese": "彼[かれ]の成功[せいこう]の源[みなもと]は努力[どりょく]にある。",
+          "chinese": "他成功的根源在于努力。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "根源",
+            "meaning": "根源",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "エネルギーの源[みなもと]",
+          "meaning": "能量的源泉"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "读音混淆",
+          "explanation": "作为接尾词时读作“げん”，但作为独立名词“源”时常读作“みなもと”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "VGHMssyQs9",
+        "moji_target_id": "VGHMssyQs9",
+        "word_text": "～源",
+        "moji_reading": "～げん",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "a7b37f5d-7f1b-576d-9d93-9f4028ffa739",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 62,
+      "_book_sort_order": 1758,
+      "1_basic_info": {
+        "word": "食育",
+        "reading": "しょくいく",
+        "romaji": "shokuiku",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "指通过各种经验，学习有关食物的知识，培养选择健康食物的能力，从而养成良好饮食习惯的教育。",
+          "nuance": "日本近年来非常重视的教育理念，强调饮食与健康、文化的关系。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "学校[がっこう]で食育[しょくいく]の授業[じゅぎょう]を行[おこな]う。",
+          "chinese": "在学校进行食育课程。"
+        },
+        {
+          "japanese": "食育[しょくいく]は子[こ]どもの健康[けんこう]にとって大切[たいせつ]だ。",
+          "chinese": "食育对孩子的健康很重要。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "食育[しょくいく]を推進[すいしん]する",
+          "meaning": "推进食育"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "概念理解",
+          "explanation": "不仅仅是教人做饭，更包含营养学、食品安全及饮食礼仪的综合教育。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198970418",
+        "moji_target_id": "198970418",
+        "word_text": "食育",
+        "moji_reading": "しょくいく",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "d0cabadd-e0e3-5a13-b695-fb4d035853a7",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 63,
+      "_book_sort_order": 1759,
+      "1_basic_info": {
+        "word": "原理",
+        "reading": "げんり",
+        "romaji": "genri",
+        "pitch_accent": "1",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "事物的基本规律、法则或运作的基础。",
+          "nuance": "多用于科学、技术或逻辑领域。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "機械[きかい]の作動[さどう]原理[げんり]を理解[りかい]する。",
+          "chinese": "理解机器的运作原理。"
+        },
+        {
+          "japanese": "それは科学[かがく]の原理[げんり]に反[はん]している。",
+          "chinese": "那违反了科学原理。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "原則",
+            "meaning": "原则",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "原理[げんり]原則[げんそく]",
+          "meaning": "原理原则"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "搭配错误",
+          "explanation": "常与“理解”、“解明”等动词搭配使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198950158",
+        "moji_target_id": "198950158",
+        "word_text": "原理",
+        "moji_reading": "げんり",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "1ef53144-5402-515b-9ad6-5c74576b1156",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 64,
+      "_book_sort_order": 1760,
+      "1_basic_info": {
+        "word": "本格的",
+        "reading": "ほんかくてき",
+        "romaji": "honkakuteki",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "形容动词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "正式的、真正的、大规模的。",
+          "nuance": "表示达到了一定的标准或规模，不再是业余或初步的。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "本格的[ほんかくてき]な冬[ふゆ]がやってきた。",
+          "chinese": "真正的冬天到来了。"
+        },
+        {
+          "japanese": "本格的[ほんかくてき]な料理[りょうり]を習[なら]う。",
+          "chinese": "学习正宗的料理。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "本物",
+            "meaning": "真货",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "簡易的",
+            "meaning": "简易的",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "本格的[ほんかくてき]に始[はじ]まる",
+          "meaning": "正式开始"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词性误用",
+          "explanation": "作为形容动词，修饰名词时需加“な”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989104861",
+        "moji_target_id": "1989104861",
+        "word_text": "本格的",
+        "moji_reading": "ほんかくてき",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "f8aab95b-f395-5e46-8d92-0b8675dad23c",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 65,
+      "_book_sort_order": 1761,
+      "1_basic_info": {
+        "word": "～長",
+        "reading": "～ちょう",
+        "romaji": "chou",
+        "pitch_accent": "1",
+        "jlpt_level": "N3",
+        "part_of_speech": "接尾词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "表示组织、团体或部门的负责人、首领。",
+          "nuance": "接在名词后，表示职位的最高领导者。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "部長[ぶちょう]に相談[そうだん]する。",
+          "chinese": "和部长商量。"
+        },
+        {
+          "japanese": "校長[こうちょう]先生[せんせい]の話[はなし]を聞[き]く。",
+          "chinese": "听校长的讲话。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "リーダー",
+            "meaning": "领导者",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "社長[しゃちょう]",
+          "meaning": "社长"
+        },
+        {
+          "phrase": "課長[かちょう]",
+          "meaning": "科长"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "读音变化",
+          "explanation": "在某些词中可能发生连浊，如“学長（がくちょう）”虽不连浊，但需注意整体读音。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "83pkV12yGr",
+        "moji_target_id": "83pkV12yGr",
+        "word_text": "～長",
+        "moji_reading": "～ちょう",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "2da201b3-333f-5650-b9a0-e9ab31f6e33f",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 66,
+      "_book_sort_order": 1762,
+      "1_basic_info": {
+        "word": "マイクロ",
+        "reading": "",
+        "romaji": "maikuro",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "微小的，百万分之一。",
+          "nuance": "源自希腊语，常用于科技或度量衡单位的前缀。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この[機械]は[超微細]な[作業]が[可能]です。",
+          "chinese": "这台机器可以进行超微细作业。"
+        },
+        {
+          "japanese": "[世界]は[急速]に[小型化]しています。",
+          "chinese": "世界正在急速地小型化。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "マイクロ[波]",
+          "meaning": "微波"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "198925597",
+        "moji_target_id": "198925597",
+        "word_text": "マイクロ",
+        "moji_reading": "まいくろ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "bd4f0ea0-c740-584e-abdb-3265702ca3e9",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 67,
+      "_book_sort_order": 1763,
+      "1_basic_info": {
+        "word": "出前",
+        "reading": "でまえ",
+        "romaji": "demae",
+        "pitch_accent": "0",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "外卖，送餐上门。",
+          "nuance": "特指餐馆将做好的饭菜送到顾客家中或办公室。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を[出前]する",
+            "explanation": "叫外卖。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "[今日]は[疲]れたので、[寿司]を[出前]しましょう。",
+          "chinese": "今天太累了，叫寿司外卖吧。"
+        },
+        {
+          "japanese": "[近所]の[蕎麦屋]に[出前]を[頼]む。",
+          "chinese": "向附近的荞麦面店叫外卖。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "デリバリー",
+            "meaning": "配送，外卖",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "[出前][迅速]",
+          "meaning": "送餐迅速"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "现代多用“デリバリー”一词，但“出前”在指代传统日式餐饮配送时依然常用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198966234",
+        "moji_target_id": "198966234",
+        "word_text": "出前",
+        "moji_reading": "でまえ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "c4e57bd7-0c64-5b4c-a722-fd4e1aa66520",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 68,
+      "_book_sort_order": 1764,
+      "1_basic_info": {
+        "word": "聞き逃す",
+        "reading": "ききのがす",
+        "romaji": "kikinogasu",
+        "pitch_accent": "4",
+        "jlpt_level": "N2",
+        "part_of_speech": "他动词",
+        "transitivity": "他动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "听漏，没听见。",
+          "nuance": "因为不注意或环境嘈杂而错过了听到的机会。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を[聞き逃す]",
+            "explanation": "错过了某事。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "聞き逃す",
+        "masu_form": "聞き逃します",
+        "nai_form": "聞き逃さない",
+        "te_form": "聞き逃して",
+        "ta_form": "聞き逃した",
+        "potential_form": "聞き逃せる",
+        "passive_form": "聞き逃される",
+        "causative_form": "聞き逃させる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "[大事]な[放送]を[聞き逃]してしまった。",
+          "chinese": "错过了重要的广播。"
+        },
+        {
+          "japanese": "[先生]の[説明]を[聞き逃]さないように[注意]する。",
+          "chinese": "注意不要漏听老师的讲解。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "1989102075",
+        "moji_target_id": "1989102075",
+        "word_text": "聞き逃す",
+        "moji_reading": "ききのがす",
+        "moji_accent": "4",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "2ca7ce7e-cf9a-57b3-bd7b-df36ced48f9d",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 69,
+      "_book_sort_order": 1765,
+      "1_basic_info": {
+        "word": "生き物",
+        "reading": "いきもの",
+        "romaji": "ikimono",
+        "pitch_accent": "3/2",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "生物，活的东西。",
+          "nuance": "指具有生命活动的动物或植物。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "[地球]には[多]くの[生き物]が[存在]する。",
+          "chinese": "地球上存在着许多生物。"
+        },
+        {
+          "japanese": "[子供]は[生き物]を[大切]に[育]てるべきだ。",
+          "chinese": "孩子应该爱护生物。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "生物",
+            "meaning": "生物",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "198974930",
+        "moji_target_id": "198974930",
+        "word_text": "生き物",
+        "moji_reading": "いきもの",
+        "moji_accent": "3/2",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "d29f8cba-244a-5f7a-91a1-05f5aacb3ecf",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 70,
+      "_book_sort_order": 1766,
+      "1_basic_info": {
+        "word": "悪～",
+        "reading": "あく～",
+        "romaji": "aku~",
+        "pitch_accent": null,
+        "jlpt_level": "N2",
+        "part_of_speech": "接头词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "恶，坏，不良。",
+          "nuance": "加在名词前，表示负面、有害或不好的性质。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "[悪循環]を[断]ち[切]る[必要]がある。",
+          "chinese": "有必要切断恶性循环。"
+        },
+        {
+          "japanese": "[悪影響]を[及]ぼす[可能性]がある。",
+          "chinese": "有产生不良影响的可能性。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": [
+          {
+            "word": "善～",
+            "meaning": "善，好",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "[悪循環]",
+          "meaning": "恶性循环"
+        },
+        {
+          "phrase": "[悪影響]",
+          "meaning": "不良影响"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "w8ePlUokAi",
+        "moji_target_id": "w8ePlUokAi",
+        "word_text": "悪～",
+        "moji_reading": "あく～",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "6cb340e8-1bd6-503c-b5e3-e39b10c77ec3",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 71,
+      "_book_sort_order": 1767,
+      "1_basic_info": {
+        "word": "近郊",
+        "reading": "きんこう",
+        "romaji": "kinkou",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "城市周边的地区，郊区。",
+          "nuance": "指距离城市中心较近的郊外区域。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "近郊[きんこう]の",
+            "explanation": "修饰名词，表示某地的近郊。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "都心[としん]から近郊[きんこう]へ引[ひ]っ越[こ]した。",
+          "chinese": "从市中心搬到了近郊。"
+        },
+        {
+          "japanese": "この近郊[きんこう]には自然[しぜん]が多[おお]い。",
+          "chinese": "这一带近郊自然环境丰富。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "郊外[こうがい]",
+            "meaning": "郊外",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "近郊[きんこう]電車[でんしゃ]",
+          "meaning": "近郊列车"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "198946139",
+        "moji_target_id": "198946139",
+        "word_text": "近郊",
+        "moji_reading": "きんこう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "0dc6f008-bfb8-51eb-a3b7-427f77dd720d",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 72,
+      "_book_sort_order": 1768,
+      "1_basic_info": {
+        "word": "賄う",
+        "reading": "まかなう",
+        "romaji": "makanau",
+        "pitch_accent": "3",
+        "jlpt_level": "N1",
+        "part_of_speech": "五段动词",
+        "transitivity": "他动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "提供（饮食等）；维持（生活）；筹措（资金）。",
+          "nuance": "强调为了维持某种状态而准备必要的资源或资金。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を賄[まかな]う",
+            "explanation": "宾语通常是费用、饮食或人手。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "賄う",
+        "masu_form": "賄います",
+        "nai_form": "賄わない",
+        "te_form": "賄って",
+        "ta_form": "賄った",
+        "potential_form": "賄える",
+        "passive_form": "賄われる",
+        "causative_form": "賄わせる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "アルバイトで学費[がくひ]を賄[まかな]う。",
+          "chinese": "靠打工筹措学费。"
+        },
+        {
+          "japanese": "食料[しょくりょう]を自給[じきゅう]で賄[まかな]う。",
+          "chinese": "靠自给自足来提供食物。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "支払[しはら]う",
+            "meaning": "支付",
+            "difference": ""
+          },
+          {
+            "word": "調達[ちょうたつ]する",
+            "meaning": "筹措",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "経費[けいひ]を賄[まかな]う",
+          "meaning": "支付经费"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "1989113867",
+        "moji_target_id": "1989113867",
+        "word_text": "賄う",
+        "moji_reading": "まかなう",
+        "moji_accent": "3",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "57bcf5ae-d672-5594-85fc-72d69237927e",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 73,
+      "_book_sort_order": 1769,
+      "1_basic_info": {
+        "word": "森育",
+        "reading": "もりいく",
+        "romaji": "moriiku",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "通过接触森林、参与森林活动来培养儿童身心健康的教育方式。",
+          "nuance": "一种环境教育或自然教育的理念。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "最近[さいきん]、森育[もりいく]に注目[ちゅうもく]が集[あつ]まっている。",
+          "chinese": "最近，森育受到了关注。"
+        },
+        {
+          "japanese": "森育[もりいく]を通[とお]して子供[こども]の感性[かんせい]を育[そだ]てる。",
+          "chinese": "通过森育来培养孩子的感性。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "9vFSD5m53u",
+        "moji_target_id": "9vFSD5m53u",
+        "word_text": "森育",
+        "moji_reading": "もりいく",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "01bb4982-11fa-56eb-9fef-d136047e62ab",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 74,
+      "_book_sort_order": 1770,
+      "1_basic_info": {
+        "word": "溶け出す",
+        "reading": "とけだす",
+        "romaji": "tokedasu",
+        "pitch_accent": "3",
+        "jlpt_level": "N3",
+        "part_of_speech": "五段动词",
+        "transitivity": "自动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "开始融化并流出；溶解出来。",
+          "nuance": "强调从固体状态转变为液体并向外溢出的过程。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～から溶[と]け出[だ]す",
+            "explanation": "表示从某处开始融化流出。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "溶け出す",
+        "masu_form": "溶け出します",
+        "nai_form": "溶け出さない",
+        "te_form": "溶け出して",
+        "ta_form": "溶け出した",
+        "potential_form": "溶け出せる",
+        "passive_form": "溶け出される",
+        "causative_form": "溶け出させる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "氷[こおり]が溶[と]け出[だ]して水[みず]になった。",
+          "chinese": "冰开始融化变成了水。"
+        },
+        {
+          "japanese": "金属[きんぞく]から有害[ゆうがい]な物質[ぶっしつ]が溶[と]け出[だ]す。",
+          "chinese": "有害物质从金属中溶解出来。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "AkV3yrgycc",
+        "moji_target_id": "AkV3yrgycc",
+        "word_text": "溶け出す",
+        "moji_reading": "とけだす",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "966f8713-8219-52a1-abb7-fe8e8e357841",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 75,
+      "_book_sort_order": 1771,
+      "1_basic_info": {
+        "word": "デメリット",
+        "reading": "",
+        "romaji": "demeritto",
+        "pitch_accent": "2",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "缺点，不利条件，弊端。",
+          "nuance": "常用于对比利弊（メリット与デメリット）。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この計画[けいかく]にはデメリットも多[おお]い。",
+          "chinese": "这个计划也有很多弊端。"
+        },
+        {
+          "japanese": "メリットとデメリットを比較[ひかく]する。",
+          "chinese": "比较利弊。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "欠点[けってん]",
+            "meaning": "缺点",
+            "difference": ""
+          },
+          {
+            "word": "短所[たんしょ]",
+            "meaning": "短处",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "メリット",
+            "meaning": "优点",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "メリットとデメリット",
+          "meaning": "利与弊"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [],
+      "_source_meta": {
+        "moji_word_id": "198918471",
+        "moji_target_id": "198918471",
+        "word_text": "デメリット",
+        "moji_reading": "でめりっと",
+        "moji_accent": "2",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "cb97cbe5-a28f-59f1-95e4-490978ffa574",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 76,
+      "_book_sort_order": 1772,
+      "1_basic_info": {
+        "word": "聞き慣れる",
+        "reading": "ききなれる",
+        "romaji": "kikinareru",
+        "pitch_accent": "0/2",
+        "jlpt_level": "N2",
+        "part_of_speech": "一段动词",
+        "transitivity": "自动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "听习惯了，听惯了",
+          "nuance": "指因为经常听到某事物，所以不再感到新鲜或陌生。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～に聞き慣れる",
+            "explanation": "表示对某种声音或语言变得习惯。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "聞き慣れる",
+        "masu_form": "聞き慣れます",
+        "nai_form": "聞き慣れない",
+        "te_form": "聞き慣れて",
+        "ta_form": "聞き慣れた",
+        "potential_form": "聞き慣れられる",
+        "passive_form": "聞き慣れられる",
+        "causative_form": "聞き慣れさせる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この[曲][曲]は[聞][聞]き[慣][慣]れている。",
+          "chinese": "这首歌我已经听习惯了。"
+        },
+        {
+          "japanese": "その[名前][名前]は[聞][聞]き[慣][慣]れている。",
+          "chinese": "那个名字我已经听得很耳熟了。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "通常用于表示对某种特定的声音、语言或旋律感到熟悉。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989102045",
+        "moji_target_id": "1989102045",
+        "word_text": "聞き慣れる",
+        "moji_reading": "ききなれる",
+        "moji_accent": "0/2",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "556e8cf2-288d-558f-981d-2b3d4dd3dd3a",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 77,
+      "_book_sort_order": 1773,
+      "1_basic_info": {
+        "word": "同様",
+        "reading": "どうよう",
+        "romaji": "douyou",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词/形容动词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "同样，一样",
+          "nuance": "指性质、状态或程度与之前提到的事物相同。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～と[同様][同様]",
+            "explanation": "表示与某事物相同。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼と[同様][同様]の[意見][意見]を[持][持]っている。",
+          "chinese": "持有和他一样的意见。"
+        },
+        {
+          "japanese": "前[回][回]と[同様][同様]に[失敗][失敗]した。",
+          "chinese": "和上次一样失败了。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "同じ",
+            "meaning": "相同",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "異[異]なる",
+            "meaning": "不同",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "[同様][同様]に",
+          "meaning": "同样地"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "常用于书面语或正式场合。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198991556",
+        "moji_target_id": "198991556",
+        "word_text": "同様",
+        "moji_reading": "どうよう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "20d2fb91-32a1-5b9a-8872-fe15af0546ee",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 78,
+      "_book_sort_order": 1774,
+      "1_basic_info": {
+        "word": "提唱",
+        "reading": "ていしょう",
+        "romaji": "teishou",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "提倡，倡导",
+          "nuance": "指提出某种主张、理论或计划，并呼吁大家支持或实行。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を[提唱][提唱]する",
+            "explanation": "表示提倡某项主张。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "新しい[理論][理論]を[提唱][提唱]する。",
+          "chinese": "提倡一种新的理论。"
+        },
+        {
+          "japanese": "環境[保護][保護]を[提唱][提唱]する[団体][団体]。",
+          "chinese": "提倡环境保护的团体。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "推奨",
+            "meaning": "推荐",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "多用于学术、政治或社会运动等正式语境。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198988079",
+        "moji_target_id": "198988079",
+        "word_text": "提唱",
+        "moji_reading": "ていしょう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "b209e4f6-efe0-55e4-91b1-5475aab3f300",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 79,
+      "_book_sort_order": 1775,
+      "1_basic_info": {
+        "word": "実物",
+        "reading": "じつぶつ",
+        "romaji": "jitsubutsu",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "实物，真东西",
+          "nuance": "指不是模型、照片或复制品，而是真实存在的物体。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "[写真][写真]より[実物][実物]のほうが[良][良]い。",
+          "chinese": "实物比照片看起来更好。"
+        },
+        {
+          "japanese": "[実物][実物]を[見][見]てから[決][決]める。",
+          "chinese": "看过实物后再决定。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "本物",
+            "meaning": "真货",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "模型",
+            "meaning": "模型",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "常用于购物或对比评价时。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198962358",
+        "moji_target_id": "198962358",
+        "word_text": "実物",
+        "moji_reading": "じつぶつ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "1851240a-6492-50ea-8ea9-fa05c77661ec",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 80,
+      "_book_sort_order": 1776,
+      "1_basic_info": {
+        "word": "イマイチ",
+        "reading": "",
+        "romaji": "imaichi",
+        "pitch_accent": "2",
+        "jlpt_level": "N3",
+        "part_of_speech": "副词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "差一点，不太好，不尽如人意",
+          "nuance": "口语词，表示对某事物的评价稍有不满，觉得还不够完美。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この[料理][料理]は[少][少]しイマイチだ。",
+          "chinese": "这道菜味道稍微差了点。"
+        },
+        {
+          "japanese": "今日の[映画][映画]はイマイチだった。",
+          "chinese": "今天的电影不太好看。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "不十分",
+            "meaning": "不充分",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "仅限口语使用，不宜在正式公文或商务场合中使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "19897425",
+        "moji_target_id": "19897425",
+        "word_text": "イマイチ",
+        "moji_reading": "いまいち",
+        "moji_accent": "2",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "7e8b8c37-2df7-5047-ba42-3858659fe174",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 81,
+      "_book_sort_order": 1777,
+      "1_basic_info": {
+        "word": "漠然と",
+        "reading": "ばくぜんと",
+        "romaji": "bakuzento",
+        "pitch_accent": "0",
+        "jlpt_level": "N1",
+        "part_of_speech": "副词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "模糊地，茫然地，不明确地。",
+          "nuance": "指事物或想法没有明确的轮廓或界限，处于一种朦胧、不确定的状态。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "漠然[ばくぜん]とする",
+            "explanation": "表示处于一种模糊的状态。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "将来[しょうらい]について漠然[ばくぜん]とした不安[ふあん]を抱[いだ]いている。",
+          "chinese": "对未来怀有一种模糊的不安感。"
+        },
+        {
+          "japanese": "彼[かれ]の言[い]うことは漠然[ばくぜん]としていてよくわからない。",
+          "chinese": "他说的话很模糊，让人不太明白。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "ぼんやり",
+            "meaning": "模糊，发呆",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "明確[めいかく]",
+            "meaning": "明确",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "漠然[ばくぜん]とした不安[ふあん]",
+          "meaning": "模糊的不安感"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法混淆",
+          "explanation": "常用于描述心理状态或对事物的认知，不用于描述具体的物理形状。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "vHB2ZuBzAW",
+        "moji_target_id": "vHB2ZuBzAW",
+        "word_text": "漠然と",
+        "moji_reading": "ばくぜんと",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "90703da8-0476-5df3-8181-dd60d4b763c8",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 82,
+      "_book_sort_order": 1778,
+      "1_basic_info": {
+        "word": "ユニバーサルデザイン",
+        "reading": "",
+        "romaji": "yunibāsaru dezain",
+        "pitch_accent": "8",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "通用设计。",
+          "nuance": "指无论年龄、性别、身体状况如何，任何人都能方便使用的产品、建筑或环境的设计理念。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この駅[えき]はユニバーサルデザインを取[と]り入[い]れている。",
+          "chinese": "这个车站采用了通用设计。"
+        },
+        {
+          "japanese": "ユニバーサルデザインの考[かんが]え方[かた]は重要[じゅうよう]だ。",
+          "chinese": "通用设计的理念非常重要。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "ユニバーサルデザインの製品[せいひん]",
+          "meaning": "通用设计产品"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "概念理解",
+          "explanation": "不要与“无障碍设计（バリアフリー）”混淆，通用设计是面向所有人的，而无障碍设计侧重于消除障碍。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198927518",
+        "moji_target_id": "198927518",
+        "word_text": "ユニバーサルデザイン",
+        "moji_reading": "ゆにばーさるでざいん",
+        "moji_accent": "8",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "ac40305e-2e3f-506d-8a06-ee84515a4567",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 83,
+      "_book_sort_order": 1779,
+      "1_basic_info": {
+        "word": "保全",
+        "reading": "ほぜん",
+        "romaji": "hozen",
+        "pitch_accent": "0",
+        "jlpt_level": "N1",
+        "part_of_speech": "名词/サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "保全，维护，保护。",
+          "nuance": "指保持原状，防止损坏或灭失，常用于自然环境、文化遗产或法律权利。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を保全[ほぜん]する",
+            "explanation": "对某事物进行保护或维护。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "自然[しぜん]環境[かんきょう]の保全[ほぜん]に努[つと]める。",
+          "chinese": "致力于自然环境的保护。"
+        },
+        {
+          "japanese": "文化財[ぶんかざい]を保全[ほぜん]する。",
+          "chinese": "保护文化遗产。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "保護[ほご]",
+            "meaning": "保护",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "環境[かんきょう]保全[ほぜん]",
+          "meaning": "环境保护"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "搭配限制",
+          "explanation": "多用于正式场合或法律、环境领域。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989103200",
+        "moji_target_id": "1989103200",
+        "word_text": "保全",
+        "moji_reading": "ほぜん",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "01e5a904-22ee-5875-8d2b-efad07186ea1",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 84,
+      "_book_sort_order": 1780,
+      "1_basic_info": {
+        "word": "意図",
+        "reading": "いと",
+        "romaji": "ito",
+        "pitch_accent": "1",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词/サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "意图，打算，企图。",
+          "nuance": "指为了实现某种目的而预先设想的计划或想法。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "意図[いと]がある",
+            "explanation": "有某种意图。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]の言動[げんどう]には何[なに]か意図[いと]があるようだ。",
+          "chinese": "他的言行似乎有什么意图。"
+        },
+        {
+          "japanese": "そのような意図[いと]で言[い]ったわけではない。",
+          "chinese": "我并不是抱着那种意图说的。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "目的[もくてき]",
+            "meaning": "目的",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "意図[いと]的[てき]な",
+          "meaning": "有意的，故意的"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词性误用",
+          "explanation": "意図本身是名词，作动词时必须加“する”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989432",
+        "moji_target_id": "1989432",
+        "word_text": "意図",
+        "moji_reading": "いと",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "06b470fb-ff81-540f-ae72-27e023154f68",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 85,
+      "_book_sort_order": 1781,
+      "1_basic_info": {
+        "word": "パワーポイント",
+        "reading": "",
+        "romaji": "pawāpointo",
+        "pitch_accent": "4",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "PowerPoint（演示文稿软件）。",
+          "nuance": "指微软公司开发的演示文稿制作软件。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "会議[かいぎ]でパワーポイントを使[つか]って発表[はっぴょう]する。",
+          "chinese": "在会议上使用PowerPoint进行发表。"
+        },
+        {
+          "japanese": "パワーポイントの資料[しりょう]を作[つく]る。",
+          "chinese": "制作PowerPoint资料。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "パワポ",
+            "meaning": "PPT",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "パワポでプレゼンする",
+          "meaning": "用PPT做演示"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "缩写使用",
+          "explanation": "在正式商务场合建议使用全称“パワーポイント”，非正式场合可用“パワポ”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198921718",
+        "moji_target_id": "198921718",
+        "word_text": "パワーポイント",
+        "moji_reading": "ぱわーぽいんと",
+        "moji_accent": "4",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "ae0e4002-e8e8-57c0-9004-c63255f8a3ad",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 86,
+      "_book_sort_order": 1782,
+      "1_basic_info": {
+        "word": "浄化",
+        "reading": "じょうか",
+        "romaji": "jouka",
+        "pitch_accent": "0/1",
+        "jlpt_level": "N1",
+        "part_of_speech": "サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "清除污秽，使变得纯净。",
+          "nuance": "常用于宗教、环境或心理层面，指去除不洁之物。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "を浄化[じょうか]する",
+            "explanation": "对某物进行净化。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "心[こころ]を浄化[じょうか]する。",
+          "chinese": "净化心灵。"
+        },
+        {
+          "japanese": "水[みず]を浄化[じょうか]する装置[そうち]。",
+          "chinese": "净化水的装置。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "清浄[せいじょう]",
+            "meaning": "清净",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "汚染[おせん]",
+            "meaning": "污染",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "環境[かんきょう]浄化[じょうか]",
+          "meaning": "环境净化"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义混淆",
+          "explanation": "注意不要与“清扫”混淆，净化通常带有某种程度的化学或精神上的提升。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198969937",
+        "moji_target_id": "198969937",
+        "word_text": "浄化",
+        "moji_reading": "じょうか",
+        "moji_accent": "0/1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "c7e4ba52-9fad-5088-b3e0-dac2a132b116",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 87,
+      "_book_sort_order": 1783,
+      "1_basic_info": {
+        "word": "西郷慎太郎",
+        "reading": "さいごうしんたろう",
+        "romaji": "saigoushintarou",
+        "pitch_accent": "1/0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "专有名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "日本人的姓名。",
+          "nuance": ""
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "西郷[さいごう]慎太郎[しんたろう]という人[ひと]を知[し]っていますか。",
+          "chinese": "你认识叫西乡慎太郎的人吗？"
+        },
+        {
+          "japanese": "昨日[きのう]、西郷[さいごう]慎太郎[しんたろう]さんに会[あ]いました。",
+          "chinese": "昨天见到了西乡慎太郎先生。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "书写错误",
+          "explanation": "注意“慎”字的写法，不要写成“慎”的异体字。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "ryKrlyngzi",
+        "moji_target_id": "ryKrlyngzi",
+        "word_text": "西郷慎太郎",
+        "moji_reading": "さいごうしんたろう",
+        "moji_accent": "1/0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "ee4541ba-9b8b-54cb-80a8-70a81dc991ec",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 88,
+      "_book_sort_order": 1784,
+      "1_basic_info": {
+        "word": "照明",
+        "reading": "しょうめい",
+        "romaji": "shoumei",
+        "pitch_accent": "0",
+        "jlpt_level": "N3",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "照亮，灯光设备。",
+          "nuance": "指为了使周围明亮而设置的光源。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "照明[しょうめい]を消[け]す",
+            "explanation": "关灯。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "部屋[へや]の照明[しょうめい]を落[お]とす。",
+          "chinese": "调暗房间的灯光。"
+        },
+        {
+          "japanese": "照明[しょうめい]が明[あか]るすぎる。",
+          "chinese": "照明太亮了。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "明[あか]り",
+            "meaning": "灯光",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "照明[しょうめい]器具[きぐ]",
+          "meaning": "照明器具"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义混淆",
+          "explanation": "与“证明[しょうめい]”同音，需根据上下文区分。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198968931",
+        "moji_target_id": "198968931",
+        "word_text": "照明",
+        "moji_reading": "しょうめい",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "10f2376a-cfd5-5aec-b106-6b1e2a970593",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 89,
+      "_book_sort_order": 1785,
+      "1_basic_info": {
+        "word": "ご覧に入れる",
+        "reading": "ごらんにいれる",
+        "romaji": "goranniireru",
+        "pitch_accent": null,
+        "jlpt_level": "N2",
+        "part_of_speech": "惯用句/一段动词",
+        "transitivity": "他动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "给（对方）看，展示给（对方）看。",
+          "nuance": "“見せる”的谦让语，表示恭敬地展示。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～をご覧[ごらん]に入[い]れる",
+            "explanation": "展示某物给对方看。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "ご覧に入れる",
+        "masu_form": "ご覧に入れます",
+        "nai_form": "ご覧に入れない",
+        "te_form": "ご覧に入れて",
+        "ta_form": "ご覧に入れた",
+        "potential_form": "ご覧に入れられる",
+        "passive_form": "ご覧に入れられる",
+        "causative_form": "ご覧に入れさせる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "新[あたら]しい作品[さくひん]をご覧[ごらん]に入[い]れます。",
+          "chinese": "给您展示一下新作品。"
+        },
+        {
+          "japanese": "実力[じつりょく]をご覧[ごらん]に入[い]れる。",
+          "chinese": "展示一下实力。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "見[み]せる",
+            "meaning": "看",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "敬语误用",
+          "explanation": "这是谦让语，只能用于自己或自己一方的行为，不能用于对方。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "19892063",
+        "moji_target_id": "19892063",
+        "word_text": "ご覧に入れる",
+        "moji_reading": "ごらんにいれる",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "1d62fb58-7c79-5cc8-a731-78344002a85c",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 90,
+      "_book_sort_order": 1786,
+      "1_basic_info": {
+        "word": "伝う",
+        "reading": "つたう",
+        "romaji": "tsutau",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "五段动词/自动词",
+        "transitivity": "自动词"
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "沿着……移动，顺着……流下。",
+          "nuance": "指沿着物体表面移动或流动的动作。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～を伝[つた]う",
+            "explanation": "沿着某处移动。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": "伝う",
+        "masu_form": "伝います",
+        "nai_form": "伝わない",
+        "te_form": "伝って",
+        "ta_form": "伝った",
+        "potential_form": "伝える",
+        "passive_form": "伝われる",
+        "causative_form": "伝わせる"
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "頬[ほお]を涙[なみだ]が伝[つた]う。",
+          "chinese": "泪水顺着脸颊流下。"
+        },
+        {
+          "japanese": "壁[かべ]を伝[つた]って歩[ある]く。",
+          "chinese": "扶着墙走。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "沿[そ]う",
+            "meaning": "沿着",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义混淆",
+          "explanation": "与“伝える（传达）”不同，此词侧重于物理上的移动。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198989104",
+        "moji_target_id": "198989104",
+        "word_text": "伝う",
+        "moji_reading": "つたう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "88c78c50-8289-5af2-834b-4f4cdf62a88e",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 91,
+      "_book_sort_order": 1787,
+      "1_basic_info": {
+        "word": "コントロールパネル",
+        "reading": "",
+        "romaji": "kontorōrupaneru",
+        "pitch_accent": "7",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "计算机操作系统中的控制面板，用于设置系统参数。",
+          "nuance": "外来语，常用于IT领域。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "コントロールパネル[開]く",
+            "explanation": "打开控制面板。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "コントロールパネル[開]いて、設定[変]更してください。",
+          "chinese": "请打开控制面板，修改设置。"
+        },
+        {
+          "japanese": "コントロールパネル[使]って、[新]しいプリンターを[追]加する。",
+          "chinese": "使用控制面板添加新打印机。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "コントロールパネルを[開]く",
+          "meaning": "打开控制面板"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "拼写错误",
+          "explanation": "注意长音符号的使用，不要漏掉。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198912833",
+        "moji_target_id": "198912833",
+        "word_text": "コントロールパネル",
+        "moji_reading": "こんとろーるぱねる",
+        "moji_accent": "7",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "3ed5b580-b07e-5915-846a-a0dc94138d37",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 92,
+      "_book_sort_order": 1788,
+      "1_basic_info": {
+        "word": "密接",
+        "reading": "みっせつ",
+        "romaji": "missetsu",
+        "pitch_accent": "0",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词/な形容词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "紧密接触，关系密切。",
+          "nuance": "指事物之间联系非常紧密，不可分割。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "～と密接な関係がある",
+            "explanation": "与...有密切关系。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この二[者]の[間]には密接な[関]係がある。",
+          "chinese": "这两者之间有着密切的关系。"
+        },
+        {
+          "japanese": "環境[問]題は[私]たちの[生]活と密接に[関]わっている。",
+          "chinese": "环境问题与我们的生活密切相关。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "緊密",
+            "meaning": "紧密",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "疎遠",
+            "meaning": "疏远",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "密接な[関]係",
+          "meaning": "密切关系"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "搭配错误",
+          "explanation": "通常与“関係”或“関わる”搭配使用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989105904",
+        "moji_target_id": "1989105904",
+        "word_text": "密接",
+        "moji_reading": "みっせつ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "3f6e3d1d-e05a-592a-b0ff-48c97aae8460",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 93,
+      "_book_sort_order": 1789,
+      "1_basic_info": {
+        "word": "切っても切れない",
+        "reading": "きってもきれない",
+        "romaji": "kitte mo kirenai",
+        "pitch_accent": null,
+        "jlpt_level": "N2",
+        "part_of_speech": "惯用句",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "不可分割的，关系极深。",
+          "nuance": "形容两者关系非常紧密，无法分开。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "AとBは切っても切れない",
+            "explanation": "A和B是不可分割的。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "健康と[食]事とは切っても切れない[関]係だ。",
+          "chinese": "健康与饮食是不可分割的关系。"
+        },
+        {
+          "japanese": "彼らは切っても切れない[仲]だ。",
+          "chinese": "他们是关系极好的朋友。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "不可分",
+            "meaning": "不可分",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "切っても切れない[縁]",
+          "meaning": "不可分割的缘分"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法注意",
+          "explanation": "常用于形容抽象的关系或深厚的感情。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198976415",
+        "moji_target_id": "198976415",
+        "word_text": "切っても切れない",
+        "moji_reading": "きってもきれない",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "5a14f1bc-56e8-5f68-89f8-172632225fed",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 94,
+      "_book_sort_order": 1790,
+      "1_basic_info": {
+        "word": "一貫",
+        "reading": "いっかん",
+        "romaji": "ikkan",
+        "pitch_accent": "0/3",
+        "jlpt_level": "N2",
+        "part_of_speech": "名词/サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "一贯，始终如一。",
+          "nuance": "指思想、态度或行动始终保持一致。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "一貫した態度",
+            "explanation": "一贯的态度。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼はずっと一貫した[主]張を[続]けている。",
+          "chinese": "他一直坚持着一贯的主张。"
+        },
+        {
+          "japanese": "この[作]品には一貫したテーマがある。",
+          "chinese": "这部作品有一个一贯的主题。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "首尾一貫",
+            "meaning": "首尾一贯",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "矛盾",
+            "meaning": "矛盾",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "一貫した[態]度",
+          "meaning": "一贯的态度"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词性混淆",
+          "explanation": "常作为形容动词使用，即“一貫した”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198931284",
+        "moji_target_id": "198931284",
+        "word_text": "一貫",
+        "moji_reading": "いっかん",
+        "moji_accent": "0/3",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "21a0b30b-f45e-5386-ab20-438efa619f41",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 95,
+      "_book_sort_order": 1791,
+      "1_basic_info": {
+        "word": "海草",
+        "reading": "かいそう",
+        "romaji": "kaisō",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "海草，生长在海里的草本植物。",
+          "nuance": "指海里的植物，与海藻（海藻）有所区别。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "海草を[採]る",
+            "explanation": "采集海草。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "海岸に[多]くの海草が[打]ち[上]げられている。",
+          "chinese": "海岸上有很多被冲上来的海草。"
+        },
+        {
+          "japanese": "海草は[魚]たちの[隠]れ[家]になる。",
+          "chinese": "海草是鱼儿们的藏身之处。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "海藻",
+            "meaning": "海藻",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "海草の[森]",
+          "meaning": "海草森林"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "同音词混淆",
+          "explanation": "注意与“海藻”的区别，虽然读音相同，但汉字写法不同。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198938182",
+        "moji_target_id": "198938182",
+        "word_text": "海草",
+        "moji_reading": "かいそう",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "3ec9d1ae-922f-5567-884c-80b8f0649185",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 96,
+      "_book_sort_order": 1792,
+      "1_basic_info": {
+        "word": "出前授業",
+        "reading": "でまえじゅぎょう",
+        "romaji": "demaejugyou",
+        "pitch_accent": null,
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "指专家、学者或企业人员前往学校等场所进行的特别授课。",
+          "nuance": "通常指校外人员到校内进行实践性或专业性的教学活动。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "出前授業[でまえじゅぎょう]を 行[おこな]う",
+            "explanation": "进行出前授课。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "大学[だいがく]の 先生[せんせい]が 小学校[しょうがっこう]で 出前授業[でまえじゅぎょう]を 行[おこな]った。",
+          "chinese": "大学教授在小学进行了出前授课。"
+        },
+        {
+          "japanese": "企業[きぎょう]による 出前授業[でまえじゅぎょう]は 生徒[せいと]に 人気[にんき]がある。",
+          "chinese": "企业举办的出前授课很受学生欢迎。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "出前授業[でまえじゅぎょう]を 受[う]ける",
+          "meaning": "接受出前授课"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义理解",
+          "explanation": "不要将其误解为单纯的“外卖”，这里的“出前”引申为“送教上门”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "yCDHdHpCoE",
+        "moji_target_id": "yCDHdHpCoE",
+        "word_text": "出前授業",
+        "moji_reading": "でまえじゅぎょう",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "802a207c-b2bd-5278-8950-8e0418f36f12",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 97,
+      "_book_sort_order": 1793,
+      "1_basic_info": {
+        "word": "精進",
+        "reading": "しょうじん",
+        "romaji": "shoujin",
+        "pitch_accent": "1",
+        "jlpt_level": "N1",
+        "part_of_speech": "サ变名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "专心致志，努力修行。",
+          "nuance": "原为佛教用语，指断绝杂念，专心修行；现多指在工作或学业上刻苦努力。"
+        },
+        {
+          "definition": "素食，斋戒。",
+          "nuance": "指不吃鱼肉，仅吃蔬菜等。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "精進[しょうじん]する",
+            "explanation": "努力，精进。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "これからも 芸[げい]の 道[みち]に 精進[しょうじん]します。",
+          "chinese": "今后我也会在艺术道路上继续精进。"
+        },
+        {
+          "japanese": "日夜[にちや]の 精進[しょうじん]が 実[みの]を結[むす]んだ。",
+          "chinese": "日夜的努力终于结出了果实。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "努力",
+            "meaning": "努力",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "精進[しょうじん]料理[りょうり]",
+          "meaning": "精进料理（素斋）"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "语境使用",
+          "explanation": "在商务场合常用于表达“今后会更加努力”的谦逊说法。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198975397",
+        "moji_target_id": "198975397",
+        "word_text": "精進",
+        "moji_reading": "しょうじん",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "3642d38d-47de-54cc-8968-a2434719c4b0",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 98,
+      "_book_sort_order": 1794,
+      "1_basic_info": {
+        "word": "水洗",
+        "reading": "すいせん",
+        "romaji": "suisen",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "用水冲洗。",
+          "nuance": "指利用水流去除污垢。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "水洗[すいせん]する",
+            "explanation": "用水冲洗。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この 野菜[やさい]は よく 水洗[すいせん]してください。",
+          "chinese": "请把这些蔬菜洗干净。"
+        },
+        {
+          "japanese": "水洗[すいせん]トイレは 今[いま]では 当[あ]たり前[まえ]だ。",
+          "chinese": "水冲式厕所现在是理所当然的。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "水洗[すいせん]トイレ",
+          "meaning": "水冲式厕所"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "同音词混淆",
+          "explanation": "注意与“推荐（推薦[すいせん]）”发音相同，需根据上下文区分。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198914976",
+        "moji_target_id": "198914976",
+        "word_text": "水洗",
+        "moji_reading": "すいせん",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "66cd75c8-ca73-5f73-aca6-870e4891be3d",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 100,
+      "_book_sort_order": 1795,
+      "1_basic_info": {
+        "word": "工場長",
+        "reading": "こうじょうちょう",
+        "romaji": "koujouchou",
+        "pitch_accent": "3",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "工厂的最高负责人。",
+          "nuance": "指管理工厂运营的职位。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "工場長[こうじょうちょう]に 就任[しゅうにん]する",
+            "explanation": "就任工厂长。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]は 新[あたら]しい 工場長[こうじょうちょう]に 選[えら]ばれた。",
+          "chinese": "他被选为新任工厂长。"
+        },
+        {
+          "japanese": "工場長[こうじょうちょう]の 指示[しじ]を 仰[あお]ぐ。",
+          "chinese": "请示工厂长的指示。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "工場長[こうじょうちょう]会議[かいぎ]",
+          "meaning": "工厂长会议"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "读音",
+          "explanation": "注意“工場”读作“こうじょう”，不要读成“こうば”。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198953063",
+        "moji_target_id": "198953063",
+        "word_text": "工場長",
+        "moji_reading": "こうじょうちょう",
+        "moji_accent": "3",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "dff62289-4669-5a4c-87b5-adc72e8595a0",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 101,
+      "_book_sort_order": 1796,
+      "1_basic_info": {
+        "word": "大久保勇",
+        "reading": "おおくぼいさむ",
+        "romaji": "ookuboisamu",
+        "pitch_accent": null,
+        "jlpt_level": "N/A",
+        "part_of_speech": "专有名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "日本人的姓名。",
+          "nuance": "大久保（姓）和勇（名）。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "大久保勇[おおくぼいさむ]さんは 私[わたし]の 同僚[どうりょう]です。",
+          "chinese": "大久保勇先生是我的同事。"
+        },
+        {
+          "japanese": "昨日[きのう]、大久保勇[おおくぼいさむ]さんに 会[あ]いました。",
+          "chinese": "昨天见到了大久保勇先生。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "姓名读音",
+          "explanation": "人名读音多样，此处为常见读法，实际使用中需确认本人读音。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "03eQBVOiPW",
+        "moji_target_id": "03eQBVOiPW",
+        "word_text": "大久保勇",
+        "moji_reading": "おおくぼいさむ",
+        "moji_accent": null,
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "d91e33d1-7a13-5b34-8f6b-2158f14d2fe9",
+      "_lesson": {
+        "id": "8734f887-d613-5d64-b4bc-124a178342cd",
+        "number": 12,
+        "title": "第三单元 / 第十二课"
+      },
+      "_sort_order": 102,
+      "_book_sort_order": 1797,
+      "1_basic_info": {
+        "word": "趙越",
+        "reading": "ちょうえつ",
+        "romaji": "chouetsu",
+        "pitch_accent": "1",
+        "jlpt_level": "N/A",
+        "part_of_speech": "专有名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "人名，常见于中文姓名的日语读音。",
+          "nuance": "作为专有名词使用，无特殊语境含义。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": []
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]の名字[みょうじ]は趙[ちょう]越[えつ]です。",
+          "chinese": "他的姓氏是赵越。"
+        },
+        {
+          "japanese": "趙[ちょう]越[えつ]さんと昨日[きのう]会[あ]いました。",
+          "chinese": "昨天和赵越先生/女士见面了。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "读音混淆",
+          "explanation": "作为中文姓名，在日语中通常按音读处理，注意长音的准确性。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "NYgePCrffM",
+        "moji_target_id": "NYgePCrffM",
+        "word_text": "趙越",
+        "moji_reading": "ちょうえつ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "af1ff02b-5842-50fa-b889-e2956922ce26",
+      "_lesson": {
+        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
+        "number": 3,
+        "title": "第一单元 / 第三课"
+      },
+      "_sort_order": 161,
+      "_book_sort_order": 453,
+      "1_basic_info": {
+        "word": "古墳",
+        "reading": "こふん",
+        "romaji": "kofun",
+        "pitch_accent": "0",
+        "jlpt_level": "N1",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "古坟，指日本3世纪中叶至7世纪左右建造的古代坟墓。",
+          "nuance": "特指日本历史中“古坟时代”的遗迹，通常具有特定的形状（如前方后圆坟）。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "古墳[こふん]を訪[おとず]れる",
+            "explanation": "参观古坟。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "この地域[ちいき]には多[おお]くの古墳[こふん]が残[のこ]されている。",
+          "chinese": "在这个地区留存着许多古坟。"
+        },
+        {
+          "japanese": "古墳[こふん]から貴重[きちょう]な副葬品[ふくそうひん]が発見[はっけん]された。",
+          "chinese": "从古坟中发现了珍贵的陪葬品。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "墓[はか]",
+            "meaning": "坟墓",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "前方後円墳[ぜんぽうこうえんふん]",
+          "meaning": "前方后圆坟（古坟的一种典型形状）。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义范围",
+          "explanation": "不要将现代的墓地称为“古坟”，古坟仅用于考古学语境下的古代遗迹。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198950810",
+        "moji_target_id": "198950810",
+        "word_text": "古墳",
+        "moji_reading": "こふん",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "110215d1-02f2-5ffa-968a-6c89183ca40a",
+      "_lesson": {
+        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
+        "number": 3,
+        "title": "第一单元 / 第三课"
+      },
+      "_sort_order": 162,
+      "_book_sort_order": 454,
+      "1_basic_info": {
+        "word": "前開き",
+        "reading": "まえあき",
+        "romaji": "maeaki",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "指衣服等从前面开口，通过纽扣、拉链等方式穿脱的样式。",
+          "nuance": "常用于描述衬衫、开衫、睡衣等服装的结构。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "前開き[まえあき]の～",
+            "explanation": "修饰名词，表示具有前开口特征的物品。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "このシャツは前開き[まえあき]です。",
+          "chinese": "这件衬衫是前开襟的。"
+        },
+        {
+          "japanese": "入院中[にゅういんちゅう]は前開き[まえあき]のパジャマが便利[べんり]です。",
+          "chinese": "住院期间，前开襟的睡衣很方便。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [],
+        "antonyms": [
+          {
+            "word": "被[かぶ]り",
+            "meaning": "套头式",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "前開き[まえあき]の服[ふく]",
+          "meaning": "前开襟的衣服"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "用法混淆",
+          "explanation": "注意不要与“前空き（まえあき）”混淆，虽然读音相同，但在某些语境下“前開き”特指服装结构。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198978229",
+        "moji_target_id": "198978229",
+        "word_text": "前開き",
+        "moji_reading": "まえあき",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "4b920a6e-d794-5aa1-a835-606607a34a4c",
+      "_lesson": {
+        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
+        "number": 3,
+        "title": "第一单元 / 第三课"
+      },
+      "_sort_order": 163,
+      "_book_sort_order": 455,
+      "1_basic_info": {
+        "word": "着付け",
+        "reading": "きつけ",
+        "romaji": "kitsuke",
+        "pitch_accent": "0",
+        "jlpt_level": "N/A",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "指为他人穿戴和服的技术或行为。",
+          "nuance": "特指穿戴和服时所需的专业技巧，包括腰带的系法、衣领的调整等。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "着付け[きつけ]を習[なら]う",
+            "explanation": "学习和服穿戴。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼女[かのじょ]は着付け[きつけ]の教室[きょうしつ]に通[かよ]っている。",
+          "chinese": "她正在上和服穿戴教室。"
+        },
+        {
+          "japanese": "結婚式[けっこんしき]のために、着付け[きつけ]を予約[よやく]した。",
+          "chinese": "为了婚礼，预约了和服穿戴服务。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "着装[ちゃくそう]",
+            "meaning": "穿戴，着装。",
+            "difference": ""
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "着付け[きつけ]師[し]",
+          "meaning": "专门从事和服穿戴工作的专业人员。"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义混淆",
+          "explanation": "不要将着付け与普通的穿衣服（服[ふく]を着[き]る）混淆，着付け通常带有专业技术或仪式感的含义。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "198985257",
+        "moji_target_id": "198985257",
+        "word_text": "着付け",
+        "moji_reading": "きつけ",
+        "moji_accent": "0",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "ed9b41a2-7aff-5efd-80ee-7a8cf54d3096",
+      "_lesson": {
+        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
+        "number": 3,
+        "title": "第一单元 / 第三课"
+      },
+      "_sort_order": 164,
+      "_book_sort_order": 456,
+      "1_basic_info": {
+        "word": "そうだ",
+        "reading": "",
+        "romaji": "souda",
+        "pitch_accent": null,
+        "jlpt_level": "N/A",
+        "part_of_speech": "助词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "表示传闻或样态的表达（好像……、听说……）。",
+          "nuance": "根据接续形式可表示传闻或样态推测。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "そうだ",
+            "explanation": "接在普通形后表示传闻；接在词干后表示样态。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "天気予報によると、明日は雨が降るそうだ。",
+          "chinese": "据天气预报说明天会下雨。"
+        },
+        {
+          "japanese": "このケーキはおいしそうだ。",
+          "chinese": "这个蛋糕看起来很好吃。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "らしい",
+            "meaning": "表示传闻或推测",
+            "difference": "らしい更偏推测语气。"
+          }
+        ],
+        "antonyms": []
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "〜そうだ",
+          "meaning": "听说……；看起来……"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "接续误用",
+          "explanation": "传闻そうだ与样态そうだ接续不同，不能混用。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "19892842",
+        "moji_target_id": "19892842",
+        "word_text": "そうだ",
+        "moji_reading": "そうだ",
+        "moji_accent": "1",
+        "moji_meaning": "",
+        "source": "mojidict",
+        "generation_status": "SUCCESS"
+      }
+    },
+    {
+      "_word_id": "e58decad-7e70-59cc-847f-b2621f8c3156",
+      "_lesson": {
+        "id": "4928de16-8183-5536-aa2d-d7bafebec91c",
+        "number": 3,
+        "title": "第一单元 / 第三课"
+      },
+      "_sort_order": 165,
+      "_book_sort_order": 457,
+      "1_basic_info": {
+        "word": "末期",
+        "reading": "まっき",
+        "romaji": "makki",
+        "pitch_accent": "1",
+        "jlpt_level": "N1",
+        "part_of_speech": "名词",
+        "transitivity": null
+      },
+      "2_meanings_and_nuance": [
+        {
+          "definition": "事物的最后阶段，末尾。",
+          "nuance": "常用于描述疾病、时代、事业等走向终结的时期。"
+        }
+      ],
+      "3_critical_grammar_rules": {
+        "associated_particles": [
+          {
+            "pattern": "の末期",
+            "explanation": "表示某事物或某时期的最后阶段。"
+          }
+        ]
+      },
+      "4_conjugations": {
+        "dictionary_form": null,
+        "masu_form": null,
+        "nai_form": null,
+        "te_form": null,
+        "ta_form": null,
+        "potential_form": null,
+        "passive_form": null,
+        "causative_form": null
+      },
+      "6_example_sentences": [
+        {
+          "japanese": "彼[かれ]は癌[がん]の末期[まっき]と診断[しんだん]された。",
+          "chinese": "他被诊断为癌症晚期。"
+        },
+        {
+          "japanese": "江戸[えど]幕府[ばくふ]の末期[まっき]には、多[おお]くの混乱[こんらん]があった。",
+          "chinese": "江户幕府末期，发生了许多混乱。"
+        }
+      ],
+      "7_synonyms_and_antonyms": {
+        "synonyms": [
+          {
+            "word": "晩期",
+            "meaning": "晚期",
+            "difference": ""
+          }
+        ],
+        "antonyms": [
+          {
+            "word": "初期",
+            "meaning": "初期",
+            "difference": ""
+          }
+        ]
+      },
+      "8_collocations_and_phrases": [
+        {
+          "phrase": "末期[まっき]症状[しょうじょう]",
+          "meaning": "末期症状"
+        }
+      ],
+      "9_common_mistakes_and_usage_notes": [
+        {
+          "mistake_type": "词义混淆",
+          "explanation": "注意不要与“末期（まつご）”混淆，“末期（まつご）”专指临终、临死之际。"
+        }
+      ],
+      "_source_meta": {
+        "moji_word_id": "1989105398",
+        "moji_target_id": "1989105398",
+        "word_text": "末期",
+        "moji_reading": "まっき",
         "moji_accent": "1",
         "moji_meaning": "",
         "source": "mojidict",

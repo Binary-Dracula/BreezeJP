@@ -1,6 +1,6 @@
 import { AuthPayload } from '../middleware/auth';
 import { corsHeaders } from '../middleware/cors';
-import { Env, ReviewSessionEnvelope, ReviewSessionPhase, ReviewSessionStatus, ReviewSessionUpdateRequest, VocabFullDetail, VocabWord } from '../types';
+import { Env, ReviewSessionEnvelope, ReviewSessionPhase, ReviewSessionStatus, ReviewSessionUpdateRequest, VocabExample, VocabFullDetail, VocabWord } from '../types';
 import { errorResponse, jsonResponse, supabaseFetch } from '../utils/supabase';
 import { fetchFullDetailsBatch } from './vocab';
 
@@ -68,13 +68,16 @@ type WordReviewSessionItem = {
   meaning: string | null;
   reading: string | null;
   options: string[];
+  /** cloze_test 题型专用：目标单词已替换为 ___ 的例句 */
+  cloze_sentence?: string | null;
 };
 
 type WordReviewQuestionType =
   | 'word_to_meaning'
   | 'audio_to_meaning'
   | 'kanji_to_reading'
-  | 'meaning_to_spelling';
+  | 'meaning_to_spelling'
+  | 'cloze_test';
 
 // Worker 当前只暴露 word review session；kana review 已迁回本地状态流。
 type ReviewSessionKind = 'word';
@@ -102,6 +105,42 @@ const kanaOptionPool = [
   'ば', 'び', 'ぶ', 'べ', 'ぼ', 'ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ', 'ま', 'み', 'む', 'め', 'も',
   'や', 'ゆ', 'よ', 'ら', 'り', 'る', 'れ', 'ろ', 'わ', 'を', 'ん',
 ];
+
+const katakanaOptionPool = [
+  'ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク', 'ケ', 'コ', 'ガ', 'ギ', 'グ', 'ゲ', 'ゴ',
+  'サ', 'シ', 'ス', 'セ', 'ソ', 'ザ', 'ジ', 'ズ', 'ゼ', 'ゾ', 'タ', 'チ', 'ツ', 'テ', 'ト',
+  'ダ', 'ヂ', 'ヅ', 'デ', 'ド', 'ナ', 'ニ', 'ヌ', 'ネ', 'ノ', 'ハ', 'ヒ', 'フ', 'ヘ', 'ホ',
+  'バ', 'ビ', 'ブ', 'ベ', 'ボ', 'パ', 'ピ', 'プ', 'ペ', 'ポ', 'マ', 'ミ', 'ム', 'メ', 'モ',
+  'ヤ', 'ユ', 'ヨ', 'ラ', 'リ', 'ル', 'レ', 'ロ', 'ワ', 'ヲ', 'ン', 'ー',
+];
+
+/** 字符串是否全为假名（平假名 + 片假名 + 长音符）*/
+function isAllKana(str: string): boolean {
+  return /^[\u3040-\u309f\u30a0-\u30ff\u30fc\uff70]+$/.test(str);
+}
+
+/** 字符串是否全为片假名（含长音符）*/
+function isAllKatakana(str: string): boolean {
+  return /^[\u30a0-\u30ff\u30fc\uff70]+$/.test(str);
+}
+
+/**
+ * 取适合拼写题的假名拼写：
+ * 1. reading 为纯假名 → 直接返回
+ * 2. word 为纯片假名 → 用 word 本身
+ * 3. 其他（含罗马字等）→ 返回 null，不出拼写题
+ */
+function pickKanaSpelling(detail: VocabFullDetail): string | null {
+  const reading = detail.reading.trim();
+  if (reading.length > 0 && isAllKana(reading)) {
+    return reading;
+  }
+  const word = detail.word.trim();
+  if (isAllKatakana(word)) {
+    return word;
+  }
+  return null;
+}
 
 export async function handleWordReviewSession(
   request: Request,
@@ -358,12 +397,21 @@ function buildWordReviewItem(
 
   const meaning = pickWordMeaning(detail);
   const reading = pickWordReading(detail);
-  const availableTypes = collectWordReviewTypes(meaning, reading);
+  const kanaSpelling = pickKanaSpelling(detail);
+  const availableTypes = collectWordReviewTypes(meaning, reading, kanaSpelling, detail, row);
   if (availableTypes.length === 0) {
     return null;
   }
 
   const questionType = chooseWordReviewType(auth.sub, row, detail.word, availableTypes);
+  const clozeSentence =
+    questionType === 'cloze_test'
+      ? buildClozeSentence(detail.word, detail.reading, detail.examples)
+      : null;
+
+  // meaning_to_spelling 题的 reading 字段必须是假名，不能是 romaji
+  const itemReading = questionType === 'meaning_to_spelling' ? kanaSpelling : reading;
+
   return {
     word_state: row,
     word_detail: detail,
@@ -372,8 +420,9 @@ function buildWordReviewItem(
       ? new URL(`/api/v1/audio/words/${row.word_id}`, request.url).toString()
       : null,
     meaning,
-    reading,
-    options: buildWordReviewOptions(questionType, meaning, reading, distractorPool, sessionDetails),
+    reading: itemReading,
+    options: buildWordReviewOptions(questionType, meaning, reading, detail, kanaSpelling, distractorPool, sessionDetails),
+    cloze_sentence: clozeSentence,
   };
 }
 
@@ -381,12 +430,36 @@ function buildWordReviewOptions(
   questionType: WordReviewQuestionType,
   meaning: string | null,
   reading: string | null,
+  detail: VocabFullDetail,
+  kanaSpelling: string | null,
   distractorPool: VocabWord[],
   sessionDetails: VocabFullDetail[],
 ): string[] {
   if (questionType === 'meaning_to_spelling') {
-    const correctChars = (reading ?? '').split('').filter((char) => char.length > 0);
-    return shuffleArray(uniqueStrings([...correctChars, ...kanaOptionPool.slice(0, 4)]));
+    const spelling = kanaSpelling ?? '';
+    const correctChars = spelling.split('').filter((c) => c.length > 0);
+    const answerSet = new Set(correctChars);
+    const pool = isAllKatakana(spelling) ? katakanaOptionPool : kanaOptionPool;
+    const distractors = shuffleArray(pool.filter((c) => !answerSet.has(c))).slice(0, 5);
+    return shuffleArray(uniqueStrings([...correctChars, ...distractors]));
+  }
+
+  // cloze_test：选项为单词形式（目标词 + 3 个干扰词）
+  if (questionType === 'cloze_test') {
+    const options: string[] = [detail.word];
+    for (const candidate of distractorPool) {
+      if (candidate.word && !options.includes(candidate.word)) {
+        options.push(candidate.word);
+      }
+      if (options.length >= 4) break;
+    }
+    for (const d of sessionDetails) {
+      if (d.word !== detail.word && !options.includes(d.word)) {
+        options.push(d.word);
+      }
+      if (options.length >= 4) break;
+    }
+    return shuffleArray(options.slice(0, 4));
   }
 
   const options: string[] = [];
@@ -442,13 +515,28 @@ function buildWordReviewOptions(
 function collectWordReviewTypes(
   meaning: string | null,
   reading: string | null,
+  kanaSpelling: string | null,
+  detail: VocabFullDetail,
+  row: UserWordStateRow,
 ): WordReviewQuestionType[] {
   const result: WordReviewQuestionType[] = [];
   if (meaning) {
-    result.push('word_to_meaning', 'meaning_to_spelling');
+    result.push('word_to_meaning');
+    if (kanaSpelling) {
+      result.push('meaning_to_spelling');
+    }
   }
   if (reading) {
     result.push('kanji_to_reading');
+  }
+  // cloze_test 仅在复习次数 >= 2 且有可用例句时提供
+  if (row.total_reviews >= 2 && detail.examples.length > 0) {
+    const hasCloze = detail.examples.some(
+      (ex) => ex.japanese.includes(detail.word) || (detail.reading && ex.japanese.includes(detail.reading)),
+    );
+    if (hasCloze) {
+      result.push('cloze_test');
+    }
   }
   return result;
 }
@@ -463,8 +551,12 @@ function chooseWordReviewType(
   if (row.total_reviews === 0) {
     return available.includes('word_to_meaning') ? 'word_to_meaning' : available[0];
   }
+  // total_reviews >= 2 时有 30% 几率选填空题（如果可用）
+  if (bucket < 3 && available.includes('cloze_test')) {
+    return 'cloze_test';
+  }
   if (
-    bucket < 4 &&
+    bucket < 6 &&
     available.includes('kanji_to_reading') &&
     /[\u4e00-\u9faf]/.test(word)
   ) {
@@ -563,6 +655,19 @@ function parseContentRangeTotal(contentRange: string | null): number | null {
   }
   const match = contentRange.match(/\/(\d+)$/);
   return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function buildClozeSentence(word: string, reading: string, examples: VocabExample[]): string | null {
+  for (const example of examples) {
+    const japanese = example.japanese;
+    if (word.length > 0 && japanese.includes(word)) {
+      return japanese.replace(word, '___');
+    }
+    if (reading.length > 0 && japanese.includes(reading)) {
+      return japanese.replace(reading, '___');
+    }
+  }
+  return null;
 }
 
 function simpleHash(value: string): number {

@@ -64,5 +64,7 @@ String _wordQuestionTypeToString(WordReviewQuestionType type) {
       return 'meaning_to_spelling';
     case WordReviewQuestionType.wordToMeaning:
       return 'word_to_meaning';
+    case WordReviewQuestionType.clozeTest:
+      return 'cloze_test';
   }
 }

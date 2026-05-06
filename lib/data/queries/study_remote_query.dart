@@ -249,6 +249,7 @@ class RemoteWordReviewSessionItem {
     required this.meaning,
     required this.reading,
     required this.options,
+    this.clozeSentence,
   });
 
   final StudyWord studyWord;
@@ -258,6 +259,9 @@ class RemoteWordReviewSessionItem {
   final String? meaning;
   final String? reading;
   final List<String> options;
+
+  /// 仅 cloze_test 题型携带：例句（目标单词已替换为 ___）
+  final String? clozeSentence;
 
   factory RemoteWordReviewSessionItem.fromJson(
     Map<String, dynamic> json,
@@ -293,6 +297,7 @@ class RemoteWordReviewSessionItem {
       meaning: _asNullableString(json['meaning']),
       reading: _asNullableString(json['reading']),
       options: _toStringList(json['options']),
+      clozeSentence: _asNullableString(json['cloze_sentence']),
     );
   }
 }

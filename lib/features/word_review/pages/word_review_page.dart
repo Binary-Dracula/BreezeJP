@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/network_error_view.dart';
 import '../../../core/widgets/review_spelling_options.dart';
 import '../../../core/widgets/review_widgets.dart';
 import '../../../l10n/app_localizations.dart';
@@ -63,6 +64,13 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage> {
   ) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.isNetworkError) {
+      return NetworkErrorView(
+        onRetry: () =>
+            ref.read(wordReviewControllerProvider.notifier).loadReview(),
+      );
     }
 
     if (state.error != null) {
@@ -136,16 +144,35 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage> {
                           .submitObjectiveAnswer(option),
                     )
                 else
-                  ReviewSubjectiveRatings(
-                    onRate: (rating) => ref
-                        .read(wordReviewControllerProvider.notifier)
-                        .submitSubjectiveRating(rating),
-                  ),
+                  _buildContinueButton(l10n),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildContinueButton(AppLocalizations l10n) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF6C63FF),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        onPressed: () =>
+            ref.read(wordReviewControllerProvider.notifier).continueToNext(),
+        child: Text(
+          l10n.wordReviewContinue,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ),
     );
   }
 
@@ -199,6 +226,18 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage> {
             fontSize: 48,
             fontWeight: FontWeight.bold,
             color: Color(0xFF2D3142),
+          ),
+        );
+        break;
+      case WordReviewQuestionType.clozeTest:
+        titleWidget = Text(
+          item.clozeSentence ?? '',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2D3142),
+            height: 1.7,
           ),
         );
         break;
@@ -320,6 +359,8 @@ class _WordReviewPageState extends ConsumerState<WordReviewPage> {
       case WordReviewQuestionType.kanjiToReading:
       case WordReviewQuestionType.meaningToSpelling:
         return item.reading ?? '';
+      case WordReviewQuestionType.clozeTest:
+        return item.wordDetail.word.word;
     }
   }
 
@@ -335,5 +376,6 @@ String _titleForType(WordReviewQuestionType type, AppLocalizations l10n) {
     WordReviewQuestionType.meaningToSpelling => l10n.wordReviewTitleMeaningWord,
     WordReviewQuestionType.audioToMeaning => l10n.wordReviewTitleAudioWord,
     WordReviewQuestionType.kanjiToReading => l10n.wordReviewTitleReadingWord,
+    WordReviewQuestionType.clozeTest => l10n.wordReviewTitleClozeTest,
   };
 }

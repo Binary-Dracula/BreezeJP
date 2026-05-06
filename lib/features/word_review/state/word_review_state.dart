@@ -27,8 +27,12 @@ class WordReviewState {
   // 如果是复杂的题型，可能需要具体页面去获取，但这里为了快速改造，我们保留通用的 option list
   final List<String> currentOptions;
 
+  /// 当前卡片答题开始时间（用于自动计算评分）
+  final DateTime? cardStartTime;
+
   final bool isAllFinished;
   final String? error;
+  final bool isNetworkError;
 
   const WordReviewState({
     this.sessionId,
@@ -39,8 +43,10 @@ class WordReviewState {
     this.currentPhase = ReviewCardPhase.testing,
     this.hasMistakeOnCurrent = false,
     this.currentOptions = const [],
+    this.cardStartTime,
     this.isAllFinished = false,
     this.error,
+    this.isNetworkError = false,
   });
 
   WordReviewItem? get currentItem {
@@ -64,8 +70,10 @@ class WordReviewState {
     ReviewCardPhase? currentPhase,
     bool? hasMistakeOnCurrent,
     List<String>? currentOptions,
+    Object? cardStartTime = _unset,
     bool? isAllFinished,
     Object? error = _unset,
+    bool? isNetworkError,
   }) {
     return WordReviewState(
       sessionId: sessionId == _unset ? this.sessionId : (sessionId as String?),
@@ -76,8 +84,12 @@ class WordReviewState {
       currentPhase: currentPhase ?? this.currentPhase,
       hasMistakeOnCurrent: hasMistakeOnCurrent ?? this.hasMistakeOnCurrent,
       currentOptions: currentOptions ?? this.currentOptions,
+      cardStartTime: cardStartTime == _unset
+          ? this.cardStartTime
+          : (cardStartTime as DateTime?),
       isAllFinished: isAllFinished ?? this.isAllFinished,
       error: error == _unset ? this.error : (error as String?),
+      isNetworkError: isNetworkError ?? this.isNetworkError,
     );
   }
 }

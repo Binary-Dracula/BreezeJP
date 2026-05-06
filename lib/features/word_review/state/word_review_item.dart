@@ -6,6 +6,7 @@ enum WordReviewQuestionType {
   audioToMeaning, // 2. 听音：只播放单词音频，选中文含义
   kanjiToReading, // 3. 读音判定：有汉字的单词选平假名读音
   meaningToSpelling, // 4. 拼写：显示释义/发音，乱序假名拼写
+  clozeTest, // 5. 填空：例句挖空，四选一单词
 }
 
 class WordReviewItem {
@@ -17,6 +18,9 @@ class WordReviewItem {
   final String? reading;
   final List<String> options;
 
+  /// 仅 clozeTest 使用：含空白符的例句，如「私は___で通学しています」
+  final String? clozeSentence;
+
   const WordReviewItem({
     required this.studyWord,
     required this.wordDetail,
@@ -25,6 +29,7 @@ class WordReviewItem {
     required this.meaning,
     required this.reading,
     required this.options,
+    this.clozeSentence,
   });
 }
 
@@ -36,6 +41,8 @@ WordReviewQuestionType wordReviewQuestionTypeFromApi(String value) {
       return WordReviewQuestionType.kanjiToReading;
     case 'meaning_to_spelling':
       return WordReviewQuestionType.meaningToSpelling;
+    case 'cloze_test':
+      return WordReviewQuestionType.clozeTest;
     case 'word_to_meaning':
     default:
       return WordReviewQuestionType.wordToMeaning;

@@ -317,6 +317,7 @@ def main():
     lessons_seen = {}
     seen_word_ids = set()
     seen_map_ids = set()
+    cloud_ref_word_ids = set()  # CLOUD_REFERENCE 词的 word_id，上传时跳过 words/details/examples
 
     for w in valid_words:
         word_id = w.get("_word_id")
@@ -359,6 +360,12 @@ def main():
         if word_id in seen_word_ids:
             continue
         seen_word_ids.add(word_id)
+
+        # CLOUD_REFERENCE：该词在云端已有完整数据，只写 lesson_word_map，不覆盖 words/details/examples
+        status = w.get("_source_meta", {}).get("generation_status", "")
+        if status == "CLOUD_REFERENCE":
+            cloud_ref_word_ids.add(word_id)
+            continue
 
         basic = w.get("1_basic_info", {})
         meanings = w.get("2_meanings_and_nuance", [])
@@ -434,8 +441,9 @@ def main():
     print(f"[2/6] 清理旧关联...")
     sb_delete("lesson_word_map", {"book_id": f"eq.{book_id}"})
     sb_delete("lessons", {"book_id": f"eq.{book_id}"})
-    # 删除旧例句
-    for batch in chunked(list(seen_word_ids), UPLOAD_BATCH_SIZE):
+    # 删除旧例句（跳过 CLOUD_REFERENCE 词，避免删除其他书已写入的例句）
+    non_cloud_ref_ids = seen_word_ids - cloud_ref_word_ids
+    for batch in chunked(list(non_cloud_ref_ids), UPLOAD_BATCH_SIZE):
         in_filter = "in.(" + ",".join(batch) + ")"
         sb_delete("word_examples", {"word_id": in_filter})
 

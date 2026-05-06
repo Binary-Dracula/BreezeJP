@@ -478,6 +478,18 @@ abstract class AppLocalizations {
   /// **'服务不可用'**
   String get networkServiceUnavailable;
 
+  /// 网络错误页面标题
+  ///
+  /// In zh, this message translates to:
+  /// **'网络连接失败'**
+  String get networkErrorTitle;
+
+  /// 网络错误页面描述
+  ///
+  /// In zh, this message translates to:
+  /// **'请检查网络设置后重试'**
+  String get networkErrorMessage;
+
   /// 通用加载失败错误
   ///
   /// In zh, this message translates to:
@@ -579,6 +591,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'读音 → 单词'**
   String get wordReviewTitleReadingWord;
+
+  /// 单词复习题型标题-例句填空
+  ///
+  /// In zh, this message translates to:
+  /// **'例句填空'**
+  String get wordReviewTitleClozeTest;
+
+  /// 答对后展示答案阶段的继续按钮
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get wordReviewContinue;
 
   /// 单词复习题型说明-读音到单词
   ///
