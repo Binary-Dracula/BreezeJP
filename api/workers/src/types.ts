@@ -160,97 +160,32 @@ export interface ReviewSessionUpdateRequest<TItem> {
   is_finished?: boolean;
 }
 
-export type SyncEntityType =
-  | 'profile'
-  | 'word_state'
-  | 'word_favorite'
-  | 'word_example_favorite'
-  | 'kana_state'
-  | 'grammar_state'
-  | 'book_progress';
+// =============================================================
+// 快照同步系统（v2）
+// =============================================================
 
-export type SyncOperation =
-  | 'upsert'
-  | 'delete'
-  | 'mark_learned'
-  | 'mark_mastered'
-  | 'mark_ignored'
-  | 'review'
-  | 'reset';
-
-export interface SyncMutation {
-  mutation_id: string;
-  entity_type: SyncEntityType;
-  entity_key: string;
-  operation: SyncOperation;
-  payload: Record<string, unknown>;
-  base_version?: number | null;
-  client_occurred_at?: string | null;
+/** 用户数据快照（每个字段 null 表示"跳过该实体，不覆盖服务端" */
+export interface SyncSnapshot {
+  profile?: Record<string, unknown> | null;
+  word_states?: Record<string, unknown>[] | null;
+  word_favorites?: Record<string, unknown>[] | null;
+  word_example_favorites?: Record<string, unknown>[] | null;
+  kana_states?: Record<string, unknown>[] | null;
+  grammar_states?: Record<string, unknown>[] | null;
+  book_progress?: Record<string, unknown>[] | null;
 }
 
-export interface SyncRegisterDeviceRequest {
+/** POST /api/v1/sync/checkpoint 请求体 */
+export interface SyncCheckpointRequest {
   device_id: string;
-  platform: string;
-  device_name?: string | null;
-  app_version?: string | null;
+  platform?: string;
+  /** true = 强制接管（登录/bootstrap 时），false = 后台同步（被踢时不抢占） */
+  force_takeover?: boolean;
+  snapshot?: SyncSnapshot | null;
 }
 
-export interface SyncBootstrapRequest {
-  device_id: string;
-  cursor?: string | null;
-  limit?: number;
-}
-
-export interface SyncPullRequest {
-  device_id: string;
-  after_seq?: number;
-  limit?: number;
-}
-
-export interface SyncPushRequest {
-  device_id: string;
-  known_cursor?: string | null;
-  mutations: SyncMutation[];
-}
-
-export interface SyncAckedMutation {
-  mutation_id: string;
-  entity_type: SyncEntityType;
-  entity_key: string;
-  result_version: number | null;
-  status: 'applied' | 'noop' | 'duplicate';
-}
-
-export interface SyncConflict {
-  mutation_id: string;
-  entity_type: SyncEntityType;
-  entity_key: string;
-  reason: string;
-  server_version: number | null;
-  server_state?: Record<string, unknown> | null;
-}
-
-export interface SyncPullEvent {
-  seq: number;
-  entity_type: SyncEntityType;
-  entity_key: string;
-  operation: SyncOperation;
-  payload: Record<string, unknown>;
-  committed_at: string;
-}
-
-export interface SyncRegisterDeviceResponse {
-  data: {
-    device_id: string;
-    server_cursor: string;
-    bootstrap_required: boolean;
-  };
-  meta: {
-    server_time: string;
-  };
-}
-
-export interface SyncBootstrapResponse {
+/** POST /api/v1/sync/checkpoint 响应体 */
+export interface SyncCheckpointResponse {
   data: {
     profile: Record<string, unknown> | null;
     word_states: Record<string, unknown>[];
@@ -261,28 +196,11 @@ export interface SyncBootstrapResponse {
     book_progress: Record<string, unknown>[];
   };
   meta: {
-    next_cursor: string;
-    has_more: boolean;
     server_time: string;
-  };
-}
-
-export interface SyncPushResponse {
-  data: {
-    acked_mutations: SyncAckedMutation[];
-    conflicts: SyncConflict[];
-  };
-  meta: {
-    next_cursor: string;
-    server_time: string;
-  };
-}
-
-export interface SyncPullResponse {
-  data: SyncPullEvent[];
-  meta: {
-    next_cursor: string;
-    has_more: boolean;
-    server_time: string;
+    active_device_id: string;
+    /** true 表示此次 checkpoint 接管了另一台设备的会话 */
+    took_over: boolean;
+    /** true 表示当前设备已被其他设备接管，本次未更新 active_device_id */
+    displaced: boolean;
   };
 }

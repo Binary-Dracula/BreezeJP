@@ -262,6 +262,27 @@ class StudyWordRepository {
     }
   }
 
+  /// 获取某用户的所有学习记录
+  Future<List<StudyWord>> getAllByUser(int userId) async {
+    try {
+      final db = await _db;
+      final results = await db.query(
+        'study_words',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+      return results.map(StudyWord.fromMap).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT ALL',
+        table: 'study_words',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 删除某用户的所有学习记录
   Future<void> deleteAllByUser(int userId) async {
     try {

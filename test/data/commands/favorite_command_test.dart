@@ -72,18 +72,7 @@ void main() {
     when(
       () => activeUserCommand.ensureActiveUser(),
     ).thenAnswer((_) async => user);
-    when(
-      () => syncRemoteCommand.pushWordFavorite(
-        favorite: any(named: 'favorite'),
-        operation: any(named: 'operation'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => syncRemoteCommand.pushWordExampleFavorite(
-        favorite: any(named: 'favorite'),
-        operation: any(named: 'operation'),
-      ),
-    ).thenAnswer((_) async {});
+    when(() => syncRemoteCommand.scheduleCheckpoint()).thenReturn(null);
 
     container = ProviderContainer(
       overrides: [
@@ -129,12 +118,7 @@ void main() {
     expect(savedFavorite.wordId, 'word-1');
     expect(savedFavorite.bookId, 'book-1');
 
-    verify(
-      () => syncRemoteCommand.pushWordFavorite(
-        favorite: any(named: 'favorite'),
-        operation: 'upsert',
-      ),
-    ).called(1);
+    verify(() => syncRemoteCommand.scheduleCheckpoint()).called(1);
     expect(container.read(favoriteRefreshProvider), 1);
   });
 
@@ -166,12 +150,7 @@ void main() {
       verify(
         () => wordFavoriteRepository.deleteFavorite(user.id, 'word-1'),
       ).called(1);
-      verify(
-        () => syncRemoteCommand.pushWordFavorite(
-          favorite: existingFavorite,
-          operation: 'delete',
-        ),
-      ).called(1);
+      verify(() => syncRemoteCommand.scheduleCheckpoint()).called(1);
       expect(container.read(favoriteRefreshProvider), 1);
     },
   );
@@ -201,12 +180,7 @@ void main() {
       expect(savedFavorite.exampleId, 'example-1');
       expect(savedFavorite.wordId, 'word-1');
 
-      verify(
-        () => syncRemoteCommand.pushWordExampleFavorite(
-          favorite: any(named: 'favorite'),
-          operation: 'upsert',
-        ),
-      ).called(1);
+      verify(() => syncRemoteCommand.scheduleCheckpoint()).called(1);
       expect(container.read(favoriteRefreshProvider), 1);
     },
   );

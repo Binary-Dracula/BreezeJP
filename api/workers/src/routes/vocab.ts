@@ -132,9 +132,14 @@ export async function handleUserNextWords(
   const progressRows = (await progressResp.json()) as Array<{ current_sort_cursor: number }>;
   const currentCursor = progressRows[0]?.current_sort_cursor ?? 0;
 
-  const sequenceRows = await fetchBookSequenceRows(env, bookId);
+  // 并行拉取书籍单词顺序表 + 用户已有学习记录的 word_id（任意 state 均排除）
+  const [sequenceRows, learnedIds] = await Promise.all([
+    fetchBookSequenceRows(env, bookId),
+    fetchUserLearnedWordIds(env, auth.sub, bookId),
+  ]);
+
   const nextRows = sequenceRows
-    .filter(row => row.book_sort_order > currentCursor)
+    .filter(row => row.book_sort_order > currentCursor && !learnedIds.has(row.word_id))
     .slice(0, limit);
 
   if (nextRows.length === 0) {
@@ -166,6 +171,26 @@ export async function handleUserNextWords(
       current_cursor: currentCursor,
     },
   }, corsHeaders(request));
+}
+
+/**
+ * 获取用户在某本书中已有学习记录（任意 state）的 word_id 集合。
+ * 用于 handleUserNextWords 过滤，防止已学词再次出现在新批次里。
+ */
+async function fetchUserLearnedWordIds(
+  env: Env,
+  userId: string,
+  bookId: string
+): Promise<Set<string>> {
+  const resp = await supabaseFetch(env, '/user_word_states', {
+    select: 'word_id',
+    user_id: `eq.${userId}`,
+    book_id: `eq.${bookId}`,
+    limit: '5000',
+  });
+  if (!resp.ok) return new Set();
+  const rows = (await resp.json()) as Array<{ word_id: string }>;
+  return new Set(rows.map(r => r.word_id));
 }
 
 /**

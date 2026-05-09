@@ -2337,6 +2337,358 @@ CREATE POLICY "authenticated users can upsert own review sessions"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
+-- =============================================================
+-- 5.0 快照同步系统（替代旧的 mutation-event 体系）
+-- 设计：单设备活跃，checkpoint = push(LWW) + pull 一次完成
+-- =============================================================
+
+-- 在 user_profiles 上追踪活跃设备
+ALTER TABLE user_profiles
+    ADD COLUMN IF NOT EXISTS active_device_id UUID REFERENCES user_devices(device_id) ON DELETE SET NULL;
+
+-- --------------------------------------------------
+-- sync_checkpoint：唯一的同步接口
+-- 逻辑：
+--   1. 自动注册设备（如不存在）
+--   2. LWW upsert 所有实体（按 updated_at 比较，客户端更新则覆盖）
+--   3. favorites 做全集替换（NULL=跳过，[]或非空=替换）
+--   4. 更新 active_device_id（接管主权）
+--   5. 读取并返回当前服务端完整快照
+--   返回 took_over=true 表示此次接管了之前另一台设备的会话
+-- --------------------------------------------------
+CREATE OR REPLACE FUNCTION sync_checkpoint(
+    p_user_id                  UUID,
+    p_device_id                UUID,
+    p_platform                 TEXT       DEFAULT 'unknown',
+    p_profile                  JSONB      DEFAULT NULL,
+    p_word_states              JSONB      DEFAULT NULL,
+    p_word_favorites           JSONB      DEFAULT NULL,
+    p_word_example_favorites   JSONB      DEFAULT NULL,
+    p_kana_states              JSONB      DEFAULT NULL,
+    p_grammar_states           JSONB      DEFAULT NULL,
+    p_book_progress            JSONB      DEFAULT NULL,
+    p_force_takeover           BOOLEAN    DEFAULT false
+) RETURNS JSONB AS $$
+DECLARE
+    v_prev_active_device UUID;
+    v_took_over          BOOLEAN := false;
+    v_displaced          BOOLEAN := false;
+    v_profile            JSONB   := NULL;
+    v_word_states        JSONB   := '[]';
+    v_word_favorites     JSONB   := '[]';
+    v_word_example_favs  JSONB   := '[]';
+    v_kana_states        JSONB   := '[]';
+    v_grammar_states     JSONB   := '[]';
+    v_book_progress      JSONB   := '[]';
+BEGIN
+    -- ① 注册/更新设备
+    INSERT INTO user_devices (device_id, user_id, platform, last_seen_at, created_at, updated_at)
+    VALUES (p_device_id, p_user_id, p_platform, now(), now(), now())
+    ON CONFLICT (device_id) DO UPDATE SET
+        last_seen_at = now(),
+        updated_at   = now();
+
+    -- ② 检测设备接管 / 被踢下线
+    SELECT active_device_id INTO v_prev_active_device
+    FROM user_profiles WHERE user_id = p_user_id;
+
+    IF v_prev_active_device IS NOT NULL AND v_prev_active_device <> p_device_id THEN
+        IF p_force_takeover THEN
+            v_took_over := true;
+        ELSE
+            v_displaced := true;
+        END IF;
+    END IF;
+
+    -- ③ word_states：LWW upsert（按 updated_at）
+    IF p_word_states IS NOT NULL AND jsonb_array_length(p_word_states) > 0 THEN
+        INSERT INTO user_word_states (
+            user_id, word_id, book_id, user_state,
+            next_review_at, last_reviewed_at, first_learned_at,
+            interval, ease_factor, stability, difficulty,
+            streak, total_reviews, fail_count,
+            source_device_id, created_at, updated_at, version
+        )
+        SELECT
+            p_user_id,
+            elem->>'word_id',
+            elem->>'book_id',
+            COALESCE((elem->>'user_state')::INTEGER, 0),
+            (NULLIF(elem->>'next_review_at',   ''))::BIGINT,
+            (NULLIF(elem->>'last_reviewed_at', ''))::BIGINT,
+            (NULLIF(elem->>'first_learned_at', ''))::BIGINT,
+            (NULLIF(elem->>'interval',         ''))::INTEGER,
+            (NULLIF(elem->>'ease_factor',      ''))::DOUBLE PRECISION,
+            (NULLIF(elem->>'stability',        ''))::DOUBLE PRECISION,
+            (NULLIF(elem->>'difficulty',       ''))::DOUBLE PRECISION,
+            COALESCE((elem->>'streak')::INTEGER,        0),
+            COALESCE((elem->>'total_reviews')::INTEGER, 0),
+            COALESCE((elem->>'fail_count')::INTEGER,    0),
+            p_device_id,
+            COALESCE(to_timestamp((elem->>'created_at')::BIGINT), now()),
+            COALESCE(to_timestamp((elem->>'updated_at')::BIGINT), now()),
+            COALESCE((elem->>'version')::BIGINT, 1)
+        FROM jsonb_array_elements(p_word_states) AS elem
+        WHERE (elem->>'word_id') IS NOT NULL AND (elem->>'book_id') IS NOT NULL
+        ON CONFLICT (user_id, word_id, book_id) DO UPDATE SET
+            user_state       = EXCLUDED.user_state,
+            next_review_at   = EXCLUDED.next_review_at,
+            last_reviewed_at = EXCLUDED.last_reviewed_at,
+            first_learned_at = EXCLUDED.first_learned_at,
+            interval         = EXCLUDED.interval,
+            ease_factor      = EXCLUDED.ease_factor,
+            stability        = EXCLUDED.stability,
+            difficulty       = EXCLUDED.difficulty,
+            streak           = EXCLUDED.streak,
+            total_reviews    = EXCLUDED.total_reviews,
+            fail_count       = EXCLUDED.fail_count,
+            source_device_id = EXCLUDED.source_device_id,
+            updated_at       = EXCLUDED.updated_at,
+            version          = user_word_states.version + 1
+        WHERE EXCLUDED.updated_at >= user_word_states.updated_at;
+    END IF;
+
+    -- ④ word_favorites：全集替换（NULL=跳过；被踢下线时跳过，避免覆盖活跃设备数据）
+    IF p_word_favorites IS NOT NULL AND NOT v_displaced THEN
+        DELETE FROM user_word_favorites WHERE user_id = p_user_id;
+        IF jsonb_array_length(p_word_favorites) > 0 THEN
+            INSERT INTO user_word_favorites (user_id, word_id, book_id, source_device_id, created_at, updated_at, version)
+            SELECT
+                p_user_id,
+                elem->>'word_id',
+                COALESCE(elem->>'book_id', ''),
+                p_device_id,
+                COALESCE(to_timestamp((elem->>'created_at')::BIGINT), now()),
+                COALESCE(to_timestamp((elem->>'updated_at')::BIGINT), now()),
+                COALESCE((elem->>'version')::BIGINT, 1)
+            FROM jsonb_array_elements(p_word_favorites) AS elem
+            WHERE (elem->>'word_id') IS NOT NULL;
+        END IF;
+    END IF;
+
+    -- ⑤ word_example_favorites：全集替换（NULL=跳过；被踢下线时跳过）
+    IF p_word_example_favorites IS NOT NULL AND NOT v_displaced THEN
+        DELETE FROM user_word_example_favorites WHERE user_id = p_user_id;
+        IF jsonb_array_length(p_word_example_favorites) > 0 THEN
+            INSERT INTO user_word_example_favorites (user_id, example_id, word_id, source_device_id, created_at, updated_at, version)
+            SELECT
+                p_user_id,
+                elem->>'example_id',
+                elem->>'word_id',
+                p_device_id,
+                COALESCE(to_timestamp((elem->>'created_at')::BIGINT), now()),
+                COALESCE(to_timestamp((elem->>'updated_at')::BIGINT), now()),
+                COALESCE((elem->>'version')::BIGINT, 1)
+            FROM jsonb_array_elements(p_word_example_favorites) AS elem
+            WHERE (elem->>'example_id') IS NOT NULL;
+        END IF;
+    END IF;
+
+    -- ⑥ kana_states：LWW upsert
+    IF p_kana_states IS NOT NULL AND jsonb_array_length(p_kana_states) > 0 THEN
+        INSERT INTO user_kana_states (
+            user_id, kana_id, learning_status,
+            next_review_at, last_reviewed_at,
+            streak, total_reviews, fail_count,
+            interval, ease_factor, stability, difficulty,
+            source_device_id, created_at, updated_at, version
+        )
+        SELECT
+            p_user_id,
+            (elem->>'kana_id')::INTEGER,
+            COALESCE((elem->>'learning_status')::INTEGER, 0),
+            (NULLIF(elem->>'next_review_at',   ''))::BIGINT,
+            (NULLIF(elem->>'last_reviewed_at', ''))::BIGINT,
+            COALESCE((elem->>'streak')::INTEGER,        0),
+            COALESCE((elem->>'total_reviews')::INTEGER, 0),
+            COALESCE((elem->>'fail_count')::INTEGER,    0),
+            COALESCE((elem->>'interval')::DOUBLE PRECISION,   0),
+            COALESCE((elem->>'ease_factor')::DOUBLE PRECISION, 2.5),
+            COALESCE((elem->>'stability')::DOUBLE PRECISION,  0),
+            COALESCE((elem->>'difficulty')::DOUBLE PRECISION, 0),
+            p_device_id,
+            COALESCE(to_timestamp((elem->>'created_at')::BIGINT), now()),
+            COALESCE(to_timestamp((elem->>'updated_at')::BIGINT), now()),
+            COALESCE((elem->>'version')::BIGINT, 1)
+        FROM jsonb_array_elements(p_kana_states) AS elem
+        WHERE (elem->>'kana_id') IS NOT NULL
+        ON CONFLICT (user_id, kana_id) DO UPDATE SET
+            learning_status  = EXCLUDED.learning_status,
+            next_review_at   = EXCLUDED.next_review_at,
+            last_reviewed_at = EXCLUDED.last_reviewed_at,
+            streak           = EXCLUDED.streak,
+            total_reviews    = EXCLUDED.total_reviews,
+            fail_count       = EXCLUDED.fail_count,
+            interval         = EXCLUDED.interval,
+            ease_factor      = EXCLUDED.ease_factor,
+            stability        = EXCLUDED.stability,
+            difficulty       = EXCLUDED.difficulty,
+            source_device_id = EXCLUDED.source_device_id,
+            updated_at       = EXCLUDED.updated_at,
+            version          = user_kana_states.version + 1
+        WHERE EXCLUDED.updated_at >= user_kana_states.updated_at;
+    END IF;
+
+    -- ⑦ grammar_states：LWW upsert
+    IF p_grammar_states IS NOT NULL AND jsonb_array_length(p_grammar_states) > 0 THEN
+        INSERT INTO user_grammar_states (
+            user_id, grammar_id, learning_status,
+            next_review_at, last_reviewed_at,
+            streak, total_reviews, fail_count,
+            interval, ease_factor, stability, difficulty,
+            source_device_id, created_at, updated_at, version
+        )
+        SELECT
+            p_user_id,
+            (elem->>'grammar_id')::INTEGER,
+            COALESCE((elem->>'learning_status')::INTEGER, 0),
+            (NULLIF(elem->>'next_review_at',   ''))::BIGINT,
+            (NULLIF(elem->>'last_reviewed_at', ''))::BIGINT,
+            COALESCE((elem->>'streak')::INTEGER,        0),
+            COALESCE((elem->>'total_reviews')::INTEGER, 0),
+            COALESCE((elem->>'fail_count')::INTEGER,    0),
+            COALESCE((elem->>'interval')::DOUBLE PRECISION,   0),
+            COALESCE((elem->>'ease_factor')::DOUBLE PRECISION, 2.5),
+            COALESCE((elem->>'stability')::DOUBLE PRECISION,  0),
+            COALESCE((elem->>'difficulty')::DOUBLE PRECISION, 0),
+            p_device_id,
+            COALESCE(to_timestamp((elem->>'created_at')::BIGINT), now()),
+            COALESCE(to_timestamp((elem->>'updated_at')::BIGINT), now()),
+            COALESCE((elem->>'version')::BIGINT, 1)
+        FROM jsonb_array_elements(p_grammar_states) AS elem
+        WHERE (elem->>'grammar_id') IS NOT NULL
+        ON CONFLICT (user_id, grammar_id) DO UPDATE SET
+            learning_status  = EXCLUDED.learning_status,
+            next_review_at   = EXCLUDED.next_review_at,
+            last_reviewed_at = EXCLUDED.last_reviewed_at,
+            streak           = EXCLUDED.streak,
+            total_reviews    = EXCLUDED.total_reviews,
+            fail_count       = EXCLUDED.fail_count,
+            interval         = EXCLUDED.interval,
+            ease_factor      = EXCLUDED.ease_factor,
+            stability        = EXCLUDED.stability,
+            difficulty       = EXCLUDED.difficulty,
+            source_device_id = EXCLUDED.source_device_id,
+            updated_at       = EXCLUDED.updated_at,
+            version          = user_grammar_states.version + 1
+        WHERE EXCLUDED.updated_at >= user_grammar_states.updated_at;
+    END IF;
+
+    -- ⑧ book_progress：LWW upsert（cursor 单调递增）
+    IF p_book_progress IS NOT NULL AND jsonb_array_length(p_book_progress) > 0 THEN
+        INSERT INTO user_book_progress (
+            user_id, book_id,
+            total_words, learned_count, mastered_count, ignored_count,
+            is_completed, current_sort_cursor,
+            created_at, updated_at, version
+        )
+        SELECT
+            p_user_id,
+            elem->>'book_id',
+            COALESCE((elem->>'total_words')::INTEGER,    0),
+            COALESCE((elem->>'learned_count')::INTEGER,  0),
+            COALESCE((elem->>'mastered_count')::INTEGER, 0),
+            COALESCE((elem->>'ignored_count')::INTEGER,  0),
+            COALESCE((elem->>'is_completed')::BOOLEAN,   false),
+            COALESCE((elem->>'current_sort_cursor')::INTEGER, 0),
+            COALESCE(to_timestamp((elem->>'created_at')::BIGINT), now()),
+            COALESCE(to_timestamp((elem->>'updated_at')::BIGINT), now()),
+            COALESCE((elem->>'version')::BIGINT, 1)
+        FROM jsonb_array_elements(p_book_progress) AS elem
+        WHERE (elem->>'book_id') IS NOT NULL
+        ON CONFLICT (user_id, book_id) DO UPDATE SET
+            total_words          = EXCLUDED.total_words,
+            learned_count        = EXCLUDED.learned_count,
+            mastered_count       = EXCLUDED.mastered_count,
+            ignored_count        = EXCLUDED.ignored_count,
+            is_completed         = EXCLUDED.is_completed,
+            current_sort_cursor  = GREATEST(user_book_progress.current_sort_cursor, EXCLUDED.current_sort_cursor),
+            updated_at           = EXCLUDED.updated_at,
+            version              = user_book_progress.version + 1
+        WHERE EXCLUDED.updated_at >= user_book_progress.updated_at;
+    END IF;
+
+    -- ⑨ profile：LWW upsert + 更新 active_device_id
+    IF p_profile IS NOT NULL THEN
+        INSERT INTO user_profiles (
+            user_id, display_name, email, avatar_url, locale, timezone,
+            settings, onboarding_completed, pro_status,
+            active_device_id, created_at, updated_at, version
+        ) VALUES (
+            p_user_id,
+            p_profile->>'display_name',
+            p_profile->>'email',
+            p_profile->>'avatar_url',
+            COALESCE(p_profile->>'locale', 'zh'),
+            p_profile->>'timezone',
+            COALESCE(p_profile->'settings', '{}'::JSONB),
+            COALESCE((p_profile->>'onboarding_completed')::BOOLEAN, false),
+            COALESCE((p_profile->>'pro_status')::SMALLINT, 0),
+            p_device_id, now(), now(), 1
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+            display_name         = COALESCE(p_profile->>'display_name',               user_profiles.display_name),
+            email                = COALESCE(p_profile->>'email',                       user_profiles.email),
+            avatar_url           = COALESCE(p_profile->>'avatar_url',                 user_profiles.avatar_url),
+            locale               = COALESCE(p_profile->>'locale',                     user_profiles.locale),
+            timezone             = COALESCE(p_profile->>'timezone',                   user_profiles.timezone),
+            settings             = COALESCE(p_profile->'settings',                    user_profiles.settings),
+            onboarding_completed = COALESCE((p_profile->>'onboarding_completed')::BOOLEAN, user_profiles.onboarding_completed),
+            pro_status           = COALESCE((p_profile->>'pro_status')::SMALLINT,     user_profiles.pro_status),
+            active_device_id     = CASE WHEN v_displaced THEN user_profiles.active_device_id ELSE p_device_id END,
+            updated_at           = now(),
+            version              = user_profiles.version + 1;
+    ELSE
+        -- 没有 profile 数据时，也要更新 active_device_id
+        INSERT INTO user_profiles (user_id, active_device_id, created_at, updated_at, version)
+        VALUES (p_user_id, p_device_id, now(), now(), 1)
+        ON CONFLICT (user_id) DO UPDATE SET
+            active_device_id = CASE WHEN v_displaced THEN user_profiles.active_device_id ELSE p_device_id END,
+            updated_at       = now();
+    END IF;
+
+    -- ⑩ 读取当前完整快照并返回
+    SELECT to_jsonb(p) INTO v_profile
+    FROM user_profiles p WHERE user_id = p_user_id;
+
+    SELECT COALESCE(jsonb_agg(to_jsonb(s) ORDER BY s.updated_at ASC), '[]'::JSONB) INTO v_word_states
+    FROM user_word_states s WHERE user_id = p_user_id;
+
+    SELECT COALESCE(jsonb_agg(to_jsonb(f) ORDER BY f.updated_at ASC), '[]'::JSONB) INTO v_word_favorites
+    FROM user_word_favorites f WHERE user_id = p_user_id;
+
+    SELECT COALESCE(jsonb_agg(to_jsonb(f) ORDER BY f.updated_at ASC), '[]'::JSONB) INTO v_word_example_favs
+    FROM user_word_example_favorites f WHERE user_id = p_user_id;
+
+    SELECT COALESCE(jsonb_agg(to_jsonb(s) ORDER BY s.updated_at ASC), '[]'::JSONB) INTO v_kana_states
+    FROM user_kana_states s WHERE user_id = p_user_id;
+
+    SELECT COALESCE(jsonb_agg(to_jsonb(s) ORDER BY s.updated_at ASC), '[]'::JSONB) INTO v_grammar_states
+    FROM user_grammar_states s WHERE user_id = p_user_id;
+
+    SELECT COALESCE(jsonb_agg(to_jsonb(b) ORDER BY b.updated_at ASC), '[]'::JSONB) INTO v_book_progress
+    FROM user_book_progress b WHERE user_id = p_user_id;
+
+    RETURN jsonb_build_object(
+        'data', jsonb_build_object(
+            'profile',                  v_profile,
+            'word_states',              v_word_states,
+            'word_favorites',           v_word_favorites,
+            'word_example_favorites',   v_word_example_favs,
+            'kana_states',              v_kana_states,
+            'grammar_states',           v_grammar_states,
+            'book_progress',            v_book_progress
+        ),
+        'meta', jsonb_build_object(
+            'server_time',      now(),
+            'active_device_id', CASE WHEN v_displaced THEN v_prev_active_device ELSE p_device_id END,
+            'took_over',        v_took_over,
+            'displaced',        v_displaced
+        )
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 NOTIFY pgrst, 'reload schema';
 
 -- --------------------------------------------------

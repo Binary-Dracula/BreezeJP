@@ -127,6 +127,27 @@ class BookProgressRepository {
     }
   }
 
+  /// 获取某个用户的全部书籍进度
+  Future<List<BookProgress>> getAllByUser(int userId) async {
+    try {
+      final db = await _db;
+      final results = await db.query(
+        'book_progress',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+      return results.map(BookProgress.fromMap).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT ALL',
+        table: 'book_progress',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// 删除某个用户的全部书籍进度
   Future<void> deleteAllByUser(int userId) async {
     try {

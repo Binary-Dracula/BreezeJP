@@ -69,7 +69,7 @@ class StudyWordCommand {
 
       if (created != null) {
         _homeSummaryInvalidation.markStale();
-        unawaited(_pushWordState(created, 'mark_learned'));
+        _syncRemote.scheduleCheckpoint();
       }
     } catch (e, stackTrace) {
       logger.dbError(
@@ -113,7 +113,7 @@ class StudyWordCommand {
 
       await _repo.updateStudyWord(updated);
       _homeSummaryInvalidation.markStale();
-      unawaited(_pushWordState(updated, 'mark_learned'));
+      _syncRemote.scheduleCheckpoint();
 
       logger.stateChange(
         scope: 'word',
@@ -159,7 +159,7 @@ class StudyWordCommand {
         final saved = await _repo.getStudyWord(userId, wordId, bookId);
         if (saved != null) {
           _homeSummaryInvalidation.markStale();
-          unawaited(_pushWordState(saved, 'mark_mastered'));
+          _syncRemote.scheduleCheckpoint();
         }
       } else {
         final updated = studyWord.copyWith(
@@ -169,7 +169,7 @@ class StudyWordCommand {
         );
         await _repo.updateStudyWord(updated);
         _homeSummaryInvalidation.markStale();
-        unawaited(_pushWordState(updated, 'mark_mastered'));
+        _syncRemote.scheduleCheckpoint();
       }
 
       logger.stateChange(
@@ -216,7 +216,7 @@ class StudyWordCommand {
         final saved = await _repo.getStudyWord(userId, wordId, bookId);
         if (saved != null) {
           _homeSummaryInvalidation.markStale();
-          unawaited(_pushWordState(saved, 'mark_ignored'));
+          _syncRemote.scheduleCheckpoint();
         }
       } else {
         final updated = studyWord.copyWith(
@@ -226,7 +226,7 @@ class StudyWordCommand {
         );
         await _repo.updateStudyWord(updated);
         _homeSummaryInvalidation.markStale();
-        unawaited(_pushWordState(updated, 'mark_ignored'));
+        _syncRemote.scheduleCheckpoint();
       }
 
       logger.stateChange(
@@ -258,14 +258,5 @@ class StudyWordCommand {
   Future<void> deleteAllByBook(int userId, String bookId) async {
     await _repo.deleteAllByBook(userId, bookId);
     _homeSummaryInvalidation.markStale();
-  }
-
-  Future<void> _pushWordState(StudyWord state, String operation) async {
-    try {
-      await _syncRemote.pushWordState(state: state, operation: operation);
-    } catch (e, stackTrace) {
-      logger.warning('单词状态已写本地，云端同步稍后重试: ${state.wordId}');
-      logger.error('单词状态同步失败', e, stackTrace);
-    }
   }
 }

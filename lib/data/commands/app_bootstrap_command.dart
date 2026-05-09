@@ -48,7 +48,7 @@ class AppBootstrapCommand {
     try {
       await _ref
           .read(syncRemoteCommandProvider)
-          .syncDownForCurrentUser(localUserId: activeUser.id);
+          .checkpointForCurrentUser(localUserId: activeUser.id);
     } catch (e) {
       logger.error('[Bootstrap] Remote sync pull failed, skipping', e);
     }

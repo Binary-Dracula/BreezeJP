@@ -91,6 +91,26 @@ class WordFavoriteRepository {
     }
   }
 
+  Future<List<WordFavorite>> getAllByUser(int userId) async {
+    try {
+      final db = await _db;
+      final results = await db.query(
+        'user_word_favorites',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+      return results.map(WordFavorite.fromMap).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT ALL',
+        table: 'user_word_favorites',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   Future<void> deleteAllByUser(int userId) async {
     try {
       final db = await _db;

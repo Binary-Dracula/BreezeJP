@@ -117,12 +117,7 @@ void main() {
     when(
       () => studyWordRepository.updateStudyWord(any()),
     ).thenAnswer((_) async {});
-    when(
-      () => syncRemoteCommand.pushWordState(
-        state: any(named: 'state'),
-        operation: any(named: 'operation'),
-      ),
-    ).thenAnswer((_) async {});
+    when(() => syncRemoteCommand.scheduleCheckpoint()).thenReturn(null);
 
     container = ProviderContainer(
       overrides: [
@@ -160,12 +155,7 @@ void main() {
       expect(captured.bookId, 'book-1');
       expect(captured.nextReviewAt, isNotNull);
 
-      verify(
-        () => syncRemoteCommand.pushWordState(
-          state: any(named: 'state'),
-          operation: 'mark_learned',
-        ),
-      ).called(1);
+      verify(() => syncRemoteCommand.scheduleCheckpoint()).called(1);
     },
   );
 }

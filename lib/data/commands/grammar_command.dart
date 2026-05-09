@@ -61,7 +61,7 @@ class GrammarCommand {
       logger.info(
         'Grammar state initialized: userId=$userId grammarId=$grammarId',
       );
-      unawaited(_pushGrammarState(state, 'upsert'));
+      _syncRemote.scheduleCheckpoint();
       return state;
     } catch (e, stackTrace) {
       logger.dbError(
@@ -101,7 +101,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
-    unawaited(_pushGrammarState(updated, 'mark_learned'));
+    _syncRemote.scheduleCheckpoint();
     logger.info('Grammar marked as learning: $grammarId');
   }
 
@@ -163,7 +163,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
-    unawaited(_pushGrammarState(updated, 'review'));
+    _syncRemote.scheduleCheckpoint();
     logger.info('Grammar reviewed: $grammarId, rating: ${rating.name}');
   }
 
@@ -178,7 +178,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
-    unawaited(_pushGrammarState(updated, 'mark_mastered'));
+    _syncRemote.scheduleCheckpoint();
     logger.info('Grammar mastered: $grammarId');
   }
 
@@ -215,7 +215,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
-    unawaited(_pushGrammarState(updated, 'mark_learned'));
+    _syncRemote.scheduleCheckpoint();
     logger.info('Grammar restored to learning: $grammarId');
   }
 
@@ -245,16 +245,7 @@ class GrammarCommand {
     );
 
     await _repo.saveStudyGrammar(updated);
-    unawaited(_pushGrammarState(updated, 'reset'));
+    _syncRemote.scheduleCheckpoint();
     logger.info('Grammar reset to unlearned: $grammarId');
-  }
-
-  Future<void> _pushGrammarState(StudyGrammar state, String operation) async {
-    try {
-      await _syncRemote.pushGrammarState(state: state, operation: operation);
-    } catch (e, stackTrace) {
-      logger.warning('语法状态已写本地，云端同步稍后重试: ${state.grammarId}');
-      logger.error('语法状态同步失败', e, stackTrace);
-    }
   }
 }

@@ -31,10 +31,7 @@ class ApiEndpoints {
   static const String issues = '/api/v1/issues';
 
   // 用户数据同步
-  static const String syncRegisterDevice = '/api/v1/sync/register-device';
-  static const String syncBootstrap = '/api/v1/sync/bootstrap';
-  static const String syncPull = '/api/v1/sync/pull';
-  static const String syncPush = '/api/v1/sync/push';
+  static const String syncCheckpoint = '/api/v1/sync/checkpoint';
 
   /// 替换路径参数
   /// 例如: replaceParams('/words/{id}', {'id': '123'}) => '/words/123'

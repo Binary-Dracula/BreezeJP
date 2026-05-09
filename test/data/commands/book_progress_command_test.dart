@@ -72,12 +72,7 @@ void main() {
     when(
       () => progressRepository.upsertProgress(any()),
     ).thenAnswer((_) async {});
-    when(
-      () => syncRemoteCommand.pushBookProgress(
-        progress: any(named: 'progress'),
-        operation: 'upsert',
-      ),
-    ).thenAnswer((_) async {});
+    when(() => syncRemoteCommand.scheduleCheckpoint()).thenReturn(null);
 
     final container = ProviderContainer(
       overrides: [
@@ -111,15 +106,6 @@ void main() {
     expect(updatedProgress.currentSortCursor, 10);
     expect(updatedProgress.totalWords, 100);
 
-    final pushedProgress =
-        verify(
-              () => syncRemoteCommand.pushBookProgress(
-                progress: captureAny(named: 'progress'),
-                operation: 'upsert',
-              ),
-            ).captured.single
-            as BookProgress;
-    expect(pushedProgress.currentSortCursor, 10);
-    expect(pushedProgress.bookId, 'book-1');
+    verify(() => syncRemoteCommand.scheduleCheckpoint()).called(1);
   });
 }

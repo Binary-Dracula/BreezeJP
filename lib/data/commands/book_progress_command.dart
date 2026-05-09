@@ -64,7 +64,7 @@ class BookProgressCommand {
       );
 
       await _progressRepo.upsertProgress(updated);
-      await _pushBookProgress(updated);
+      _syncRemote.scheduleCheckpoint();
 
       logger.info(
         '[BookProgressCmd] refreshed: bookId=$bookId cursor=$newCursor '
@@ -78,18 +78,6 @@ class BookProgressCommand {
         stackTrace: stackTrace,
       );
       rethrow;
-    }
-  }
-
-  Future<void> _pushBookProgress(BookProgress progress) async {
-    try {
-      await _syncRemote.pushBookProgress(
-        progress: progress,
-        operation: 'upsert',
-      );
-    } catch (e, stackTrace) {
-      logger.warning('书籍进度已写本地，云端同步稍后重试: ${progress.bookId}');
-      logger.error('书籍进度同步失败', e, stackTrace);
     }
   }
 

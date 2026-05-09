@@ -78,7 +78,7 @@ class AuthController extends Notifier<AuthPageState> {
           .ensureActiveUser();
       await ref
           .read(syncRemoteCommandProvider)
-          .syncDownForCurrentUser(localUserId: activeUser.id);
+          .checkpointForCurrentUser(localUserId: activeUser.id);
       ref.read(homeSummaryInvalidationProvider.notifier).markStale();
       state = const AuthPageState();
       return true;
@@ -122,7 +122,7 @@ class AuthController extends Notifier<AuthPageState> {
     try {
       await ref
           .read(syncRemoteCommandProvider)
-          .syncDownForCurrentUser(localUserId: activeUser.id);
+          .checkpointForCurrentUser(localUserId: activeUser.id);
     } catch (e) {
       logger.warning('[Auth] 登录后首轮云端同步失败，稍后重试: $e');
     }

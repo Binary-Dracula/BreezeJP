@@ -68,7 +68,7 @@ class FavoriteCommand {
 
     await _wordFavoriteRepo.saveFavorite(favorite);
     _refreshNotifier.bump();
-    unawaited(_pushWordFavorite(favorite, 'upsert'));
+    _syncRemote.scheduleCheckpoint();
 
     logger.info('[Favorite] 收藏单词: wordId=$wordId, bookId=$resolvedBookId');
   }
@@ -82,7 +82,7 @@ class FavoriteCommand {
 
     await _wordFavoriteRepo.deleteFavorite(user.id, wordId);
     _refreshNotifier.bump();
-    unawaited(_pushWordFavorite(existing, 'delete'));
+    _syncRemote.scheduleCheckpoint();
 
     logger.info('[Favorite] 取消收藏单词: wordId=$wordId');
   }
@@ -126,7 +126,7 @@ class FavoriteCommand {
 
     await _wordExampleFavoriteRepo.saveFavorite(favorite);
     _refreshNotifier.bump();
-    unawaited(_pushWordExampleFavorite(favorite, 'upsert'));
+    _syncRemote.scheduleCheckpoint();
 
     logger.info('[Favorite] 收藏例句: exampleId=$exampleId, wordId=$wordId');
   }
@@ -143,38 +143,8 @@ class FavoriteCommand {
 
     await _wordExampleFavoriteRepo.deleteFavorite(user.id, exampleId);
     _refreshNotifier.bump();
-    unawaited(_pushWordExampleFavorite(existing, 'delete'));
+    _syncRemote.scheduleCheckpoint();
 
     logger.info('[Favorite] 取消收藏例句: exampleId=$exampleId');
-  }
-
-  Future<void> _pushWordFavorite(
-    WordFavorite favorite,
-    String operation,
-  ) async {
-    try {
-      await _syncRemote.pushWordFavorite(
-        favorite: favorite,
-        operation: operation,
-      );
-    } catch (e, stackTrace) {
-      logger.warning('单词收藏已写本地，云端同步稍后重试: ${favorite.wordId}');
-      logger.error('单词收藏同步失败', e, stackTrace);
-    }
-  }
-
-  Future<void> _pushWordExampleFavorite(
-    WordExampleFavorite favorite,
-    String operation,
-  ) async {
-    try {
-      await _syncRemote.pushWordExampleFavorite(
-        favorite: favorite,
-        operation: operation,
-      );
-    } catch (e, stackTrace) {
-      logger.warning('例句收藏已写本地，云端同步稍后重试: ${favorite.exampleId}');
-      logger.error('例句收藏同步失败', e, stackTrace);
-    }
   }
 }

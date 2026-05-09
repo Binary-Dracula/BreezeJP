@@ -114,6 +114,7 @@ class LearnController extends Notifier<LearnState> {
       isResumed: true,
       isLoading: false,
       totalWordsInBook: state.totalWordsInBook,
+      wordSortOrders: entries.map((e) => e.bookSortOrder).toList(),
     );
 
     // 把当前卡片标记为已学
@@ -199,6 +200,7 @@ class LearnController extends Notifier<LearnState> {
       isResumed: false,
       isLoading: false,
       totalWordsInBook: response.totalWords,
+      wordSortOrders: entries.map((e) => e.bookSortOrder).toList(),
     );
 
     // 翻到即标记
@@ -314,6 +316,19 @@ class LearnController extends Notifier<LearnState> {
       wordId: wordId,
       bookId: bookId,
     );
+
+    // 每翻一张即推进游标，防止 app 关闭后游标丢失导致重复学习
+    if (index < state.wordSortOrders.length) {
+      final sortOrder = state.wordSortOrders[index];
+      unawaited(
+        _bookProgressCommand.refreshProgress(
+          userId: userId,
+          bookId: bookId,
+          newCursor: sortOrder,
+          totalWordsInBook: state.totalWordsInBook,
+        ),
+      );
+    }
   }
 
   Future<void> _updateSessionIndex(int index, int userId, String bookId) async {

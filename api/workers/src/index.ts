@@ -1,20 +1,17 @@
 // Workers 主入口
 // 路由：
-//   GET  /api/v1/articles         - 新闻列表（增量同步）
-//   GET  /api/v1/articles/:id     - 新闻详情（含分词）
-//   GET  /api/v1/audio/:id        - 文章音频代理
-//   GET  /api/v1/audio/words/:id  - 词汇音频代理
-//   GET  /api/v1/books            - 词书列表
-//   GET  /api/v1/books/sync       - 词书增量同步
-//   GET  /api/v1/reference        - 参考内容
-//   GET  /api/v1/review/words/session - 单词复习会话
-//   GET  /api/v1/sync/bootstrap   - 同步引导数据
-//   GET  /api/v1/sync/pull        - 拉取增量同步变更
-//   POST /api/v1/sync/register-device - 注册同步设备
-//   POST /api/v1/sync/push        - 推送本地同步变更
-//   POST /api/v1/issues           - 问题上报（需认证）
-//   GET  /api/v1/health           - 健康检查（无需认证）
-//   OPTIONS *                     - CORS 预检
+//   GET  /api/v1/articles              - 新闻列表（增量同步）
+//   GET  /api/v1/articles/:id          - 新闻详情（含分词）
+//   GET  /api/v1/audio/:id             - 文章音频代理
+//   GET  /api/v1/audio/words/:id       - 词汇音频代理
+//   GET  /api/v1/books                 - 词书列表
+//   GET  /api/v1/books/sync            - 词书增量同步
+//   GET  /api/v1/reference             - 参考内容
+//   GET  /api/v1/review/words/session  - 单词复习会话
+//   POST /api/v1/sync/checkpoint       - 快照同步（push LWW + pull）
+//   POST /api/v1/issues                - 问题上报（需认证）
+//   GET  /api/v1/health                - 健康检查（无需认证）
+//   OPTIONS *                          - CORS 预检
 
 import { Env } from './types';
 import { verifyAuth, unauthorizedResponse } from './middleware/auth';
@@ -27,12 +24,7 @@ import { handleReferenceContent } from './routes/reference';
 import { handleGrammarBook, handleUpdateWordReviewSession, handleWordBook, handleWordExampleFavorites, handleWordReviewSession } from './routes/study';
 import { handleBookList, handleBookSync, handleNextWords, handleUserNextWords, handleWordDetail, handleWordSync } from './routes/vocab';
 import { handleCreateIssue } from './routes/issues';
-import {
-  handleRegisterSyncDevice,
-  handleSyncBootstrap,
-  handleSyncPull,
-  handleSyncPush,
-} from './routes/sync';
+import { handleSyncCheckpoint } from './routes/sync';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -67,20 +59,13 @@ export default {
       return handleCreateIssue(request, env, auth);
     }
 
-    // ---- Sync 路由（需 JWT 认证）----
-    if (path === '/api/v1/sync/register-device' || path === '/api/v1/sync/push') {
+    // ---- POST /api/v1/sync/checkpoint（快照同步，需 JWT 认证）----
+    if (method === 'POST' && path === '/api/v1/sync/checkpoint') {
       const auth = await verifyAuth(request, env);
       if (!auth) {
         return unauthorizedResponse('Invalid or expired token. Please re-login.');
       }
-
-      if (method === 'POST' && path === '/api/v1/sync/register-device') {
-        return handleRegisterSyncDevice(request, env, auth);
-      }
-
-      if (method === 'POST' && path === '/api/v1/sync/push') {
-        return handleSyncPush(request, env, auth);
-      }
+      return handleSyncCheckpoint(request, env, auth);
     }
 
     if (method === 'POST' && path === '/api/v1/review/words/session') {
@@ -184,16 +169,6 @@ export default {
         auth,
         Number.parseInt(grammarDetailMatch[1], 10),
       );
-    }
-
-    // GET /api/v1/sync/bootstrap
-    if (path === '/api/v1/sync/bootstrap') {
-      return handleSyncBootstrap(request, env, auth);
-    }
-
-    // GET /api/v1/sync/pull
-    if (path === '/api/v1/sync/pull') {
-      return handleSyncPull(request, env, auth);
     }
 
     // GET /api/v1/articles

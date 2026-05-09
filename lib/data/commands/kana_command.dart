@@ -69,7 +69,7 @@ class KanaCommand {
         toState: 'learning',
         reason: 'practice',
       );
-      unawaited(_pushKanaState(state, 'mark_learned'));
+      _syncRemote.scheduleCheckpoint();
       return KanaPracticed(userId: userId, kanaId: kanaId, occurredAt: now);
     } catch (e, stackTrace) {
       logger.dbError(
@@ -158,7 +158,7 @@ class KanaCommand {
         await _repo.updateKanaLearningState(updated);
       }
       _homeSummaryInvalidation.markStale();
-      unawaited(_pushKanaState(updated, 'review'));
+      _syncRemote.scheduleCheckpoint();
       logger.srsUpdate(
         scope: 'kana',
         userId: userId,
@@ -207,7 +207,7 @@ class KanaCommand {
           toState: 'mastered',
           reason: 'toggle_mastered',
         );
-        unawaited(_pushKanaState(state, 'mark_mastered'));
+        _syncRemote.scheduleCheckpoint();
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -226,7 +226,7 @@ class KanaCommand {
           toState: 'learning',
           reason: 'toggle_mastered',
         );
-        unawaited(_pushKanaState(updated, 'mark_learned'));
+        _syncRemote.scheduleCheckpoint();
         return KanaUnmastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -245,7 +245,7 @@ class KanaCommand {
           toState: 'mastered',
           reason: 'toggle_mastered',
         );
-        unawaited(_pushKanaState(updated, 'mark_mastered'));
+        _syncRemote.scheduleCheckpoint();
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
       return null;
@@ -280,14 +280,5 @@ class KanaCommand {
       'totalReviews': state.totalReviews,
       'failCount': state.failCount,
     };
-  }
-
-  Future<void> _pushKanaState(KanaLearningState state, String operation) async {
-    try {
-      await _syncRemote.pushKanaState(state: state, operation: operation);
-    } catch (e, stackTrace) {
-      logger.warning('假名状态已写本地，云端同步稍后重试: ${state.kanaId}');
-      logger.error('假名状态同步失败', e, stackTrace);
-    }
   }
 }

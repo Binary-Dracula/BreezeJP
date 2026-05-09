@@ -91,6 +91,26 @@ class StudyGrammarRepository {
     }
   }
 
+  Future<List<StudyGrammar>> getAllByUser(int userId) async {
+    try {
+      final db = await _db;
+      final results = await db.query(
+        'study_grammars',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+      return results.map(StudyGrammar.fromMap).toList();
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'SELECT ALL',
+        table: 'study_grammars',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   Future<void> deleteAllByUser(int userId) async {
     try {
       final db = await _db;

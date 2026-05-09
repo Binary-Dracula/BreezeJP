@@ -29,7 +29,7 @@ void main() {
 
     when(() => activeUserQuery.getActiveUser()).thenAnswer((_) async => user);
     when(
-      () => syncRemoteCommand.syncDownForCurrentUser(localUserId: 1),
+      () => syncRemoteCommand.checkpointForCurrentUser(localUserId: 1),
     ).thenAnswer((_) async {});
   });
 
@@ -52,7 +52,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     verify(
-      () => syncRemoteCommand.syncDownForCurrentUser(localUserId: 1),
+      () => syncRemoteCommand.checkpointForCurrentUser(localUserId: 1),
     ).called(1);
   });
 }

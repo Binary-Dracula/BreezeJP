@@ -42,6 +42,9 @@ class LearnState {
   /// 当前书总词数（来自 API）
   final int totalWordsInBook;
 
+  /// 批次内每张卡对应的 book_sort_order（与 words 等长，用于逐卡推进游标）
+  final List<int> wordSortOrders;
+
   const LearnState({
     this.words = const [],
     this.currentIndex = 0,
@@ -55,6 +58,7 @@ class LearnState {
     this.isResumed = false,
     this.isBookUnavailableForNextBatch = false,
     this.totalWordsInBook = 0,
+    this.wordSortOrders = const [],
   });
 
   /// 当前卡片的单词详情
@@ -87,6 +91,7 @@ class LearnState {
     bool? isResumed,
     bool? isBookUnavailableForNextBatch,
     int? totalWordsInBook,
+    List<int>? wordSortOrders,
   }) {
     return LearnState(
       words: words ?? this.words,
@@ -102,6 +107,7 @@ class LearnState {
       isBookUnavailableForNextBatch:
           isBookUnavailableForNextBatch ?? this.isBookUnavailableForNextBatch,
       totalWordsInBook: totalWordsInBook ?? this.totalWordsInBook,
+      wordSortOrders: wordSortOrders ?? this.wordSortOrders,
     );
   }
 

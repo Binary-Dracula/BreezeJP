@@ -85,7 +85,7 @@ class SyncSchedulerCommand with WidgetsBindingObserver {
       final activeUser =
           await _activeUserQuery.getActiveUser() ??
           await _activeUserCommand.ensureActiveUser();
-      await _syncRemote.syncDownForCurrentUser(localUserId: activeUser.id);
+      await _syncRemote.checkpointForCurrentUser(localUserId: activeUser.id);
       _lastSyncAt = DateTime.now();
       logger.info(
         '[SyncScheduler] completed trigger=$trigger userId=${activeUser.id}',

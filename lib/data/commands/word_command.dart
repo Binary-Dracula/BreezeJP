@@ -97,7 +97,7 @@ class WordCommand {
 
     await _repo.updateStudyWord(updated);
     _homeSummaryInvalidation.markStale();
-    unawaited(_pushWordState(updated));
+    _syncRemote.scheduleCheckpoint();
     logger.srsUpdate(
       scope: 'word',
       userId: userId,
@@ -125,14 +125,5 @@ class WordCommand {
       'totalReviews': word.totalReviews,
       'failCount': word.failCount,
     };
-  }
-
-  Future<void> _pushWordState(StudyWord state) async {
-    try {
-      await _syncRemote.pushWordState(state: state, operation: 'review');
-    } catch (e, stackTrace) {
-      logger.warning('单词复习结果已写本地，云端同步稍后重试: ${state.wordId}');
-      logger.error('单词复习状态同步失败', e, stackTrace);
-    }
   }
 }
