@@ -36,9 +36,11 @@ description: BreezeJP 项目的 MVVM 架构规范、数据源流转、路由及�
 
 - **存储与注入**：SQLite 数据源位于 `assets/database/breeze_jp.sqlite`。Query 和 Analytics 需要通过 `databaseProvider` 注入 Database 示例进行操作；而 Repository 内部允许调用 `AppDatabase.instance`（但绝不能将其向外暴露给 Controller/UI 层）。
 - **对象转换要求**：所有 Model 类必须实现基于 Map 的序列化与反序列化：`fromMap(Map<String, dynamic>)` 和 `toMap()`。
-- **时间约定**：所有业务关联时间字段，在 DB 中一律使用 **秒级 Unix 时间戳**。
-  - 读取时：`DateTime.fromMillisecondsSinceEpoch(seconds * 1000)`。
-  - 写入时：`(DateTime.now().millisecondsSinceEpoch / 1000).round()`。
+- **时间约定**：当前仓库时间字段并不统一，禁止写“全库秒级时间戳”这类规则。
+  - `learning_sessions.created_at` 是毫秒整数。
+  - 其他部分本地状态表仍可能是秒级整数。
+  - 远端 `created_at` / `updated_at` 多为 ISO/TIMESTAMPTZ。
+  - 任何时间比较、序列化和 TTL 逻辑，都必须以具体 Model / schema 为准。
 - **命名区分**：数据库中的表与列定义按 `snake_case`；Dart 中的模型类使用 `PascalCase`，成员变量使用 `camelCase`。
 - **取当前用户**：必须由 `ActiveUserQuery` 统一提取（如 `ref.read(activeUserQueryProvider).getActiveUserId()`）。
 
@@ -48,30 +50,35 @@ description: BreezeJP 项目的 MVVM 架构规范、数据源流转、路由及�
 - **可用 Api**：必须使用 `context.go()`, `context.replace()`, `context.pop()`。彻底禁用 Flutter 原生的由 Navigator 推导的 API。
 - **参数解耦**：导航采用 **路径参数（Path Parameters）**（例如：`/learn/:wordId`），而不应使用 Query 参数来负载核心业务。所有参数兜底以及类型检验必须在 **目标页面（Page Component）内部处理**，不要让 Router 处理业务兜底或决定跳转。
 
-## 5. 统计与学习模型的强制语义约束（最高优先级 ❗）
+## 5. 当前学习模型与状态边界（最高优先级 ❗）
 
-> **不得混用 Event-based（事件模型）与 State-based（状态模型），不得相互推导。**
+> **不得用历史文档中的事件统计模型覆盖当前已落地的 session + 远端状态模型。**
 
 ### 1️⃣ 词汇（Word）模块
 
-- `study_words`（Status 层）：仅表示“单前的快照状态”（如 `seen`, `learning`, `mastered`, `ignored`）。它不是行为记录，**状态变化不等于发生了学习事件**。
-- `study_logs`（Event 层）：用户的离散离轨操作。它的重点是 `firstLearn`：它只产生于**用户第一次点击“加入复习”时**，绝不会因其状态改变成 \`learning\` 而“顺手”生成。每对 (user, word) 有且仅支持最多一笔 `firstLearn` 记录。
-- `daily_stats`（Analytics 层）：今日统计事实。`new_learned_count` 完全取决于当日写入 `firstLearn` 的数量。这些写入应直接从由行为触发的 `Command` 中完成（例 `applyLearningDelta`）。严禁去从 log 或者状态拼装推算 “今日复习数及学习数” 供给 UI 侧。
+- `user_word_states` 是单词学习状态与 SRS 的云端权威。
+- `user_book_progress` 是按书聚合的学习进度与 cursor。
+- `learning_sessions` 只保存本地活跃会话快照，用于恢复；真正的状态落库发生在 `complete` 时。
+- 收藏相关为即时远端写入，不参与旧式 checkpoint 流程。
 
 ### 2️⃣ 假名（Kana）模块
 
-- **模型设计**：纯 State-based 设计（`kana_learning_state` 表），状态切换于 `learning` <-> `mastered` 间变化。不存在 `firstLearn` 等 `study_logs` 及行为流水录入。
-- **产生前置条件**：仅支持在进行**完整的屏幕描红**后被初创记录写入系统。
-- **禁止项**：假名的学习/复习进度严禁向 `daily_stats` 的统计字段混入与扩散。
+- 假名内容来自本地 seed DB：`kana_letters`、`kana_audio`、`kana_stroke_order`。
+- 假名状态来自远端 `user_kana_states`。
+- `kana_review` 通过 review session 批量提交；单个假名学习通过 `POST /kana/states` 即时写入。
+- 禁止把假名进度并入单词的历史统计语义。
 
 ### 3️⃣ 语法（Grammar）模块
 
-- 三层结构组织：`grammars` -> `grammar_meanings`（接续/语意/提示等） -> `grammar_examples`。
-- **SRS 控制**：直接通过 `study_grammars` 控制（包含对应复习相关数据）。不需要触发统计结果与 Event 行为日志存储。
+- 内容结构为 `grammars -> grammar_meanings -> grammar_contexts -> grammar_examples`。
+- 状态由 `user_grammar_states` 管理。
+- 当前实现没有语法专属本地状态镜像，也不依赖事件表来回放统计。
 
-### 4️⃣ 学习时长
+### 4️⃣ 首页摘要与聚合
 
-- 发起源自 `PageDurationTracker`，单通道由 `DailyStatCommand.applyTimeOnlyDelta` 执行存储更新。这个口径独立于由 Session 层提供的常规链路。
+- 首页摘要的权威来源是 `/api/v1/me/home-summary`。
+- 不允许在 UI / Controller 侧通过本地表或多个状态表手工拼装首页聚合数据。
+- 如果未来新增学习时长或其他聚合指标，必须先补 schema / API / 文档，再落代码。
 
 ## 6. 其他通用红线与工程实践
 

@@ -18,45 +18,48 @@ description: BreezeJP 项目的 SQLite 数据库模式、实体关系、表结�
 
 - **必须实现序列化模型**：数据库对应的 Dart Model 类必须要实现 `fromMap(Map<String, dynamic>)` 和 `toMap()`。
 - **命名转换**：SQLite 的表和字段为 **snake_case**（如 `jlpt_level`, `created_at`）。Dart 实体类名为 **PascalCase**，类变量为 **camelCase**。
-- **时间规范 (Unix Timestamp)**：
-  - 数据库存的都是 **秒级时间戳 (Seconds)**。
-  - Dart 读取时必须：`DateTime.fromMillisecondsSinceEpoch(seconds * 1000)`。
-  - Dart 写入时必须转换为秒：`(DateTime.now().millisecondsSinceEpoch / 1000).round()`。
+- **时间字段规范**：当前仓库的时间字段是**混合制**，禁止做全局秒级假设。
+  - 本地 `learning_sessions.created_at` 使用**毫秒整数**。
+  - 部分本地用户表仍使用**秒级整数**。
+  - seed DB 与远端 `created_at` / `updated_at` 常使用 **ISO/TIMESTAMPTZ**。
+  - 读取和写入必须以**具体 schema + Model** 为准，新增字段时要在 DDL 和 Model 注明单位。
 - **全局会话标识**：读取当前使用者应该通过 `ActiveUserQuery`（如 `ref.read(activeUserQueryProvider).getActiveUserId()`），因为它是管理表中 (`app_state.current_user_id`) 映射的单例关系。
 
 ## 3. 核心表结构与业务边界
 
-### 【A. 单词与词库模块】(Content Layer)
+### 【A. 运行时本地表】
 
-- **主表**：`words`
-- **关联信息 (1:N)**：`word_meanings`、`word_audio`、`example_sentences`、`example_audio`
-- **词态扩展**：`word_conjugations` (关联 `conjugation_types`)
-- **网状拓展**：`word_relations`（语义关联词），查询结果须使用关联强度 `score` 或特定维度合并（如 DTO）。
+- 当前运行时会直接使用或保留的本地表：`users`、`app_state`、`sync_metadata`、`learning_sessions`、`kana_letters`、`kana_audio`、`kana_stroke_order`。
+- 其中 `learning_sessions` 只保存**活跃会话快照**，用于断点恢复；并不承担长期学习状态权威。
+- `users` / `app_state` 来自 seed DB 与运行时组合使用，当前用户必须通过 `ActiveUserQuery` 读取，不能手写 SQL 到处查。
 
-### 【B. 单词状态与行为】(State & Event Layer)
+### 【B. 单词与词库模块】(Content + State Layer)
 
-- **`study_words`**（状态表）：每个单词随用户的学习进度**时刻状态**。
-  - 核心：`user_state` (0=未学, 1=学习中, 2=已掌握, 3=忽略) 和 `next_review_at`。
-  - 涵盖基于 SM-2 (interval, ease_factor) 与 FSRS (stability, difficulty) 的调度参数。
-  - 此表不可代表行为及任何“新学/复习”语义统计推导。
-- **`study_logs`**（行为表）：**不可变的**离散学习行为事实快照！
-  - 如 `firstLearn` 是加入复习操作时刻**唯一产生事件**的历史，**不得复写或更新**。不允许用 `study_words` 的新学或跨状态记录反推 `study_logs`。
-- **`daily_stats`**（统计表）：记录“确认口径的基础统计”（如 `review_count`, `new_learned_count`, `total_time_ms`，主键包含 `UNIQUE(user_id, date)`）。不能由行为日志表做 Join 实时累加出这批数字！由专属 Command 进行同步写库。
+- **远端内容表**：`words`、`word_details`、`word_examples`、`books`、`lessons`、`lesson_word_map`。
+- **远端状态表**：`user_word_states`、`user_book_progress`、`user_word_favorites`、`user_word_example_favorites`。
+- 当前仓库**不应再引用** `word_meanings`、`word_audio`、`example_sentences`、`example_audio`、`word_conjugations`、`word_relations` 这些旧表名来描述现状。
 
 ### 【C. 假名学习模块】(Kana Layer)
 
-- **主表**：`kana_letters`，搭配音频 (`kana_audio`)、示例 (`kana_examples`)、SVG 笔画定义 (`kana_stroke_order`)。
-- **状态管理表**：`kana_learning_state`。
-  - 基于存状态机运转（`learning` <-> `mastered`）。**不允许生成也不应调用** 行为流水表及包含此部分统计在 `daily_stats` 内。
+- **本地内容表**：`kana_letters`、`kana_audio`、`kana_stroke_order`。
+- **远端状态表**：`user_kana_states`。
+- 当前运行时说明中不应再把 `kana_examples` 视为现役表。
+- 假名复习的会话快照走本地 `learning_sessions`；状态提交走远端 `user_kana_states`。
 
 ### 【D. 语法学习模块】(Grammar Layer)
 
-- **主表**：`grammars`
-- **层级分支**：一条语法产生多种义项 `grammar_meanings`（含中英文释义与接续），独立存储使用场景 `grammar_contexts`，以及挂载在语法下的例句 `grammar_examples`。
-- **状态管理表**：`study_grammars`。使用 SRS (FSRS) 原理处理学习进度安排。
+- **远端内容表**：`grammars`、`grammar_meanings`、`grammar_contexts`、`grammar_examples`。
+- **远端状态表**：`user_grammar_states`。
+- 语法不维护单独的本地状态镜像，不应假定存在可回放的事件表。
+
+### 【E. 问题上报与会话】
+
+- **问题上报**：`issue_reports`，字段使用 `content_type`、`content_id`、`content_snapshot`、`message`、`status`、`admin_note`、`resolved_at`。
+- **服务端会话**：`user_learning_sessions`、`user_review_sessions`。
+- **本地会话**：`learning_sessions`，通过 `session_type` 区分 `word_learn` / `word_review` / `kana_review`。
 
 ## 4. 实体关系
 
-- User 与统计的一对多关系。
-- AppState 作为单一对象对 User 表包含一个单向映射。
-- 业务表关系，必须通过对应的模型/实体映射明确：对依赖 `1:N` 和 `N:N` 的映射通过独立的 Repository / Query 并装为组合 DTO（不要在基础的 Repository 使用 Group By 或 Left Join）。
+- `app_state.current_user_id -> users.id` 是当前激活用户的唯一入口。
+- 单词、语法、文章等内容关系应通过 Query 组装 DTO，不要把 Join / 聚合塞进基础 Repository。
+- `learning_sessions` 与远端 `user_learning_sessions` / `user_review_sessions` 是“本地恢复快照 vs 远端权威提交”的关系，不是双向实时同步副本。

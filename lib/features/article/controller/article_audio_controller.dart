@@ -5,10 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../../data/commands/article_sync_command_provider.dart';
 import '../../../data/models/article/article_detail.dart';
 import '../../../data/models/article/article_item.dart';
-import '../../../data/queries/article_query_provider.dart';
+import '../../../data/queries/article_remote_query_provider.dart';
 import '../state/article_state.dart';
 
 // ----------------------------------------------------------------------
@@ -99,19 +98,9 @@ class ArticleAudioController extends Notifier<ArticleState> {
         ),
       );
 
-      // 从本地缓存获取文章详情
-      final articleQuery = ref.read(articleQueryProvider);
-      ArticleDetail? article = await articleQuery.getArticleById(articleId);
-
-      // 本地不存在 items 时触发远程同步
-      if (article == null || article.items.isEmpty) {
-        await ref.read(articleSyncCommandProvider).syncArticleDetail(articleId);
-        article = await articleQuery.getArticleById(articleId);
-      }
-
-      if (article == null) {
-        throw Exception('找不到文章: $articleId');
-      }
+      final article = await ref
+          .read(articleRemoteQueryProvider)
+          .fetchArticleDetail(articleId);
 
       state = state.copyWith(article: article);
 

@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../../data/queries/active_user_query_provider.dart';
-import '../../../data/queries/grammar_read_queries.dart';
+import '../../../data/models/grammar.dart';
+import '../../../data/queries/grammar_remote_query.dart';
+import '../../../data/queries/grammar_remote_query_provider.dart';
 import '../state/grammar_list_state.dart';
 
 final grammarListControllerProvider =
@@ -10,6 +11,8 @@ final grammarListControllerProvider =
     );
 
 class GrammarListController extends Notifier<GrammarListState> {
+  static const _pageSize = 50;
+
   @override
   GrammarListState build() {
     return const GrammarListState(
@@ -18,23 +21,17 @@ class GrammarListController extends Notifier<GrammarListState> {
     ); // Default to n5
   }
 
-  GrammarReadQueries get _queries => ref.read(grammarReadQueriesProvider);
+  GrammarRemoteQuery get _remoteQuery => ref.read(grammarRemoteQueryProvider);
 
   Future<void> loadGrammars() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final activeUserQuery = ref.read(activeUserQueryProvider);
-      final userId = await activeUserQuery.getActiveUserId();
+      final grammars = await _fetchAllGrammars(state.selectedLevel);
 
-      final grammars = await _queries.getGrammarList(
-        userId: userId,
-        jlptLevel: state.selectedLevel,
-      );
-
-      // If counts are not loaded yet, load them
-      Map<String, int> counts = state.levelCounts;
-      if (counts.isEmpty) {
-        counts = await _queries.getGrammarCountsByLevel();
+      final counts = Map<String, int>.from(state.levelCounts);
+      final selectedLevel = state.selectedLevel;
+      if (selectedLevel != null) {
+        counts[selectedLevel] = grammars.length;
       }
 
       state = state.copyWith(
@@ -46,6 +43,45 @@ class GrammarListController extends Notifier<GrammarListState> {
       logger.error('Failed to load grammar list', e, stackTrace);
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  Future<List<Grammar>> _fetchAllGrammars(String? jlptLevel) async {
+    final grammars = <Grammar>[];
+    final excludedIds = <int>[];
+    final seenIds = <int>{};
+
+    while (true) {
+      final page = await _remoteQuery.fetchGrammars(
+        limit: _pageSize,
+        excludeIds: excludedIds,
+        jlptLevel: jlptLevel,
+      );
+
+      if (page.isEmpty) {
+        break;
+      }
+
+      final newGrammars = <Grammar>[];
+      for (final detail in page) {
+        final grammar = detail.grammar;
+        if (seenIds.add(grammar.id)) {
+          newGrammars.add(grammar);
+        }
+      }
+
+      if (newGrammars.isEmpty) {
+        break;
+      }
+
+      grammars.addAll(newGrammars);
+      excludedIds.addAll(newGrammars.map((grammar) => grammar.id));
+
+      if (page.length < _pageSize) {
+        break;
+      }
+    }
+
+    return grammars;
   }
 
   void selectLevel(String? level) {

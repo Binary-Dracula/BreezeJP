@@ -12,18 +12,42 @@ class LearningSessionRepository {
 
   /// 获取某本书的当前活跃会话（最多一条）
   Future<LearningSession?> getActiveSession(int userId, String bookId) async {
+    return getActiveSessionByType(
+      userId,
+      LearningSessionType.wordLearn,
+      bookId: bookId,
+    );
+  }
+
+  Future<LearningSession?> getActiveSessionByType(
+    int userId,
+    LearningSessionType sessionType, {
+    String? bookId,
+  }) async {
     try {
       final db = await _db;
+      final whereBuffer = StringBuffer('user_id = ? AND session_type = ?');
+      final whereArgs = <Object?>[userId.toString(), sessionType.dbValue];
+
+      if (bookId != null) {
+        whereBuffer.write(' AND book_id = ?');
+        whereArgs.add(bookId);
+      }
+
+      whereBuffer.write(' AND status = ?');
+      whereArgs.add('active');
+
       final results = await db.query(
         'learning_sessions',
-        where: 'user_id = ? AND book_id = ? AND status = ?',
-        whereArgs: [userId, bookId, 'active'],
+        where: whereBuffer.toString(),
+        whereArgs: whereArgs,
         limit: 1,
       );
 
       logger.dbQuery(
         table: 'learning_sessions',
-        where: 'user_id=$userId AND book_id=$bookId AND status=active',
+        where:
+            'user_id=$userId AND session_type=${sessionType.dbValue} AND book_id=$bookId AND status=active',
         resultCount: results.length,
       );
 
@@ -41,17 +65,21 @@ class LearningSessionRepository {
   }
 
   /// 创建新会话
-  Future<int> createSession(LearningSession session) async {
+  Future<String> createSession(LearningSession session) async {
     try {
       final db = await _db;
-      final id = await db.insert('learning_sessions', session.toMapForInsert());
+      await db.insert('learning_sessions', session.toMapForInsert());
 
       logger.dbInsert(
         table: 'learning_sessions',
-        id: id,
-        keyFields: {'bookId': session.bookId, 'userId': session.userId},
+        id: session.id,
+        keyFields: {
+          'bookId': session.bookId,
+          'userId': session.userId,
+          'sessionType': session.sessionType.dbValue,
+        },
       );
-      return id;
+      return session.id;
     } catch (e, stackTrace) {
       logger.dbError(
         operation: 'INSERT',
@@ -67,42 +95,24 @@ class LearningSessionRepository {
   Future<void> updateSession(LearningSession session) async {
     try {
       final db = await _db;
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      var deletedRows = 0;
-      final affectedRows = await db.transaction((txn) async {
-        if (session.status == 'completed') {
-          deletedRows = await txn.delete(
-            'learning_sessions',
-            where: 'user_id = ? AND book_id = ? AND status = ? AND id != ?',
-            whereArgs: [
-              session.userId,
-              session.bookId,
-              'completed',
-              session.id,
-            ],
-          );
-        }
-
-        return txn.update(
-          'learning_sessions',
-          {
-            'current_index': session.currentIndex,
-            'status': session.status,
-            'updated_at': now,
-          },
-          where: 'id = ?',
-          whereArgs: [session.id],
-        );
-      });
-
-      if (deletedRows > 0) {
-        logger.dbDelete(table: 'learning_sessions', deletedRows: deletedRows);
-      }
+      final affectedRows = await db.update(
+        'learning_sessions',
+        session.toMapForUpdate(),
+        where: 'id = ?',
+        whereArgs: [session.id],
+      );
 
       logger.dbUpdate(
         table: 'learning_sessions',
         affectedRows: affectedRows,
-        updatedFields: const ['current_index', 'status', 'updated_at'],
+        updatedFields: const [
+          'session_type',
+          'server_session_id',
+          'book_id',
+          'status',
+          'data_payload',
+          'created_at',
+        ],
       );
     } catch (e, stackTrace) {
       logger.dbError(
@@ -121,8 +131,33 @@ class LearningSessionRepository {
       final db = await _db;
       final deletedRows = await db.delete(
         'learning_sessions',
-        where: 'user_id = ? AND book_id = ?',
-        whereArgs: [userId, bookId],
+        where: 'user_id = ? AND session_type = ? AND book_id = ?',
+        whereArgs: [
+          userId.toString(),
+          LearningSessionType.wordLearn.dbValue,
+          bookId,
+        ],
+      );
+
+      logger.dbDelete(table: 'learning_sessions', deletedRows: deletedRows);
+    } catch (e, stackTrace) {
+      logger.dbError(
+        operation: 'DELETE',
+        table: 'learning_sessions',
+        dbError: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    try {
+      final db = await _db;
+      final deletedRows = await db.delete(
+        'learning_sessions',
+        where: 'id = ?',
+        whereArgs: [sessionId],
       );
 
       logger.dbDelete(table: 'learning_sessions', deletedRows: deletedRows);

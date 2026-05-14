@@ -33,7 +33,10 @@ class WordDetailContent extends StatelessWidget {
           ...prefixChildren,
           WordHeader(
             wordDetail: wordDetail,
-            trailingAction: WordFavoriteButton(wordId: wordDetail.word.id),
+            trailingAction: WordFavoriteButton(
+              wordId: wordDetail.word.id,
+              initialIsFavorited: wordDetail.isFavorited,
+            ),
           ),
           WordMeaningsSection(richContent: wordDetail.richContent),
           WordExamplesSection(examples: wordDetail.examples),

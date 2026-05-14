@@ -2,6 +2,7 @@ import 'grammar.dart';
 import 'grammar_meaning.dart';
 import 'grammar_context.dart';
 import 'grammar_example.dart';
+import 'study_grammar.dart';
 import '../../core/constants/learning_status.dart';
 
 /// 语法详情（封装供 View 层消费的对象）
@@ -11,6 +12,7 @@ class GrammarDetail {
   final List<GrammarContext> contexts;
   final List<GrammarExample> examples;
   final LearningStatus userState;
+  final StudyGrammar? learningState;
 
   GrammarDetail({
     required this.grammar,
@@ -18,6 +20,7 @@ class GrammarDetail {
     required this.contexts,
     required this.examples,
     this.userState = LearningStatus.unlearned,
+    this.learningState,
   });
 
   GrammarDetail copyWith({
@@ -26,6 +29,7 @@ class GrammarDetail {
     List<GrammarContext>? contexts,
     List<GrammarExample>? examples,
     LearningStatus? userState,
+    StudyGrammar? learningState,
   }) {
     return GrammarDetail(
       grammar: grammar ?? this.grammar,
@@ -33,6 +37,7 @@ class GrammarDetail {
       contexts: contexts ?? this.contexts,
       examples: examples ?? this.examples,
       userState: userState ?? this.userState,
+      learningState: learningState ?? this.learningState,
     );
   }
 }

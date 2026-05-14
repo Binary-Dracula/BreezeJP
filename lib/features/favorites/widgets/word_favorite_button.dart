@@ -3,13 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/commands/favorite_command_provider.dart';
-import '../providers/favorite_state_provider.dart';
 
 class WordFavoriteButton extends ConsumerStatefulWidget {
-  const WordFavoriteButton({super.key, required this.wordId, this.bookId});
+  const WordFavoriteButton({
+    super.key,
+    required this.wordId,
+    this.bookId,
+    this.initialIsFavorited = false,
+  });
 
   final String wordId;
   final String? bookId;
+  final bool initialIsFavorited;
 
   @override
   ConsumerState<WordFavoriteButton> createState() => _WordFavoriteButtonState();
@@ -17,21 +22,32 @@ class WordFavoriteButton extends ConsumerStatefulWidget {
 
 class _WordFavoriteButtonState extends ConsumerState<WordFavoriteButton> {
   bool _isSubmitting = false;
+  late bool _isFavorited;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFavorited = widget.initialIsFavorited;
+  }
+
+  @override
+  void didUpdateWidget(covariant WordFavoriteButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.wordId != widget.wordId ||
+        oldWidget.initialIsFavorited != widget.initialIsFavorited) {
+      _isFavorited = widget.initialIsFavorited;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final favoriteState = ref.watch(wordFavoriteStateProvider(widget.wordId));
-    final isFavorited = favoriteState.maybeWhen(
-      data: (value) => value,
-      orElse: () => false,
-    );
-    final color = isFavorited
+    final color = _isFavorited
         ? const Color(0xFFF59E0B)
         : const Color(0xFF94A3B8);
 
     return Tooltip(
-      message: isFavorited ? l10n.actionUnfavorite : l10n.actionFavorite,
+      message: _isFavorited ? l10n.actionUnfavorite : l10n.actionFavorite,
       child: Container(
         width: 44,
         height: 44,
@@ -46,12 +62,15 @@ class _WordFavoriteButtonState extends ConsumerState<WordFavoriteButton> {
               : () async {
                   setState(() => _isSubmitting = true);
                   try {
-                    await ref
+                    final favorited = await ref
                         .read(favoriteCommandProvider)
                         .toggleWordFavorite(
                           wordId: widget.wordId,
                           bookId: widget.bookId,
                         );
+                    if (mounted) {
+                      setState(() => _isFavorited = favorited);
+                    }
                   } catch (_) {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -64,7 +83,7 @@ class _WordFavoriteButtonState extends ConsumerState<WordFavoriteButton> {
                   }
                 },
           icon: Icon(
-            isFavorited ? Icons.star_rounded : Icons.star_border_rounded,
+            _isFavorited ? Icons.star_rounded : Icons.star_border_rounded,
             color: color,
             size: 22,
           ),

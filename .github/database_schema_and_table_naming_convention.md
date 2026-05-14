@@ -9,23 +9,31 @@
 判断依据如下：
 
 1. 本地 SQLite 的有效 schema 并不只等于 `assets/database/breeze_jp.sqlite`。
-   运行时还会由 `lib/data/db/app_database.dart` 自动补齐以下内容：
-   - `books.is_available`
-   - `learning_sessions.words_payload`
-   - `sync_state`
-   - `sync_outbox`
+   运行时还会由 `lib/data/db/app_database.dart` 执行 `DROP + ensure`：
+   - 重建 `learning_sessions` 新 schema（含 `session_type`、`server_session_id`、`data_payload` 等字段）
+   - 删除本地旧内容表和旧状态表
+   - 保留 `users`、`app_state`、`sync_metadata`
+   - 确保 `kana_audio`、`kana_letters`、`kana_stroke_order` 存在并从 assets 回填内容
 
 2. 云端 Supabase 的权威 schema 已统一收口到：
    - `api/supabase/schema.sql`
 
 3. `api/supabase/reset_content_identity_sequences.sql` 属于内容导入后的维护脚本，不再视为独立 schema 来源。
 
-4. V2 复习续接所需的 `user_review_sessions` 已纳入主 schema，并通过真实线上联调验证。
+4. 当前学习/复习会话所需的 `user_learning_sessions`、`user_review_sessions` 已纳入主 schema。
 
 5. 本地与云端并不是要求“表集合完全相同”。
    有些表天然是本地专属，有些表天然是云端专属。当前不存在“功能已经上线但缺少承载表”的情况。
 
-6. `study_logs` / `daily_stats` 目前不是现网代码依赖表。
+6. 云端 schema 当前明确执行：
+   - `DROP TABLE IF EXISTS kana_stroke_order`
+   - `DROP TABLE IF EXISTS kana_examples`
+   - `DROP TABLE IF EXISTS kana_letters`
+   - `DROP TABLE IF EXISTS kana_audio`
+
+   这说明假名内容表不是当前正式云端表集合的一部分。
+
+7. `study_logs` / `daily_stats` 目前不是现网代码依赖表。
    代码库中没有真实读写依赖；日志文档里的出现仅是 Logger 示例，不能据此认定现在必须补表。
 
 ### 1.2 命名结论
@@ -34,18 +42,18 @@
 
 最明显的不一致来自“同一类用户状态表”：
 
-| 语义         | 本地 SQLite 现名      | 云端 Supabase 现名    | 结论             |
-| ------------ | --------------------- | --------------------- | ---------------- |
-| 单词学习状态 | `study_words`         | `user_word_states`    | 需要统一命名口径 |
-| 语法学习状态 | `study_grammars`      | `user_grammar_states` | 需要统一命名口径 |
-| 假名学习状态 | `kana_learning_state` | `user_kana_states`    | 需要统一命名口径 |
-| 书本进度状态 | `book_progress`       | `user_book_progress`  | 需要统一命名口径 |
+| 语义         | 本地 SQLite 现名 | 云端 Supabase 现名    | 结论               |
+| ------------ | ---------------- | --------------------- | ------------------ |
+| 单词学习状态 | （本地已移除）   | `user_word_states`    | 统一以云端命名为准 |
+| 语法学习状态 | （本地已移除）   | `user_grammar_states` | 统一以云端命名为准 |
+| 假名学习状态 | （本地已移除）   | `user_kana_states`    | 统一以云端命名为准 |
+| 书本进度状态 | （本地已移除）   | `user_book_progress`  | 统一以云端命名为准 |
 
 本次结论是：
 
 - **不再新增结构性表改动**。
 - **从现在开始冻结统一命名规约**。
-- **历史遗留表暂不在本轮直接 rename**，因为 rename 本身会构成一次新的破坏性 schema 变更；但以后若进入专门的本地/云端破坏性迁移窗口，上面 4 组表应优先统一。
+- **旧本地状态表名仅作为历史兼容术语保留**，后续文档、接口与新代码统一使用 `user_*` 命名，不再规划本地同语义 rename。
 
 ## 2. 统一命名原则
 
@@ -69,7 +77,6 @@
 - `grammar_examples`
 - `kana_letters`
 - `kana_audio`
-- `kana_examples`
 - `kana_stroke_order`
 - `articles`
 - `article_details`
@@ -111,6 +118,7 @@
 
 示例：
 
+- `user_learning_sessions`
 - `user_review_sessions`
 
 ### 2.5 用户账户与档案表
@@ -129,84 +137,97 @@
 允许的语义类型：
 
 - App 单例状态：`app_state`
-- 同步游标状态：`sync_state`
-- 同步待推送队列：`sync_outbox`
 - 本地学习流程会话：`learning_sessions`
 
 但以后如果再新增本地专属基础设施表，优先使用更明确的命名，不要与云端业务表混淆。
 
 ## 3. 当前正式认可的表分类
 
-### 3.1 本地与云端共用命名的内容表
+### 3.1 本地与云端共存的基础元数据表
 
-以下表名在本地和云端已经一致，后续保持不变：
+以下表当前在本地 seed DB 与云端 Supabase schema 中都存在，且保持同名：
 
-- `articles`
-- `article_details`
 - `sync_metadata`
-- `words`
-- `word_details`
-- `word_examples`
-- `books`
-- `lessons`
-- `lesson_word_map`
-- `grammars`
-- `grammar_meanings`
-- `grammar_contexts`
-- `grammar_examples`
+
+说明：
+
+- 该表属于基础元数据，不属于内容表，也不属于 `user_*` 状态/进度/会话表。
+- 当前本地 `AppDatabase._ensureSchema()` 不会删除它，因此它仍是有效本地表的一部分。
+
+### 3.2 当前仍在本地保留的内容表
+
+以下内容表当前仍在本地 SQLite 保留，用于假名图表、音频与笔顺等离线能力：
+
 - `kana_audio`
 - `kana_letters`
-- `kana_examples`
 - `kana_stroke_order`
 
-### 3.2 本地专属表
+说明：
+
+- 这三张表当前只保留在本地；远端 `schema.sql` 已显式删除历史 `kana_*` 内容表。
+
+### 3.3 本地专属表
 
 以下表当前定义为本地专属，不要求在云端存在同名表：
 
 - `users`
 - `app_state`
 - `learning_sessions`
-- `sync_state`
-- `sync_outbox`
 
 说明：
 
 - `users` 是当前本地账户/会话体系的历史表，不等同于云端 `auth.users`，也不等同于 `user_profiles`。
-- `learning_sessions` 是本地学习流程会话，不等同于云端 `user_review_sessions`。
-- `sync_state` / `sync_outbox` 属于客户端同步基础设施，不是云端业务事实表。
+- `learning_sessions` 是本地学习/复习流程的恢复会话，不等同于云端 `user_learning_sessions` 或 `user_review_sessions`。
 
-### 3.3 云端专属表
+### 3.4 云端专属表
 
 以下表当前定义为云端专属，不要求本地存在同名表：
 
+- `articles`
+- `article_details`
+- `books`
+- `grammars`
+- `grammar_contexts`
+- `grammar_examples`
+- `grammar_meanings`
 - `issue_reports`
-- `user_profiles`
+- `lessons`
+- `lesson_word_map`
+- `user_book_progress`
 - `user_devices`
-- `sync_mutation_receipts`
-- `user_sync_events`
+- `user_grammar_states`
+- `user_kana_states`
+- `user_learning_sessions`
+- `user_profiles`
 - `user_review_sessions`
+- `user_word_example_favorites`
+- `user_word_favorites`
+- `user_word_states`
+- `word_details`
+- `word_examples`
+- `words`
 
 说明：
 
-- `user_review_sessions` 是服务端权威复习会话，不应再回退到本地 SharedPreferences 或本地 SQLite 同名镜像。
+- `user_learning_sessions` 与 `user_review_sessions` 是服务端权威会话，不应再回退到本地 SharedPreferences 或本地 SQLite 同名镜像。
+- `user_word_favorites` 与 `user_word_example_favorites` 也是当前远端正式表的一部分，不能再按“已删除本地收藏表”误判为全局已下线。
+- 当前远端正式表集合不包含 `kana_audio`、`kana_letters`、`kana_stroke_order`、`kana_examples`。
 
 ## 4. 已识别的历史命名遗留
 
-以下 4 组表名，语义上建议统一到云端命名口径：
+以下 4 个本地旧表名已经退出当前 SQLite schema，但仍可能出现在历史文档、旧讨论或日志中：
 
-| 当前本地表            | 建议统一名            | 是否本轮执行 rename | 原因                                                                    |
-| --------------------- | --------------------- | ------------------- | ----------------------------------------------------------------------- |
-| `study_words`         | `user_word_states`    | 否                  | 当前线上功能已稳定，rename 会引入本地迁移、仓库改名、同步映射和测试重写 |
-| `study_grammars`      | `user_grammar_states` | 否                  | 同上                                                                    |
-| `kana_learning_state` | `user_kana_states`    | 否                  | 同上                                                                    |
-| `book_progress`       | `user_book_progress`  | 否                  | 同上                                                                    |
-
-这 4 个名字从今天起视为**历史遗留名**。
+| 历史本地表            | 当前统一名            | 当前状态 | 说明                                 |
+| --------------------- | --------------------- | -------- | ------------------------------------ |
+| `study_words`         | `user_word_states`    | 已移除   | 新文档、新接口、新代码统一使用目标名 |
+| `study_grammars`      | `user_grammar_states` | 已移除   | 同上                                 |
+| `kana_learning_state` | `user_kana_states`    | 已移除   | 同上                                 |
+| `book_progress`       | `user_book_progress`  | 已移除   | 同上                                 |
 
 规约要求是：
 
 1. 不再新增任何新的本地或云端表沿用这套旧风格。
-2. 以后如果进入专门的破坏性数据库迁移窗口，优先统一这 4 组名字。
+2. 历史名只允许出现在迁移说明、兼容说明或故障排查语境中。
 3. 在新文档、新设计、新接口命名里，统一使用目标名，而不是继续扩散旧名。
 
 ## 5. 对“相同表保持表名一致”的最终解释
@@ -215,11 +236,12 @@
 
 因此：
 
-- `study_words` 和 `user_word_states` 是同一业务语义，应统一命名。
-- `book_progress` 和 `user_book_progress` 是同一业务语义，应统一命名。
+- `sync_metadata` 在本地和云端都存在，且维持同名。
+- `study_words` 与 `user_word_states` 代表同一业务语义，但前者已成为历史名。
+- `book_progress` 与 `user_book_progress` 代表同一业务语义，但前者已成为历史名。
+- `kana_letters` / `kana_audio` / `kana_stroke_order` 当前是本地内容表，不要求云端同名。
 - `users` 与 `user_profiles` 不是同一张语义表，不要求同名。
-- `learning_sessions` 与 `user_review_sessions` 不是同一张语义表，不要求同名。
-- `sync_outbox` 与 `user_sync_events` / `sync_mutation_receipts` 不是同一层职责，不要求同名。
+- `learning_sessions` 与 `user_learning_sessions` / `user_review_sessions` 不是同一张语义表，不要求同名。
 
 ## 6. 后续开发强制规约
 
@@ -238,6 +260,6 @@
 
 截至本次审计，BreezeJP 的数据库基线结论如下：
 
-- **结构基线：通过，不需要继续补结构。**
-- **命名基线：已有统一规约，但存在 4 组本地历史遗留表名待未来专门迁移窗口统一。**
+- **结构基线：通过。当前本地有效表集合应理解为 `users`、`app_state`、`sync_metadata`、`learning_sessions`、`kana_audio`、`kana_letters`、`kana_stroke_order`；云端以 `api/supabase/schema.sql` 当前 create/drop 结果为准。**
+- **命名基线：统一以当前云端权威表名为准，旧本地状态表名仅作历史兼容术语。**
 - **以后所有新增表，必须以本文件作为唯一命名口径。**

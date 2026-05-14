@@ -9,8 +9,6 @@ void main() {
         final session = RemoteWordReviewSession.fromJson({
           'session_id': 'word-session-1',
           'current_index': 0,
-          'current_phase': 'testing',
-          'has_mistake_on_current': false,
           'items': [
             {
               'word_state': {
@@ -67,9 +65,64 @@ void main() {
 
       expect(session.sessionId, isNull);
       expect(session.currentIndex, 0);
-      expect(session.currentPhase, 'testing');
-      expect(session.hasMistakeOnCurrent, isFalse);
       expect(session.items, isEmpty);
+    });
+
+    test('decodes kana review session and injects local user id', () {
+      final session = RemoteKanaReviewSession.fromJson({
+        'session_id': 'kana-session-1',
+        'current_index': 0,
+        'items': [
+          {
+            'kana_letter': {
+              'id': 1,
+              'kana_char': 'あ',
+              'script_kind': 'hiragana',
+              'romaji': 'a',
+              'vowel': 'a',
+              'pair_group_id': 100,
+              'display_order': 1,
+              'created_at': '2026-04-20T00:00:00Z',
+              'updated_at': '2026-04-20T00:00:00Z',
+            },
+            'learning_state': {
+              'kana_id': 1,
+              'learning_status': 1,
+              'next_review_at': 1713574800,
+              'last_reviewed_at': 1713571200,
+              'interval': 1,
+              'ease_factor': 2.5,
+              'stability': 0,
+              'difficulty': 0,
+              'streak': 1,
+              'total_reviews': 2,
+              'fail_count': 0,
+              'created_at': '2026-04-20T00:00:00Z',
+              'updated_at': '2026-04-20T00:00:00Z',
+            },
+            'question_type': 'hiragana_to_romaji',
+            'audio_filename': null,
+            'options': const ['a', 'i', 'u', 'e'],
+            'counterpart_letter': {
+              'id': 2,
+              'kana_char': 'ア',
+              'script_kind': 'katakana',
+              'romaji': 'a',
+              'vowel': 'a',
+              'pair_group_id': 100,
+              'display_order': 2,
+              'created_at': '2026-04-20T00:00:00Z',
+              'updated_at': '2026-04-20T00:00:00Z',
+            },
+          },
+        ],
+      }, 7);
+
+      expect(session.sessionId, 'kana-session-1');
+      expect(session.items, hasLength(1));
+      expect(session.items.first.learningState.userId, 7);
+      expect(session.items.first.kanaLetter.id, 1);
+      expect(session.items.first.counterpartLetter?.id, 2);
     });
   });
 }

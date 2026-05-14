@@ -79,6 +79,9 @@ class ExampleFavoritesController extends Notifier<ExampleFavoritesState> {
   }
 
   Future<void> unfavorite(ExampleFavoriteItem item) async {
-    await _favoriteCommand.removeWordExampleFavorite(exampleId: item.exampleId);
+    await _favoriteCommand.removeWordExampleFavorite(
+      exampleId: item.exampleId,
+      wordId: item.wordId,
+    );
   }
 }

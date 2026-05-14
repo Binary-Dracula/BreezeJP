@@ -1,6 +1,8 @@
 import '../../core/constants/learning_status.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/network/dio_client.dart';
+import '../models/kana_learning_state.dart';
+import '../models/kana_letter.dart';
 import '../models/read/example_favorite_item.dart';
 import '../models/read/grammar_book_item.dart';
 import '../models/read/vocabulary_book_item.dart';
@@ -10,15 +12,29 @@ import '../models/word_detail.dart';
 class StudyRemoteQuery {
   final _dio = DioClient.instance.dio;
 
-  Future<RemoteWordReviewSession> fetchWordReviewSession({
+  Future<RemoteWordReviewSession> createWordReviewSession({
     required int localUserId,
     int limit = 20,
   }) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiEndpoints.wordReviewSession,
-      queryParameters: {'limit': limit},
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.reviewSessions,
+      data: {'kind': 'word', 'limit': limit},
     );
     return RemoteWordReviewSession.fromApiData(
+      response.data!['data'],
+      localUserId,
+    );
+  }
+
+  Future<RemoteKanaReviewSession> createKanaReviewSession({
+    required int localUserId,
+    int limit = 20,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.reviewSessions,
+      data: {'kind': 'kana', 'limit': limit},
+    );
+    return RemoteKanaReviewSession.fromApiData(
       response.data!['data'],
       localUserId,
     );
@@ -186,22 +202,16 @@ class RemoteWordReviewSession {
   const RemoteWordReviewSession({
     required this.sessionId,
     required this.currentIndex,
-    required this.currentPhase,
-    required this.hasMistakeOnCurrent,
     required this.items,
   });
 
   final String? sessionId;
   final int currentIndex;
-  final String currentPhase;
-  final bool hasMistakeOnCurrent;
   final List<RemoteWordReviewSessionItem> items;
 
   const RemoteWordReviewSession.empty()
     : sessionId = null,
       currentIndex = 0,
-      currentPhase = 'testing',
-      hasMistakeOnCurrent = false,
       items = const [];
 
   factory RemoteWordReviewSession.fromApiData(dynamic data, int localUserId) {
@@ -233,8 +243,56 @@ class RemoteWordReviewSession {
     return RemoteWordReviewSession(
       sessionId: _asNullableString(json['session_id']),
       currentIndex: (json['current_index'] as int?) ?? 0,
-      currentPhase: _asNullableString(json['current_phase']) ?? 'testing',
-      hasMistakeOnCurrent: json['has_mistake_on_current'] == true,
+      items: items,
+    );
+  }
+}
+
+class RemoteKanaReviewSession {
+  const RemoteKanaReviewSession({
+    required this.sessionId,
+    required this.currentIndex,
+    required this.items,
+  });
+
+  final String? sessionId;
+  final int currentIndex;
+  final List<RemoteKanaReviewSessionItem> items;
+
+  const RemoteKanaReviewSession.empty()
+    : sessionId = null,
+      currentIndex = 0,
+      items = const [];
+
+  factory RemoteKanaReviewSession.fromApiData(dynamic data, int localUserId) {
+    if (data is List) {
+      return const RemoteKanaReviewSession.empty();
+    }
+    if (data is Map) {
+      return RemoteKanaReviewSession.fromJson(
+        Map<String, dynamic>.from(data),
+        localUserId,
+      );
+    }
+    return const RemoteKanaReviewSession.empty();
+  }
+
+  factory RemoteKanaReviewSession.fromJson(
+    Map<String, dynamic> json,
+    int localUserId,
+  ) {
+    final items = (json['items'] as List<dynamic>? ?? const [])
+        .map(
+          (item) => RemoteKanaReviewSessionItem.fromJson(
+            Map<String, dynamic>.from(item as Map),
+            localUserId,
+          ),
+        )
+        .toList();
+
+    return RemoteKanaReviewSession(
+      sessionId: _asNullableString(json['session_id']),
+      currentIndex: (json['current_index'] as int?) ?? 0,
       items: items,
     );
   }
@@ -302,11 +360,93 @@ class RemoteWordReviewSessionItem {
   }
 }
 
+class RemoteKanaReviewSessionItem {
+  const RemoteKanaReviewSessionItem({
+    required this.kanaLetter,
+    required this.learningState,
+    required this.questionType,
+    required this.options,
+    this.audioFilename,
+    this.counterpartLetter,
+  });
+
+  final KanaLetter kanaLetter;
+  final KanaLearningState learningState;
+  final String questionType;
+  final List<String> options;
+  final String? audioFilename;
+  final KanaLetter? counterpartLetter;
+
+  factory RemoteKanaReviewSessionItem.fromJson(
+    Map<String, dynamic> json,
+    int localUserId,
+  ) {
+    return RemoteKanaReviewSessionItem(
+      kanaLetter: KanaLetter.fromMap(
+        Map<String, dynamic>.from(json['kana_letter'] as Map),
+      ),
+      learningState: _kanaLearningStateFromJson(
+        Map<String, dynamic>.from(json['learning_state'] as Map),
+        localUserId,
+      ),
+      questionType:
+          _asNullableString(json['question_type']) ?? 'hiragana_to_romaji',
+      options: _toStringList(json['options']),
+      audioFilename: _asNullableString(json['audio_filename']),
+      counterpartLetter: json['counterpart_letter'] == null
+          ? null
+          : KanaLetter.fromMap(
+              Map<String, dynamic>.from(json['counterpart_letter'] as Map),
+            ),
+    );
+  }
+}
+
 DateTime? _secondsToDateTime(int? seconds) {
   if (seconds == null) {
     return null;
   }
   return DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+}
+
+KanaLearningState _kanaLearningStateFromJson(
+  Map<String, dynamic> json,
+  int localUserId,
+) {
+  final createdAt = _parseRemoteDateTime(json['created_at']);
+  final updatedAt = _parseRemoteDateTime(json['updated_at']);
+
+  return KanaLearningState.fromMap({
+    'id': 0,
+    'user_id': localUserId,
+    'kana_id': json['kana_id'],
+    'learning_status': json['learning_status'],
+    'next_review_at': _readNullableInt(json['next_review_at']),
+    'last_review_at': _readNullableInt(json['last_reviewed_at']),
+    'last_reviewed_at': _readNullableInt(json['last_reviewed_at']),
+    'streak': json['streak'],
+    'total_reviews': json['total_reviews'],
+    'fail_count': json['fail_count'],
+    'interval': json['interval'],
+    'ease_factor': json['ease_factor'],
+    'stability': json['stability'],
+    'difficulty': json['difficulty'],
+    'created_at': createdAt?.millisecondsSinceEpoch != null
+        ? createdAt!.millisecondsSinceEpoch ~/ 1000
+        : null,
+    'updated_at': updatedAt?.millisecondsSinceEpoch != null
+        ? updatedAt!.millisecondsSinceEpoch ~/ 1000
+        : null,
+  });
+}
+
+int? _readNullableInt(dynamic value) {
+  return switch (value) {
+    null => null,
+    int number => number,
+    String text => int.tryParse(text),
+    _ => null,
+  };
 }
 
 DateTime? _parseIsoDateTime(String? value) {

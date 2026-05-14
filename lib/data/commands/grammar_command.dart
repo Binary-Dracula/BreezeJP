@@ -1,16 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/algorithm/algorithm_service.dart';
 import '../../core/algorithm/algorithm_service_provider.dart';
 import '../../core/algorithm/srs_types.dart';
 
 import '../../core/constants/learning_status.dart';
+import '../../core/providers/home_summary_invalidation_provider.dart';
 import '../../core/utils/app_logger.dart';
-import 'sync_remote_command.dart';
+import 'grammar_remote_command.dart';
+import 'grammar_remote_command_provider.dart';
+import '../queries/grammar_remote_query.dart';
+import '../queries/grammar_remote_query_provider.dart';
 import '../models/study_grammar.dart';
-import '../repositories/study_grammar_repository.dart';
-import '../repositories/study_grammar_repository_provider.dart';
 
 final grammarCommandProvider = Provider<GrammarCommand>((ref) {
   return GrammarCommand(ref);
@@ -21,57 +21,42 @@ class GrammarCommand {
 
   final Ref ref;
 
-  StudyGrammarRepository get _repo => ref.read(studyGrammarRepositoryProvider);
   AlgorithmService get _algorithmService => ref.read(algorithmServiceProvider);
-  SyncRemoteCommand get _syncRemote => ref.read(syncRemoteCommandProvider);
+  GrammarRemoteCommand get _remoteCommand =>
+      ref.read(grammarRemoteCommandProvider);
+  GrammarRemoteQuery get _remoteQuery => ref.read(grammarRemoteQueryProvider);
+  HomeSummaryInvalidationNotifier get _homeSummaryInvalidation =>
+      ref.read(homeSummaryInvalidationProvider.notifier);
 
   /// 获取或创建学习状态 (默认 seen/0)
   Future<StudyGrammar> getOrCreateLearningState(
     int userId,
     int grammarId,
   ) async {
-    try {
-      final existing = await _repo.getStudyGrammar(userId, grammarId);
-      if (existing != null) return existing;
-
-      final now = DateTime.now();
-      final state = StudyGrammar(
-        id: 0,
-        userId: userId,
-        grammarId: grammarId,
-        learningStatus: LearningStatus.unlearned.value,
-        nextReviewAt: null,
-        lastReviewedAt: null,
-        interval: 0,
-        easeFactor: 2.5,
-        stability: 0, // FSRS initial default
-        difficulty: 0,
-        streak: 0,
-        totalReviews: 0,
-        failCount: 0,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      await _repo.saveStudyGrammar(state);
-      // Re-fetch to get ID if needed, but for now just returning state (ID might be missing if we used replace)
-      // If repo.save uses replace without returning ID, we might need to fetch again to be sure.
-      // But for StudyGrammar, ID is not super critical if we query by unique key.
-
-      logger.info(
-        'Grammar state initialized: userId=$userId grammarId=$grammarId',
-      );
-      _syncRemote.scheduleCheckpoint();
-      return state;
-    } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'UPSERT',
-        table: 'study_grammars',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
+    final existing = await _fetchRemoteLearningState(userId, grammarId);
+    if (existing != null) {
+      return existing;
     }
+
+    final now = DateTime.now();
+    logger.info('Grammar state initialized remotely: grammarId=$grammarId');
+    return StudyGrammar(
+      id: 0,
+      userId: userId,
+      grammarId: grammarId,
+      learningStatus: LearningStatus.unlearned.value,
+      nextReviewAt: null,
+      lastReviewedAt: null,
+      interval: 0,
+      easeFactor: 2.5,
+      stability: 0,
+      difficulty: 0,
+      streak: 0,
+      totalReviews: 0,
+      failCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    );
   }
 
   /// 开始学习 (seen -> learning)
@@ -100,8 +85,7 @@ class GrammarCommand {
       updatedAt: now,
     );
 
-    await _repo.saveStudyGrammar(updated);
-    _syncRemote.scheduleCheckpoint();
+    await _saveAndSync(updated);
     logger.info('Grammar marked as learning: $grammarId');
   }
 
@@ -111,7 +95,7 @@ class GrammarCommand {
     required int grammarId,
     required ReviewRating rating,
   }) async {
-    final existing = await _repo.getStudyGrammar(userId, grammarId);
+    final existing = await _fetchRemoteLearningState(userId, grammarId);
     if (existing == null) {
       logger.warning('Grammar study state not found for review: $grammarId');
       return;
@@ -162,8 +146,7 @@ class GrammarCommand {
       updatedAt: now,
     );
 
-    await _repo.saveStudyGrammar(updated);
-    _syncRemote.scheduleCheckpoint();
+    await _saveAndSync(updated);
     logger.info('Grammar reviewed: $grammarId, rating: ${rating.name}');
   }
 
@@ -177,14 +160,13 @@ class GrammarCommand {
       updatedAt: DateTime.now(),
     );
 
-    await _repo.saveStudyGrammar(updated);
-    _syncRemote.scheduleCheckpoint();
+    await _saveAndSync(updated);
     logger.info('Grammar mastered: $grammarId');
   }
 
   /// 恢复学习（mastered -> learning）
   Future<void> restoreToLearning(int userId, int grammarId) async {
-    final existing = await _repo.getStudyGrammar(userId, grammarId);
+    final existing = await _fetchRemoteLearningState(userId, grammarId);
     if (existing == null) {
       logger.warning('Grammar study state not found for restore: $grammarId');
       return;
@@ -214,8 +196,7 @@ class GrammarCommand {
       updatedAt: now,
     );
 
-    await _repo.saveStudyGrammar(updated);
-    _syncRemote.scheduleCheckpoint();
+    await _saveAndSync(updated);
     logger.info('Grammar restored to learning: $grammarId');
   }
 
@@ -244,8 +225,45 @@ class GrammarCommand {
       updatedAt: DateTime.now(),
     );
 
-    await _repo.saveStudyGrammar(updated);
-    _syncRemote.scheduleCheckpoint();
+    await _saveAndSync(updated);
     logger.info('Grammar reset to unlearned: $grammarId');
+  }
+
+  Future<void> _saveAndSync(StudyGrammar state) async {
+    await _remoteCommand.saveStates([_toRemoteState(state)]);
+    _homeSummaryInvalidation.markStale();
+  }
+
+  Future<StudyGrammar?> _fetchRemoteLearningState(
+    int userId,
+    int grammarId,
+  ) async {
+    final detail = await _remoteQuery.fetchGrammarDetail(grammarId);
+    final learningState = detail?.learningState;
+    if (learningState == null) {
+      return null;
+    }
+
+    return learningState.copyWith(userId: userId, grammarId: grammarId);
+  }
+
+  GrammarStateUpsert _toRemoteState(StudyGrammar state) {
+    return GrammarStateUpsert(
+      grammarId: state.grammarId,
+      learningStatus: state.learningStatus,
+      nextReviewAt: state.nextReviewAt == null
+          ? null
+          : state.nextReviewAt!.millisecondsSinceEpoch ~/ 1000,
+      lastReviewedAt: state.lastReviewedAt == null
+          ? null
+          : state.lastReviewedAt!.millisecondsSinceEpoch ~/ 1000,
+      streak: state.streak,
+      totalReviews: state.totalReviews,
+      failCount: state.failCount,
+      interval: state.interval,
+      easeFactor: state.easeFactor,
+      stability: state.stability,
+      difficulty: state.difficulty,
+    );
   }
 }

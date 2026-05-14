@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/algorithm/srs_types.dart';
+
 import 'word_review_item.dart';
 
 enum ReviewCardPhase {
@@ -8,15 +10,54 @@ enum ReviewCardPhase {
 }
 
 @immutable
+class WordReviewAnsweredResult {
+  const WordReviewAnsweredResult({
+    required this.wordId,
+    required this.rating,
+    this.bookId,
+  });
+
+  final String wordId;
+  final String? bookId;
+  final ReviewRating rating;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'word_id': wordId,
+      if (bookId != null) 'book_id': bookId,
+      'rating': rating.name,
+    };
+  }
+
+  factory WordReviewAnsweredResult.fromJson(Map<String, dynamic> json) {
+    final ratingValue = (json['rating'] as String?)?.trim();
+    final rating = ReviewRating.values.firstWhere(
+      (entry) => entry.name == ratingValue,
+      orElse: () => ReviewRating.good,
+    );
+
+    return WordReviewAnsweredResult(
+      wordId: (json['word_id'] as String?) ?? '',
+      bookId: json['book_id'] as String?,
+      rating: rating,
+    );
+  }
+}
+
+@immutable
 class WordReviewState {
   static const Object _unset = Object();
 
+  final String? localSessionId;
   final String? sessionId;
+  final DateTime? sessionCreatedAt;
   final bool isLoading;
   final bool isEmpty;
 
   // 复习队列与进度
+  final List<WordReviewItem> initialItems;
   final List<WordReviewItem> items;
+  final List<WordReviewAnsweredResult> answeredResults;
   final int currentIndex;
 
   // 当前卡片的状态
@@ -35,10 +76,14 @@ class WordReviewState {
   final bool isNetworkError;
 
   const WordReviewState({
+    this.localSessionId,
     this.sessionId,
+    this.sessionCreatedAt,
     this.isLoading = false,
     this.isEmpty = false,
+    this.initialItems = const [],
     this.items = const [],
+    this.answeredResults = const [],
     this.currentIndex = 0,
     this.currentPhase = ReviewCardPhase.testing,
     this.hasMistakeOnCurrent = false,
@@ -62,10 +107,14 @@ class WordReviewState {
   }
 
   WordReviewState copyWith({
+    Object? localSessionId = _unset,
     Object? sessionId = _unset,
+    Object? sessionCreatedAt = _unset,
     bool? isLoading,
     bool? isEmpty,
+    List<WordReviewItem>? initialItems,
     List<WordReviewItem>? items,
+    List<WordReviewAnsweredResult>? answeredResults,
     int? currentIndex,
     ReviewCardPhase? currentPhase,
     bool? hasMistakeOnCurrent,
@@ -76,10 +125,18 @@ class WordReviewState {
     bool? isNetworkError,
   }) {
     return WordReviewState(
+      localSessionId: localSessionId == _unset
+          ? this.localSessionId
+          : (localSessionId as String?),
       sessionId: sessionId == _unset ? this.sessionId : (sessionId as String?),
+      sessionCreatedAt: sessionCreatedAt == _unset
+          ? this.sessionCreatedAt
+          : (sessionCreatedAt as DateTime?),
       isLoading: isLoading ?? this.isLoading,
       isEmpty: isEmpty ?? this.isEmpty,
+      initialItems: initialItems ?? this.initialItems,
       items: items ?? this.items,
+      answeredResults: answeredResults ?? this.answeredResults,
       currentIndex: currentIndex ?? this.currentIndex,
       currentPhase: currentPhase ?? this.currentPhase,
       hasMistakeOnCurrent: hasMistakeOnCurrent ?? this.hasMistakeOnCurrent,

@@ -92,6 +92,7 @@ class _ExampleItem extends StatelessWidget {
           trailing: WordExampleFavoriteButton(
             exampleId: example.id,
             wordId: example.wordId,
+            initialIsFavorited: example.isFavorited,
           ),
         ),
       ],

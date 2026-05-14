@@ -4,8 +4,6 @@ import '../../../core/auth/auth_service.dart';
 import '../../../core/auth/auth_provider.dart';
 import '../../../core/providers/home_summary_invalidation_provider.dart';
 import '../../../data/commands/active_user_command_provider.dart';
-import '../../../data/commands/sync_remote_command.dart';
-import '../../../data/commands/sync_scheduler_command_provider.dart';
 import '../state/auth_page_state.dart';
 import '../../home/controller/home_controller.dart';
 
@@ -73,12 +71,6 @@ class AuthController extends Notifier<AuthPageState> {
     state = const AuthPageState(isLoading: true);
     try {
       await _auth.updateDisplayName(displayName);
-      final activeUser = await ref
-          .read(activeUserCommandProvider)
-          .ensureActiveUser();
-      await ref
-          .read(syncRemoteCommandProvider)
-          .checkpointForCurrentUser(localUserId: activeUser.id);
       ref.read(homeSummaryInvalidationProvider.notifier).markStale();
       state = const AuthPageState();
       return true;
@@ -105,37 +97,22 @@ class AuthController extends Notifier<AuthPageState> {
   Future<void> signOut() async {
     state = const AuthPageState(isLoading: true);
     try {
-      ref.read(syncSchedulerCommandProvider).stop();
       await _auth.signOut();
     } finally {
       state = const AuthPageState();
     }
   }
 
-  /// 登录/注册后的准备流程：同步完成 + Home 数据预加载，完成后再返回（导航发生前）
+  /// 登录/注册后的准备流程：确保本地活跃用户已就绪，并预加载 Home 摘要。
   Future<void> _prepareAuthenticatedHome() async {
-    final activeUser = await ref
-        .read(activeUserCommandProvider)
-        .ensureActiveUser();
+    await ref.read(activeUserCommandProvider).ensureActiveUser();
 
-    // 1. 同步云端数据（阻塞：完成后才跳转 Home）
-    try {
-      await ref
-          .read(syncRemoteCommandProvider)
-          .checkpointForCurrentUser(localUserId: activeUser.id);
-    } catch (e) {
-      logger.warning('[Auth] 登录后首轮云端同步失败，稍后重试: $e');
-    }
-
-    // 2. 预加载 Home 摘要（让 Home 页面一进来就有数据）
+    // 预加载 Home 摘要（让 Home 页面一进来就有数据）
     try {
       await ref.read(homeControllerProvider.notifier).loadHomeData();
     } catch (e) {
       logger.warning('[Auth] Home 数据预加载失败: $e');
     }
-
-    // 3. 启动定期同步调度器
-    await ref.read(syncSchedulerCommandProvider).start();
   }
 
   /// 将 Supabase 错误信息转为用户友好文案

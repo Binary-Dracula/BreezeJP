@@ -4,31 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/app_logger.dart';
 import '../../features/favorites/providers/favorite_refresh_provider.dart';
-import '../models/word_example_favorite.dart';
-import '../models/word_favorite.dart';
-import '../queries/favorite_query.dart';
-import '../queries/favorite_query_provider.dart';
-import '../repositories/word_example_favorite_repository.dart';
-import '../repositories/word_example_favorite_repository_provider.dart';
-import '../repositories/word_favorite_repository.dart';
-import '../repositories/word_favorite_repository_provider.dart';
-import 'active_user_command.dart';
-import 'active_user_command_provider.dart';
-import 'sync_remote_command.dart';
+import 'favorite_remote_command.dart';
+import 'favorite_remote_command_provider.dart';
 
 class FavoriteCommand {
   FavoriteCommand(this.ref);
 
   final Ref ref;
 
-  ActiveUserCommand get _activeUserCommand =>
-      ref.read(activeUserCommandProvider);
-  FavoriteQuery get _favoriteQuery => ref.read(favoriteQueryProvider);
-  WordFavoriteRepository get _wordFavoriteRepo =>
-      ref.read(wordFavoriteRepositoryProvider);
-  WordExampleFavoriteRepository get _wordExampleFavoriteRepo =>
-      ref.read(wordExampleFavoriteRepositoryProvider);
-  SyncRemoteCommand get _syncRemote => ref.read(syncRemoteCommandProvider);
+  FavoriteRemoteCommand get _favoriteRemote =>
+      ref.read(favoriteRemoteCommandProvider);
   FavoriteRefreshNotifier get _refreshNotifier =>
       ref.read(favoriteRefreshProvider.notifier);
 
@@ -36,115 +21,106 @@ class FavoriteCommand {
     required String wordId,
     String? bookId,
   }) async {
-    final user = await _activeUserCommand.ensureActiveUser();
-    final existing = await _wordFavoriteRepo.getFavorite(user.id, wordId);
-    if (existing != null) {
-      await removeWordFavorite(wordId: wordId);
-      return false;
-    }
-
-    await addWordFavorite(wordId: wordId, bookId: bookId);
-    return true;
+    final result = await _favoriteRemote.toggleWordFavorite(wordId: wordId);
+    _refreshNotifier.bump();
+    logger.info(
+      '[Favorite] ${result.favorited ? '收藏' : '取消收藏'}单词: wordId=$wordId',
+    );
+    return result.favorited;
   }
 
   Future<void> addWordFavorite({required String wordId, String? bookId}) async {
-    final user = await _activeUserCommand.ensureActiveUser();
-    final resolvedBookId =
-        bookId ?? await _favoriteQuery.resolveBookIdForWord(wordId);
-    if (resolvedBookId == null || resolvedBookId.isEmpty) {
-      throw StateError('未找到单词所属词书: $wordId');
-    }
-
-    final existing = await _wordFavoriteRepo.getFavorite(user.id, wordId);
-    final now = DateTime.now();
-    final favorite = WordFavorite(
-      id: existing?.id ?? 0,
-      userId: user.id,
-      wordId: wordId,
-      bookId: resolvedBookId,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    );
-
-    await _wordFavoriteRepo.saveFavorite(favorite);
-    _refreshNotifier.bump();
-    _syncRemote.scheduleCheckpoint();
-
-    logger.info('[Favorite] 收藏单词: wordId=$wordId, bookId=$resolvedBookId');
+    await _ensureWordFavoriteState(wordId: wordId, favorited: true);
   }
 
   Future<void> removeWordFavorite({required String wordId}) async {
-    final user = await _activeUserCommand.ensureActiveUser();
-    final existing = await _wordFavoriteRepo.getFavorite(user.id, wordId);
-    if (existing == null) {
-      return;
-    }
-
-    await _wordFavoriteRepo.deleteFavorite(user.id, wordId);
-    _refreshNotifier.bump();
-    _syncRemote.scheduleCheckpoint();
-
-    logger.info('[Favorite] 取消收藏单词: wordId=$wordId');
+    await _ensureWordFavoriteState(wordId: wordId, favorited: false);
   }
 
   Future<bool> toggleWordExampleFavorite({
     required String exampleId,
     required String wordId,
   }) async {
-    final user = await _activeUserCommand.ensureActiveUser();
-    final existing = await _wordExampleFavoriteRepo.getFavorite(
-      user.id,
-      exampleId,
+    final result = await _favoriteRemote.toggleWordExampleFavorite(
+      exampleId: exampleId,
+      wordId: wordId,
     );
-    if (existing != null) {
-      await removeWordExampleFavorite(exampleId: exampleId);
-      return false;
-    }
-
-    await addWordExampleFavorite(exampleId: exampleId, wordId: wordId);
-    return true;
+    _refreshNotifier.bump();
+    logger.info(
+      '[Favorite] ${result.favorited ? '收藏' : '取消收藏'}例句: exampleId=$exampleId, wordId=$wordId',
+    );
+    return result.favorited;
   }
 
   Future<void> addWordExampleFavorite({
     required String exampleId,
     required String wordId,
   }) async {
-    final user = await _activeUserCommand.ensureActiveUser();
-    final existing = await _wordExampleFavoriteRepo.getFavorite(
-      user.id,
-      exampleId,
-    );
-    final now = DateTime.now();
-    final favorite = WordExampleFavorite(
-      id: existing?.id ?? 0,
-      userId: user.id,
+    await _ensureWordExampleFavoriteState(
       exampleId: exampleId,
       wordId: wordId,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
+      favorited: true,
     );
-
-    await _wordExampleFavoriteRepo.saveFavorite(favorite);
-    _refreshNotifier.bump();
-    _syncRemote.scheduleCheckpoint();
-
-    logger.info('[Favorite] 收藏例句: exampleId=$exampleId, wordId=$wordId');
   }
 
-  Future<void> removeWordExampleFavorite({required String exampleId}) async {
-    final user = await _activeUserCommand.ensureActiveUser();
-    final existing = await _wordExampleFavoriteRepo.getFavorite(
-      user.id,
-      exampleId,
+  Future<void> removeWordExampleFavorite({
+    required String exampleId,
+    required String wordId,
+  }) async {
+    await _ensureWordExampleFavoriteState(
+      exampleId: exampleId,
+      wordId: wordId,
+      favorited: false,
     );
-    if (existing == null) {
-      return;
+  }
+
+  Future<void> _ensureWordFavoriteState({
+    required String wordId,
+    required bool favorited,
+  }) async {
+    final result = await _favoriteRemote.toggleWordFavorite(wordId: wordId);
+    FavoriteToggleResult finalResult = result;
+    if (result.favorited != favorited) {
+      finalResult = await _favoriteRemote.toggleWordFavorite(wordId: wordId);
     }
 
-    await _wordExampleFavoriteRepo.deleteFavorite(user.id, exampleId);
-    _refreshNotifier.bump();
-    _syncRemote.scheduleCheckpoint();
+    if (finalResult.favorited != favorited) {
+      throw StateError('单词收藏状态更新失败: wordId=$wordId');
+    }
 
-    logger.info('[Favorite] 取消收藏例句: exampleId=$exampleId');
+    _refreshNotifier.bump();
+    logger.info('[Favorite] ${favorited ? '收藏' : '取消收藏'}单词: wordId=$wordId');
+  }
+
+  Future<void> _ensureWordExampleFavoriteState({
+    required String exampleId,
+    String? wordId,
+    required bool favorited,
+  }) async {
+    final resolvedWordId = wordId;
+    if (resolvedWordId == null || resolvedWordId.isEmpty) {
+      throw StateError('缺少例句所属单词: exampleId=$exampleId');
+    }
+
+    final result = await _favoriteRemote.toggleWordExampleFavorite(
+      exampleId: exampleId,
+      wordId: resolvedWordId,
+    );
+    FavoriteToggleResult finalResult = result;
+    if (result.favorited != favorited) {
+      finalResult = await _favoriteRemote.toggleWordExampleFavorite(
+        exampleId: exampleId,
+        wordId: resolvedWordId,
+      );
+    }
+
+    if (finalResult.favorited != favorited) {
+      throw StateError('例句收藏状态更新失败: exampleId=$exampleId');
+    }
+
+    _refreshNotifier.bump();
+    logger.info(
+      '[Favorite] ${favorited ? '收藏' : '取消收藏'}例句: exampleId=$exampleId, wordId=$resolvedWordId',
+    );
   }
 }

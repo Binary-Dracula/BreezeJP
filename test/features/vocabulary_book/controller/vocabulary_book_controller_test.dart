@@ -2,16 +2,14 @@ import 'package:breeze_jp/core/constants/learning_status.dart';
 import 'package:breeze_jp/core/providers/preferences_provider.dart';
 import 'package:breeze_jp/data/commands/active_user_command.dart';
 import 'package:breeze_jp/data/commands/active_user_command_provider.dart';
-import 'package:breeze_jp/data/commands/sync_remote_command.dart';
+import 'package:breeze_jp/data/commands/word_remote_command.dart';
+import 'package:breeze_jp/data/commands/word_remote_command_provider.dart';
 import 'package:breeze_jp/data/models/read/vocabulary_book_item.dart';
-import 'package:breeze_jp/data/models/study_word.dart';
 import 'package:breeze_jp/data/models/user.dart';
 import 'package:breeze_jp/data/queries/active_user_query.dart';
 import 'package:breeze_jp/data/queries/active_user_query_provider.dart';
 import 'package:breeze_jp/data/queries/study_remote_query.dart';
 import 'package:breeze_jp/data/queries/study_remote_query_provider.dart';
-import 'package:breeze_jp/data/repositories/study_word_repository.dart';
-import 'package:breeze_jp/data/repositories/study_word_repository_provider.dart';
 import 'package:breeze_jp/features/vocabulary_book/controller/vocabulary_book_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,9 +22,7 @@ class _MockActiveUserQuery extends Mock implements ActiveUserQuery {}
 
 class _MockStudyRemoteQuery extends Mock implements StudyRemoteQuery {}
 
-class _MockStudyWordRepository extends Mock implements StudyWordRepository {}
-
-class _MockSyncRemoteCommand extends Mock implements SyncRemoteCommand {}
+class _MockWordRemoteCommand extends Mock implements WordRemoteCommand {}
 
 void main() {
   late SharedPreferences prefs;
@@ -34,23 +30,9 @@ void main() {
   late _MockActiveUserCommand activeUserCommand;
   late _MockActiveUserQuery activeUserQuery;
   late _MockStudyRemoteQuery remoteQuery;
-  late _MockStudyWordRepository studyWordRepository;
-  late _MockSyncRemoteCommand syncRemoteCommand;
+  late _MockWordRemoteCommand wordRemoteCommand;
 
   final user = User(id: 1, username: 'u', passwordHash: 'p');
-
-  final existingStudyWord = StudyWord(
-    id: 7,
-    userId: 1,
-    wordId: 'word-1',
-    bookId: 'book-1',
-    userState: LearningStatus.mastered,
-    nextReviewAt: null,
-    lastReviewedAt: null,
-    firstLearnedAt: DateTime.utc(2026, 4, 20),
-    createdAt: DateTime.utc(2026, 4, 20),
-    updatedAt: DateTime.utc(2026, 4, 20),
-  );
 
   final masteredItem = VocabularyBookItem(
     studyWordId: 7,
@@ -66,14 +48,10 @@ void main() {
   setUpAll(() {
     registerFallbackValue(LearningStatus.learning);
     registerFallbackValue(
-      StudyWord(
-        id: 0,
-        userId: 0,
+      const WordStateUpsert(
         wordId: 'fallback',
         bookId: 'fallback',
-        userState: LearningStatus.learning,
-        createdAt: DateTime.utc(2026, 4, 20),
-        updatedAt: DateTime.utc(2026, 4, 20),
+        userState: 1,
       ),
     );
   });
@@ -88,8 +66,7 @@ void main() {
     activeUserCommand = _MockActiveUserCommand();
     activeUserQuery = _MockActiveUserQuery();
     remoteQuery = _MockStudyRemoteQuery();
-    studyWordRepository = _MockStudyWordRepository();
-    syncRemoteCommand = _MockSyncRemoteCommand();
+    wordRemoteCommand = _MockWordRemoteCommand();
 
     when(
       () => activeUserCommand.ensureActiveUser(),
@@ -111,13 +88,7 @@ void main() {
       ),
     );
 
-    when(
-      () => studyWordRepository.getStudyWord(1, 'word-1', 'book-1'),
-    ).thenAnswer((_) async => existingStudyWord);
-    when(
-      () => studyWordRepository.updateStudyWord(any()),
-    ).thenAnswer((_) async {});
-    when(() => syncRemoteCommand.scheduleCheckpoint()).thenReturn(null);
+    when(() => wordRemoteCommand.saveState(any())).thenAnswer((_) async {});
 
     container = ProviderContainer(
       overrides: [
@@ -125,8 +96,7 @@ void main() {
         activeUserCommandProvider.overrideWith((ref) => activeUserCommand),
         activeUserQueryProvider.overrideWith((ref) => activeUserQuery),
         studyRemoteQueryProvider.overrideWith((ref) => remoteQuery),
-        studyWordRepositoryProvider.overrideWith((ref) => studyWordRepository),
-        syncRemoteCommandProvider.overrideWith((ref) => syncRemoteCommand),
+        wordRemoteCommandProvider.overrideWith((ref) => wordRemoteCommand),
       ],
     );
   });
@@ -145,17 +115,16 @@ void main() {
 
       await notifier.toggleStatus(masteredItem);
 
-      final captured =
+      final remotePayload =
           verify(
-                () => studyWordRepository.updateStudyWord(captureAny()),
+                () => wordRemoteCommand.saveState(captureAny()),
               ).captured.single
-              as StudyWord;
-      expect(captured.userState, LearningStatus.learning);
-      expect(captured.wordId, 'word-1');
-      expect(captured.bookId, 'book-1');
-      expect(captured.nextReviewAt, isNotNull);
-
-      verify(() => syncRemoteCommand.scheduleCheckpoint()).called(1);
+              as WordStateUpsert;
+      expect(remotePayload.wordId, 'word-1');
+      expect(remotePayload.bookId, 'book-1');
+      expect(remotePayload.userState, LearningStatus.learning.value);
+      expect(remotePayload.nextReviewAt, isNotNull);
+      expect(remotePayload.lastReviewedAt, isNotNull);
     },
   );
 }

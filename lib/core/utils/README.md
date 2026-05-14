@@ -17,23 +17,23 @@
 
 ### 日志级别
 
-| 级别 | 方法 | 表情 | 用途 |
-|------|------|------|------|
-| Trace | `logger.trace()` | 🔍 | 追踪信息（最详细） |
-| Debug | `logger.debug()` | 🐛 | 调试信息 |
-| Info | `logger.info()` | 💡 | 一般信息 |
-| Warning | `logger.warning()` | ⚠️ | 警告信息 |
-| Error | `logger.error()` | ❌ | 错误信息 |
-| Fatal | `logger.fatal()` | 💀 | 致命错误 |
+| 级别    | 方法               | 表情 | 用途               |
+| ------- | ------------------ | ---- | ------------------ |
+| Trace   | `logger.trace()`   | 🔍   | 追踪信息（最详细） |
+| Debug   | `logger.debug()`   | 🐛   | 调试信息           |
+| Info    | `logger.info()`    | 💡   | 一般信息           |
+| Warning | `logger.warning()` | ⚠️   | 警告信息           |
+| Error   | `logger.error()`   | ❌   | 错误信息           |
+| Fatal   | `logger.fatal()`   | 💀   | 致命错误           |
 
 ### 日志分类
 
-| 分类 | 前缀 | 用途 | 使用场景 |
-|------|------|------|----------|
-| LEARN | `[LEARN]` | 学习流程 | 会话开始/结束、单词加载、答案提交 |
-| DB | `[DB]` | 数据库操作 | CRUD 操作、查询、事务 |
-| AUDIO | `[AUDIO]` | 音频状态 | 播放、暂停、停止、错误 |
-| ALGO | `[ALGO]` | 算法计算 | SRS 输入/输出、参数更新 |
+| 分类  | 前缀      | 用途       | 使用场景                          |
+| ----- | --------- | ---------- | --------------------------------- |
+| LEARN | `[LEARN]` | 学习流程   | 会话开始/结束、单词加载、答案提交 |
+| DB    | `[DB]`    | 数据库操作 | CRUD 操作、查询、事务             |
+| AUDIO | `[AUDIO]` | 音频状态   | 播放、暂停、停止、错误            |
+| ALGO  | `[ALGO]`  | 算法计算   | SRS 输入/输出、参数更新           |
 
 ---
 
@@ -124,43 +124,43 @@ logger.stateChange(
 ```dart
 // 记录数据库查询
 logger.dbQuery(
-  table: 'study_words',
+  table: 'user_word_states',
   where: 'user_id=1 AND user_state=1',
   resultCount: 5,
 );
-// 输出: [DB] query: table=study_words, where="user_id=1 AND user_state=1", results=5
+// 输出: [DB] query: table=user_word_states, where="user_id=1 AND user_state=1", results=5
 
 // 记录数据库插入
 logger.dbInsert(
-  table: 'study_words',
+  table: 'user_word_states',
   id: 456,
   keyFields: {'wordId': 123, 'userId': 1},
 );
-// 输出: [DB] insert: table=study_words, id=456, wordId=123, userId=1
+// 输出: [DB] insert: table=user_word_states, id=456, wordId=123, userId=1
 
 // 记录数据库更新
 logger.dbUpdate(
-  table: 'study_words',
+  table: 'user_word_states',
   affectedRows: 1,
   updatedFields: ['interval', 'ease_factor', 'next_review_at'],
 );
-// 输出: [DB] update: table=study_words, affected=1, fields=[interval, ease_factor, next_review_at]
+// 输出: [DB] update: table=user_word_states, affected=1, fields=[interval, ease_factor, next_review_at]
 
 // 记录数据库删除
 logger.dbDelete(
-  table: 'study_logs',
-  deletedRows: 10,
+  table: 'learning_sessions',
+  deletedRows: 1,
 );
-// 输出: [DB] delete: table=study_logs, deleted=10
+// 输出: [DB] delete: table=learning_sessions, deleted=1
 
 // 记录数据库错误
 logger.dbError(
   operation: 'INSERT',
-  table: 'study_words',
+  table: 'user_word_states',
   dbError: 'UNIQUE constraint failed',
   stackTrace: stackTrace,
 );
-// 输出: [DB] error: op=INSERT, table=study_words, error="UNIQUE constraint failed"
+// 输出: [DB] error: op=INSERT, table=user_word_states, error="UNIQUE constraint failed"
 ```
 
 ### 音频状态日志 [AUDIO]
@@ -170,22 +170,19 @@ logger.dbError(
 ```dart
 // 记录音频播放开始
 logger.audioPlayStart(
-  sourceType: 'word',
   source: 'https://example.com/audio/word_123.mp3',
-  wordId: 123,
 );
-// 输出: [AUDIO] play_start: type=word, source="https://...", wordId=123
+// 输出: [AUDIO] play_start: https://example.com/audio/word_123.mp3
 
 // 记录音频播放完成
 logger.audioPlayComplete(
   source: 'https://example.com/audio/word_123.mp3',
-  durationMs: 1200,
 );
-// 输出: [AUDIO] play_complete: source="https://...", duration=1s 200ms
+// 输出: [AUDIO] play_complete: source="https://example.com/audio/word_123.mp3"
 
 // 记录音频播放失败
 logger.audioPlayError(
-  source: 'https://example.com/audio/word_123.mp3',
+  audio: 'https://example.com/audio/word_123.mp3',
   errorType: 'NetworkError',
   errorMessage: 'Connection timeout',
 );
@@ -193,10 +190,9 @@ logger.audioPlayError(
 
 // 记录音频状态变化
 logger.audioStateChange(
-  previousState: 'playing',
-  newState: 'stopped',
+  newState: 'playing',
 );
-// 输出: [AUDIO] state_change: playing -> stopped
+// 输出: [AUDIO] state_change: playing
 ```
 
 ### 算法状态日志 [ALGO]
@@ -303,14 +299,14 @@ final listStr = LogFormatter.formatListSummary([1, 2, 3, 4, 5], maxItems: 3);
 
 ### 格式化精度规范
 
-| 数据类型 | 精度 | 示例 |
-|----------|------|------|
-| interval (间隔) | 2 位小数 | `2.50` |
-| easeFactor (难度因子) | 3 位小数 | `2.500` |
-| stability (稳定性) | 3 位小数 | `4.200` |
-| difficulty (难度) | 3 位小数 | `5.300` |
-| 时间戳 | ISO 8601 | `2024-11-27T10:30:00+08:00` |
-| 时长 | 人类可读 | `5m 30s` |
+| 数据类型              | 精度     | 示例                        |
+| --------------------- | -------- | --------------------------- |
+| interval (间隔)       | 2 位小数 | `2.50`                      |
+| easeFactor (难度因子) | 3 位小数 | `2.500`                     |
+| stability (稳定性)    | 3 位小数 | `4.200`                     |
+| difficulty (难度)     | 3 位小数 | `5.300`                     |
+| 时间戳                | ISO 8601 | `2024-11-27T10:30:00+08:00` |
+| 时长                  | 人类可读 | `5m 30s`                    |
 
 ---
 
@@ -323,24 +319,24 @@ class LearnController extends Notifier<LearnState> {
   Future<void> loadWords() async {
     // 记录会话开始
     logger.learnSessionStart(userId: 1);
-    
+
     try {
       final reviewWords = await _studyWordRepository.getReviewWords(userId: 1);
       final newWords = await _wordRepository.getNewWords(limit: 10);
-      
+
       // 记录单词加载
       logger.learnWordsLoaded(
         reviewCount: reviewWords.length,
         newCount: newWords.length,
         totalCount: reviewWords.length + newWords.length,
       );
-      
+
       state = state.copyWith(words: [...reviewWords, ...newWords]);
     } catch (e, stackTrace) {
       logger.error('加载单词失败', e, stackTrace);
     }
   }
-  
+
   void submitAnswer(int wordId, Rating rating) {
     // 记录答案提交
     logger.learnAnswerSubmit(
@@ -360,46 +356,46 @@ class StudyWordRepository {
   Future<List<StudyWord>> getReviewWords({required int userId}) async {
     final db = await AppDatabase.instance.database;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    
+
     final results = await db.query(
-      'study_words',
+      'user_word_states',
       where: 'user_id = ? AND user_state = ? AND next_review_at <= ?',
       whereArgs: [userId, 1, now],
     );
-    
+
     // 记录查询
     logger.dbQuery(
-      table: 'study_words',
+      table: 'user_word_states',
       where: 'user_id=$userId AND user_state=1 AND next_review_at<=$now',
       resultCount: results.length,
     );
-    
+
     return results.map((map) => StudyWord.fromMap(map)).toList();
   }
-  
+
   Future<int> updateStudyWord(StudyWord word) async {
     try {
       final db = await AppDatabase.instance.database;
       final affected = await db.update(
-        'study_words',
+        'user_word_states',
         word.toMap(),
         where: 'id = ?',
         whereArgs: [word.id],
       );
-      
+
       // 记录更新
       logger.dbUpdate(
-        table: 'study_words',
+        table: 'user_word_states',
         affectedRows: affected,
         updatedFields: ['interval', 'ease_factor', 'next_review_at'],
       );
-      
+
       return affected;
     } catch (e, stackTrace) {
       // 记录错误
       logger.dbError(
         operation: 'UPDATE',
-        table: 'study_words',
+        table: 'user_word_states',
         dbError: e,
         stackTrace: stackTrace,
       );
@@ -413,32 +409,27 @@ class StudyWordRepository {
 
 ```dart
 class AudioService {
-  Future<void> playWordAudio(String url, {int? wordId}) async {
+  Future<void> playAudio(String source) async {
     // 记录播放开始
     logger.audioPlayStart(
-      sourceType: 'word',
-      source: url,
-      wordId: wordId,
+      source: source,
     );
-    
+
     try {
-      final stopwatch = Stopwatch()..start();
-      await _player.setUrl(url);
+      await _player.setUrl(source);
       await _player.play();
-      stopwatch.stop();
-      
-      // 记录播放完成
+
       logger.audioPlayComplete(
-        source: url,
-        durationMs: stopwatch.elapsedMilliseconds,
+        source: source,
       );
     } catch (e) {
       // 记录播放错误
       logger.audioPlayError(
-        source: url,
+        audio: source,
         errorType: e.runtimeType.toString(),
         errorMessage: e.toString(),
       );
+      rethrow;
     }
   }
 }
@@ -450,14 +441,14 @@ class AudioService {
 
 ```
 💡 INFO | [LEARN] session_start: userId=1, timestamp=2024-11-27T10:30:00+08:00
-🐛 DEBUG | [DB] query: table=study_words, where="user_id=1 AND user_state=1", results=5
+🐛 DEBUG | [DB] query: table=user_word_states, where="user_id=1 AND user_state=1", results=5
 💡 INFO | [LEARN] words_loaded: review=5, new=10, total=15
 💡 INFO | [LEARN] word_view: wordId=123, position=1/15
 💡 INFO | [AUDIO] play_start: type=word, source="https://...", wordId=123
 💡 INFO | [AUDIO] play_complete: source="https://...", duration=1s 200ms
 💡 INFO | [ALGO] calculate_start: type=FSRS, interval=1.00, ef=2.500, stability=0.000, difficulty=0.000, rating=good
 💡 INFO | [ALGO] calculate_complete: type=FSRS, interval=3.50, ef=2.600, stability=4.200, difficulty=5.300, nextReview=2024-11-30
-🐛 DEBUG | [DB] update: table=study_words, affected=1, fields=[interval, ease_factor, next_review_at]
+🐛 DEBUG | [DB] update: table=user_word_states, affected=1, fields=[interval, ease_factor, next_review_at]
 💡 INFO | [LEARN] answer_submit: wordId=123, rating=good, interval=3.50, ef=2.600
 💡 INFO | [LEARN] session_end: duration=5m 30s, learned=10, reviewed=5
 ```
@@ -481,6 +472,7 @@ class AudioService {
    - SRS 算法计算结果
 
 3. **包含上下文信息**
+
    ```dart
    logger.learnAnswerSubmit(
      wordId: wordId,
@@ -491,10 +483,11 @@ class AudioService {
    ```
 
 4. **错误时记录堆栈**
+
    ```dart
    logger.dbError(
      operation: 'UPDATE',
-     table: 'study_words',
+     table: 'user_word_states',
      dbError: error,
      stackTrace: stackTrace,
    );
@@ -509,12 +502,13 @@ class AudioService {
 ### ❌ 避免做法
 
 1. **不要在循环中记录日志**
+
    ```dart
    // ❌ 错误
    for (final word in words) {
      logger.debug('处理单词: ${word.id}');
    }
-   
+
    // ✅ 正确
    logger.debug('开始处理 ${words.length} 个单词');
    ```
@@ -525,21 +519,23 @@ class AudioService {
    - 个人隐私数据
 
 3. **不要记录过大的数据**
+
    ```dart
    // ❌ 错误
    logger.debug('查询结果: $results');  // results 可能很大
-   
+
    // ✅ 正确
    logger.dbQuery(table: 'words', resultCount: results.length);
    ```
 
 4. **不要混用分类**
+
    ```dart
    // ❌ 错误 - 数据库操作使用了 learn 方法
    logger.learnWordsLoaded(...);  // 在 Repository 中
-   
+
    // ✅ 正确 - 使用对应的分类方法
-   logger.dbQuery(table: 'study_words', resultCount: count);
+   logger.dbQuery(table: 'user_word_states', resultCount: count);
    ```
 
 ---

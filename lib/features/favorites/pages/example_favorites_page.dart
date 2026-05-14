@@ -260,6 +260,7 @@ class _ExampleFavoriteCard extends StatelessWidget {
                   WordExampleFavoriteButton(
                     exampleId: item.exampleId,
                     wordId: item.wordId,
+                    initialIsFavorited: true,
                   ),
                 ],
               ),

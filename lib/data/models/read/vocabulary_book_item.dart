@@ -1,7 +1,7 @@
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/constants/learning_status.dart';
 
-/// 单词本列表项（只读，2.0 — JOIN study_words + words）
+/// 单词本列表项（只读，来自远端单词本 API）
 class VocabularyBookItem {
   final int studyWordId;
   final String wordId;

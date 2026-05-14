@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_endpoints.dart';
 import '../../core/network/dio_client.dart';
-import '../../features/review/shared/review_session_codec.dart';
+import '../../features/kana/review/state/kana_review_state.dart';
 import '../../features/word_review/state/word_review_state.dart';
 
 final reviewSessionRemoteCommandProvider = Provider<ReviewSessionRemoteCommand>(
@@ -14,31 +14,35 @@ final reviewSessionRemoteCommandProvider = Provider<ReviewSessionRemoteCommand>(
 class ReviewSessionRemoteCommand {
   final _dio = DioClient.instance.dio;
 
-  Future<void> saveWordSession({
+  Future<void> completeWordSession({
     required String sessionId,
-    required WordReviewState state,
+    required List<WordReviewAnsweredResult> results,
   }) async {
     await _dio.post<void>(
-      ApiEndpoints.wordReviewSession,
-      data: encodeWordReviewSessionUpdate(
-        sessionId: sessionId,
-        state: state,
-        isFinished: false,
-      ),
+      ApiEndpoints.replaceParams(ApiEndpoints.reviewSessionComplete, {
+        'id': sessionId,
+      }),
+      data: {'results': results.map((result) => result.toJson()).toList()},
     );
   }
 
-  Future<void> completeWordSession({
+  Future<void> completeKanaSession({
     required String sessionId,
-    required WordReviewState state,
+    required List<KanaReviewAnsweredResult> results,
   }) async {
     await _dio.post<void>(
-      ApiEndpoints.wordReviewSession,
-      data: encodeWordReviewSessionUpdate(
-        sessionId: sessionId,
-        state: state,
-        isFinished: true,
-      ),
+      ApiEndpoints.replaceParams(ApiEndpoints.reviewSessionComplete, {
+        'id': sessionId,
+      }),
+      data: {'results': results.map((result) => result.toJson()).toList()},
+    );
+  }
+
+  Future<void> abandonReviewSession({required String sessionId}) async {
+    await _dio.post<void>(
+      ApiEndpoints.replaceParams(ApiEndpoints.reviewSessionAbandon, {
+        'id': sessionId,
+      }),
     );
   }
 }

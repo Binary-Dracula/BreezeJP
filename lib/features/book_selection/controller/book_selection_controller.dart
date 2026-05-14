@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../data/commands/book_sync_command_provider.dart';
-import '../../../data/queries/book_query_provider.dart';
+import '../../../data/queries/vocab_remote_query_provider.dart';
 import '../state/book_selection_state.dart';
 
 final bookSelectionControllerProvider =
@@ -20,32 +19,9 @@ class BookSelectionController extends Notifier<BookSelectionState> {
     state = state.copyWith(isLoading: true, isSyncing: false, error: null);
 
     try {
-      final localBooks = await ref.read(bookQueryProvider).getAvailableBooks();
-      if (localBooks.isNotEmpty) {
-        state = state.copyWith(
-          books: localBooks,
-          isLoading: false,
-          isSyncing: false,
-          error: null,
-        );
-        _silentRefreshBooks();
-        return;
-      }
-    } catch (e) {
-      state = state.copyWith(isLoading: false, isSyncing: false, error: '$e');
-      return;
-    }
-
-    await refreshBooks();
-  }
-
-  Future<void> refreshBooks() async {
-    try {
-      state = state.copyWith(isLoading: true, isSyncing: true, error: null);
-      await ref.read(bookSyncCommandProvider).syncBooks();
-      final books = await ref.read(bookQueryProvider).getAvailableBooks();
+      final response = await ref.read(vocabRemoteQueryProvider).fetchBooks();
       state = state.copyWith(
-        books: books,
+        books: response.books,
         isLoading: false,
         isSyncing: false,
         error: null,
@@ -55,15 +31,18 @@ class BookSelectionController extends Notifier<BookSelectionState> {
     }
   }
 
-  void _silentRefreshBooks() {
-    Future<void>(() async {
-      try {
-        await ref.read(bookSyncCommandProvider).syncBooks();
-        final books = await ref.read(bookQueryProvider).getAvailableBooks();
-        state = state.copyWith(books: books, isSyncing: false);
-      } catch (_) {
-        // Keep current UI when background refresh fails.
-      }
-    });
+  Future<void> refreshBooks() async {
+    try {
+      state = state.copyWith(isLoading: true, isSyncing: true, error: null);
+      final books = await ref.read(vocabRemoteQueryProvider).fetchBooks();
+      state = state.copyWith(
+        books: books.books,
+        isLoading: false,
+        isSyncing: false,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, isSyncing: false, error: '$e');
+    }
   }
 }

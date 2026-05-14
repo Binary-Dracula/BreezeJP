@@ -1,7 +1,7 @@
 import { AuthPayload } from '../middleware/auth';
 import { corsHeaders } from '../middleware/cors';
-import { Env, ReviewSessionEnvelope, ReviewSessionPhase, ReviewSessionStatus, ReviewSessionUpdateRequest, VocabExample, VocabFullDetail, VocabWord } from '../types';
-import { errorResponse, jsonResponse, supabaseFetch } from '../utils/supabase';
+import { Env, ReviewSessionEnvelope, ReviewSessionStatus, VocabExample, VocabFullDetail, VocabWord } from '../types';
+import { errorResponse, jsonResponse, supabaseFetch, supabaseRpc } from '../utils/supabase';
 import { fetchFullDetailsBatch } from './vocab';
 
 type UserWordStateRow = {
@@ -18,6 +18,39 @@ type UserWordStateRow = {
   streak: number;
   total_reviews: number;
   fail_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type UserKanaStateRow = {
+  kana_id: number;
+  learning_status: number;
+  next_review_at: number | null;
+  last_reviewed_at: number | null;
+  interval: number | null;
+  ease_factor: number | null;
+  stability: number | null;
+  difficulty: number | null;
+  streak: number;
+  total_reviews: number;
+  fail_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type KanaLetterRow = {
+  id: number;
+  kana_char: string;
+  script_kind: 'hiragana' | 'katakana';
+  romaji: string;
+  consonant?: string | null;
+  vowel: string;
+  row_group?: string | null;
+  kana_category?: string | null;
+  display_order?: number | null;
+  pair_group_id?: number | null;
+  audio_id?: number | null;
+  mnemonic?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -79,8 +112,82 @@ type WordReviewQuestionType =
   | 'meaning_to_spelling'
   | 'cloze_test';
 
-// Worker 当前只暴露 word review session；kana review 已迁回本地状态流。
-type ReviewSessionKind = 'word';
+type KanaReviewSessionItem = {
+  kana_letter: KanaLetterRow;
+  learning_state: UserKanaStateRow;
+  audio_filename: string | null;
+  question_type: KanaReviewQuestionType;
+  options: string[];
+  counterpart_letter: KanaLetterRow | null;
+};
+
+type KanaReviewQuestionType =
+  | 'hiragana_to_romaji'
+  | 'romaji_to_hiragana'
+  | 'katakana_to_romaji'
+  | 'romaji_to_katakana'
+  | 'hiragana_to_katakana'
+  | 'katakana_to_hiragana';
+
+type ReviewRatingValue = 'again' | 'hard' | 'good' | 'easy';
+
+type ReviewSessionCreateRequest = {
+  kind?: string;
+  limit?: number;
+};
+
+type WordReviewResultPayload = {
+  word_id?: string;
+  book_id?: string;
+  rating?: ReviewRatingValue;
+};
+
+type KanaReviewResultPayload = {
+  kana_id?: number;
+  rating?: ReviewRatingValue;
+};
+
+type ReviewSessionCompleteRequest = {
+  results?: Array<WordReviewResultPayload | KanaReviewResultPayload>;
+};
+
+type WordStateRequestPayload = {
+  word_id?: string;
+  book_id?: string;
+  user_state?: number;
+  next_review_at?: number | null;
+  last_reviewed_at?: number | null;
+  first_learned_at?: number | null;
+  interval?: number | null;
+  ease_factor?: number | null;
+  stability?: number | null;
+  difficulty?: number | null;
+  streak?: number;
+  total_reviews?: number;
+  fail_count?: number;
+  version?: number;
+};
+
+type WordStateUpsertPayload = {
+  word_id: string;
+  book_id: string;
+  user_state: number;
+  next_review_at: number | null;
+  last_reviewed_at: number | null;
+  first_learned_at: number | null;
+  interval: number | null;
+  ease_factor: number | null;
+  stability: number;
+  difficulty: number;
+  streak: number;
+  total_reviews: number;
+  fail_count: number;
+  created_at: number;
+  updated_at: number;
+  version: number;
+};
+
+type ReviewSessionKind = 'word' | 'kana';
 
 type ReviewSessionRow = {
   id: string;
@@ -88,8 +195,6 @@ type ReviewSessionRow = {
   session_kind: ReviewSessionKind;
   status: ReviewSessionStatus;
   current_index: number;
-  current_phase: ReviewSessionPhase;
-  has_mistake_on_current: boolean;
   items: unknown[];
   created_at: string;
   updated_at: string;
@@ -98,6 +203,7 @@ type ReviewSessionRow = {
 
 const MAX_SESSION_LIMIT = 50;
 const MAX_BOOK_LIMIT = 100;
+const REVIEW_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const kanaOptionPool = [
   'あ', 'い', 'う', 'え', 'お', 'か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご',
   'さ', 'し', 'す', 'せ', 'そ', 'ざ', 'じ', 'ず', 'ぜ', 'ぞ', 'た', 'ち', 'つ', 'て', 'と',
@@ -142,28 +248,220 @@ function pickKanaSpelling(detail: VocabFullDetail): string | null {
   return null;
 }
 
-export async function handleWordReviewSession(
+export async function handleCreateReviewSession(
   request: Request,
   env: Env,
   auth: AuthPayload,
 ): Promise<Response> {
-  const activeSession = await getActiveReviewSession(env, auth.sub, 'word');
-  if (activeSession) {
+  let body: ReviewSessionCreateRequest;
+  try {
+    body = await request.json<ReviewSessionCreateRequest>();
+  } catch {
+    return errorResponse(400, 'BAD_REQUEST', 'Invalid review session payload');
+  }
+
+  const limit = clampSessionLimit(body.limit);
+  if (body.kind === 'kana') {
+    return createOrResumeKanaReviewSession(request, env, auth, limit);
+  }
+  if (body.kind !== 'word') {
+    return errorResponse(400, 'BAD_REQUEST', 'Invalid review session kind');
+  }
+  return createOrResumeWordReviewSession(request, env, auth, limit);
+}
+
+export async function handleCompleteReviewSession(
+  request: Request,
+  env: Env,
+  auth: AuthPayload,
+  sessionId: string,
+): Promise<Response> {
+  let body: ReviewSessionCompleteRequest;
+  try {
+    body = await request.json<ReviewSessionCompleteRequest>();
+  } catch {
+    return errorResponse(400, 'BAD_REQUEST', 'Invalid review session payload');
+  }
+
+  const existing = await getReviewSessionById(env, auth.sub, sessionId);
+  if (!existing) {
+    return errorResponse(404, 'SESSION_NOT_FOUND', 'Review session not found');
+  }
+
+  let appliedCount = 0;
+  let rpcResponse: Response;
+  try {
+    if (existing.session_kind === 'kana') {
+      const kanaStates = buildKanaReviewStateUpserts(existing.items, body.results ?? []);
+      appliedCount = kanaStates.length;
+      rpcResponse = await supabaseRpc(
+        env,
+        'complete_kana_review_session',
+        {
+          p_user_id: auth.sub,
+          p_session_id: sessionId,
+          p_kana_states: kanaStates,
+        },
+      );
+    } else {
+      const wordStates = buildWordReviewStateUpserts(existing.items, body.results ?? []);
+      appliedCount = wordStates.length;
+      rpcResponse = await supabaseRpc(
+        env,
+        'complete_word_review_session',
+        {
+          p_user_id: auth.sub,
+          p_session_id: sessionId,
+          p_word_states: wordStates,
+        },
+      );
+    }
+  } catch (error) {
+    return errorResponse(
+      400,
+      'BAD_REQUEST',
+      error instanceof Error ? error.message : 'Invalid review results payload',
+    );
+  }
+
+  if (!rpcResponse.ok) {
+    return errorResponse(500, 'DB_ERROR', 'Failed to complete review session');
+  }
+
+  const payload = await rpcResponse.json<Record<string, unknown>>();
+  if (payload.applied !== true) {
+    if (payload.reason === 'STALE_SESSION') {
+      return errorResponse(409, 'STALE_SESSION', 'Review session is stale');
+    }
+    return errorResponse(500, 'DB_ERROR', 'Failed to complete review session');
+  }
+
+  return jsonResponse(
+    {
+      data: {
+        session_id: sessionId,
+        status: 'completed',
+        applied_count: appliedCount,
+      },
+      meta: { server_time: new Date().toISOString() },
+    },
+    corsHeaders(request),
+  );
+}
+
+export async function handleAbandonReviewSession(
+  request: Request,
+  env: Env,
+  auth: AuthPayload,
+  sessionId: string,
+): Promise<Response> {
+  const existing = await getReviewSessionById(env, auth.sub, sessionId);
+  if (!existing) {
+    return errorResponse(404, 'SESSION_NOT_FOUND', 'Review session not found');
+  }
+
+  if (existing.status !== 'active') {
     return jsonResponse(
       {
-        data: toStoredReviewSession<WordReviewSessionItem>(activeSession),
-        meta: {
-          count: activeSession.items.length,
-          resumed: true,
-          server_time: new Date().toISOString(),
+        data: {
+          session_id: existing.id,
+          status: existing.status,
         },
+        meta: { server_time: new Date().toISOString() },
       },
       corsHeaders(request),
     );
   }
 
-  const url = new URL(request.url);
-  const limit = clampInt(url.searchParams.get('limit'), 20, 1, MAX_SESSION_LIMIT);
+  await abandonReviewSession(env, auth.sub, existing.session_kind, sessionId);
+
+  return jsonResponse(
+    {
+      data: {
+        session_id: sessionId,
+        status: 'abandoned',
+      },
+      meta: { server_time: new Date().toISOString() },
+    },
+    corsHeaders(request),
+  );
+}
+
+export async function handleUpsertWordStates(
+  request: Request,
+  env: Env,
+  auth: AuthPayload,
+): Promise<Response> {
+  let body: WordStateRequestPayload | { states?: WordStateRequestPayload[] };
+  try {
+    body = await request.json<WordStateRequestPayload | { states?: WordStateRequestPayload[] }>();
+  } catch {
+    return errorResponse(400, 'BAD_REQUEST', 'Invalid JSON body');
+  }
+
+  const inputStates = Array.isArray((body as { states?: WordStateRequestPayload[] }).states)
+    ? (body as { states?: WordStateRequestPayload[] }).states ?? []
+    : [body as WordStateRequestPayload];
+  const states = inputStates
+    .map((state) => normalizeWordStatePayload(state, auth.sub))
+    .filter((state): state is Record<string, unknown> => state != null);
+
+  if (states.length === 0) {
+    return errorResponse(400, 'BAD_REQUEST', 'No valid word states provided');
+  }
+
+  const response = await supabaseFetch(
+    env,
+    '/user_word_states',
+    { on_conflict: 'user_id,word_id,book_id' },
+    {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+      body: states,
+    },
+  );
+  if (!response.ok) {
+    return errorResponse(500, 'DB_ERROR', 'Failed to upsert word states');
+  }
+
+  const rows = await response.json();
+  return jsonResponse(
+    {
+      data: rows,
+      meta: {
+        count: states.length,
+        server_time: new Date().toISOString(),
+      },
+    },
+    corsHeaders(request),
+  );
+}
+
+async function createOrResumeWordReviewSession(
+  request: Request,
+  env: Env,
+  auth: AuthPayload,
+  limit: number,
+): Promise<Response> {
+  const activeSession = await getActiveReviewSession(env, auth.sub, 'word');
+  if (activeSession) {
+    if (isSessionExpired(activeSession.created_at)) {
+      await abandonReviewSession(env, auth.sub, 'word', activeSession.id);
+    } else {
+      return jsonResponse(
+        {
+          data: toStoredReviewSession<WordReviewSessionItem>(activeSession),
+          meta: {
+            count: activeSession.items.length,
+            resumed: true,
+            server_time: new Date().toISOString(),
+          },
+        },
+        corsHeaders(request),
+      );
+    }
+  }
+
   const nowSeconds = Math.floor(Date.now() / 1000);
 
   const stateResp = await supabaseFetch(env, '/user_word_states', {
@@ -228,16 +526,100 @@ export async function handleWordReviewSession(
   );
 }
 
-export async function handleUpdateWordReviewSession(
+async function createOrResumeKanaReviewSession(
   request: Request,
   env: Env,
   auth: AuthPayload,
+  limit: number,
 ): Promise<Response> {
-  return handleUpdateReviewSession<WordReviewSessionItem>(
-    request,
-    env,
-    auth,
-    'word',
+  const activeSession = await getActiveReviewSession(env, auth.sub, 'kana');
+  if (activeSession) {
+    if (isSessionExpired(activeSession.created_at)) {
+      await abandonReviewSession(env, auth.sub, 'kana', activeSession.id);
+    } else {
+      return jsonResponse(
+        {
+          data: toStoredReviewSession<KanaReviewSessionItem>(activeSession),
+          meta: {
+            count: activeSession.items.length,
+            resumed: true,
+            server_time: new Date().toISOString(),
+          },
+        },
+        corsHeaders(request),
+      );
+    }
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const [stateResp, lettersResp] = await Promise.all([
+    supabaseFetch(env, '/user_kana_states', {
+      select: '*',
+      user_id: `eq.${auth.sub}`,
+      learning_status: 'eq.1',
+      or: `(next_review_at.is.null,next_review_at.lte.${nowSeconds})`,
+      order: 'next_review_at.asc.nullsfirst',
+      limit: String(limit),
+    }),
+    supabaseFetch(env, '/kana_letters', {
+      select: '*',
+      limit: '200',
+    }),
+  ]);
+
+  if (!stateResp.ok || !lettersResp.ok) {
+    return errorResponse(500, 'DB_ERROR', 'Failed to fetch due kana reviews');
+  }
+
+  const stateRows = (await stateResp.json()) as UserKanaStateRow[];
+  if (stateRows.length === 0) {
+    return jsonResponse(
+      {
+        data: emptyReviewSession<KanaReviewSessionItem>(),
+        meta: {
+          count: 0,
+          resumed: false,
+          server_time: new Date().toISOString(),
+        },
+      },
+      corsHeaders(request),
+    );
+  }
+
+  const letters = (await lettersResp.json()) as KanaLetterRow[];
+  letters.sort(
+    (left, right) =>
+      (left.display_order ?? Number.MAX_SAFE_INTEGER) -
+          (right.display_order ?? Number.MAX_SAFE_INTEGER) ||
+      left.id - right.id,
+  );
+  const letterById = new Map<number, KanaLetterRow>();
+  for (const letter of letters) {
+    letterById.set(letter.id, letter);
+  }
+
+  const items = stateRows
+    .map((row) => buildKanaReviewItem(row, letterById, letters, auth.sub))
+    .filter((item): item is KanaReviewSessionItem => item != null);
+
+  if (items.length === 0) {
+    return jsonResponse(
+      {
+        data: emptyReviewSession<KanaReviewSessionItem>(),
+        meta: { count: 0, resumed: false, server_time: new Date().toISOString() },
+      },
+      corsHeaders(request),
+    );
+  }
+
+  const createdSession = await createReviewSession(env, auth.sub, 'kana', items);
+
+  return jsonResponse(
+    {
+      data: toStoredReviewSession<KanaReviewSessionItem>(createdSession),
+      meta: { count: items.length, resumed: false, server_time: new Date().toISOString() },
+    },
+    corsHeaders(request),
   );
 }
 
@@ -719,19 +1101,17 @@ async function getActiveReviewSession(
 async function getReviewSessionById(
   env: Env,
   userId: string,
-  kind: ReviewSessionKind,
   sessionId: string,
 ): Promise<ReviewSessionRow | null> {
   const response = await supabaseFetch(env, '/user_review_sessions', {
     select: '*',
     id: `eq.${sessionId}`,
     user_id: `eq.${userId}`,
-    session_kind: `eq.${kind}`,
     limit: '1',
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${kind} review session by id`);
+    throw new Error('Failed to fetch review session by id');
   }
 
   const rows = (await response.json()) as ReviewSessionRow[];
@@ -756,8 +1136,6 @@ async function createReviewSession<TItem>(
         session_kind: kind,
         status: 'active',
         current_index: 0,
-        current_phase: 'testing',
-        has_mistake_on_current: false,
         items,
         closed_at: null,
       },
@@ -775,97 +1153,550 @@ async function createReviewSession<TItem>(
   return rows[0];
 }
 
-async function handleUpdateReviewSession<TItem>(
-  request: Request,
+async function abandonReviewSession(
   env: Env,
-  auth: AuthPayload,
+  userId: string,
   kind: ReviewSessionKind,
-): Promise<Response> {
-  let body: ReviewSessionUpdateRequest<TItem>;
-  try {
-    body = await request.json<ReviewSessionUpdateRequest<TItem>>();
-  } catch {
-    return errorResponse(400, 'BAD_REQUEST', 'Invalid review session payload');
-  }
-
-  if (!body.session_id || body.session_id.trim().length === 0) {
-    return errorResponse(400, 'BAD_REQUEST', 'session_id is required');
-  }
-
-  const existing = await getReviewSessionById(env, auth.sub, kind, body.session_id);
-  if (!existing) {
-    return errorResponse(404, 'SESSION_NOT_FOUND', 'Review session not found');
-  }
-  if (existing.status !== 'active') {
-    return errorResponse(409, 'SESSION_CLOSED', 'Review session is already closed');
-  }
-
-  const currentPhase = body.current_phase ?? existing.current_phase;
-  if (currentPhase !== 'testing' && currentPhase !== 'grading') {
-    return errorResponse(400, 'BAD_REQUEST', 'Invalid current_phase');
-  }
-
-  const currentIndexRaw = body.current_index ?? existing.current_index;
-  const currentIndex = Number.isFinite(currentIndexRaw)
-    ? Math.max(0, Math.trunc(currentIndexRaw))
-    : existing.current_index;
-
-  const items = Array.isArray(body.items) ? body.items : (existing.items as TItem[]);
-  const status: ReviewSessionStatus = body.is_finished === true ? 'completed' : 'active';
-
+  sessionId: string,
+): Promise<void> {
   const response = await supabaseFetch(
     env,
     '/user_review_sessions',
     {
-      id: `eq.${body.session_id}`,
-      user_id: `eq.${auth.sub}`,
+      id: `eq.${sessionId}`,
+      user_id: `eq.${userId}`,
       session_kind: `eq.${kind}`,
+      status: 'eq.active',
     },
     {
       method: 'PATCH',
       headers: { Prefer: 'return=representation' },
       body: {
-        current_index: currentIndex,
-        current_phase: currentPhase,
-        has_mistake_on_current: body.has_mistake_on_current === true,
-        items,
-        status,
-        closed_at: body.is_finished === true ? new Date().toISOString() : null,
+        status: 'abandoned',
+        closed_at: new Date().toISOString(),
       },
     },
   );
 
   if (!response.ok) {
-    return errorResponse(500, 'DB_ERROR', 'Failed to update review session');
+    throw new Error(`Failed to abandon ${kind} review session`);
+  }
+}
+
+function buildWordReviewStateUpserts(
+  rawItems: unknown[],
+  rawResults: Array<WordReviewResultPayload | KanaReviewResultPayload>,
+): WordStateUpsertPayload[] {
+  if (!Array.isArray(rawResults)) {
+    throw new Error('results must be an array');
   }
 
-  const rows = (await response.json()) as ReviewSessionRow[];
-  const updated = rows[0];
-  if (!updated) {
-    return errorResponse(500, 'DB_ERROR', 'Empty review session update response');
+  const statesByKey = new Map<string, UserWordStateRow>();
+  const keysByWordId = new Map<string, string[]>();
+
+  for (const rawItem of rawItems) {
+    const item = rawItem as WordReviewSessionItem;
+    if (!item?.word_state?.word_id || !item.word_state.book_id) {
+      continue;
+    }
+    const key = buildWordStateKey(item.word_state.word_id, item.word_state.book_id);
+    statesByKey.set(key, { ...item.word_state });
+    const existingKeys = keysByWordId.get(item.word_state.word_id) ?? [];
+    existingKeys.push(key);
+    keysByWordId.set(item.word_state.word_id, existingKeys);
   }
 
-  return jsonResponse(
-    {
-      data: {
-        session_id: updated.id,
-        status: updated.status,
-        current_index: updated.current_index,
-        current_phase: updated.current_phase,
-        has_mistake_on_current: updated.has_mistake_on_current,
-      },
-      meta: { server_time: new Date().toISOString() },
-    },
-    corsHeaders(request),
-  );
+  const touchedKeys = new Set<string>();
+
+  for (const result of rawResults) {
+    const key = resolveWordReviewResultKey(result, keysByWordId);
+    const current = statesByKey.get(key);
+    if (!current) {
+      throw new Error('Review result item is not in session');
+    }
+
+    const rating = normalizeReviewRating(result.rating);
+    const nextState = applySm2Review(current, rating);
+    statesByKey.set(key, nextState);
+    touchedKeys.add(key);
+  }
+
+  return Array.from(touchedKeys).map((key) => toWordStateUpsertPayload(statesByKey.get(key)!));
+}
+
+function buildKanaReviewStateUpserts(
+  rawItems: unknown[],
+  rawResults: Array<WordReviewResultPayload | KanaReviewResultPayload>,
+): UserKanaStateRow[] {
+  if (!Array.isArray(rawResults)) {
+    throw new Error('results must be an array');
+  }
+
+  const statesByKanaId = new Map<number, UserKanaStateRow>();
+  for (const rawItem of rawItems) {
+    const item = rawItem as KanaReviewSessionItem;
+    if (!item?.learning_state?.kana_id) {
+      continue;
+    }
+    statesByKanaId.set(item.learning_state.kana_id, { ...item.learning_state });
+  }
+
+  const touchedKanaIds = new Set<number>();
+  for (const rawResult of rawResults) {
+    const result = rawResult as KanaReviewResultPayload;
+    const kanaId = typeof result.kana_id === 'number' ? result.kana_id : 0;
+    if (kanaId <= 0) {
+      throw new Error('results[].kana_id is required');
+    }
+    const current = statesByKanaId.get(kanaId);
+    if (!current) {
+      throw new Error('Review result item is not in session');
+    }
+    const rating = normalizeReviewRating(result.rating);
+    const nextState = applySm2ReviewToKana(current, rating);
+    statesByKanaId.set(kanaId, nextState);
+    touchedKanaIds.add(kanaId);
+  }
+
+  return Array.from(touchedKanaIds)
+    .map((kanaId) => statesByKanaId.get(kanaId))
+    .filter((state): state is UserKanaStateRow => state != null);
+}
+
+function resolveWordReviewResultKey(
+  result: WordReviewResultPayload,
+  keysByWordId: Map<string, string[]>,
+): string {
+  const wordId = typeof result.word_id === 'string' ? result.word_id.trim() : '';
+  if (wordId.length === 0) {
+    throw new Error('results[].word_id is required');
+  }
+
+  const explicitBookId = typeof result.book_id === 'string' ? result.book_id.trim() : '';
+  if (explicitBookId.length > 0) {
+    return buildWordStateKey(wordId, explicitBookId);
+  }
+
+  const matchingKeys = keysByWordId.get(wordId) ?? [];
+  if (matchingKeys.length !== 1) {
+    throw new Error('results[].book_id is required for duplicated word_id');
+  }
+  return matchingKeys[0];
+}
+
+function normalizeReviewRating(rating: ReviewRatingValue | undefined): ReviewRatingValue {
+  switch (rating) {
+    case 'again':
+    case 'hard':
+    case 'good':
+    case 'easy':
+      return rating;
+    default:
+      throw new Error('results[].rating is invalid');
+  }
+}
+
+function applySm2Review(
+  state: UserWordStateRow,
+  rating: ReviewRatingValue,
+): UserWordStateRow {
+  const now = new Date();
+  const nowSeconds = Math.floor(now.getTime() / 1000);
+  const reviews = state.total_reviews ?? 0;
+  const baseInterval = state.interval ?? 0;
+  const baseEaseFactor = state.ease_factor ?? 2.5;
+
+  let newInterval: number;
+  let newEaseFactor = baseEaseFactor;
+
+  const quality = reviewRatingToQuality(rating);
+  if (quality < 3) {
+    newInterval = 0;
+    newEaseFactor = Math.max(1.3, baseEaseFactor - 0.20);
+  } else {
+    const effectiveInterval = baseInterval <= 0 ? 1 : baseInterval;
+    if (reviews === 0) {
+      newInterval = 6;
+    } else {
+      newInterval = Math.round(effectiveInterval * baseEaseFactor);
+    }
+
+    if (newInterval < 1) {
+      newInterval = 1;
+    }
+
+    newEaseFactor = baseEaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+    newEaseFactor = Math.max(1.3, newEaseFactor);
+  }
+
+  if (rating === 'hard' && reviews > 1) {
+    newInterval = Math.round(baseInterval * 1.2);
+    newEaseFactor = Math.max(1.3, baseEaseFactor - 0.15);
+  }
+
+  if (rating === 'easy') {
+    newEaseFactor += 0.15;
+    if (reviews > 1) {
+      newInterval = Math.round(baseInterval * baseEaseFactor * 1.3);
+    }
+  }
+
+  const nextReviewAt = rating === 'again'
+    ? nowSeconds + 60
+    : nowSeconds + (Math.ceil(newInterval) * 86400);
+
+  return {
+    ...state,
+    next_review_at: nextReviewAt,
+    last_reviewed_at: nowSeconds,
+    interval: Math.round(newInterval),
+    ease_factor: newEaseFactor,
+    stability: 0,
+    difficulty: 0,
+    streak: isCorrectReviewRating(rating) ? state.streak + 1 : 0,
+    total_reviews: state.total_reviews + 1,
+    fail_count: state.fail_count + (isCorrectReviewRating(rating) ? 0 : 1),
+    updated_at: now.toISOString(),
+  };
+}
+
+function applySm2ReviewToKana(
+  state: UserKanaStateRow,
+  rating: ReviewRatingValue,
+): UserKanaStateRow {
+  const now = new Date();
+  const nowSeconds = Math.floor(now.getTime() / 1000);
+  const reviews = state.total_reviews ?? 0;
+  const baseInterval = state.interval ?? 0;
+  const baseEaseFactor = state.ease_factor ?? 2.5;
+
+  let newInterval: number;
+  let newEaseFactor = baseEaseFactor;
+
+  const quality = reviewRatingToQuality(rating);
+  if (quality < 3) {
+    newInterval = 0;
+    newEaseFactor = Math.max(1.3, baseEaseFactor - 0.20);
+  } else {
+    const effectiveInterval = baseInterval <= 0 ? 1 : baseInterval;
+    if (reviews === 0) {
+      newInterval = 6;
+    } else {
+      newInterval = Math.round(effectiveInterval * baseEaseFactor);
+    }
+
+    if (newInterval < 1) {
+      newInterval = 1;
+    }
+
+    newEaseFactor = baseEaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+    newEaseFactor = Math.max(1.3, newEaseFactor);
+  }
+
+  if (rating === 'hard' && reviews > 1) {
+    newInterval = Math.round(baseInterval * 1.2);
+    newEaseFactor = Math.max(1.3, baseEaseFactor - 0.15);
+  }
+
+  if (rating === 'easy') {
+    newEaseFactor += 0.15;
+    if (reviews > 1) {
+      newInterval = Math.round(baseInterval * baseEaseFactor * 1.3);
+    }
+  }
+
+  const nextReviewAt = rating === 'again'
+    ? nowSeconds + 60
+    : nowSeconds + (Math.ceil(newInterval) * 86400);
+
+  return {
+    ...state,
+    next_review_at: nextReviewAt,
+    last_reviewed_at: nowSeconds,
+    interval: Math.round(newInterval),
+    ease_factor: newEaseFactor,
+    stability: 0,
+    difficulty: 0,
+    streak: isCorrectReviewRating(rating) ? state.streak + 1 : 0,
+    total_reviews: state.total_reviews + 1,
+    fail_count: state.fail_count + (isCorrectReviewRating(rating) ? 0 : 1),
+    updated_at: now.toISOString(),
+  };
+}
+
+function buildKanaReviewItem(
+  row: UserKanaStateRow,
+  letterById: Map<number, KanaLetterRow>,
+  allLetters: KanaLetterRow[],
+  userId: string,
+): KanaReviewSessionItem | null {
+  const letter = letterById.get(row.kana_id);
+  if (!letter) {
+    return null;
+  }
+
+  const questionType = chooseKanaReviewType(letter, userId);
+  const counterpartLetter = resolveKanaCounterpart(letter, allLetters);
+
+  return {
+    kana_letter: letter,
+    learning_state: row,
+    audio_filename: null,
+    question_type: questionType,
+    options: buildKanaReviewOptions(questionType, letter, counterpartLetter, allLetters),
+    counterpart_letter: counterpartLetter,
+  };
+}
+
+function chooseKanaReviewType(
+  letter: KanaLetterRow,
+  userId: string,
+): KanaReviewQuestionType {
+  const seed = Math.abs(simpleHash(`${userId}:${letter.id}`)) % 3;
+  if (letter.script_kind === 'hiragana') {
+    return seed === 0
+      ? 'hiragana_to_romaji'
+      : seed === 1
+        ? 'romaji_to_hiragana'
+        : 'hiragana_to_katakana';
+  }
+
+  return seed === 0
+    ? 'katakana_to_romaji'
+    : seed === 1
+      ? 'romaji_to_katakana'
+      : 'katakana_to_hiragana';
+}
+
+function buildKanaReviewOptions(
+  questionType: KanaReviewQuestionType,
+  letter: KanaLetterRow,
+  counterpart: KanaLetterRow | null,
+  allLetters: KanaLetterRow[],
+): string[] {
+  const otherLetters = allLetters.filter((item) => item.id !== letter.id);
+  const options: string[] = [];
+
+  switch (questionType) {
+    case 'hiragana_to_romaji':
+    case 'katakana_to_romaji':
+      options.push(letter.romaji);
+      for (const item of otherLetters) {
+        if (!options.includes(item.romaji)) {
+          options.push(item.romaji);
+        }
+        if (options.length >= 4) {
+          break;
+        }
+      }
+      break;
+    case 'romaji_to_hiragana':
+    case 'katakana_to_hiragana':
+      options.push(
+        questionType === 'romaji_to_hiragana'
+          ? letter.kana_char
+          : counterpart?.kana_char ?? letter.kana_char,
+      );
+      for (const item of otherLetters) {
+        if (item.script_kind === 'hiragana' && !options.includes(item.kana_char)) {
+          options.push(item.kana_char);
+        }
+        if (options.length >= 4) {
+          break;
+        }
+      }
+      break;
+    case 'romaji_to_katakana':
+    case 'hiragana_to_katakana':
+      options.push(
+        questionType === 'romaji_to_katakana'
+          ? letter.kana_char
+          : counterpart?.kana_char ?? letter.kana_char,
+      );
+      for (const item of otherLetters) {
+        if (item.script_kind === 'katakana' && !options.includes(item.kana_char)) {
+          options.push(item.kana_char);
+        }
+        if (options.length >= 4) {
+          break;
+        }
+      }
+      break;
+  }
+
+  if (options.length < 4) {
+    for (const item of otherLetters) {
+      if (!options.includes(item.kana_char)) {
+        options.push(item.kana_char);
+      }
+      if (options.length >= 4) {
+        break;
+      }
+    }
+  }
+
+  return shuffleArray(options.slice(0, 4));
+}
+
+function resolveKanaCounterpart(
+  letter: KanaLetterRow,
+  allLetters: KanaLetterRow[],
+): KanaLetterRow | null {
+  if (!letter.pair_group_id) {
+    return null;
+  }
+
+  const targetKind = letter.script_kind === 'hiragana' ? 'katakana' : 'hiragana';
+  for (const candidate of allLetters) {
+    if (candidate.pair_group_id === letter.pair_group_id && candidate.script_kind === targetKind) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function reviewRatingToQuality(rating: ReviewRatingValue): number {
+  switch (rating) {
+    case 'again':
+      return 0;
+    case 'hard':
+      return 3;
+    case 'good':
+      return 4;
+    case 'easy':
+      return 5;
+  }
+}
+
+function isCorrectReviewRating(rating: ReviewRatingValue): boolean {
+  return rating !== 'again';
+}
+
+function toWordStateUpsertPayload(state: UserWordStateRow): WordStateUpsertPayload {
+  return {
+    word_id: state.word_id,
+    book_id: state.book_id,
+    user_state: state.user_state,
+    next_review_at: state.next_review_at,
+    last_reviewed_at: state.last_reviewed_at,
+    first_learned_at: state.first_learned_at,
+    interval: state.interval,
+    ease_factor: state.ease_factor,
+    stability: state.stability ?? 0,
+    difficulty: state.difficulty ?? 0,
+    streak: state.streak,
+    total_reviews: state.total_reviews,
+    fail_count: state.fail_count,
+    created_at: toEpochSeconds(state.created_at),
+    updated_at: toEpochSeconds(state.updated_at),
+    version: 1,
+  };
+}
+
+function buildWordStateKey(wordId: string, bookId: string): string {
+  return `${bookId}::${wordId}`;
+}
+
+function normalizeWordStatePayload(
+  state: WordStateRequestPayload,
+  userId: string,
+): Record<string, unknown> | null {
+  const wordId = state.word_id?.trim();
+  const bookId = state.book_id?.trim();
+  const userState = toNullableInteger(state.user_state);
+  if (!wordId || !bookId || userState == null) {
+    return null;
+  }
+
+  const payload: Record<string, unknown> = {
+    user_id: userId,
+    word_id: wordId,
+    book_id: bookId,
+    user_state: userState,
+  };
+
+  const nextReviewAt = toNullableInteger(state.next_review_at);
+  const lastReviewedAt = toNullableInteger(state.last_reviewed_at);
+  const firstLearnedAt = toNullableInteger(state.first_learned_at);
+  const interval = toNullableInteger(state.interval);
+  const easeFactor = toNullableFloat(state.ease_factor);
+  const stability = toNullableFloat(state.stability);
+  const difficulty = toNullableFloat(state.difficulty);
+  const streak = toNullableInteger(state.streak);
+  const totalReviews = toNullableInteger(state.total_reviews);
+  const failCount = toNullableInteger(state.fail_count);
+  const version = toNullableInteger(state.version);
+
+  if (nextReviewAt != null) payload['next_review_at'] = nextReviewAt;
+  if (lastReviewedAt != null) payload['last_reviewed_at'] = lastReviewedAt;
+  if (firstLearnedAt != null) payload['first_learned_at'] = firstLearnedAt;
+  if (interval != null) payload['interval'] = interval;
+  if (easeFactor != null) payload['ease_factor'] = easeFactor;
+  if (stability != null) payload['stability'] = stability;
+  if (difficulty != null) payload['difficulty'] = difficulty;
+  if (streak != null) payload['streak'] = streak;
+  if (totalReviews != null) payload['total_reviews'] = totalReviews;
+  if (failCount != null) payload['fail_count'] = failCount;
+  if (version != null) payload['version'] = version;
+
+  return payload;
+}
+
+function toNullableInteger(value: unknown): number | null {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
+function toNullableFloat(value: unknown): number | null {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number.parseFloat(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
+function toEpochSeconds(value: string): number {
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return Math.floor(Date.now() / 1000);
+  }
+  return Math.floor(parsed / 1000);
+}
+
+function isSessionExpired(createdAt: string): boolean {
+  const createdAtMs = Date.parse(createdAt);
+  if (Number.isNaN(createdAtMs)) {
+    return false;
+  }
+  return (Date.now() - createdAtMs) > REVIEW_SESSION_TTL_MS;
+}
+
+function clampSessionLimit(raw: number | undefined): number {
+  if (typeof raw !== 'number' || Number.isNaN(raw)) {
+    return 20;
+  }
+  return Math.min(Math.max(Math.trunc(raw), 1), MAX_SESSION_LIMIT);
 }
 
 function emptyReviewSession<TItem>(): ReviewSessionEnvelope<TItem> {
   return {
     session_id: null,
     current_index: 0,
-    current_phase: 'testing',
-    has_mistake_on_current: false,
     items: [],
   };
 }
@@ -876,8 +1707,6 @@ function toStoredReviewSession<TItem>(
   return {
     session_id: session.id,
     current_index: session.current_index,
-    current_phase: session.current_phase,
-    has_mistake_on_current: session.has_mistake_on_current,
     items: Array.isArray(session.items) ? (session.items as TItem[]) : [],
   };
 }

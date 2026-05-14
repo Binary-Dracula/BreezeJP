@@ -16,8 +16,8 @@
 
 ### 3. 云端同步数据 / Cloud Sync Data
 
-- **中文**: 当您启用登录与同步后，我们可能存储您的单词、语法、假名学习状态，复习会话断点，书本进度，以及用于冲突处理和设备识别的同步元数据。这些数据会保存在 Supabase 数据库与 Cloudflare 提供的相关基础设施中，用于实现跨设备学习。
-- **English**: When you enable sign-in and sync, we may store your word, grammar, and kana learning states, review session checkpoints, book progress, and sync metadata used for device identification and conflict handling. This data is stored in infrastructure provided by Supabase and Cloudflare to enable cross-device learning.
+- **中文**: 当您启用登录与同步后，我们可能存储您的单词、语法、假名学习状态，学习/复习会话快照与完成结果，书本进度，以及用于冲突处理和设备识别的同步元数据。这些数据会保存在 Supabase 数据库与 Cloudflare 提供的相关基础设施中，用于实现跨设备学习。
+- **English**: When you enable sign-in and sync, we may store your word, grammar, and kana learning states, learning or review session snapshots and completion results, book progress, and sync metadata used for device identification and conflict handling. This data is stored in infrastructure provided by Supabase and Cloudflare to enable cross-device learning.
 
 ### 4. 第三方服务 / Third-party Services
 

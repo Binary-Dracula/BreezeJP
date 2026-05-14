@@ -77,9 +77,10 @@ class GrammarController extends Notifier<GrammarState> {
     try {
       final currentIds = state.studyQueue.map((g) => g.grammar.id).toList();
 
-      final newDetails = await _remoteQuery.fetchGrammarLearningQueue(
+      final newDetails = await _remoteQuery.fetchGrammars(
         limit: 5,
         excludeIds: currentIds,
+        unlearnedOnly: true,
       );
 
       if (newDetails.isEmpty) {

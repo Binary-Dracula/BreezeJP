@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-用户在学习页（单词 / 语法）发现问题时，点击 🚩 按钮上报，内容进入 Supabase，管理员在 Admin 面板处理。
+已登录用户可在单词学习页、单词详情页、语法学习页提交问题上报。App 通过 Workers `POST /api/v1/issues` 写入 Supabase `issue_reports`，Admin 面板使用 service role 做全量查看和处理。
 
 ---
 
@@ -11,19 +11,26 @@
 表名：`issue_reports`
 
 ```sql
-CREATE TABLE issue_reports (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     UUID NOT NULL REFERENCES users(id),
-  type        TEXT NOT NULL,          -- 'word' | 'grammar'
-  description TEXT NOT NULL,
-  snapshot    JSONB,                  -- 上报时的词条/语法完整快照
-  status      TEXT NOT NULL DEFAULT 'open',  -- 'open' | 'resolved' | 'wont_fix'
-  created_at  TIMESTAMPTZ DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS issue_reports (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL,
+  content_type      TEXT NOT NULL CHECK (content_type IN ('word', 'grammar')),
+  content_id        TEXT NOT NULL,
+  content_snapshot  JSONB NOT NULL,
+  message           TEXT,
+  status            TEXT NOT NULL DEFAULT 'open'
+                    CHECK (status IN ('open', 'resolved', 'ignored')),
+  admin_note        TEXT,
+  resolved_at       TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
-RLS：用户只能 INSERT 自己的记录；管理员 Service Role 可全量读写。
+RLS：
+
+- 已登录用户可以 `INSERT` 自己的记录。
+- 已登录用户可以 `SELECT` 自己提交的记录。
+- 管理后台使用 `service_role` 绕过 RLS 进行全量读写。
 
 ---
 
@@ -33,28 +40,35 @@ RLS：用户只能 INSERT 自己的记录；管理员 Service Role 可全量读�
 
 路由：`POST /api/v1/issues`（需要 JWT 认证）
 
-注册位置：`api/workers/src/index.ts`
+请求体字段：
 
-```typescript
-// index.ts 中
-import { handleCreateIssue } from "./routes/issues";
-// ...
-if (path === "/api/v1/issues" && request.method === "POST") {
-  return handleCreateIssue(request, env, auth);
-}
-```
+- `content_type`：`word` 或 `grammar`
+- `content_id`：单词 UUID 或语法 ID 字符串
+- `content_snapshot`：提交时的完整快照
+- `message`：用户补充说明，可为空
 
 payload 示例：
 
 ```json
 {
-  "type": "word",
-  "description": "释义有误，应为……",
-  "snapshot": {
-    /* word.toMap() + richContent.toJsonString() */
-  }
+  "content_type": "word",
+  "content_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "content_snapshot": {
+    "word": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "word": "高校"
+    },
+    "rich_content": "{\"meanings\": []}"
+  },
+  "message": "首要释义需要调整"
 }
 ```
+
+校验与响应：
+
+- 缺少 `content_type` / `content_id` / `content_snapshot` 时返回 `400 BAD_REQUEST`
+- `content_type` 只接受 `word` 或 `grammar`
+- 成功时返回 `201` 和 `{ "success": true }`
 
 ---
 
@@ -72,101 +86,111 @@ static const String issues = '/api/v1/issues';
 
 `lib/data/commands/issue_report_command.dart`
 
-- POST 到 `ApiEndpoints.issues`
-- 字段：`type`, `description`, `snapshot`
-
-`lib/data/commands/issue_report_command_provider.dart`
-
 ```dart
-final issueReportCommandProvider = Provider<IssueReportCommand>((ref) { ... });
+Future<void> reportIssue({
+  required String contentType,
+  required String contentId,
+  required Map<String, dynamic> contentSnapshot,
+  String? message,
+})
 ```
+
+发送字段：`content_type`、`content_id`、`content_snapshot`、`message`。
 
 ### Widget
 
 `lib/features/common/widgets/issue_report_sheet.dart`
 
-- `ConsumerStatefulWidget`，底部弹出 Sheet
-- 静态方法 `IssueReportSheet.show(context, type, snapshot)`
-- 包含描述文本框 + 提交按钮
-
-### 调用点
-
-**单词学习页** `lib/features/learn/pages/learn_page.dart`
+- `ConsumerStatefulWidget`，通过 BottomSheet 展示
+- 静态方法：
 
 ```dart
-// AppBar 右侧 IconButton
-IconButton(
-  icon: const Icon(Icons.flag_outlined),
-  onPressed: () => IssueReportSheet.show(
-    context,
-    type: 'word',
-    snapshot: {
-      ...wordDetail.word.toMap(),
-      'rich_content': wordDetail.richContent.toJsonString(),
-    },
-  ),
-)
+IssueReportSheet.show(
+  context: context,
+  ref: ref,
+  contentType: 'word',
+  contentId: wordId,
+  contentSnapshot: snapshot,
+  displayTitle: title,
+);
 ```
 
-**语法学习页** `lib/features/grammar/pages/grammar_learning_page.dart`
+### 当前调用点
+
+- `lib/features/learn/pages/learn_page.dart`
+- `lib/features/word_detail/pages/word_detail_page.dart`
+- `lib/features/grammar/pages/grammar_learning_page.dart`
+
+单词上报示例：
 
 ```dart
-// AppBar actions 中
-IconButton(
-  icon: const Icon(Icons.flag_outlined),
-  onPressed: () => IssueReportSheet.show(
-    context,
-    type: 'grammar',
-    snapshot: {
-      'grammar': grammar.toMap(),
-      'meanings': ...,
-      'contexts': ...,
-      'examples': ...,
-    },
-  ),
-)
+IssueReportSheet.show(
+  context: context,
+  ref: ref,
+  contentType: 'word',
+  contentId: wordDetail.word.id,
+  contentSnapshot: {
+    'word': wordDetail.word.toMap(),
+    'rich_content': wordDetail.richContent.toJsonString(),
+  },
+  displayTitle: wordDetail.word.word,
+);
+```
+
+语法上报示例：
+
+```dart
+IssueReportSheet.show(
+  context: context,
+  ref: ref,
+  contentType: 'grammar',
+  contentId: detail.grammar.id.toString(),
+  contentSnapshot: {
+    'grammar': detail.grammar.toMap(),
+    'meanings': detail.meanings.map((m) => m.toMap()).toList(),
+    'contexts': detail.contexts.map((c) => c.toMap()).toList(),
+    'examples': detail.examples.map((e) => e.toMap()).toList(),
+  },
+  displayTitle: detail.grammar.title,
+);
 ```
 
 ---
 
 ## 4. Admin 面板
 
-路径：`admin/`（React + Vite + TypeScript）
+主要文件：
 
-部署：Cloudflare Pages，项目名 `breezejp-admin`
+- `admin/src/pages/IssueListPage.tsx`
+- `admin/src/pages/IssueDetail.tsx`
 
-地址：
+当前行为：
 
-- `https://breezejp-admin.pages.dev`
-- `https://admin.binary-dracula.com`（自定义域名）
+- 列表页按 `status` 过滤，状态值为 `open` / `resolved` / `ignored`
+- 详情页展示并编辑 `content_snapshot`
+- 可保存修改到实际内容表后标记 `resolved`
+- 也可仅更新状态为 `resolved` 或 `ignored`
+- `admin_note` 和 `resolved_at` 与状态更新一起写回 `issue_reports`
 
-部署命令（必须加 `--branch main`）：
+实际回写目标：
 
-```bash
-cd admin && npm run build
-npx wrangler pages deploy dist --project-name breezejp-admin --branch main --commit-dirty=true
-```
-
-功能：
-
-- 登录（Supabase Auth，管理员账号）
-- 问题列表，支持按 type / status 筛选
-- 问题详情，含 snapshot 展示
-- 状态修改（open → resolved / wont_fix）
+- `word`：`words` + `word_details`
+- `grammar`：`grammars` + `grammar_meanings` + `grammar_examples`
 
 ---
 
 ## 5. 验证流程
 
-1. App 内点击 🚩 → 填写描述 → 提交
-2. Supabase `issue_reports` 表出现新记录
-3. `https://admin.binary-dracula.com` 登录后可见该条记录
-4. Admin 面板修改 status → Supabase 更新
+1. App 内点击旗帜按钮，填写说明并提交。
+2. Supabase `issue_reports` 表出现新记录。
+3. Admin 列表页能看到该记录，状态初始为 `open`。
+4. 在详情页修改数据或直接变更状态，`issue_reports.status` / `admin_note` / `resolved_at` 更新。
 
 ---
 
 ## 关键注意事项
 
-- `wordDetail.richContent.toJsonString()` —— 方法在 `WordRichContent` 上，不在 `WordDetail` 上
-- Admin 部署**必须带 `--branch main`**，否则是 preview 部署，自定义域名不生效
-- RLS 策略：普通用户只能写，不能读他人记录
+- `content_id` 在接口层统一按字符串传输；语法 ID 提交时要 `toString()`。
+- `message` 允许为空；真正必填的是 `content_type`、`content_id`、`content_snapshot`。
+- `content_snapshot` 是提交时证据快照，不是直接展示给客户端回读的正式内容源。
+- 状态值没有 `wont_fix`；当前忽略态统一使用 `ignored`。

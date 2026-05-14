@@ -1,19 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'active_user_query.dart';
-import 'active_user_query_provider.dart';
-import 'kana_query.dart';
-import 'kana_query_provider.dart';
-import 'mastered_count_query.dart';
-import 'study_word_query.dart';
+import 'home_remote_query.dart';
+import 'home_remote_query_provider.dart';
 
 final homeQueryProvider = Provider<HomeQuery>((ref) {
-  return HomeQuery(
-    ref.read(activeUserQueryProvider),
-    ref.read(studyWordQueryProvider),
-    ref.read(kanaQueryProvider),
-    ref.read(masteredStateQueryProvider),
-  );
+  return HomeQuery(ref.read(homeRemoteQueryProvider));
 });
 
 class HomeSummaryData {
@@ -31,46 +22,18 @@ class HomeSummaryData {
 }
 
 class HomeQuery {
-  HomeQuery(
-    this._activeUserQuery,
-    this._studyWordQuery,
-    this._kanaQuery,
-    this._masteredStateQuery,
-  );
+  HomeQuery(this._homeRemoteQuery);
 
-  final ActiveUserQuery _activeUserQuery;
-  final StudyWordQuery _studyWordQuery;
-  final KanaQuery _kanaQuery;
-  final MasteredStateQuery _masteredStateQuery;
+  final HomeRemoteQuery _homeRemoteQuery;
 
   Future<HomeSummaryData> fetchHomeSummary() async {
-    final user = await _activeUserQuery.getActiveUser();
-
-    if (user == null) {
-      return const HomeSummaryData(
-        userName: '',
-        reviewCount: 0,
-        kanaReviewCount: 0,
-        masteredWordCount: 0,
-      );
-    }
-
-    final counts = await Future.wait<int>([
-      _studyWordQuery.getDueReviewCount(user.id),
-      _kanaQuery.countDueKanaReviews(user.id),
-      _masteredStateQuery.getWordMasteredCount(user.id),
-    ]);
-
-    final preferredName = user.nickname?.trim();
-    final userName = preferredName != null && preferredName.isNotEmpty
-        ? preferredName
-        : user.username.trim();
+    final summary = await _homeRemoteQuery.fetchHomeSummary();
 
     return HomeSummaryData(
-      userName: userName,
-      reviewCount: counts[0],
-      kanaReviewCount: counts[1],
-      masteredWordCount: counts[2],
+      userName: summary.userName,
+      reviewCount: summary.reviewCount,
+      kanaReviewCount: summary.kanaReviewCount,
+      masteredWordCount: summary.masteredWordCount,
     );
   }
 }

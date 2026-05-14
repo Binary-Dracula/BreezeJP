@@ -55,35 +55,35 @@ logger.stateChange(
 
 ```dart
 // 查询
-logger.dbQuery(table: 'study_words', where: 'user_id=1', resultCount: 5);
+logger.dbQuery(table: 'user_word_states', where: 'user_id=1', resultCount: 5);
 
 // 插入
-logger.dbInsert(table: 'study_words', id: 456, keyFields: {'wordId': 123});
+logger.dbInsert(table: 'user_word_states', id: 456, keyFields: {'wordId': 123});
 
 // 更新
-logger.dbUpdate(table: 'study_words', affectedRows: 1, updatedFields: ['interval']);
+logger.dbUpdate(table: 'user_word_states', affectedRows: 1, updatedFields: ['interval']);
 
 // 删除
-logger.dbDelete(table: 'study_logs', deletedRows: 10);
+logger.dbDelete(table: 'learning_sessions', deletedRows: 1);
 
 // 错误
-logger.dbError(operation: 'UPDATE', table: 'study_words', dbError: e, stackTrace: st);
+logger.dbError(operation: 'UPDATE', table: 'user_word_states', dbError: e, stackTrace: st);
 ```
 
 ### [AUDIO] 音频状态
 
 ```dart
 // 播放开始
-logger.audioPlayStart(sourceType: 'word', source: url, wordId: 123);
+logger.audioPlayStart(source: url);
 
 // 播放完成
-logger.audioPlayComplete(source: url, durationMs: 1200);
+logger.audioPlayComplete(source: url);
 
 // 播放错误
-logger.audioPlayError(source: url, errorType: 'NetworkError', errorMessage: msg);
+logger.audioPlayError(audio: url, errorType: 'NetworkError', errorMessage: msg);
 
 // 状态变化
-logger.audioStateChange(previousState: 'playing', newState: 'stopped');
+logger.audioStateChange(newState: 'playing');
 ```
 
 ### [ALGO] 算法计算
@@ -151,27 +151,27 @@ LogFormatter.formatListSummary([1, 2, 3, 4, 5], maxItems: 3);
 
 ## 格式化精度
 
-| 类型 | 精度 | 示例 |
-|------|------|------|
-| interval | 2 位小数 | `2.50` |
-| easeFactor | 3 位小数 | `2.500` |
-| stability | 3 位小数 | `4.200` |
-| difficulty | 3 位小数 | `5.300` |
-| 时间戳 | ISO 8601 | `2024-11-27T10:30:00+08:00` |
-| 时长 | 人类可读 | `5m 30s` |
+| 类型       | 精度     | 示例                        |
+| ---------- | -------- | --------------------------- |
+| interval   | 2 位小数 | `2.50`                      |
+| easeFactor | 3 位小数 | `2.500`                     |
+| stability  | 3 位小数 | `4.200`                     |
+| difficulty | 3 位小数 | `5.300`                     |
+| 时间戳     | ISO 8601 | `2024-11-27T10:30:00+08:00` |
+| 时长       | 人类可读 | `5m 30s`                    |
 
 ---
 
 ## 日志级别
 
-| 方法 | 表情 | 用途 |
-|------|------|------|
-| `trace()` | 🔍 | 追踪信息 |
-| `debug()` | 🐛 | 调试信息 |
-| `info()` | 💡 | 一般信息 |
-| `warning()` | ⚠️ | 警告 |
-| `error()` | ❌ | 错误 |
-| `fatal()` | 💀 | 致命错误 |
+| 方法        | 表情 | 用途     |
+| ----------- | ---- | -------- |
+| `trace()`   | 🔍   | 追踪信息 |
+| `debug()`   | 🐛   | 调试信息 |
+| `info()`    | 💡   | 一般信息 |
+| `warning()` | ⚠️   | 警告     |
+| `error()`   | ❌   | 错误     |
+| `fatal()`   | 💀   | 致命错误 |
 
 ---
 

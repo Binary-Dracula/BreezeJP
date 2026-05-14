@@ -159,7 +159,10 @@ void main() {
 
   test('unfavorite delegates to favorite command', () async {
     when(
-      () => favoriteCommand.removeWordExampleFavorite(exampleId: 'example-1'),
+      () => favoriteCommand.removeWordExampleFavorite(
+        exampleId: 'example-1',
+        wordId: 'word-1',
+      ),
     ).thenAnswer((_) async {});
 
     await container
@@ -167,7 +170,10 @@ void main() {
         .unfavorite(firstItem);
 
     verify(
-      () => favoriteCommand.removeWordExampleFavorite(exampleId: 'example-1'),
+      () => favoriteCommand.removeWordExampleFavorite(
+        exampleId: 'example-1',
+        wordId: 'word-1',
+      ),
     ).called(1);
   });
 }

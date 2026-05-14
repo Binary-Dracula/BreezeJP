@@ -188,7 +188,7 @@ class AppLogger {
   /// Requirements: 1.3, 3.2
   void dbInsert({
     required String table,
-    required int id,
+    required Object id,
     Map<String, dynamic>? keyFields,
   }) {
     final parts = <String>['table=$table', 'id=$id'];

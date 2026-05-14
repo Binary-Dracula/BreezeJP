@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/learning_status.dart';
 import '../../../../core/domain/domain_event_bus.dart';
+import '../../../../core/providers/kana_state_cache_provider.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../data/models/kana_detail.dart';
 import '../../../../data/commands/kana_command.dart';
@@ -27,6 +28,8 @@ final kanaStrokeControllerProvider =
 class KanaStrokeController extends Notifier<KanaStrokeState> {
   KanaQuery get _kanaQuery => ref.read(kanaQueryProvider);
   KanaCommand get _kanaCommand => ref.read(kanaCommandProvider);
+  KanaStateCacheNotifier get _kanaStateCache =>
+      ref.read(kanaStateCacheProvider.notifier);
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
@@ -115,8 +118,7 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
       if (state.currentKanaId != requestedKanaId) {
         return;
       }
-      final userId = await _activeUserQuery.getActiveUserId() ?? 0;
-      final detail = await _kanaQuery.getKanaDetail(userId, requestedKanaId);
+      final detail = await _kanaQuery.getKanaDetail(requestedKanaId);
       if (state.currentKanaId != requestedKanaId) {
         return;
       }
@@ -125,7 +127,12 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
         return;
       }
 
-      final learningState = detail.learningState;
+      final learningState =
+          ref.read(kanaStateCacheProvider)[requestedKanaId] ??
+          current.learningState;
+      if (learningState != null) {
+        _kanaStateCache.upsertState(learningState);
+      }
       state = state.copyWith(
         currentKanaId: requestedKanaId,
         learningState: learningState,
@@ -202,7 +209,18 @@ class KanaStrokeController extends Notifier<KanaStrokeState> {
   }
 
   void _setCurrentLearningState(KanaLearningState learningState) {
+    final updatedKanaLetters = [
+      for (final kana in state.kanaLetters)
+        kana.letter.id == learningState.kanaId
+            ? KanaLetterWithState(
+                letter: kana.letter,
+                learningState: learningState,
+              )
+            : kana,
+    ];
+    _kanaStateCache.upsertState(learningState);
     state = state.copyWith(
+      kanaLetters: updatedKanaLetters,
       currentKanaId: learningState.kanaId,
       learningState: learningState,
     );

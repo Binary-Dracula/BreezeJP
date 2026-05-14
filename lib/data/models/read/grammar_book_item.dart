@@ -1,7 +1,6 @@
 import '../../../core/constants/learning_status.dart';
 
-/// 语法本列表项（只读，用于列表展示）
-/// JOIN study_grammars + grammars 的查询结果
+/// 语法本列表项（只读，来自远端语法本 API）
 class GrammarBookItem {
   final int studyGrammarId;
   final int grammarId;

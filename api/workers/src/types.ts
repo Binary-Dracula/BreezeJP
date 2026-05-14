@@ -140,67 +140,18 @@ export interface PaginationMeta {
   server_time: string;
 }
 
-export type ReviewSessionPhase = 'testing' | 'grading';
 export type ReviewSessionStatus = 'active' | 'completed' | 'abandoned';
 
 export interface ReviewSessionEnvelope<TItem> {
   session_id: string | null;
   current_index: number;
-  current_phase: ReviewSessionPhase;
-  has_mistake_on_current: boolean;
   items: TItem[];
 }
 
 export interface ReviewSessionUpdateRequest<TItem> {
   session_id: string;
   current_index?: number;
-  current_phase?: ReviewSessionPhase;
-  has_mistake_on_current?: boolean;
   items?: TItem[];
   is_finished?: boolean;
 }
 
-// =============================================================
-// 快照同步系统（v2）
-// =============================================================
-
-/** 用户数据快照（每个字段 null 表示"跳过该实体，不覆盖服务端" */
-export interface SyncSnapshot {
-  profile?: Record<string, unknown> | null;
-  word_states?: Record<string, unknown>[] | null;
-  word_favorites?: Record<string, unknown>[] | null;
-  word_example_favorites?: Record<string, unknown>[] | null;
-  kana_states?: Record<string, unknown>[] | null;
-  grammar_states?: Record<string, unknown>[] | null;
-  book_progress?: Record<string, unknown>[] | null;
-}
-
-/** POST /api/v1/sync/checkpoint 请求体 */
-export interface SyncCheckpointRequest {
-  device_id: string;
-  platform?: string;
-  /** true = 强制接管（登录/bootstrap 时），false = 后台同步（被踢时不抢占） */
-  force_takeover?: boolean;
-  snapshot?: SyncSnapshot | null;
-}
-
-/** POST /api/v1/sync/checkpoint 响应体 */
-export interface SyncCheckpointResponse {
-  data: {
-    profile: Record<string, unknown> | null;
-    word_states: Record<string, unknown>[];
-    word_favorites: Record<string, unknown>[];
-    word_example_favorites: Record<string, unknown>[];
-    kana_states: Record<string, unknown>[];
-    grammar_states: Record<string, unknown>[];
-    book_progress: Record<string, unknown>[];
-  };
-  meta: {
-    server_time: string;
-    active_device_id: string;
-    /** true 表示此次 checkpoint 接管了另一台设备的会话 */
-    took_over: boolean;
-    /** true 表示当前设备已被其他设备接管，本次未更新 active_device_id */
-    displaced: boolean;
-  };
-}

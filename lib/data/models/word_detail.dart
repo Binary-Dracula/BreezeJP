@@ -2,18 +2,20 @@ import 'dart:convert';
 import 'word.dart';
 import '../../core/constants/learning_status.dart';
 
-/// 单词完整详情（2.0 — 聚合 words + word_details + word_examples）
+/// 单词完整详情（来自远端单词详情 API）
 class WordDetail {
   final Word word;
   final WordRichContent richContent;
   final List<WordExample> examples;
   final LearningStatus userState;
+  final bool isFavorited;
 
   WordDetail({
     required this.word,
     required this.richContent,
     required this.examples,
     this.userState = LearningStatus.learning,
+    this.isFavorited = false,
   });
 
   /// 获取主要释义
@@ -31,31 +33,14 @@ class WordDetail {
     WordRichContent? richContent,
     List<WordExample>? examples,
     LearningStatus? userState,
+    bool? isFavorited,
   }) {
     return WordDetail(
       word: word ?? this.word,
       richContent: richContent ?? this.richContent,
       examples: examples ?? this.examples,
       userState: userState ?? this.userState,
-    );
-  }
-
-  /// 从本地 DB 的三表 JOIN 创建
-  factory WordDetail.fromDbMaps({
-    required Map<String, dynamic> wordMap,
-    Map<String, dynamic>? detailMap,
-    List<Map<String, dynamic>>? exampleMaps,
-    int? userState,
-  }) {
-    return WordDetail(
-      word: Word.fromMap(wordMap),
-      richContent: detailMap != null
-          ? WordRichContent.fromMap(detailMap)
-          : WordRichContent.empty(),
-      examples: exampleMaps?.map((m) => WordExample.fromMap(m)).toList() ?? [],
-      userState: userState != null
-          ? LearningStatus.fromValue(userState)
-          : LearningStatus.learning,
+      isFavorited: isFavorited ?? this.isFavorited,
     );
   }
 
@@ -73,11 +58,12 @@ class WordDetail {
               ?.map((e) => WordExample.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      isFavorited: json['is_favorited'] == true,
     );
   }
 }
 
-/// word_details.rich_content 的结构化包装
+/// 远端 detail payload 中 rich_content 的结构化包装
 class WordRichContent {
   final List<Map<String, dynamic>> meanings;
   final List<Map<String, dynamic>>? grammarRules;
@@ -280,6 +266,7 @@ class WordExample {
   final String chinese;
   final bool hasAudio;
   final int sortOrder;
+  final bool isFavorited;
 
   WordExample({
     required this.id,
@@ -288,6 +275,7 @@ class WordExample {
     required this.chinese,
     this.hasAudio = false,
     this.sortOrder = 0,
+    this.isFavorited = false,
   });
 
   factory WordExample.fromMap(Map<String, dynamic> map) {
@@ -298,6 +286,7 @@ class WordExample {
       chinese: (map['chinese'] as String?) ?? '',
       hasAudio: (map['has_audio'] as int?) == 1,
       sortOrder: (map['sort_order'] as int?) ?? 0,
+      isFavorited: false,
     );
   }
 
@@ -309,6 +298,7 @@ class WordExample {
       chinese: (json['chinese'] as String?) ?? '',
       hasAudio: json['has_audio'] == true,
       sortOrder: (json['sort_order'] as int?) ?? 0,
+      isFavorited: json['is_favorited'] == true,
     );
   }
 

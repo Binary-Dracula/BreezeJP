@@ -1,4 +1,6 @@
 class StudyGrammar {
+  static const Object _sentinel = Object();
+
   final int id;
   final int userId;
   final int grammarId;
@@ -94,8 +96,8 @@ class StudyGrammar {
     int? userId,
     int? grammarId,
     int? learningStatus,
-    DateTime? nextReviewAt,
-    DateTime? lastReviewedAt,
+    Object? nextReviewAt = _sentinel,
+    Object? lastReviewedAt = _sentinel,
     int? streak,
     int? totalReviews,
     int? failCount,
@@ -111,8 +113,12 @@ class StudyGrammar {
       userId: userId ?? this.userId,
       grammarId: grammarId ?? this.grammarId,
       learningStatus: learningStatus ?? this.learningStatus,
-      nextReviewAt: nextReviewAt ?? this.nextReviewAt,
-      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
+      nextReviewAt: nextReviewAt == _sentinel
+          ? this.nextReviewAt
+          : nextReviewAt as DateTime?,
+      lastReviewedAt: lastReviewedAt == _sentinel
+          ? this.lastReviewedAt
+          : lastReviewedAt as DateTime?,
       streak: streak ?? this.streak,
       totalReviews: totalReviews ?? this.totalReviews,
       failCount: failCount ?? this.failCount,

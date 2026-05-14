@@ -11,6 +11,11 @@ export interface AuthPayload {
   exp: number;
 }
 
+export interface OptionalAuthResult {
+  auth: AuthPayload | null;
+  invalid: boolean;
+}
+
 // 缓存 JWKS 公钥（Worker 生命周期内有效，约 30s~5min）
 let cachedKeys: Map<string, CryptoKey> = new Map();
 let cacheExpiry = 0;
@@ -122,6 +127,22 @@ export async function verifyAuth(
     console.error('JWT verification error:', e);
     return null;
   }
+}
+
+export async function verifyOptionalAuth(
+  request: Request,
+  env: Env,
+): Promise<OptionalAuthResult> {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { auth: null, invalid: false };
+  }
+
+  const auth = await verifyAuth(request, env);
+  return {
+    auth,
+    invalid: auth == null,
+  };
 }
 
 /**

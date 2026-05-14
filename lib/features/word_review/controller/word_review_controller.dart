@@ -1,17 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
 import '../../../core/algorithm/srs_types.dart';
+import '../../../core/providers/home_summary_invalidation_provider.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../data/commands/active_user_command.dart';
 import '../../../data/commands/active_user_command_provider.dart';
 import '../../../data/commands/review_session_remote_command.dart';
-import '../../../data/commands/word_command.dart';
+import '../../../data/models/learning_session.dart';
 import '../../../data/models/user.dart';
 import '../../../data/queries/active_user_query.dart';
 import '../../../data/queries/active_user_query_provider.dart';
 import '../../../data/queries/study_remote_query.dart';
 import '../../../data/queries/study_remote_query_provider.dart';
+import '../../../data/repositories/learning_session_repository.dart';
+import '../../../data/repositories/learning_session_repository_provider.dart';
+import '../../review/shared/review_session_codec.dart';
 
 import '../state/word_review_item.dart';
 import '../state/word_review_state.dart';
@@ -22,13 +27,18 @@ final wordReviewControllerProvider =
     );
 
 class WordReviewController extends Notifier<WordReviewState> {
+  static const _sessionTtl = Duration(days: 7);
+
   ActiveUserCommand get _activeUserCommand =>
       ref.read(activeUserCommandProvider);
   ActiveUserQuery get _activeUserQuery => ref.read(activeUserQueryProvider);
   StudyRemoteQuery get _studyRemoteQuery => ref.read(studyRemoteQueryProvider);
   ReviewSessionRemoteCommand get _reviewSessionRemoteCommand =>
       ref.read(reviewSessionRemoteCommandProvider);
-  WordCommand get _wordCommand => ref.read(wordCommandProvider);
+  LearningSessionRepository get _sessionRepo =>
+      ref.read(learningSessionRepositoryProvider);
+  HomeSummaryInvalidationNotifier get _homeSummaryInvalidation =>
+      ref.read(homeSummaryInvalidationProvider.notifier);
 
   @override
   WordReviewState build() => const WordReviewState();
@@ -44,10 +54,14 @@ class WordReviewController extends Notifier<WordReviewState> {
     required bool isEmpty,
   }) {
     state = state.copyWith(
+      localSessionId: null,
       sessionId: null,
+      sessionCreatedAt: null,
       isLoading: isLoading,
       isEmpty: isEmpty,
+      initialItems: const [],
       items: const [],
+      answeredResults: const [],
       currentIndex: 0,
       currentPhase: ReviewCardPhase.testing,
       hasMistakeOnCurrent: false,
@@ -63,7 +77,12 @@ class WordReviewController extends Notifier<WordReviewState> {
       _setSessionBootstrapState(isLoading: true, isEmpty: false);
 
       final user = await _getActiveUser();
-      final remoteSession = await _studyRemoteQuery.fetchWordReviewSession(
+      final restored = await _restoreLocalSession(user);
+      if (restored) {
+        return;
+      }
+
+      final remoteSession = await _studyRemoteQuery.createWordReviewSession(
         localUserId: user.id,
       );
       final items = remoteSession.items
@@ -86,23 +105,40 @@ class WordReviewController extends Notifier<WordReviewState> {
         return;
       }
 
-      final safeIndex = _resolveSafeCurrentIndex(
-        remoteSession.currentIndex,
-        items.length,
-      );
+      final remoteSessionId = remoteSession.sessionId;
+      if (remoteSessionId == null || remoteSessionId.isEmpty) {
+        throw StateError('Remote word review session id is missing');
+      }
 
-      logger.info('Resume remote word review session: ${items.length} items');
+      final localSession = LearningSession.wordReview(
+        userId: user.id,
+        serverSessionId: remoteSessionId,
+        dataPayload: encodeWordReviewSessionPayload(
+          initialItems: items,
+          dynamicQueue: items,
+          answeredResults: const [],
+          currentIndex: 0,
+        ),
+      );
+      final localSessionId = await _sessionRepo.createSession(localSession);
+
+      logger.info('Create remote word review session: ${items.length} items');
 
       state = state.copyWith(
-        sessionId: remoteSession.sessionId,
+        localSessionId: localSessionId,
+        sessionId: remoteSessionId,
+        sessionCreatedAt: localSession.createdAt,
         isLoading: false,
         isEmpty: false,
+        initialItems: items,
         items: items,
-        currentIndex: safeIndex,
-        currentPhase: _reviewCardPhaseFromApi(remoteSession.currentPhase),
-        hasMistakeOnCurrent: remoteSession.hasMistakeOnCurrent,
+        answeredResults: const [],
+        currentIndex: 0,
+        currentPhase: ReviewCardPhase.testing,
+        hasMistakeOnCurrent: false,
         isAllFinished: false,
         error: null,
+        isNetworkError: false,
       );
 
       await _prepareCurrentCardOptions();
@@ -115,6 +151,85 @@ class WordReviewController extends Notifier<WordReviewState> {
         isNetworkError: isNetworkError,
       );
     }
+  }
+
+  Future<bool> _restoreLocalSession(User user) async {
+    final session = await _sessionRepo.getActiveSessionByType(
+      user.id,
+      LearningSessionType.wordReview,
+    );
+    if (session == null) {
+      return false;
+    }
+
+    if (_isSessionExpired(session.createdAt)) {
+      await _sessionRepo.deleteSession(session.id);
+      return false;
+    }
+
+    final snapshot = decodeWordReviewSessionPayload(session.dataPayload);
+    if (snapshot.dynamicQueue.isEmpty || session.serverSessionId == null) {
+      await _sessionRepo.deleteSession(session.id);
+      return false;
+    }
+
+    if (snapshot.currentIndex >= snapshot.dynamicQueue.length) {
+      state = state.copyWith(
+        localSessionId: session.id,
+        sessionId: session.serverSessionId,
+        sessionCreatedAt: session.createdAt,
+        isLoading: false,
+        isEmpty: false,
+        initialItems: snapshot.initialItems,
+        items: snapshot.dynamicQueue,
+        answeredResults: snapshot.answeredResults,
+        currentIndex: snapshot.currentIndex,
+        currentPhase: ReviewCardPhase.testing,
+        hasMistakeOnCurrent: false,
+        currentOptions: const [],
+        cardStartTime: null,
+        isAllFinished: true,
+        error: null,
+        isNetworkError: false,
+      );
+
+      final completed = await _completeCurrentSession(
+        autoRestartOnStale: false,
+      );
+      if (completed) {
+        await loadReview();
+      }
+      return true;
+    }
+
+    final safeIndex = _resolveSafeCurrentIndex(
+      snapshot.currentIndex,
+      snapshot.dynamicQueue.length,
+    );
+
+    logger.info(
+      'Resume local word review session: ${snapshot.dynamicQueue.length} items',
+    );
+
+    state = state.copyWith(
+      localSessionId: session.id,
+      sessionId: session.serverSessionId,
+      sessionCreatedAt: session.createdAt,
+      isLoading: false,
+      isEmpty: false,
+      initialItems: snapshot.initialItems,
+      items: snapshot.dynamicQueue,
+      answeredResults: snapshot.answeredResults,
+      currentIndex: safeIndex,
+      currentPhase: ReviewCardPhase.testing,
+      hasMistakeOnCurrent: false,
+      isAllFinished: false,
+      error: null,
+      isNetworkError: false,
+    );
+
+    await _prepareCurrentCardOptions();
+    return true;
   }
 
   /// 为当前卡片生成选项并记录答题开始时间
@@ -157,41 +272,10 @@ class WordReviewController extends Notifier<WordReviewState> {
     final isCorrect = selectedOption == correctOption;
 
     if (isCorrect) {
-      // 根据答题耗时自动评分（无需用户手动选 Hard/Good/Easy）
-      if (!state.hasMistakeOnCurrent) {
-        final elapsed = state.cardStartTime != null
-            ? DateTime.now().difference(state.cardStartTime!).inMilliseconds /
-                  1000.0
-            : 5.0;
-        final autoRating = _ratingFromElapsed(elapsed);
-        try {
-          await _wordCommand.onWordReviewed(
-            userId: item.studyWord.userId,
-            wordId: item.studyWord.wordId,
-            bookId: item.studyWord.bookId,
-            rating: autoRating,
-          );
-        } catch (e, stackTrace) {
-          logger.error('Failed to log auto rating', e, stackTrace);
-        }
-      }
       state = state.copyWith(currentPhase: ReviewCardPhase.grading);
-      await _persistCurrentSession();
     } else {
       if (!state.hasMistakeOnCurrent) {
         state = state.copyWith(hasMistakeOnCurrent: true);
-
-        try {
-          await _wordCommand.onWordReviewed(
-            userId: item.studyWord.userId,
-            wordId: item.studyWord.wordId,
-            bookId: item.studyWord.bookId,
-            rating: ReviewRating.again,
-          );
-        } catch (e, stackTrace) {
-          logger.error('Failed to log again rating', e, stackTrace);
-        }
-        await _persistCurrentSession();
       }
     }
   }
@@ -204,29 +288,66 @@ class WordReviewController extends Notifier<WordReviewState> {
   }
 
   Future<void> _goToNextCard() async {
+    final currentItem = state.currentItem;
+    if (currentItem == null) {
+      return;
+    }
+
     final items = List<WordReviewItem>.from(state.items);
+    final answeredResults = List<WordReviewAnsweredResult>.from(
+      state.answeredResults,
+    );
     if (state.hasMistakeOnCurrent) {
-      final currentItem = items[state.currentIndex];
       items.add(currentItem);
+      answeredResults.add(
+        WordReviewAnsweredResult(
+          wordId: currentItem.studyWord.wordId,
+          bookId: currentItem.studyWord.bookId,
+          rating: ReviewRating.again,
+        ),
+      );
+    } else {
+      final elapsed = state.cardStartTime != null
+          ? DateTime.now().difference(state.cardStartTime!).inMilliseconds /
+                1000.0
+          : 5.0;
+      answeredResults.add(
+        WordReviewAnsweredResult(
+          wordId: currentItem.studyWord.wordId,
+          bookId: currentItem.studyWord.bookId,
+          rating: _ratingFromElapsed(elapsed),
+        ),
+      );
     }
 
     final nextIndex = state.currentIndex + 1;
     if (nextIndex >= items.length) {
       state = state.copyWith(
+        currentPhase: ReviewCardPhase.testing,
+        hasMistakeOnCurrent: false,
         isAllFinished: true,
         items: items,
+        answeredResults: answeredResults,
         currentIndex: nextIndex,
+        currentOptions: const [],
+        cardStartTime: null,
+        error: null,
+        isNetworkError: false,
       );
+      await _persistCurrentSession();
       await _completeCurrentSession();
     } else {
       state = state.copyWith(
         items: items,
+        answeredResults: answeredResults,
         currentIndex: nextIndex,
         currentPhase: ReviewCardPhase.testing,
         hasMistakeOnCurrent: false,
+        error: null,
+        isNetworkError: false,
       );
-      await _prepareCurrentCardOptions();
       await _persistCurrentSession();
+      await _prepareCurrentCardOptions();
     }
   }
 
@@ -243,33 +364,85 @@ class WordReviewController extends Notifier<WordReviewState> {
       await _completeCurrentSession();
       return;
     }
-    if (state.items.isEmpty || state.isEmpty) {
-      return;
-    }
-    await _persistCurrentSession();
   }
 
   Future<void> _persistCurrentSession() async {
     final sessionId = state.sessionId;
-    if (sessionId == null) {
+    final localSessionId = state.localSessionId;
+    final createdAt = state.sessionCreatedAt;
+    final userId = _resolveLocalUserId();
+    if (sessionId == null ||
+        localSessionId == null ||
+        createdAt == null ||
+        userId == null) {
       return;
     }
-    await _reviewSessionRemoteCommand.saveWordSession(
-      sessionId: sessionId,
-      state: state,
+
+    final session = LearningSession.wordReview(
+      id: localSessionId,
+      userId: userId,
+      serverSessionId: sessionId,
+      dataPayload: encodeWordReviewSessionPayload(
+        initialItems: state.initialItems,
+        dynamicQueue: state.items,
+        answeredResults: state.answeredResults,
+        currentIndex: state.currentIndex,
+      ),
+      createdAt: createdAt,
     );
+    await _sessionRepo.updateSession(session);
   }
 
-  Future<void> _completeCurrentSession() async {
+  Future<bool> _completeCurrentSession({bool autoRestartOnStale = true}) async {
     final sessionId = state.sessionId;
     if (sessionId == null) {
-      return;
+      return false;
     }
-    await _reviewSessionRemoteCommand.completeWordSession(
-      sessionId: sessionId,
-      state: state,
-    );
-    state = state.copyWith(sessionId: null);
+
+    try {
+      await _reviewSessionRemoteCommand.completeWordSession(
+        sessionId: sessionId,
+        results: state.answeredResults,
+      );
+      await _deleteLocalSession();
+      _homeSummaryInvalidation.markStale();
+      state = state.copyWith(
+        localSessionId: null,
+        sessionId: null,
+        sessionCreatedAt: null,
+        error: null,
+        isNetworkError: false,
+      );
+      return true;
+    } catch (error) {
+      if (_isStaleSessionError(error)) {
+        await _deleteLocalSession();
+        state = state.copyWith(
+          localSessionId: null,
+          sessionId: null,
+          sessionCreatedAt: null,
+          error: null,
+          isNetworkError: false,
+        );
+        if (autoRestartOnStale) {
+          await loadReview();
+        }
+        return false;
+      }
+
+      logger.error(
+        'Complete word review session failed',
+        error,
+        StackTrace.current,
+      );
+      final isNetworkError = _isNetworkError(error);
+      state = state.copyWith(
+        isLoading: false,
+        error: isNetworkError ? null : error.toString(),
+        isNetworkError: isNetworkError,
+      );
+      return false;
+    }
   }
 
   int _resolveSafeCurrentIndex(int currentIndex, int itemCount) {
@@ -285,10 +458,34 @@ class WordReviewController extends Notifier<WordReviewState> {
     return currentIndex;
   }
 
-  ReviewCardPhase _reviewCardPhaseFromApi(String value) {
-    return ReviewCardPhase.values.firstWhere(
-      (phase) => phase.name == value,
-      orElse: () => ReviewCardPhase.testing,
-    );
+  Future<void> _deleteLocalSession() async {
+    final localSessionId = state.localSessionId;
+    if (localSessionId == null) {
+      return;
+    }
+    await _sessionRepo.deleteSession(localSessionId);
+  }
+
+  bool _isSessionExpired(DateTime createdAt) {
+    return DateTime.now().difference(createdAt) > _sessionTtl;
+  }
+
+  int? _resolveLocalUserId() {
+    if (state.items.isNotEmpty) {
+      return state.items.first.studyWord.userId;
+    }
+    if (state.initialItems.isNotEmpty) {
+      return state.initialItems.first.studyWord.userId;
+    }
+    return null;
+  }
+
+  bool _isStaleSessionError(Object error) {
+    return error is DioException && error.response?.statusCode == 409;
+  }
+
+  bool _isNetworkError(Object error) {
+    return error is NetworkException ||
+        (error is DioException && error.type != DioExceptionType.badResponse);
   }
 }

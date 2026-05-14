@@ -8,7 +8,7 @@ import '../../core/utils/app_logger.dart';
 
 class AppDatabase {
   static const _dbName = "breeze_jp.sqlite";
-  static const _dbVersion = 4;
+  static const _dbVersion = 5;
 
   static Database? _database;
 
@@ -61,116 +61,87 @@ class AppDatabase {
   }
 
   Future<void> _ensureSchema(Database db) async {
-    final bookColumns = await db.rawQuery("PRAGMA table_info(books)");
-    final hasIsAvailable = bookColumns.any(
-      (row) => row['name'] == 'is_available',
-    );
+    await _ensureLearningSessionSchema(db);
 
-    if (!hasIsAvailable) {
-      await db.execute(
-        'ALTER TABLE books ADD COLUMN is_available INTEGER NOT NULL DEFAULT 1',
-      );
-    }
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_books_available_sort ON books (is_available, sort_order)',
-    );
-
-    final sessionColumns = await db.rawQuery(
-      "PRAGMA table_info(learning_sessions)",
-    );
-    final hasWordsPayload = sessionColumns.any(
-      (row) => row['name'] == 'words_payload',
-    );
-
-    if (!hasWordsPayload && sessionColumns.isNotEmpty) {
-      await db.execute(
-        'ALTER TABLE learning_sessions ADD COLUMN words_payload TEXT',
-      );
-    }
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS sync_state (
-        sync_user_id TEXT PRIMARY KEY,
-        device_id TEXT,
-        last_pulled_seq INTEGER NOT NULL DEFAULT 0,
-        last_push_at INTEGER,
-        last_success_at INTEGER,
-        bootstrap_version INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL DEFAULT 0,
-        updated_at INTEGER NOT NULL DEFAULT 0
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS sync_outbox (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sync_user_id TEXT NOT NULL,
-        mutation_id TEXT NOT NULL,
-        entity_type TEXT NOT NULL,
-        entity_key TEXT NOT NULL,
-        operation TEXT NOT NULL,
-        payload TEXT NOT NULL,
-        base_version INTEGER,
-        status TEXT NOT NULL DEFAULT 'pending',
-        retry_count INTEGER NOT NULL DEFAULT 0,
-        next_retry_at INTEGER,
-        last_error TEXT,
-        created_at INTEGER NOT NULL DEFAULT 0,
-        updated_at INTEGER NOT NULL DEFAULT 0,
-        UNIQUE(sync_user_id, mutation_id)
-      )
-    ''');
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_sync_outbox_user_status_created ON sync_outbox (sync_user_id, status, created_at)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_sync_outbox_status_retry ON sync_outbox (status, next_retry_at)',
-    );
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS user_word_favorites (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        word_id TEXT NOT NULL,
-        book_id TEXT NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT 0,
-        updated_at INTEGER NOT NULL DEFAULT 0,
-        UNIQUE(user_id, word_id)
-      )
-    ''');
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_user_word_favorites_user_updated ON user_word_favorites (user_id, updated_at DESC)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_user_word_favorites_user_book ON user_word_favorites (user_id, book_id)',
-    );
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS user_word_example_favorites (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        example_id TEXT NOT NULL,
-        word_id TEXT NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT 0,
-        updated_at INTEGER NOT NULL DEFAULT 0,
-        UNIQUE(user_id, example_id)
-      )
-    ''');
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_user_word_example_favorites_user_updated ON user_word_example_favorites (user_id, updated_at DESC)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_user_word_example_favorites_user_word ON user_word_example_favorites (user_id, word_id)',
-    );
+    await db.execute('DROP TABLE IF EXISTS study_words');
+    await db.execute('DROP TABLE IF EXISTS book_progress');
+    await db.execute('DROP TABLE IF EXISTS study_grammars');
+    await db.execute('DROP TABLE IF EXISTS user_word_favorites');
+    await db.execute('DROP TABLE IF EXISTS user_word_example_favorites');
+    await db.execute('DROP TABLE IF EXISTS lesson_word_map');
+    await db.execute('DROP TABLE IF EXISTS lessons');
+    await db.execute('DROP TABLE IF EXISTS word_examples');
+    await db.execute('DROP TABLE IF EXISTS word_details');
+    await db.execute('DROP TABLE IF EXISTS words');
+    await db.execute('DROP TABLE IF EXISTS books');
+    await db.execute('DROP TABLE IF EXISTS grammar_examples');
+    await db.execute('DROP TABLE IF EXISTS grammar_contexts');
+    await db.execute('DROP TABLE IF EXISTS grammar_meanings');
+    await db.execute('DROP TABLE IF EXISTS grammars');
+    await db.execute('DROP TABLE IF EXISTS article_details');
+    await db.execute('DROP TABLE IF EXISTS articles');
 
     await _ensureKanaSchemaAndContent(db);
   }
 
+  Future<void> _ensureLearningSessionSchema(Database db) async {
+    final sessionColumns = await db.rawQuery(
+      'PRAGMA table_info(learning_sessions)',
+    );
+    final columnNames = sessionColumns
+        .map((row) => row['name'] as String)
+        .toSet();
+    const targetColumns = {
+      'id',
+      'user_id',
+      'session_type',
+      'server_session_id',
+      'book_id',
+      'status',
+      'data_payload',
+      'created_at',
+    };
+
+    final needsRebuild =
+        sessionColumns.isEmpty ||
+        !columnNames.containsAll(targetColumns) ||
+        columnNames.contains('words_payload') ||
+        columnNames.contains('current_index') ||
+        columnNames.contains('batch_start_sort') ||
+        columnNames.contains('batch_end_sort') ||
+        columnNames.contains('started_at') ||
+        columnNames.contains('updated_at');
+
+    if (needsRebuild) {
+      await db.execute('DROP TABLE IF EXISTS learning_sessions');
+      await db.execute('''
+        CREATE TABLE learning_sessions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          session_type TEXT NOT NULL CHECK (
+            session_type IN ('word_learn', 'word_review', 'kana_review')
+          ),
+          server_session_id TEXT,
+          book_id TEXT,
+          status TEXT NOT NULL CHECK (status IN ('active', 'completed')),
+          data_payload TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+    }
+
+    await db.execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_sessions_active_book ON learning_sessions (user_id, book_id) WHERE session_type = 'word_learn' AND status = 'active'",
+    );
+    await db.execute(
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_sessions_active_type ON learning_sessions (user_id, session_type) WHERE session_type != 'word_learn' AND status = 'active'",
+    );
+  }
+
   Future<void> _ensureKanaSchemaAndContent(Database db) async {
+    await db.execute('DROP TABLE IF EXISTS kana_examples');
+    await db.execute('DROP TABLE IF EXISTS kana_learning_state');
+
     await db.execute('''
       CREATE TABLE IF NOT EXISTS kana_audio (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -200,49 +171,12 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS kana_examples (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        kana_id INTEGER,
-        example_jp TEXT,
-        example_furigana TEXT,
-        example_cn TEXT,
-        created_at TEXT,
-        FOREIGN KEY(kana_id) REFERENCES kana_letters(id)
-      )
-    ''');
-
-    await db.execute('''
       CREATE TABLE IF NOT EXISTS kana_stroke_order (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         kana_id INTEGER NOT NULL UNIQUE REFERENCES kana_letters(id),
         svg TEXT
       )
     ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS kana_learning_state (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL REFERENCES users(id),
-        kana_id INTEGER NOT NULL REFERENCES kana_letters(id),
-        learning_status INTEGER DEFAULT 0 NOT NULL,
-        next_review_at INTEGER,
-        last_reviewed_at INTEGER,
-        streak INTEGER DEFAULT 0,
-        total_reviews INTEGER DEFAULT 0,
-        fail_count INTEGER DEFAULT 0,
-        interval REAL DEFAULT 0,
-        ease_factor REAL DEFAULT 2.5,
-        stability REAL DEFAULT 0,
-        difficulty REAL DEFAULT 0,
-        created_at INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
-        updated_at INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL,
-        UNIQUE (user_id, kana_id)
-      )
-    ''');
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_kana_review_schedule ON kana_learning_state (user_id, learning_status, next_review_at)',
-    );
 
     final kanaAudioCount = await _countRows(db, 'kana_audio');
     final kanaLettersCount = await _countRows(db, 'kana_letters');
@@ -280,7 +214,6 @@ class AppDatabase {
 
       final kanaAudioRows = await seedDb.query('kana_audio');
       final kanaLetterRows = await seedDb.query('kana_letters');
-      final kanaExampleRows = await seedDb.query('kana_examples');
       final kanaStrokeRows = await seedDb.query('kana_stroke_order');
 
       await db.transaction((txn) async {
@@ -302,14 +235,6 @@ class AppDatabase {
           );
         }
 
-        for (final row in kanaExampleRows) {
-          batch.insert(
-            'kana_examples',
-            Map<String, Object?>.from(row),
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
-        }
-
         for (final row in kanaStrokeRows) {
           batch.insert(
             'kana_stroke_order',
@@ -322,7 +247,7 @@ class AppDatabase {
       });
 
       logger.info(
-        '[DB] kana_seed_complete: audio=${kanaAudioRows.length} letters=${kanaLetterRows.length} examples=${kanaExampleRows.length} stroke=${kanaStrokeRows.length}',
+        '[DB] kana_seed_complete: audio=${kanaAudioRows.length} letters=${kanaLetterRows.length} stroke=${kanaStrokeRows.length}',
       );
     } catch (e, stackTrace) {
       logger.dbError(

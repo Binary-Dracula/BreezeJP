@@ -25,7 +25,7 @@ final vocabularyBookControllerProvider =
 const int _kPageSize = 20;
 
 /// 单词本控制器
-/// 编排 VocabularyBookQuery（只读）+ WordCommand（写入）
+/// 编排远端单词本读取与状态写入。
 class VocabularyBookController extends Notifier<VocabularyBookState> {
   int? _userId;
 

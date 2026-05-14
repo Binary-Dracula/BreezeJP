@@ -171,83 +171,83 @@ features/[feature]/
 - Query/Analytics 通过 `databaseProvider` 注入 Database 实例进行操作。
 - Repository 内部通过 `AppDatabase.instance` 访问（**不对外暴露**给 Controller/UI）。
 - 所有 Model 必须实现 `fromMap(Map<String, dynamic>)` 和 `toMap()`。
-- **时间字段**在 DB 中使用**秒级 Unix 时间戳**：
-  - 读取：`DateTime.fromMillisecondsSinceEpoch(seconds * 1000)`
-  - 写入：`(DateTime.now().millisecondsSinceEpoch / 1000).round()`
+- **时间字段禁止做全局统一假设**：当前仓库同时存在秒级整数、毫秒整数和 ISO/TIMESTAMPTZ 字段。
+  - 读取/写入时必须以**具体表结构和对应 Model** 为准。
+  - 例如：本地 `learning_sessions.created_at` 使用毫秒整数；部分本地状态表仍使用秒级整数；远端 `created_at`/`updated_at` 常为 ISO/TIMESTAMPTZ。
+  - 新增字段时，必须在 DDL、Model 和文档里明确时间单位。
 - 获取当前用户 ID：必须通过 `ActiveUserQuery`。
 - **命名**：DB 列/表名 `snake_case`；Dart Model `PascalCase`，成员 `camelCase`。
 
 ---
 
-## 12. 统计口径（冻结，不可修改）
+## 12. 首页摘要与聚合口径
 
-| 指标     | 来源                            | 唯一写入口                            |
-| -------- | ------------------------------- | ------------------------------------- |
-| 今日学习 | `daily_stats.new_learned_count` | `firstLearn` 事件触发 Command         |
-| 今日复习 | `daily_stats.review_count`      | 行为发生时 Command 增量写入           |
-| 累计掌握 | 状态表 `mastered` 去重实体数    | 状态变更 Command                      |
-| 学习时长 | `daily_stats.total_time_ms`     | `DailyStatCommand.applyTimeOnlyDelta` |
+| 场景         | 当前权威来源                         | 允许的刷新 / 写入边界                       |
+| ------------ | ------------------------------------ | ------------------------------------------- |
+| 首页摘要     | `/api/v1/me/home-summary`            | 登录后、进入首页、显式刷新                  |
+| 单词学习进度 | `user_word_states` + `user_book_progress` | `word_learn` / `word_review` 完成时批量提交 |
+| 假名进度     | `user_kana_states`                   | `kana_review` 完成或 `POST /kana/states`    |
+| 语法进度     | `user_grammar_states`                | `POST /grammar/states`                      |
 
-**绝对禁止（统计）：**
+**绝对禁止（聚合与统计）：**
 
-- ❌ 从 logs 回放推导统计
-- ❌ 从状态表反推事件
-- ❌ 混用 state-based 与 event-based 统计
-- ❌ 补算 / 修正 / 回填统计
+- ❌ 假定当前仓库仍以 `daily_stats` / `study_logs` 作为现役权威表
+- ❌ 在 UI / Controller 里从多个状态表手工拼装首页摘要
+- ❌ 用历史文档中的统计口径覆盖当前 schema、API 或实现
 
 ---
 
 ## 13. 词汇（Word）学习模型
 
-- **`study_words`**（Status 层）：当前快照状态（`seen`, `learning`, `mastered`, `ignored`）。**状态变化不等于发生了学习事件**。
-- **`study_logs`**（Event 层）：行为记录。`firstLearn` 仅产生于用户**第一次点击"加入复习"**，每对 `(user_id, word_id)` **最多一条**。
-- **`daily_stats`**（Analytics 层）：今日统计事实，由 Command 写入。
+- **`user_word_states`**：单词学习状态与 SRS 快照，服务端权威。
+- **`user_book_progress`**：按书聚合的学习进度与游标，只在学习会话完成时推进。
+- **本地 `learning_sessions`**：仅保存活跃会话快照，用于恢复，不是长期状态表。
+- 单词收藏 / 例句收藏为即时远端写入，不进入本地 checkpoint 流程。
 
 **禁止项：**
 
-- ❌ 从状态变化（`seen → learning`）推导 `firstLearn`
-- ❌ 因 `study_words` 不存在而补写 `firstLearn`
-- ❌ 从 logs 或状态拼装推算统计供给 UI
+- ❌ 依赖已废弃的本地 `study_words` / `book_progress` 作为运行时权威
+- ❌ 在翻卡过程中逐题写远端状态
+- ❌ 从不存在或未接线的事件表反推当前学习状态
 
 ---
 
 ## 14. 假名（Kana）学习模型
 
-- 纯 **State-based** 设计，使用 `kana_learning_state` 表。
-- **不存在** `firstLearn`、`study_logs` 记录，**不影响** `daily_stats`。
-- 状态切换：`learning ↔ mastered`。
-- 新记录**仅在完整描红后**创建。
-- **❌ 禁止** 将假名进度混入词汇统计（Word ↔ Kana 统计严格隔离）。
+- **内容层**：`kana_letters`、`kana_audio`、`kana_stroke_order` 来自本地 seed DB。
+- **状态层**：`user_kana_states` 为云端权威。
+- **复习**：走 `review session` 批量提交；**非复习学习**：通过 `POST /kana/states` 即时写入。
+- 当前文档和实现都不应把假名接入 `study_logs` / `daily_stats` 这一套历史口径。
 
 ---
 
 ## 15. 语法（Grammar）学习模型
 
-- 三层结构：`grammars` → `grammar_meanings` → `grammar_examples`。
-- SRS 控制通过 `study_grammars` 完成。
-- **不产生** `study_logs`，**不影响** `daily_stats`。
+- 内容层使用 `grammars`、`grammar_meanings`、`grammar_contexts`、`grammar_examples`。
+- 学习状态由 `user_grammar_states` 管理。
+- 当前实现没有语法专属本地状态镜像，也不依赖事件表推导统计。
 
 ---
 
 ## 16. Word vs Kana 差异对照
 
-| 维度        | Word（单词）  | Kana（假名） |
-| ----------- | ------------- | ------------ |
-| 数据模型    | Event + State | State only   |
-| SRS         | ✅ 独立 SRS   | ✅ 独立 SRS  |
-| study_logs  | ✅ 写入       | ❌ 不写      |
-| daily_stats | ✅ 影响       | ❌ 不影响    |
-| firstLearn  | ✅ 产生       | ❌ 不产生    |
+| 维度         | Word（单词）                              | Kana（假名）                                |
+| ------------ | ----------------------------------------- | ------------------------------------------- |
+| 内容来源     | API / 远端内容表                          | 本地 seed DB                                |
+| 状态来源     | `user_word_states` + `user_book_progress` | `user_kana_states`                          |
+| 批量提交时机 | `word_learn` / `word_review` complete     | `kana_review` complete                      |
+| 即时写入     | 收藏切换                                  | 单个假名学习 `POST /kana/states`            |
+| 本地恢复     | `learning_sessions`                       | `learning_sessions`                         |
 
-> ❌ **禁止统一 Word 与 Kana 的学习语义**，这是架构破坏。
+> ❌ **禁止把 Word 与 Kana 合并成同一套本地状态或统计假设。**
 
 ---
 
-## 17. 学习时长追踪
+## 17. 时间字段与实现纪律
 
-- 发起源自 `PageDurationTracker`。
-- 唯一写入通道：`DailyStatCommand.applyTimeOnlyDelta`。
-- **❌ 禁止** 其他路径修改学习时长统计。
+- 不允许再写“全库统一秒级时间戳”这类规则。
+- 时间字段必须逐表核对：Schema、Model、DTO、SQLite 建表语句四处保持一致。
+- 涉及 session TTL、review 到期时间、created_at 比较时，先确认单位再实现逻辑。
 
 ---
 
@@ -269,7 +269,7 @@ features/[feature]/
 | 文件名      | `snake_case`      | `kana_chart_page.dart` |
 | 类名        | `PascalCase`      | `KanaChartPage`        |
 | 方法/变量   | `camelCase`       | `loadKanaChart()`      |
-| 数据库列/表 | `snake_case`      | `kana_learning_state`  |
+| 数据库列/表 | `snake_case`      | `user_kana_states`     |
 | 路由名      | `kebab-case`      | `/kana-chart`          |
 | Controller  | 后缀 `Controller` | `KanaChartController`  |
 | Command     | 后缀 `Command`    | `KanaCommand`          |
@@ -284,7 +284,7 @@ features/[feature]/
 
 | 约束类别      | 规则内容                                                 |
 | ------------- | -------------------------------------------------------- |
-| 统计数据变更  | 所有 `daily_stats` 写入必须通过 Command，禁止直接操作 DB |
+| 聚合数据变更  | 首页摘要和聚合状态必须通过权威接口或专用 Command，禁止绕过边界直写 DB |
 | 跨层访问      | View/Controller 不得直接访问 Repository 或 DB            |
 | 路由          | 禁止 `Navigator.push`，必须使用 `context.push/go`        |
 | 硬编码文字    | 用户可见字符串必须通过 AppLocalizations                  |

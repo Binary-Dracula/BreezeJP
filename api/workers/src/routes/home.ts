@@ -56,9 +56,12 @@ export async function handleHomeSummary(
   const userName = profileRows[0]?.display_name?.trim() || 'BreezeJP User';
   const reviewCount = parseContentRangeTotal(wordReviewResp.headers.get('content-range')) ?? 0;
   const kanaReviewCount = parseContentRangeTotal(kanaReviewResp.headers.get('content-range')) ?? 0;
-  const masteredWordCount =
-      (parseContentRangeTotal(wordMasteredResp.headers.get('content-range')) ?? 0) +
-      (parseContentRangeTotal(kanaMasteredResp.headers.get('content-range')) ?? 0);
+  const masteredWordCount = parseContentRangeTotal(
+    wordMasteredResp.headers.get('content-range'),
+  ) ?? 0;
+  const kanaMasteredCount = parseContentRangeTotal(
+    kanaMasteredResp.headers.get('content-range'),
+  ) ?? 0;
 
   return jsonResponse(
     {
@@ -67,6 +70,7 @@ export async function handleHomeSummary(
         review_count: reviewCount,
         kana_review_count: kanaReviewCount,
         mastered_word_count: masteredWordCount,
+        kana_mastered_count: kanaMasteredCount,
       },
       meta: { server_time: new Date().toISOString() },
     },

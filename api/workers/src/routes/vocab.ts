@@ -1,6 +1,6 @@
 import { Env, VocabBook, VocabWord, VocabFullDetail, VocabExample, VocabWordDetail } from '../types';
 import { corsHeaders } from '../middleware/cors';
-import { supabaseFetch, jsonResponse, errorResponse } from '../utils/supabase';
+import { supabaseFetch, jsonResponse, errorResponse, supabaseRpc } from '../utils/supabase';
 import { AuthPayload } from '../middleware/auth';
 
 type LessonRow = {
@@ -13,6 +13,44 @@ type LessonWordMapRow = {
   lesson_id: string | null;
   sort_order: number;
 };
+
+type LearnSessionRow = {
+  id: string;
+  user_id: string;
+  book_id: string;
+  status: 'active' | 'completed' | 'abandoned';
+  word_ids: string[];
+  words_payload: unknown[];
+  batch_start_sort: number;
+  batch_end_sort: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type LearnSessionCreateRequest = {
+  book_id?: string;
+  device_id?: string;
+  limit?: number;
+};
+
+type LearnSessionCompleteWordState = {
+  word_id?: string;
+  user_state?: number;
+};
+
+type LearnSessionCompleteRequest = {
+  word_states?: LearnSessionCompleteWordState[];
+  first_review_interval_minutes?: number;
+};
+
+type LearnWordStateUpsert = {
+  word_id: string;
+  book_id: string;
+  user_state: number;
+};
+
+const MAX_SESSION_LIMIT = 50;
 
 /**
  * GET /api/v1/books/:bookId/next-words?after_sort=<N>&limit=<M>
@@ -84,19 +122,44 @@ export async function handleNextWords(
   }, corsHeaders(request));
 }
 
-/**
- * GET /api/v1/learn/books/:bookId/next?limit=<M>
- * 服务端根据云端 user_book_progress.current_sort_cursor 决定下一批学习词。
- */
-export async function handleUserNextWords(
+export async function handleCreateLearnSession(
   request: Request,
   env: Env,
   auth: AuthPayload,
-  bookId: string
 ): Promise<Response> {
-  const url = new URL(request.url);
-  const limitRaw = parseInt(url.searchParams.get('limit') ?? '10', 10);
-  const limit = Math.min(Math.max(limitRaw, 1), 50);
+  let body: LearnSessionCreateRequest;
+  try {
+    body = await request.json<LearnSessionCreateRequest>();
+  } catch {
+    return errorResponse(400, 'BAD_REQUEST', 'Invalid learn session payload');
+  }
+
+  const bookId = body.book_id?.trim();
+  if (!bookId) {
+    return errorResponse(400, 'BAD_REQUEST', 'book_id is required');
+  }
+
+  const limit = clampInt(
+    body.limit == null ? null : String(body.limit),
+    10,
+    1,
+    MAX_SESSION_LIMIT,
+  );
+
+  const activeSession = await getActiveLearnSession(env, auth.sub, bookId);
+  if (activeSession) {
+    return jsonResponse(
+      {
+        data: toLearnSessionEnvelope(activeSession),
+        meta: {
+          total_words: await fetchBookTotalWords(env, bookId),
+          resumed: true,
+          server_time: new Date().toISOString(),
+        },
+      },
+      corsHeaders(request),
+    );
+  }
 
   const bookResp = await supabaseFetch(env, '/books', {
     select: 'id,is_available',
@@ -118,12 +181,16 @@ export async function handleUserNextWords(
     return errorResponse(409, 'BOOK_UNAVAILABLE', 'Book is no longer available');
   }
 
-  const progressResp = await supabaseFetch(env, '/user_book_progress', {
-    select: 'current_sort_cursor',
-    user_id: `eq.${auth.sub}`,
-    book_id: `eq.${bookId}`,
-    limit: '1',
-  });
+  const [progressResp, sequenceRows, learnedIds] = await Promise.all([
+    supabaseFetch(env, '/user_book_progress', {
+      select: 'current_sort_cursor',
+      user_id: `eq.${auth.sub}`,
+      book_id: `eq.${bookId}`,
+      limit: '1',
+    }),
+    fetchBookSequenceRows(env, bookId),
+    fetchUserLearnedWordIds(env, auth.sub, bookId),
+  ]);
 
   if (!progressResp.ok) {
     return errorResponse(500, 'DB_ERROR', 'Failed to read cloud book progress');
@@ -132,50 +199,142 @@ export async function handleUserNextWords(
   const progressRows = (await progressResp.json()) as Array<{ current_sort_cursor: number }>;
   const currentCursor = progressRows[0]?.current_sort_cursor ?? 0;
 
-  // 并行拉取书籍单词顺序表 + 用户已有学习记录的 word_id（任意 state 均排除）
-  const [sequenceRows, learnedIds] = await Promise.all([
-    fetchBookSequenceRows(env, bookId),
-    fetchUserLearnedWordIds(env, auth.sub, bookId),
-  ]);
-
   const nextRows = sequenceRows
     .filter(row => row.book_sort_order > currentCursor && !learnedIds.has(row.word_id))
     .slice(0, limit);
 
   if (nextRows.length === 0) {
-    return jsonResponse({
-      data: [],
-      meta: {
-        has_more: false,
-        total_words: sequenceRows.length,
-        next_cursor: currentCursor,
+    return jsonResponse(
+      {
+        data: emptyLearnSessionEnvelope(bookId, currentCursor),
+        meta: {
+          total_words: sequenceRows.length,
+          resumed: false,
+          server_time: new Date().toISOString(),
+        },
       },
-    }, corsHeaders(request));
+      corsHeaders(request),
+    );
   }
 
-  const wordIds = nextRows.map(m => m.word_id);
+  const wordIds = nextRows.map(row => row.word_id);
   const fullDetails = await fetchFullDetailsBatch(env, wordIds);
-  const result = nextRows.map(m => ({
-    book_sort_order: m.book_sort_order,
-    ...(fullDetails.get(m.word_id) ?? { id: m.word_id }),
+  const wordsPayload = nextRows.map(row => ({
+    book_sort_order: row.book_sort_order,
+    ...(fullDetails.get(row.word_id) ?? { id: row.word_id }),
   }));
-  const nextCursor = nextRows[nextRows.length - 1].book_sort_order;
-  const hasMore = sequenceRows.length > nextCursor;
+  const createdSession = await createLearnSession(
+    env,
+    auth.sub,
+    bookId,
+    wordIds,
+    wordsPayload,
+    currentCursor,
+    nextRows[nextRows.length - 1].book_sort_order,
+    body.device_id?.trim() || null,
+  );
 
-  return jsonResponse({
-    data: result,
-    meta: {
-      has_more: hasMore,
-      total_words: sequenceRows.length,
-      next_cursor: nextCursor,
-      current_cursor: currentCursor,
+  return jsonResponse(
+    {
+      data: toLearnSessionEnvelope(createdSession),
+      meta: {
+        total_words: sequenceRows.length,
+        resumed: false,
+        server_time: new Date().toISOString(),
+      },
     },
-  }, corsHeaders(request));
+    corsHeaders(request),
+  );
+}
+
+export async function handleCompleteLearnSession(
+  request: Request,
+  env: Env,
+  auth: AuthPayload,
+  sessionId: string,
+): Promise<Response> {
+  let body: LearnSessionCompleteRequest;
+  try {
+    body = await request.json<LearnSessionCompleteRequest>();
+  } catch {
+    return errorResponse(400, 'BAD_REQUEST', 'Invalid learn session payload');
+  }
+
+  const existing = await getLearnSessionById(env, auth.sub, sessionId);
+  if (!existing) {
+    return errorResponse(404, 'SESSION_NOT_FOUND', 'Learn session not found');
+  }
+
+  const submittedStates = Array.isArray(body.word_states) ? body.word_states : [];
+  const submittedWordIds = new Set<string>();
+  const overrides = new Map<string, number>();
+  for (const entry of submittedStates) {
+    const wordId = entry.word_id?.trim() ?? '';
+    if (!wordId) {
+      return errorResponse(400, 'BAD_REQUEST', 'word_states[].word_id is required');
+    }
+    if (!existing.word_ids.includes(wordId)) {
+      return errorResponse(400, 'BAD_REQUEST', 'word_states contain word outside current session');
+    }
+    if (submittedWordIds.has(wordId)) {
+      continue;
+    }
+
+    const userState = normalizeLearnUserState(entry.user_state);
+    submittedWordIds.add(wordId);
+    overrides.set(wordId, userState);
+  }
+
+  const finalWordStates: LearnWordStateUpsert[] = existing.word_ids.map(wordId => ({
+    word_id: wordId,
+    book_id: existing.book_id,
+    user_state: overrides.get(wordId) ?? 1,
+  }));
+
+  const totalWords = await fetchBookTotalWords(env, existing.book_id);
+  const rpcResponse = await supabaseRpc(
+    env,
+    'complete_word_learning_session',
+    {
+      p_user_id: auth.sub,
+      p_session_id: sessionId,
+      p_word_states: finalWordStates,
+      p_total_words: totalWords,
+      p_first_review_interval_minutes: clampFirstReviewInterval(body.first_review_interval_minutes),
+    },
+  );
+
+  if (!rpcResponse.ok) {
+    return errorResponse(500, 'DB_ERROR', 'Failed to complete learn session');
+  }
+
+  const payload = await rpcResponse.json<Record<string, unknown>>();
+  if (payload.applied !== true) {
+    if (payload.reason === 'STALE_SESSION') {
+      return errorResponse(409, 'STALE_SESSION', 'Learn session is stale');
+    }
+    return errorResponse(500, 'DB_ERROR', 'Failed to complete learn session');
+  }
+
+  return jsonResponse(
+    {
+      data: {
+        session_id: sessionId,
+        status: 'completed',
+        applied_count: finalWordStates.length,
+      },
+      meta: {
+        total_words: totalWords,
+        server_time: new Date().toISOString(),
+      },
+    },
+    corsHeaders(request),
+  );
 }
 
 /**
  * 获取用户在某本书中已有学习记录（任意 state）的 word_id 集合。
- * 用于 handleUserNextWords 过滤，防止已学词再次出现在新批次里。
+ * 用于学习会话创建时过滤，防止已学词再次出现在新批次里。
  */
 async function fetchUserLearnedWordIds(
   env: Env,
@@ -191,6 +350,14 @@ async function fetchUserLearnedWordIds(
   if (!resp.ok) return new Set();
   const rows = (await resp.json()) as Array<{ word_id: string }>;
   return new Set(rows.map(r => r.word_id));
+}
+
+async function fetchBookTotalWords(
+  env: Env,
+  bookId: string,
+): Promise<number> {
+  const rows = await fetchBookSequenceRows(env, bookId);
+  return rows.length;
 }
 
 /**
@@ -252,6 +419,7 @@ export async function handleWordDetail(
   request: Request,
   env: Env,
   wordId: string,
+  auth?: AuthPayload | null,
 ): Promise<Response> {
   const details = await fetchFullDetailsBatch(env, [wordId]);
   const detail = details.get(wordId);
@@ -260,13 +428,70 @@ export async function handleWordDetail(
     return errorResponse(404, 'WORD_NOT_FOUND', 'Word not found');
   }
 
+  const favoriteState = auth == null
+    ? { isFavorited: false, favoritedExampleIds: new Set<string>() }
+    : await fetchFavoriteState(
+        env,
+        auth.sub,
+        wordId,
+        detail.examples.map((example) => example.id),
+      );
+  const data = {
+    ...detail,
+    is_favorited: favoriteState.isFavorited,
+    examples: detail.examples.map((example) => ({
+      ...example,
+      is_favorited: favoriteState.favoritedExampleIds.has(example.id),
+    })),
+  };
+
   return jsonResponse(
     {
-      data: detail,
+      data,
       meta: { server_time: new Date().toISOString() },
     },
     corsHeaders(request),
   );
+}
+
+async function fetchFavoriteState(
+  env: Env,
+  userId: string,
+  wordId: string,
+  exampleIds: string[],
+): Promise<{ isFavorited: boolean; favoritedExampleIds: Set<string> }> {
+  const [wordFavoriteResp, exampleFavoriteResp] = await Promise.all([
+    supabaseFetch(env, '/user_word_favorites', {
+      select: 'word_id',
+      user_id: `eq.${userId}`,
+      word_id: `eq.${wordId}`,
+      limit: '1',
+    }),
+    exampleIds.length === 0
+      ? Promise.resolve(null)
+      : supabaseFetch(env, '/user_word_example_favorites', {
+          select: 'example_id',
+          user_id: `eq.${userId}`,
+          example_id: `in.(${exampleIds.join(',')})`,
+          limit: String(exampleIds.length),
+        }),
+  ]);
+
+  if (!wordFavoriteResp.ok) {
+    return { isFavorited: false, favoritedExampleIds: new Set<string>() };
+  }
+
+  const wordFavoriteRows = (await wordFavoriteResp.json()) as Array<{ word_id: string }>;
+  const isFavorited = wordFavoriteRows.length > 0;
+  if (exampleFavoriteResp == null || !exampleFavoriteResp.ok) {
+    return { isFavorited, favoritedExampleIds: new Set<string>() };
+  }
+
+  const exampleRows = (await exampleFavoriteResp.json()) as Array<{ example_id: string }>;
+  return {
+    isFavorited,
+    favoritedExampleIds: new Set(exampleRows.map((row) => row.example_id)),
+  };
 }
 
 /**
@@ -310,43 +535,6 @@ export async function handleBookList(
   );
 
   return jsonResponse({ data: booksWithCount }, corsHeaders(request));
-}
-
-/**
- * GET /api/v1/books/sync?since=<ISO>
- * 增量同步 books 元数据，包含可用状态变更。
- */
-export async function handleBookSync(
-  request: Request,
-  env: Env,
-): Promise<Response> {
-  const url = new URL(request.url);
-  const since = url.searchParams.get('since');
-  const serverTime = new Date().toISOString();
-
-  if (!since) {
-    return jsonResponse(
-      { data: [], meta: { count: 0, server_time: serverTime } },
-      corsHeaders(request),
-    );
-  }
-
-  const resp = await supabaseFetch(env, '/books', {
-    select: '*',
-    updated_at: `gt.${since}`,
-    order: 'updated_at.asc',
-    limit: '500',
-  });
-
-  if (!resp.ok) {
-    return errorResponse(500, 'DB_ERROR', 'Failed to fetch updated books');
-  }
-
-  const books = (await resp.json()) as VocabBook[];
-  return jsonResponse(
-    { data: books, meta: { count: books.length, server_time: serverTime } },
-    corsHeaders(request),
-  );
 }
 
 async function fetchBookSequenceRows(
@@ -393,59 +581,139 @@ async function fetchBookSequenceRows(
   }));
 }
 
-/**
- * GET /api/v1/words/sync?since=<ISO>
- * 增量同步：返回 since 时间戳之后更新的所有单词完整数据
- * 客户端根据本地 word_id 是否存在决定是否覆盖
- */
-export async function handleWordSync(
-  request: Request,
+async function getActiveLearnSession(
   env: Env,
-  _auth: AuthPayload
-): Promise<Response> {
-  const url = new URL(request.url);
-  const since = url.searchParams.get('since');
-
-  if (!since) {
-    return jsonResponse(
-      { data: [], meta: { count: 0, server_time: new Date().toISOString() } },
-      corsHeaders(request)
-    );
-  }
-
-  // 查询 since 之后有更新的单词（最多 500 条，按 updated_at 升序）
-  const wordsResp = await supabaseFetch(env, '/words', {
-    select: 'id',
-    updated_at: `gt.${since}`,
-    order: 'updated_at.asc',
-    limit: '500',
+  userId: string,
+  bookId: string,
+): Promise<LearnSessionRow | null> {
+  const response = await supabaseFetch(env, '/user_learning_sessions', {
+    select: '*',
+    user_id: `eq.${userId}`,
+    book_id: `eq.${bookId}`,
+    status: 'eq.active',
+    order: 'updated_at.desc',
+    limit: '1',
   });
 
-  if (!wordsResp.ok) {
-    return errorResponse(500, 'DB_ERROR', 'Failed to fetch updated words');
+  if (!response.ok) {
+    throw new Error('Failed to fetch active learn session');
   }
 
-  const updatedWords = (await wordsResp.json()) as Array<{ id: string }>;
-  const serverTime = new Date().toISOString();
+  const rows = (await response.json()) as LearnSessionRow[];
+  return rows[0] ?? null;
+}
 
-  if (updatedWords.length === 0) {
-    return jsonResponse(
-      { data: [], meta: { count: 0, server_time: serverTime } },
-      corsHeaders(request)
-    );
+async function getLearnSessionById(
+  env: Env,
+  userId: string,
+  sessionId: string,
+): Promise<LearnSessionRow | null> {
+  const response = await supabaseFetch(env, '/user_learning_sessions', {
+    select: '*',
+    id: `eq.${sessionId}`,
+    user_id: `eq.${userId}`,
+    limit: '1',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch learn session');
   }
 
-  const wordIds = updatedWords.map(w => w.id);
-  const fullDetails = await fetchFullDetailsBatch(env, wordIds);
+  const rows = (await response.json()) as LearnSessionRow[];
+  return rows[0] ?? null;
+}
 
-  const data = wordIds
-    .filter(id => fullDetails.has(id))
-    .map(id => fullDetails.get(id)!);
-
-  return jsonResponse(
-    { data, meta: { count: data.length, server_time: serverTime } },
-    corsHeaders(request)
+async function createLearnSession(
+  env: Env,
+  userId: string,
+  bookId: string,
+  wordIds: string[],
+  wordsPayload: Record<string, unknown>[],
+  batchStartSort: number,
+  batchEndSort: number,
+  deviceId: string | null,
+): Promise<LearnSessionRow> {
+  const response = await supabaseFetch(
+    env,
+    '/user_learning_sessions',
+    undefined,
+    {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: {
+        user_id: userId,
+        device_id: deviceId,
+        book_id: bookId,
+        status: 'active',
+        word_ids: wordIds,
+        words_payload: wordsPayload,
+        batch_start_sort: batchStartSort,
+        batch_end_sort: batchEndSort,
+        completed_at: null,
+      },
+    },
   );
+
+  if (!response.ok) {
+    throw new Error('Failed to create learn session');
+  }
+
+  const rows = (await response.json()) as LearnSessionRow[];
+  if (!rows[0]) {
+    throw new Error('Empty response while creating learn session');
+  }
+  return rows[0];
+}
+
+function toLearnSessionEnvelope(session: LearnSessionRow) {
+  return {
+    session_id: session.id,
+    book_id: session.book_id,
+    batch_start_sort: session.batch_start_sort,
+    batch_end_sort: session.batch_end_sort,
+    words: Array.isArray(session.words_payload) ? session.words_payload : [],
+  };
+}
+
+function emptyLearnSessionEnvelope(bookId: string, currentCursor: number) {
+  return {
+    session_id: null,
+    book_id: bookId,
+    batch_start_sort: currentCursor,
+    batch_end_sort: currentCursor,
+    words: [],
+  };
+}
+
+function normalizeLearnUserState(value: number | undefined): number {
+  switch (value) {
+    case 1:
+    case 2:
+    case 3:
+      return value;
+    case undefined:
+      return 1;
+    default:
+      throw new Error('Invalid user_state');
+  }
+}
+
+function clampFirstReviewInterval(value: number | undefined): number {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 10;
+  }
+  return Math.min(Math.max(Math.trunc(value), 1), 1440);
+}
+
+function clampInt(raw: string | null, fallback: number, min: number, max: number): number {
+  if (!raw) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return Math.min(Math.max(parsed, min), max);
 }
 
 function parseContentRangeTotal(contentRange: string | null): number | null {

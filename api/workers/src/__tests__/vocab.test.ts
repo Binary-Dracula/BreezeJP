@@ -21,7 +21,7 @@ vi.mock('../middleware/cors', () => ({
   corsHeaders: () => ({ 'Content-Type': 'application/json' }),
 }));
 
-import { handleBookList, handleBookSync, handleNextWords } from '../routes/vocab';
+import { handleBookList, handleNextWords } from '../routes/vocab';
 
 describe('vocab routes', () => {
   beforeEach(() => {
@@ -48,23 +48,6 @@ describe('vocab routes', () => {
       {} as never,
       '/books',
       expect.objectContaining({ is_available: 'eq.true', order: 'sort_order.asc' }),
-    );
-  });
-
-  it('handleBookSync queries books updated after since', async () => {
-    mocks.supabaseFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify([]), { status: 200 }),
-    );
-
-    await handleBookSync(
-      new Request('https://example.com/api/v1/books/sync?since=2026-04-22T10:00:00Z'),
-      {} as never,
-    );
-
-    expect(mocks.supabaseFetch).toHaveBeenCalledWith(
-      {} as never,
-      '/books',
-      expect.objectContaining({ updated_at: 'gt.2026-04-22T10:00:00Z', order: 'updated_at.asc' }),
     );
   });
 

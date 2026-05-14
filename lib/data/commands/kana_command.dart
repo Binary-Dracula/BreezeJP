@@ -8,13 +8,13 @@ import '../../core/algorithm/srs_types.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/learning_status.dart';
 import '../../core/providers/home_summary_invalidation_provider.dart';
+import '../../core/providers/kana_state_cache_provider.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/log_formatter.dart';
 import '../../core/domain/kana_domain_event.dart';
-import 'sync_remote_command.dart';
+import 'kana_remote_command.dart';
+import 'kana_remote_command_provider.dart';
 import '../models/kana_learning_state.dart';
-import '../repositories/kana_repository.dart';
-import '../repositories/kana_repository_provider.dart';
 
 /// Kana command layer (state updates only).
 class KanaCommand {
@@ -22,11 +22,16 @@ class KanaCommand {
 
   final Ref ref;
 
-  KanaRepository get _repo => ref.read(kanaRepositoryProvider);
   AlgorithmService get _algorithmService => ref.read(algorithmServiceProvider);
-  SyncRemoteCommand get _syncRemote => ref.read(syncRemoteCommandProvider);
+  KanaRemoteCommand get _remoteCommand => ref.read(kanaRemoteCommandProvider);
+  KanaStateCacheNotifier get _kanaStateCache =>
+      ref.read(kanaStateCacheProvider.notifier);
   HomeSummaryInvalidationNotifier get _homeSummaryInvalidation =>
       ref.read(homeSummaryInvalidationProvider.notifier);
+
+  KanaLearningState? _getCachedState(int kanaId) {
+    return ref.read(kanaStateCacheProvider)[kanaId];
+  }
 
   /// Create kana learning state when first practiced.
   Future<KanaPracticed?> onKanaPracticed({
@@ -34,7 +39,7 @@ class KanaCommand {
     required int kanaId,
   }) async {
     try {
-      final existing = await _repo.getKanaLearningState(userId, kanaId);
+      final existing = _getCachedState(kanaId);
       if (existing != null) return null;
 
       final now = DateTime.now();
@@ -59,8 +64,7 @@ class KanaCommand {
         createdAt: nowSeconds,
         updatedAt: nowSeconds,
       );
-      await _repo.insertKanaLearningState(state);
-      _homeSummaryInvalidation.markStale();
+      await _persistState(state);
       logger.stateChange(
         scope: 'kana',
         userId: userId,
@@ -69,15 +73,9 @@ class KanaCommand {
         toState: 'learning',
         reason: 'practice',
       );
-      _syncRemote.scheduleCheckpoint();
       return KanaPracticed(userId: userId, kanaId: kanaId, occurredAt: now);
     } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'INSERT',
-        table: 'kana_learning_state',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
+      logger.error('更新假名练习状态失败', e, stackTrace);
       rethrow;
     }
   }
@@ -92,7 +90,7 @@ class KanaCommand {
     try {
       final now = DateTime.now();
       final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
-      final existing = await _repo.getKanaLearningState(userId, kanaId);
+      final existing = _getCachedState(kanaId);
       final resolvedAlgorithm =
           algorithmType ?? _algorithmService.defaultAlgorithm;
 
@@ -152,13 +150,7 @@ class KanaCommand {
         updatedAt: nowSeconds,
       );
 
-      if (existing == null) {
-        await _repo.insertKanaLearningState(updated);
-      } else {
-        await _repo.updateKanaLearningState(updated);
-      }
-      _homeSummaryInvalidation.markStale();
-      _syncRemote.scheduleCheckpoint();
+      await _persistState(updated);
       logger.srsUpdate(
         scope: 'kana',
         userId: userId,
@@ -169,12 +161,7 @@ class KanaCommand {
         after: _srsSnapshot(updated),
       );
     } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'UPDATE',
-        table: 'kana_learning_state',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
+      logger.error('写回假名复习状态失败', e, stackTrace);
       rethrow;
     }
   }
@@ -187,7 +174,7 @@ class KanaCommand {
     try {
       final now = DateTime.now();
       final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
-      final existing = await _repo.getKanaLearningState(userId, kanaId);
+      final existing = _getCachedState(kanaId);
       if (existing == null) {
         final state = KanaLearningState(
           id: 0,
@@ -197,8 +184,7 @@ class KanaCommand {
           createdAt: nowSeconds,
           updatedAt: nowSeconds,
         );
-        await _repo.insertKanaLearningState(state);
-        _homeSummaryInvalidation.markStale();
+        await _persistState(state);
         logger.stateChange(
           scope: 'kana',
           userId: userId,
@@ -207,7 +193,6 @@ class KanaCommand {
           toState: 'mastered',
           reason: 'toggle_mastered',
         );
-        _syncRemote.scheduleCheckpoint();
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -216,8 +201,7 @@ class KanaCommand {
           learningStatus: LearningStatus.learning,
           updatedAt: nowSeconds,
         );
-        await _repo.updateKanaLearningState(updated);
-        _homeSummaryInvalidation.markStale();
+        await _persistState(updated);
         logger.stateChange(
           scope: 'kana',
           userId: userId,
@@ -226,7 +210,6 @@ class KanaCommand {
           toState: 'learning',
           reason: 'toggle_mastered',
         );
-        _syncRemote.scheduleCheckpoint();
         return KanaUnmastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
 
@@ -235,8 +218,7 @@ class KanaCommand {
           learningStatus: LearningStatus.mastered,
           updatedAt: nowSeconds,
         );
-        await _repo.updateKanaLearningState(updated);
-        _homeSummaryInvalidation.markStale();
+        await _persistState(updated);
         logger.stateChange(
           scope: 'kana',
           userId: userId,
@@ -245,19 +227,35 @@ class KanaCommand {
           toState: 'mastered',
           reason: 'toggle_mastered',
         );
-        _syncRemote.scheduleCheckpoint();
         return KanaMastered(userId: userId, kanaId: kanaId, occurredAt: now);
       }
       return null;
     } catch (e, stackTrace) {
-      logger.dbError(
-        operation: 'UPDATE',
-        table: 'kana_learning_state',
-        dbError: e,
-        stackTrace: stackTrace,
-      );
+      logger.error('切换假名掌握状态失败', e, stackTrace);
       rethrow;
     }
+  }
+
+  Future<void> _persistState(KanaLearningState state) async {
+    await _remoteCommand.saveState(_toRemoteState(state));
+    _kanaStateCache.upsertState(state);
+    _homeSummaryInvalidation.markStale();
+  }
+
+  KanaStateUpsert _toRemoteState(KanaLearningState state) {
+    return KanaStateUpsert(
+      kanaId: state.kanaId,
+      learningStatus: state.learningStatus.value,
+      nextReviewAt: state.nextReviewAt,
+      lastReviewedAt: state.lastReviewedAt,
+      streak: state.streak,
+      totalReviews: state.totalReviews,
+      failCount: state.failCount,
+      interval: state.interval,
+      easeFactor: state.easeFactor,
+      stability: state.stability,
+      difficulty: state.difficulty,
+    );
   }
 
   Map<String, dynamic> _srsSnapshot(KanaLearningState state) {
