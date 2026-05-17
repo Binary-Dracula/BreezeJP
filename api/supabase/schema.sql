@@ -589,6 +589,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_user_learning_sessions_active_book
 CREATE INDEX IF NOT EXISTS idx_user_learning_sessions_user_updated
     ON user_learning_sessions(user_id, updated_at DESC);
 
+ALTER TABLE user_learning_sessions
+    ALTER COLUMN device_id DROP NOT NULL;
+
 CREATE OR REPLACE VIEW user_word_book_view AS
 SELECT
         s.user_id,

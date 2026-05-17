@@ -69,4 +69,32 @@ describe('vocab routes', () => {
       'Book is no longer available',
     );
   });
+
+  it('handleNextWords reads lesson_word_map by persisted book_sort_order', async () => {
+    mocks.supabaseFetch
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ id: 'book-1', is_available: true }]), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([]), { status: 200 }),
+      );
+
+    const response = await handleNextWords(
+      new Request('https://example.com/api/v1/books/book-1/next-words'),
+      {} as never,
+      'book-1',
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.supabaseFetch).toHaveBeenNthCalledWith(
+      2,
+      {} as never,
+      '/lesson_word_map',
+      expect.objectContaining({
+        select: 'word_id,book_sort_order',
+        order: 'book_sort_order.asc',
+        book_id: 'eq.book-1',
+      }),
+    );
+  });
 });

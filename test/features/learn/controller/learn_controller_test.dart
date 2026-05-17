@@ -231,6 +231,8 @@ void main() {
 
       final state = container.read(learnControllerProvider);
       expect(state.isBatchComplete, isTrue);
+      expect(state.currentIndex, 0);
+      expect(state.isLoading, isFalse);
       verify(
         () => remoteQuery.completeLearnSession(
           sessionId: 'remote-learn-1',

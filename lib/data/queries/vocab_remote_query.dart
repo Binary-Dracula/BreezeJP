@@ -81,18 +81,43 @@ class RemoteWordLearnSession {
   final List<Map<String, dynamic>> rawWordsJson;
 
   factory RemoteWordLearnSession.fromJson(Map<String, dynamic> json) {
-    final data = Map<String, dynamic>.from(json['data'] as Map);
-    final meta = json['meta'] as Map<String, dynamic>? ?? const {};
-    final rawWords = (data['words'] as List<dynamic>? ?? const [])
+    final payload = json['data'];
+    if (payload is! Map) {
+      throw const FormatException(
+        'Invalid learn session payload: missing data',
+      );
+    }
+
+    final data = Map<String, dynamic>.from(payload);
+    final metaValue = json['meta'];
+    final meta = metaValue is Map<String, dynamic>
+        ? metaValue
+        : metaValue is Map
+        ? Map<String, dynamic>.from(metaValue)
+        : const <String, dynamic>{};
+    final rawWordsValue = data['words'];
+    if (rawWordsValue != null && rawWordsValue is! List) {
+      throw const FormatException(
+        'Invalid learn session payload: words must be a list',
+      );
+    }
+    final rawWords = (rawWordsValue as List<dynamic>? ?? const [])
         .map((entry) => Map<String, dynamic>.from(entry as Map))
         .toList();
+    final sessionId = _asNullableString(data['session_id']);
+    if (rawWords.isNotEmpty && sessionId == null) {
+      throw const FormatException(
+        'Invalid learn session payload: non-empty words require session_id',
+      );
+    }
+
     return RemoteWordLearnSession(
-      sessionId: _asNullableString(data['session_id']),
+      sessionId: sessionId,
       bookId: _asNullableString(data['book_id']) ?? '',
-      batchStartSort: (data['batch_start_sort'] as int?) ?? 0,
-      batchEndSort: (data['batch_end_sort'] as int?) ?? 0,
+      batchStartSort: _asInt(data['batch_start_sort']) ?? 0,
+      batchEndSort: _asInt(data['batch_end_sort']) ?? 0,
       words: rawWords.map(WordDetailWithSort.fromJson).toList(),
-      totalWords: (meta['total_words'] as int?) ?? 0,
+      totalWords: _asInt(meta['total_words']) ?? 0,
       resumed: meta['resumed'] == true,
       rawWordsJson: rawWords,
     );
@@ -134,4 +159,17 @@ String? _asNullableString(dynamic value) {
     return null;
   }
   return normalized;
+}
+
+int? _asInt(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.tryParse(value.toString().trim());
 }

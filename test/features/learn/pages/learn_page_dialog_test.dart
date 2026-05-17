@@ -9,17 +9,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeLearnController extends LearnController {
-  _FakeLearnController({LearnState initialState = const LearnState()})
-    : _initialState = initialState;
+  _FakeLearnController({
+    LearnState initialState = const LearnState(),
+    this.onStartLearning,
+  }) : _initialState = initialState;
 
   final LearnState _initialState;
+  final Future<void> Function(_FakeLearnController controller, String bookId)?
+  onStartLearning;
+  int startLearningCalls = 0;
   int goToNextCalls = 0;
 
   @override
   LearnState build() => _initialState;
 
   @override
-  Future<void> startLearning(String bookId) async {}
+  Future<void> startLearning(String bookId) async {
+    startLearningCalls += 1;
+    await onStartLearning?.call(this, bookId);
+  }
 
   @override
   Future<void> goToNext() async {
@@ -103,5 +111,120 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeController.goToNextCalls, 1);
+  });
+
+  testWidgets('shows fullscreen loading overlay and clamps progress text', (
+    tester,
+  ) async {
+    late _FakeLearnController fakeController;
+    final wordDetail = WordDetail(
+      word: Word(
+        id: 'word-1',
+        word: '言葉',
+        reading: 'ことば',
+        partOfSpeech: 'noun',
+      ),
+      richContent: WordRichContent.empty(),
+      examples: const [],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          learnControllerProvider.overrideWith(() {
+            fakeController = _FakeLearnController(
+              initialState: LearnState(
+                words: [wordDetail],
+                currentIndex: 1,
+                isLoading: true,
+                bookId: 'book-1',
+              ),
+            );
+            return fakeController;
+          }),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const LearnPage(bookId: 'book-1'),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.byKey(const Key('learn_loading_overlay')), findsOneWidget);
+    expect(find.text('1 / 1'), findsOneWidget);
+  });
+
+  testWidgets(
+    'does not show empty-state text while initial loading is active',
+    (tester) async {
+      late _FakeLearnController fakeController;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            learnControllerProvider.overrideWith(() {
+              fakeController = _FakeLearnController(
+                initialState: const LearnState(
+                  isLoading: true,
+                  bookId: 'book-1',
+                ),
+              );
+              return fakeController;
+            }),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const LearnPage(bookId: 'book-1'),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byKey(const Key('learn_loading_overlay')), findsOneWidget);
+      expect(find.text('没有可学习的单词'), findsNothing);
+    },
+  );
+
+  testWidgets('defers initial provider updates until after first build', (
+    tester,
+  ) async {
+    late _FakeLearnController fakeController;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          learnControllerProvider.overrideWith(() {
+            fakeController = _FakeLearnController(
+              onStartLearning: (controller, bookId) async {
+                controller.state = controller.state.copyWith(
+                  isLoading: true,
+                  bookId: bookId,
+                );
+              },
+            );
+            return fakeController;
+          }),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const LearnPage(bookId: 'book-1'),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('learn_loading_overlay')), findsOneWidget);
+    expect(find.text('没有可学习的单词'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.pump();
+
+    expect(fakeController.startLearningCalls, 1);
+    expect(tester.takeException(), isNull);
   });
 }

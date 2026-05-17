@@ -28,18 +28,19 @@ export async function handleGrammarList(request, env, auth) {
         grammarParams.jlpt_level = `eq.${jlptLevel}`;
     }
     const [grammarResp, stateResp] = await Promise.all([
-        supabaseFetch(env, '/grammars', grammarParams),
+        fetchGrammarRows(env, grammarParams),
         supabaseFetch(env, '/user_grammar_states', {
             select: 'grammar_id,learning_status',
             user_id: `eq.${auth.sub}`,
             limit: '2000',
         }),
     ]);
-    if (!grammarResp.ok || !stateResp.ok) {
+    if (!grammarResp.ok) {
+        await logSupabaseFailure('Failed to fetch grammar list content', grammarResp);
         return errorResponse(500, 'DB_ERROR', 'Failed to fetch grammar list');
     }
     const grammars = (await grammarResp.json());
-    const states = (await stateResp.json());
+    const states = await readOptionalGrammarStates(stateResp, 'Failed to fetch grammar list states');
     const stateById = new Map(states.map((row) => [row.grammar_id, row.learning_status]));
     const candidates = grammars.filter((grammar) => {
         if (excludeIds.has(grammar.id)) {
@@ -126,7 +127,15 @@ async function fetchGrammarDetailBundle(env, userId, grammarId) {
             limit: '1',
         }),
     ]);
-    if (!grammarResp.ok || !meaningsResp.ok || !contextsResp.ok || !examplesResp.ok || !stateResp.ok) {
+    const failedContentResponse = [
+        ['grammar', grammarResp],
+        ['grammar_meanings', meaningsResp],
+        ['grammar_contexts', contextsResp],
+        ['grammar_examples', examplesResp],
+    ].find(([, response]) => !response.ok);
+    if (failedContentResponse) {
+        const [resource, response] = failedContentResponse;
+        await logSupabaseFailure(`Failed to fetch grammar detail ${resource} for grammar ${grammarId}`, response);
         return null;
     }
     const grammarRows = (await grammarResp.json());
@@ -137,7 +146,7 @@ async function fetchGrammarDetailBundle(env, userId, grammarId) {
     const meanings = (await meaningsResp.json());
     const contexts = (await contextsResp.json());
     const examples = (await examplesResp.json());
-    const stateRows = (await stateResp.json());
+    const stateRows = await readOptionalGrammarStates(stateResp, `Failed to fetch grammar detail state for grammar ${grammarId}`);
     const learningState = stateRows[0] ?? null;
     return {
         grammar,
@@ -147,6 +156,36 @@ async function fetchGrammarDetailBundle(env, userId, grammarId) {
         learning_status: learningState?.learning_status ?? 0,
         learning_state: learningState,
     };
+}
+async function fetchGrammarRows(env, grammarParams) {
+    const response = await supabaseFetch(env, '/grammars', grammarParams);
+    if (response.ok || grammarParams.order !== 'usage_frequency.desc,id.asc') {
+        return response;
+    }
+    const errorBody = await response.clone().text();
+    if (!errorBody.toLowerCase().includes('usage_frequency')) {
+        return response;
+    }
+    console.warn('Grammar list query failed on usage_frequency order; retrying with id.asc:', errorBody);
+    return supabaseFetch(env, '/grammars', {
+        ...grammarParams,
+        order: 'id.asc',
+    });
+}
+async function readOptionalGrammarStates(response, context) {
+    if (!response.ok) {
+        await logSupabaseFailure(context, response, 'warn');
+        return [];
+    }
+    return (await response.json());
+}
+async function logSupabaseFailure(context, response, level = 'error') {
+    const body = await response.clone().text();
+    if (level === 'warn') {
+        console.warn(`${context}: ${response.status} ${response.statusText}`, body);
+        return;
+    }
+    console.error(`${context}: ${response.status} ${response.statusText}`, body);
 }
 function parseExcludeIds(raw) {
     if (!raw) {
@@ -171,7 +210,7 @@ function sanitizeJlptLevel(raw) {
     if (raw == null) {
         return null;
     }
-    const normalized = raw.trim().toUpperCase();
+    const normalized = raw.trim().toLowerCase();
     return normalized.length > 0 ? normalized : null;
 }
 function normalizeGrammarState(state, userId) {

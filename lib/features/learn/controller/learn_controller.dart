@@ -331,12 +331,13 @@ class LearnController extends Notifier<LearnState> {
       return;
     }
 
-    await _persistSessionSnapshot(
-      currentIndex: state.words.length,
-      wordStates: state.wordStates,
-    );
+    state = state.copyWith(isLoading: true);
 
     try {
+      await _persistSessionSnapshot(
+        currentIndex: state.words.length,
+        wordStates: state.wordStates,
+      );
       await _remote.completeLearnSession(
         sessionId: session.serverSessionId!,
         wordStates: _buildFinalWordStates(),
@@ -344,8 +345,9 @@ class LearnController extends Notifier<LearnState> {
       );
       await _sessionRepo.deleteSession(session.id);
       state = state.copyWith(
+        isLoading: false,
         isBatchComplete: true,
-        currentIndex: state.words.length,
+        currentIndex: _completedBatchDisplayIndex(state.words),
       );
       logger.info(
         '[LearnCtrl] 批次完成 bookId=$bookId cursor=${session.batchEndSort}',
@@ -361,9 +363,12 @@ class LearnController extends Notifier<LearnState> {
       state = state.copyWith(
         isLoading: false,
         isBatchComplete: true,
-        currentIndex: state.words.length,
+        currentIndex: _completedBatchDisplayIndex(state.words),
         error: null,
       );
+    } catch (error, stackTrace) {
+      logger.error('学习批次完成失败', error, stackTrace);
+      state = state.copyWith(isLoading: false, error: error.toString());
     }
   }
 
@@ -392,7 +397,7 @@ class LearnController extends Notifier<LearnState> {
       await _sessionRepo.deleteSession(session.id);
       state = state.copyWith(
         words: details,
-        currentIndex: details.length,
+        currentIndex: _completedBatchDisplayIndex(details),
         wordStates: wordStates,
         isBatchComplete: true,
         isBookComplete: false,
@@ -411,7 +416,7 @@ class LearnController extends Notifier<LearnState> {
       logger.error('恢复后的学习批次完成失败', error, stackTrace);
       state = state.copyWith(
         words: details,
-        currentIndex: details.length,
+        currentIndex: _completedBatchDisplayIndex(details),
         wordStates: wordStates,
         isBatchComplete: true,
         isBookComplete: false,
@@ -459,6 +464,13 @@ class LearnController extends Notifier<LearnState> {
       ),
       growable: false,
     );
+  }
+
+  int _completedBatchDisplayIndex(List<WordDetail> words) {
+    if (words.isEmpty) {
+      return 0;
+    }
+    return words.length - 1;
   }
 
   bool _isSessionExpired(DateTime createdAt) {

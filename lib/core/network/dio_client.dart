@@ -70,6 +70,11 @@ class DioClient {
             error.requestOptions.uri.toString(),
             error.message,
           );
+          // 打印响应体，帮助诊断服务端错误
+          final responseData = error.response?.data;
+          if (responseData != null) {
+            logger.error('Error response body: $responseData');
+          }
 
           handler.next(error);
         },

@@ -26,6 +26,20 @@ import { handleCreateIssue } from './routes/issues';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    try {
+      return await _handleRequest(request, env);
+    } catch (err) {
+      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error('Unhandled exception in fetch handler:', msg);
+      return new Response(
+        JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: msg } }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+  },
+};
+
+async function _handleRequest(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
@@ -263,5 +277,4 @@ export default {
         },
       }
     );
-  },
-};
+}

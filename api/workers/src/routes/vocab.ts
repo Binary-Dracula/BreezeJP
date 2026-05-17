@@ -3,15 +3,9 @@ import { corsHeaders } from '../middleware/cors';
 import { supabaseFetch, jsonResponse, errorResponse, supabaseRpc } from '../utils/supabase';
 import { AuthPayload } from '../middleware/auth';
 
-type LessonRow = {
-  id: string;
-  lesson_number: number;
-};
-
 type LessonWordMapRow = {
   word_id: string;
-  lesson_id: string | null;
-  sort_order: number;
+  book_sort_order: number;
 };
 
 type LearnSessionRow = {
@@ -88,7 +82,7 @@ export async function handleNextWords(
     return errorResponse(409, 'BOOK_UNAVAILABLE', 'Book is no longer available');
   }
 
-  // 云端当前没有 book_sort_order，按 lesson_number + lesson 内 sort_order 现场合成稳定顺序。
+  // 直接使用已持久化的 book_sort_order，避免每次请求重建整本书顺序。
   const sequenceRows = await fetchBookSequenceRows(env, bookId);
   const nextRows = sequenceRows
     .filter(row => row.book_sort_order > afterSort)
@@ -148,11 +142,12 @@ export async function handleCreateLearnSession(
 
   const activeSession = await getActiveLearnSession(env, auth.sub, bookId);
   if (activeSession) {
+    const totalWords = await fetchBookTotalWords(env, bookId);
     return jsonResponse(
       {
         data: toLearnSessionEnvelope(activeSession),
         meta: {
-          total_words: await fetchBookTotalWords(env, bookId),
+          total_words: totalWords,
           resumed: true,
           server_time: new Date().toISOString(),
         },
@@ -162,7 +157,7 @@ export async function handleCreateLearnSession(
   }
 
   const bookResp = await supabaseFetch(env, '/books', {
-    select: 'id,is_available',
+    select: 'id,is_available,word_count',
     id: `eq.${bookId}`,
     limit: '1',
   });
@@ -171,7 +166,7 @@ export async function handleCreateLearnSession(
     return errorResponse(500, 'DB_ERROR', 'Failed to validate book state');
   }
 
-  const books = (await bookResp.json()) as Array<Pick<VocabBook, 'id' | 'is_available'>>;
+  const books = (await bookResp.json()) as Array<Pick<VocabBook, 'id' | 'is_available' | 'word_count'>>;
   const book = books[0];
   if (!book) {
     return errorResponse(404, 'BOOK_NOT_FOUND', 'Book not found');
@@ -208,7 +203,7 @@ export async function handleCreateLearnSession(
       {
         data: emptyLearnSessionEnvelope(bookId, currentCursor),
         meta: {
-          total_words: sequenceRows.length,
+          total_words: resolveBookWordCount(book.word_count, sequenceRows.length),
           resumed: false,
           server_time: new Date().toISOString(),
         },
@@ -238,7 +233,7 @@ export async function handleCreateLearnSession(
     {
       data: toLearnSessionEnvelope(createdSession),
       meta: {
-        total_words: sequenceRows.length,
+        total_words: resolveBookWordCount(book.word_count, sequenceRows.length),
         resumed: false,
         server_time: new Date().toISOString(),
       },
@@ -356,8 +351,30 @@ async function fetchBookTotalWords(
   env: Env,
   bookId: string,
 ): Promise<number> {
-  const rows = await fetchBookSequenceRows(env, bookId);
-  return rows.length;
+  const bookResp = await supabaseFetch(env, '/books', {
+    select: 'word_count',
+    id: `eq.${bookId}`,
+    limit: '1',
+  });
+
+  if (bookResp.ok) {
+    const rows = (await bookResp.json()) as Array<Pick<VocabBook, 'word_count'>>;
+    const count = rows[0]?.word_count;
+    if (typeof count === 'number' && count >= 0) {
+      return count;
+    }
+  }
+
+  const countResp = await supabaseFetch(env, '/lesson_word_map', {
+    select: 'id',
+    book_id: `eq.${bookId}`,
+    limit: '1',
+  });
+  if (!countResp.ok) {
+    throw new Error('Failed to fetch book total words');
+  }
+
+  return parseContentRangeTotal(countResp.headers.get('content-range')) ?? 0;
 }
 
 /**
@@ -541,43 +558,21 @@ async function fetchBookSequenceRows(
   env: Env,
   bookId: string,
 ): Promise<Array<{ word_id: string; book_sort_order: number }>> {
-  const [lessonsResp, mapResp] = await Promise.all([
-    supabaseFetch(env, '/lessons', {
-      select: 'id,lesson_number',
-      book_id: `eq.${bookId}`,
-      order: 'lesson_number.asc',
-      limit: '500',
-    }),
-    supabaseFetch(env, '/lesson_word_map', {
-      select: 'word_id,lesson_id,sort_order',
-      book_id: `eq.${bookId}`,
-      limit: '5000',
-    }),
-  ]);
+  const mapResp = await supabaseFetch(env, '/lesson_word_map', {
+    select: 'word_id,book_sort_order',
+    book_id: `eq.${bookId}`,
+    order: 'book_sort_order.asc',
+    limit: '5000',
+  });
 
-  if (!lessonsResp.ok || !mapResp.ok) {
+  if (!mapResp.ok) {
     throw new Error('Failed to fetch sequence rows');
   }
 
-  const lessons = (await lessonsResp.json()) as LessonRow[];
   const mapRows = (await mapResp.json()) as LessonWordMapRow[];
-  const lessonNumberById = new Map(lessons.map(lesson => [lesson.id, lesson.lesson_number]));
-
-  mapRows.sort((a, b) => {
-    const lessonNumberA = lessonNumberById.get(a.lesson_id ?? '') ?? 0;
-    const lessonNumberB = lessonNumberById.get(b.lesson_id ?? '') ?? 0;
-    if (lessonNumberA != lessonNumberB) {
-      return lessonNumberA - lessonNumberB;
-    }
-    if (a.sort_order != b.sort_order) {
-      return a.sort_order - b.sort_order;
-    }
-    return a.word_id.localeCompare(b.word_id);
-  });
-
-  return mapRows.map((row, index) => ({
+  return mapRows.map((row) => ({
     word_id: row.word_id,
-    book_sort_order: index + 1,
+    book_sort_order: row.book_sort_order,
   }));
 }
 
@@ -727,5 +722,15 @@ function parseContentRangeTotal(contentRange: string | null): number | null {
   }
 
   return parseInt(match[1], 10);
+}
+
+function resolveBookWordCount(
+  wordCount: number | undefined,
+  fallback: number,
+): number {
+  if (typeof wordCount === 'number' && wordCount >= 0) {
+    return wordCount;
+  }
+  return fallback;
 }
 

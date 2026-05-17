@@ -19,11 +19,20 @@ class LearnPage extends ConsumerStatefulWidget {
 }
 
 class _LearnPageState extends ConsumerState<LearnPage> {
+  bool _isBootstrapping = true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(learnControllerProvider.notifier).startLearning(widget.bookId);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await ref
+          .read(learnControllerProvider.notifier)
+          .startLearning(widget.bookId);
+      if (!mounted) return;
+      setState(() {
+        _isBootstrapping = false;
+      });
     });
   }
 
@@ -70,12 +79,14 @@ class _LearnPageState extends ConsumerState<LearnPage> {
                   Expanded(child: _buildContent(context, state, l10n)),
                 ],
               ),
-              if (!state.isLoading && !state.isEmpty)
+              if (!state.isLoading && !_isBootstrapping && !state.isEmpty)
                 Positioned(
                   right: 10,
                   bottom: 200,
                   child: _buildActionRail(context, state, l10n),
                 ),
+              if (state.isLoading || _isBootstrapping)
+                const _LearnLoadingOverlay(),
             ],
           ),
         ),
@@ -90,6 +101,11 @@ class _LearnPageState extends ConsumerState<LearnPage> {
   ) {
     final theme = Theme.of(context);
     final hasWords = state.words.isNotEmpty;
+    final progressCount = hasWords
+        ? (state.currentIndex >= state.words.length
+              ? state.words.length
+              : state.currentIndex + 1)
+        : 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -108,7 +124,7 @@ class _LearnPageState extends ConsumerState<LearnPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                '${state.currentIndex + 1} / ${state.words.length}',
+                '$progressCount / ${state.words.length}',
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -145,8 +161,8 @@ class _LearnPageState extends ConsumerState<LearnPage> {
     LearnState state,
     AppLocalizations l10n,
   ) {
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (state.isLoading || _isBootstrapping) {
+      return const SizedBox.shrink();
     }
 
     if (state.error != null) {
@@ -439,6 +455,21 @@ class _RailActionButton extends StatelessWidget {
           height: 48,
           child: Icon(icon, color: foregroundColor, size: 22),
         ),
+      ),
+    );
+  }
+}
+
+class _LearnLoadingOverlay extends StatelessWidget {
+  const _LearnLoadingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ColoredBox(
+        key: const Key('learn_loading_overlay'),
+        color: Color(0xFFF6F7FB),
+        child: Center(child: CircularProgressIndicator()),
       ),
     );
   }

@@ -113,7 +113,7 @@ export async function handleGrammarList(
   }
 
   const [grammarResp, stateResp] = await Promise.all([
-    supabaseFetch(env, '/grammars', grammarParams),
+    fetchGrammarRows(env, grammarParams),
     supabaseFetch(env, '/user_grammar_states', {
       select: 'grammar_id,learning_status',
       user_id: `eq.${auth.sub}`,
@@ -121,12 +121,29 @@ export async function handleGrammarList(
     }),
   ]);
 
-  if (!grammarResp.ok || !stateResp.ok) {
-    return errorResponse(500, 'DB_ERROR', 'Failed to fetch grammar list');
+  if (!grammarResp.ok) {
+    const supabaseBody = await grammarResp.clone().text();
+    console.error(
+      `Grammar list content query failed: ${grammarResp.status} ${grammarResp.statusText}`,
+      supabaseBody,
+    );
+    return new Response(
+      JSON.stringify({
+        error: {
+          code: 'DB_ERROR',
+          message: `Failed to fetch grammar list`,
+          debug: { supabase_status: grammarResp.status, supabase_body: supabaseBody },
+        },
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders(request) } },
+    );
   }
 
   const grammars = (await grammarResp.json()) as GrammarRow[];
-  const states = (await stateResp.json()) as UserGrammarStateRow[];
+  const states = await readOptionalGrammarStates(
+    stateResp,
+    'Failed to fetch grammar list states',
+  );
   const stateById = new Map(states.map((row) => [row.grammar_id, row.learning_status]));
 
   const candidates = grammars.filter((grammar) => {
@@ -138,14 +155,16 @@ export async function handleGrammarList(
     return !unlearnedOnly || status === 0;
   });
 
-
-  const details = [];
-  for (const grammar of candidates.slice(0, limit)) {
-    const detail = await fetchGrammarDetailBundle(env, auth.sub, grammar.id);
-    if (detail != null) {
-      details.push(detail);
-    }
-  }
+  // 列表端点只需要 grammar + learning_status；GrammarListController 只读 detail.grammar
+  // 不调用 fetchGrammarDetailBundle，避免 N×5 Supabase 请求（严重超时/限额问题）
+  const details = candidates.slice(0, limit).map((grammar) => ({
+    grammar,
+    meanings: [],
+    contexts: [],
+    examples: [],
+    learning_status: stateById.get(grammar.id) ?? 0,
+    learning_state: null,
+  }));
 
   return jsonResponse(
     {
@@ -243,7 +262,17 @@ async function fetchGrammarDetailBundle(
     }),
   ]);
 
-  if (!grammarResp.ok || !meaningsResp.ok || !contextsResp.ok || !examplesResp.ok || !stateResp.ok) {
+  const failedContentResponse = [
+    { resource: 'grammar', response: grammarResp },
+    { resource: 'grammar_meanings', response: meaningsResp },
+    { resource: 'grammar_contexts', response: contextsResp },
+    { resource: 'grammar_examples', response: examplesResp },
+  ].find(({ response }) => !response.ok);
+  if (failedContentResponse) {
+    await logSupabaseFailure(
+      `Failed to fetch grammar detail ${failedContentResponse.resource} for grammar ${grammarId}`,
+      failedContentResponse.response,
+    );
     return null;
   }
 
@@ -256,7 +285,10 @@ async function fetchGrammarDetailBundle(
   const meanings = (await meaningsResp.json()) as GrammarMeaningRow[];
   const contexts = (await contextsResp.json()) as GrammarContextRow[];
   const examples = (await examplesResp.json()) as GrammarExampleRow[];
-  const stateRows = (await stateResp.json()) as UserGrammarStateRow[];
+  const stateRows = await readOptionalGrammarStates(
+    stateResp,
+    `Failed to fetch grammar detail state for grammar ${grammarId}`,
+  );
   const learningState = stateRows[0] ?? null;
 
   return {
@@ -267,6 +299,56 @@ async function fetchGrammarDetailBundle(
     learning_status: learningState?.learning_status ?? 0,
     learning_state: learningState,
   };
+}
+
+async function fetchGrammarRows(
+  env: Env,
+  grammarParams: Record<string, string>,
+): Promise<Response> {
+  const response = await supabaseFetch(env, '/grammars', grammarParams);
+  if (response.ok || grammarParams.order !== 'usage_frequency.desc,id.asc') {
+    return response;
+  }
+
+  const errorBody = await response.clone().text();
+  if (!errorBody.toLowerCase().includes('usage_frequency')) {
+    return response;
+  }
+
+  console.warn(
+    'Grammar list query failed on usage_frequency order; retrying with id.asc:',
+    errorBody,
+  );
+  return supabaseFetch(env, '/grammars', {
+    ...grammarParams,
+    order: 'id.asc',
+  });
+}
+
+async function readOptionalGrammarStates(
+  response: Response,
+  context: string,
+): Promise<UserGrammarStateRow[]> {
+  if (!response.ok) {
+    await logSupabaseFailure(context, response, 'warn');
+    return [];
+  }
+
+  return (await response.json()) as UserGrammarStateRow[];
+}
+
+async function logSupabaseFailure(
+  context: string,
+  response: Response,
+  level: 'error' | 'warn' = 'error',
+): Promise<void> {
+  const body = await response.clone().text();
+  if (level === 'warn') {
+    console.warn(`${context}: ${response.status} ${response.statusText}`, body);
+    return;
+  }
+
+  console.error(`${context}: ${response.status} ${response.statusText}`, body);
 }
 
 function parseExcludeIds(raw: string | null): number[] {
@@ -296,7 +378,7 @@ function sanitizeJlptLevel(raw: string | null): string | null {
     return null;
   }
 
-  const normalized = raw.trim().toUpperCase();
+  const normalized = raw.trim().toLowerCase();
   return normalized.length > 0 ? normalized : null;
 }
 
